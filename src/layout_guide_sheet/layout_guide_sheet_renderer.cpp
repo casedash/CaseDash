@@ -528,8 +528,42 @@ void DrawOverviewArtifact(DashboardRenderer& renderer,
                 topRight, bottomRight, RenderStroke::Solid(RenderColorId::LayoutGuide, outlineWidth));
         } else if (shape == AnchorShape::Diamond) {
             renderer.Renderer().FillSolidDiamond(handle, RenderColorId::LayoutGuide);
-        } else if (shape == AnchorShape::Square || shape == AnchorShape::VerticalReorder ||
-                   shape == AnchorShape::HorizontalReorder || shape == AnchorShape::Plus) {
+        } else if (shape == AnchorShape::VerticalReorder || shape == AnchorShape::HorizontalReorder) {
+            const int outlineWidth = ScaleAtLeast(renderer, sheetStyle.overviewGuideStrokeWidth, 1);
+            const int centerX = handle.left + (std::max<LONG>(0, handle.right - handle.left) / 2);
+            const int centerY = handle.top + (std::max<LONG>(0, handle.bottom - handle.top) / 2);
+            const int gapHalf = ScaleAtLeast(renderer, 1, 1);
+            const auto stroke = RenderStroke::Solid(RenderColorId::LayoutGuide, static_cast<float>(outlineWidth));
+            if (shape == AnchorShape::HorizontalReorder) {
+                const int halfHeight = std::max(1, static_cast<int>(handle.bottom - handle.top) / 2);
+                const RenderPoint leftApex{handle.left, centerY};
+                const RenderPoint leftTop{centerX - gapHalf, centerY - halfHeight};
+                const RenderPoint leftBottom{centerX - gapHalf, centerY + halfHeight};
+                const RenderPoint rightApex{handle.right, centerY};
+                const RenderPoint rightTop{centerX + gapHalf, centerY - halfHeight};
+                const RenderPoint rightBottom{centerX + gapHalf, centerY + halfHeight};
+                renderer.Renderer().DrawSolidLine(leftApex, leftTop, stroke);
+                renderer.Renderer().DrawSolidLine(leftTop, leftBottom, stroke);
+                renderer.Renderer().DrawSolidLine(leftBottom, leftApex, stroke);
+                renderer.Renderer().DrawSolidLine(rightTop, rightApex, stroke);
+                renderer.Renderer().DrawSolidLine(rightApex, rightBottom, stroke);
+                renderer.Renderer().DrawSolidLine(rightBottom, rightTop, stroke);
+            } else {
+                const int halfWidth = std::max(1, static_cast<int>(handle.right - handle.left) / 2);
+                const RenderPoint upApex{centerX, handle.top};
+                const RenderPoint upLeft{centerX - halfWidth, centerY - gapHalf};
+                const RenderPoint upRight{centerX + halfWidth, centerY - gapHalf};
+                const RenderPoint downApex{centerX, handle.bottom};
+                const RenderPoint downLeft{centerX - halfWidth, centerY + gapHalf};
+                const RenderPoint downRight{centerX + halfWidth, centerY + gapHalf};
+                renderer.Renderer().DrawSolidLine(upApex, upLeft, stroke);
+                renderer.Renderer().DrawSolidLine(upLeft, upRight, stroke);
+                renderer.Renderer().DrawSolidLine(upRight, upApex, stroke);
+                renderer.Renderer().DrawSolidLine(downLeft, downApex, stroke);
+                renderer.Renderer().DrawSolidLine(downApex, downRight, stroke);
+                renderer.Renderer().DrawSolidLine(downRight, downLeft, stroke);
+            }
+        } else if (shape == AnchorShape::Square || shape == AnchorShape::Plus) {
             renderer.Renderer().FillSolidRect(handle, RenderColorId::LayoutGuide);
         } else {
             renderer.Renderer().FillSolidEllipse(handle, RenderColorId::LayoutGuide);
