@@ -161,6 +161,7 @@ add_executable(SystemTelemetry WIN32
     src/widget/impl/clock_date.cpp
     src/dashboard_renderer/impl/layout_resolver.cpp
     src/layout_guide_sheet/layout_guide_sheet_layout.cpp
+    src/layout_guide_sheet/layout_guide_sheet_placement.cpp
     src/layout_guide_sheet/layout_guide_sheet_renderer.cpp
     src/dashboard_renderer/dashboard_renderer.cpp
     src/util/utf8.cpp
@@ -353,6 +354,7 @@ add_executable(SystemTelemetryTests
     src/dashboard_renderer/impl/layout_edit_overlay_renderer.cpp
     src/dashboard_renderer/impl/layout_resolver.cpp
     src/layout_guide_sheet/layout_guide_sheet_layout.cpp
+    src/layout_guide_sheet/layout_guide_sheet_placement.cpp
     src/layout_guide_sheet/layout_guide_sheet_renderer.cpp
     src/dashboard_renderer/dashboard_renderer.cpp
     src/diagnostics/snapshot_dump.cpp
@@ -474,6 +476,7 @@ add_executable(SystemTelemetryBenchmarks
     src/widget/impl/clock_date.cpp
     src/dashboard_renderer/impl/layout_resolver.cpp
     src/layout_guide_sheet/layout_guide_sheet_layout.cpp
+    src/layout_guide_sheet/layout_guide_sheet_placement.cpp
     src/layout_guide_sheet/layout_guide_sheet_renderer.cpp
     src/dashboard_renderer/dashboard_renderer.cpp
     src/util/resource_loader.cpp
