@@ -182,13 +182,15 @@ TEST(LayoutGuideSheetPlanner, OverviewCalloutsUseDashboardAndCardChromeTargets) 
     EXPECT_EQ(verticalSizingGuides, 1u);
 }
 
-TEST(LayoutGuideSheetPlanner, CalloutGeometryUsesOnlyLeftAndRightSides) {
+TEST(LayoutGuideSheetPlanner, CalloutGeometryPromotesOuterSideItemsToTopAndBottom) {
     const RenderRect card{100, 100, 300, 300};
     const std::vector<LayoutGuideSheetCalloutGeometryInput> inputs{
         {card, RenderRect{110, 180, 130, 200}},
         {card, RenderRect{270, 180, 290, 200}},
         {card, RenderRect{180, 110, 200, 130}},
         {card, RenderRect{180, 270, 200, 290}},
+        {card, RenderRect{120, 260, 140, 280}},
+        {card, RenderRect{260, 120, 280, 140}},
     };
 
     const std::vector<LayoutGuideSheetCalloutGeometry> planned = PlanLayoutGuideSheetCalloutGeometry(inputs);
@@ -197,9 +199,12 @@ TEST(LayoutGuideSheetPlanner, CalloutGeometryUsesOnlyLeftAndRightSides) {
     for (const LayoutGuideSheetCalloutGeometry& geometry : planned) {
         sides.insert(geometry.side);
     }
-    EXPECT_EQ(sides.size(), 2u);
+    EXPECT_EQ(sides.size(), 4u);
     EXPECT_TRUE(sides.contains(LayoutGuideSheetCalloutSide::Left));
     EXPECT_TRUE(sides.contains(LayoutGuideSheetCalloutSide::Right));
+    EXPECT_TRUE(sides.contains(LayoutGuideSheetCalloutSide::Top));
+    EXPECT_TRUE(sides.contains(LayoutGuideSheetCalloutSide::Bottom));
     EXPECT_EQ(planned[0].side, LayoutGuideSheetCalloutSide::Left);
-    EXPECT_EQ(planned[1].side, LayoutGuideSheetCalloutSide::Right);
+    EXPECT_EQ(planned[4].side, LayoutGuideSheetCalloutSide::Bottom);
+    EXPECT_EQ(planned[5].side, LayoutGuideSheetCalloutSide::Top);
 }

@@ -7,6 +7,8 @@
 enum class LayoutGuideSheetCalloutSide {
     Left,
     Right,
+    Top,
+    Bottom,
 };
 
 struct LayoutGuideSheetCalloutGeometryInput {

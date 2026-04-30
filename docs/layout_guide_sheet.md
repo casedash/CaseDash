@@ -45,7 +45,7 @@ User-visible labels and documentation refer to the generated image as a `layout 
 - Overview dashboard guides, gap handles, and card-chrome hover targets are resolved from the packed overview geometry itself, so their visible positions match the compact cards rather than the full-size dashboard coordinates.
 - Packed overview cards render their chrome through the same card-chrome widget layout, draw, guide, and anchor registration path as normal dashboard cards.
 - The overview and each representative card are arranged as separate vertical sheet blocks in layout order.
-- Each sheet block owns its own left and right callout stacks. The callout stacks sit snugly beside that block's annotated overview or card instead of sharing page-wide callout columns.
+- Each sheet block owns its own local callout placement. Most callouts sit in snug left and right stacks beside that block's annotated overview or card instead of sharing page-wide callout columns.
 - Completed sheet blocks are centered horizontally on the page after their local callout stacks, annotated item, and leader geometry are measured.
 - Cards are arranged vertically in layout order after coverage selection.
 - Each card keeps its resolved card size, inner composition, widget drawing, card chrome, colors, fonts, and configured scale.
@@ -89,7 +89,7 @@ User-visible labels and documentation refer to the generated image as a `layout 
 - The first line uses the same wording and value shape that the live tooltip uses for the edited config target.
 - The second line comes from the shared tooltip-description source of truth, not from guide-sheet-only strings.
 - Help bubbles are placed outside the card bounds with enough margin to keep the card content unobscured.
-- Callouts are arranged only to the left or right of each card.
+- Callouts are arranged mostly to the left or right of each card. After the side split is known, the bottom item from the left stack moves below the annotated item and the top item from the right stack moves above it, giving each block one centered bottom and one centered top callout when those side stacks exist.
 - Callout placement is deterministic and collision-aware. Bubbles do not overlap other bubbles, cards, or important guide labels.
 - Repeated examples of the same kind remain visible as ordinary guides, but they do not get additional bubbles or leader lines. Widget-content guides for cards that are not rendered as representative cards do not produce callouts.
 - If the sheet cannot place every bubble without overlap, it prefers preserving text readability and emits a trace warning that names the affected card, documented kind, and representative target.
@@ -123,12 +123,13 @@ The guide-sheet bubble layout is deterministic and runs after the selected cards
 3. Measure bubbles. Format each bubble using the active tooltip text source and fixed padding. Measure both tooltip lines as single-line text and size the bubble to the widest measured line plus padding, without minimum or maximum width clamping.
 4. Split sides. For each card, sort representative targets by target-center x and split them near the median so the left half uses the left stack and the right half uses the right stack. A single target uses the side nearest its target-center x.
 5. Order stacks. Sort each side stack by representative target-center y. This makes the bubble order match the target order before the leaders are drawn.
-6. Place bubbles. Center each left and right stack on the annotated item center y inside that item's local sheet block. A tall stack may start above the item top and extend below the item bottom by roughly matching amounts.
-7. Assign attachment points. Within each sheet block, align left bubbles by their right edge and right bubbles by their left edge so all leader endpoints on a side share the same x coordinate. Each leader starts at the representative target point and ends at the matching bubble edge.
-8. Validate side order. After placement, check each left and right stack for same-side leader intersections and swap adjacent bubbles until no same-side leader intersections remain or the deterministic retry limit is reached.
-9. Compose blocks. Measure each annotated item plus its local callout stacks as one block, then center the completed blocks vertically down the page with the configured inter-block spacing.
-10. Compact zones. Recompute attachment points after any order adjustment while preserving non-overlap and side alignment.
-11. Emit diagnostics. Trace the selected card ids, covered widget types, documented kind count, bubble count, representative target ids, canvas size, and every placement warning.
+6. Promote top and bottom callouts. Move the bottommost item from the left stack into a bottom callout and the topmost item from the right stack into a top callout.
+7. Place bubbles. Center each remaining left and right stack on the annotated item center y inside that item's local sheet block. A tall stack may start above the item top and extend below the item bottom by roughly matching amounts. Place top and bottom bubbles above and below the annotated item, centered on their target x coordinate so their leaders run vertically to the target.
+8. Assign attachment points. Within each sheet block, align left bubbles by their right edge and right bubbles by their left edge so all leader endpoints on a side share the same x coordinate. Top and bottom leaders attach to the nearest horizontal bubble edge at the target x coordinate. Each leader starts at the representative target point and ends at the matching bubble edge.
+9. Validate side order. After placement, check each left and right stack for same-side leader intersections and swap adjacent bubbles until no same-side leader intersections remain or the deterministic retry limit is reached.
+10. Compose blocks. Measure each annotated item plus its local callout stacks and top or bottom bubbles as one block, then center the completed blocks vertically down the page with the configured inter-block spacing.
+11. Compact zones. Recompute attachment points after any order adjustment while preserving non-overlap and side alignment.
+12. Emit diagnostics. Trace the selected card ids, covered widget types, documented kind count, bubble count, representative target ids, canvas size, and every placement warning.
 
 The algorithm favors readable bubbles and deterministic output while preserving non-intersecting same-side straight leader lines. It does not attempt obstacle-avoiding polylines because the sheet uses straight leaders as part of its visual language.
 
@@ -137,8 +138,8 @@ The algorithm favors readable bubbles and deterministic output while preserving 
 - The sheet uses the active localization catalog for tooltip descriptions, menu-independent labels, and diagnostic error text.
 - Tooltip help text is rendered with the same font family and comparable sizing as live tooltips, adjusted only as needed for screenshot readability.
 - Bubbles allow wider text than live Win32 tooltips when needed to keep the sheet readable, but the two-line tooltip structure remains visible.
-- Long first-line parameter shapes stay on one header line and may be ellipsized when they exceed the callout width.
-- Long second-line descriptions stay on one line like the parameter line and may be ellipsized only when they exceed the maximum callout width.
+- Long first-line parameter shapes stay on one header line.
+- Long second-line descriptions stay on one line like the parameter line.
 - Missing localization falls back through the same fallback path as live tooltip rendering and is visible in the sheet so localization gaps are reviewable.
 
 ## Diagnostics Behavior
