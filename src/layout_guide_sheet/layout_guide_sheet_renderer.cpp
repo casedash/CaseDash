@@ -448,6 +448,7 @@ bool LayoutGuideSheetRenderer::SavePng(const std::filesystem::path& imagePath,
         std::optional<LayoutEditGuide> hoverLayoutGuide;
         std::optional<LayoutEditGapAnchorKey> hoverGapAnchorKey;
         std::optional<AnchorShape> hoverAnchorShape;
+        std::optional<LayoutEditParameter> hoverColorParameter;
         RenderRect targetRect{};
         std::optional<RenderRect> hoverAnchorRect;
         bool hoverAnchorDrawTargetOutline = true;
@@ -471,6 +472,7 @@ bool LayoutGuideSheetRenderer::SavePng(const std::filesystem::path& imagePath,
             request.hoverLayoutGuide,
             request.hoverGapAnchorKey,
             request.hoverAnchorShape,
+            request.hoverColorParameter,
             request.targetRect,
             std::nullopt,
             true,
@@ -581,6 +583,23 @@ bool LayoutGuideSheetRenderer::SavePng(const std::filesystem::path& imagePath,
         } else if (callout.hoverWidgetGuide.has_value() &&
                    callout.hoverWidgetGuide->widget.kind == LayoutEditWidgetIdentity::Kind::CardChrome) {
             cardId = callout.hoverWidgetGuide->widget.renderCardId;
+        } else if (callout.hoverColorParameter.has_value()) {
+            const auto cardIt = std::find_if(cards.begin(), cards.end(), [&](const LayoutGuideSheetCardSummary& card) {
+                const bool overlapsTitle = card.chromeLayout.titleRect.IsEmpty() == false &&
+                                           callout.targetRect.left < card.chromeLayout.titleRect.right &&
+                                           callout.targetRect.right > card.chromeLayout.titleRect.left &&
+                                           callout.targetRect.top < card.chromeLayout.titleRect.bottom &&
+                                           callout.targetRect.bottom > card.chromeLayout.titleRect.top;
+                const bool overlapsIcon = card.chromeLayout.iconRect.IsEmpty() == false &&
+                                          callout.targetRect.left < card.chromeLayout.iconRect.right &&
+                                          callout.targetRect.right > card.chromeLayout.iconRect.left &&
+                                          callout.targetRect.top < card.chromeLayout.iconRect.bottom &&
+                                          callout.targetRect.bottom > card.chromeLayout.iconRect.top;
+                return card.chromeLayout.hasHeader && (overlapsTitle || overlapsIcon);
+            });
+            if (cardIt != cards.end()) {
+                cardId = cardIt->id;
+            }
         } else {
             const auto cardIt = std::find_if(cards.begin(), cards.end(), [&](const LayoutGuideSheetCardSummary& card) {
                 return card.chromeLayout.hasHeader && card.chromeLayout.titleRect.IsEmpty() == false &&
@@ -623,6 +642,17 @@ bool LayoutGuideSheetRenderer::SavePng(const std::filesystem::path& imagePath,
                         });
                     if (guideIt != packedCard->chromeArtifacts.widgetGuides.end()) {
                         callout.targetRect = guideIt->hitRect;
+                    } else {
+                        callout.targetRect = TransformRect(callout.targetRect, sourceCard->rect, packedCard->rect);
+                    }
+                } else if (callout.hoverColorParameter.has_value()) {
+                    const auto colorIt = std::find_if(packedCard->chromeArtifacts.colorRegions.begin(),
+                        packedCard->chromeArtifacts.colorRegions.end(),
+                        [&](const LayoutEditColorRegion& region) {
+                            return region.parameter == *callout.hoverColorParameter;
+                        });
+                    if (colorIt != packedCard->chromeArtifacts.colorRegions.end()) {
+                        callout.targetRect = colorIt->targetRect;
                     } else {
                         callout.targetRect = TransformRect(callout.targetRect, sourceCard->rect, packedCard->rect);
                     }
@@ -917,6 +947,9 @@ bool LayoutGuideSheetRenderer::SavePng(const std::filesystem::path& imagePath,
             if (placement.overview) {
                 for (const Callout& callout : callouts) {
                     if (callout.sourceCardId != placement.id) {
+                        continue;
+                    }
+                    if (callout.hoverColorParameter.has_value()) {
                         continue;
                     }
                     DrawOverviewArtifact(dashboardRenderer_,

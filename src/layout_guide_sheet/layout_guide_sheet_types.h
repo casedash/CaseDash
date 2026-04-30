@@ -19,6 +19,7 @@ struct LayoutGuideSheetCalloutRequest {
     std::optional<LayoutEditGuide> hoverLayoutGuide;
     std::optional<LayoutEditGapAnchorKey> hoverGapAnchorKey;
     std::optional<AnchorShape> hoverAnchorShape;
+    std::optional<LayoutEditParameter> hoverColorParameter;
     RenderRect targetRect{};
     int priority = 1000;
     size_t order = 0;

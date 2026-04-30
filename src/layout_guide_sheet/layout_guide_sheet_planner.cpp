@@ -88,9 +88,11 @@ bool PayloadBelongsToSelectedCard(
     return true;
 }
 
-bool RectOverlapsAnyCardHeader(const RenderRect& rect, const std::vector<LayoutGuideSheetCardSummary>& cards) {
+bool RectOverlapsAnyCardChromeColorTarget(
+    const RenderRect& rect, const std::vector<LayoutGuideSheetCardSummary>& cards) {
     return std::any_of(cards.begin(), cards.end(), [&](const LayoutGuideSheetCardSummary& card) {
-        return card.chromeLayout.hasHeader && RectsOverlap(rect, card.chromeLayout.titleRect);
+        return card.chromeLayout.hasHeader &&
+               (RectsOverlap(rect, card.chromeLayout.titleRect) || RectsOverlap(rect, card.chromeLayout.iconRect));
     });
 }
 
@@ -109,7 +111,7 @@ bool IsOverviewPayload(const LayoutEditActiveRegion& region, const std::vector<L
                anchor->key.widget.kind == LayoutEditWidgetIdentity::Kind::DashboardChrome;
     }
     if (std::holds_alternative<LayoutEditColorRegion>(region.payload)) {
-        return RectOverlapsAnyCardHeader(region.box, cards);
+        return RectOverlapsAnyCardChromeColorTarget(region.box, cards);
     }
     return false;
 }
@@ -227,6 +229,10 @@ void AddOrUpdateCallout(std::vector<LayoutGuideSheetCalloutRequest>& callouts,
     if (const auto* anchor = std::get_if<LayoutEditAnchorRegion>(&region.payload)) {
         hoverAnchorShape = anchor->shape;
     }
+    std::optional<LayoutEditParameter> hoverColorParameter;
+    if (const auto* color = std::get_if<LayoutEditColorRegion>(&region.payload)) {
+        hoverColorParameter = color->parameter;
+    }
 
     const auto existing =
         std::find_if(callouts.begin(), callouts.end(), [&](const auto& callout) { return callout.key == key; });
@@ -244,6 +250,7 @@ void AddOrUpdateCallout(std::vector<LayoutGuideSheetCalloutRequest>& callouts,
             existing->hoverLayoutGuide = hoverLayoutGuide;
             existing->hoverGapAnchorKey = hoverGapAnchorKey;
             existing->hoverAnchorShape = hoverAnchorShape;
+            existing->hoverColorParameter = hoverColorParameter;
             existing->priority = priority;
         }
         return;
@@ -258,6 +265,7 @@ void AddOrUpdateCallout(std::vector<LayoutGuideSheetCalloutRequest>& callouts,
         hoverLayoutGuide,
         hoverGapAnchorKey,
         hoverAnchorShape,
+        hoverColorParameter,
         region.box,
         priority,
         order++});

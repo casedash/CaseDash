@@ -468,6 +468,26 @@ LayoutGuideSheetCardChromeArtifacts DashboardRenderer::BuildLayoutGuideSheetCard
     artifacts.widgetGuides = layoutResolver_->widgetEditGuides_;
     artifacts.anchorRegions = layoutResolver_->staticEditableAnchorRegions_;
     artifacts.colorRegions = layoutResolver_->dynamicColorEditRegions_;
+    if (!card->icon.empty() && !artifacts.chromeLayout.iconRect.IsEmpty() &&
+        std::none_of(artifacts.colorRegions.begin(), artifacts.colorRegions.end(), [](const auto& region) {
+            return region.parameter == LayoutEditParameter::ColorIcon;
+        })) {
+        artifacts.colorRegions.push_back(
+            LayoutEditColorRegion{LayoutEditParameter::ColorIcon, artifacts.chromeLayout.iconRect});
+    }
+    if (!card->title.empty() && !artifacts.chromeLayout.titleRect.IsEmpty() &&
+        std::none_of(artifacts.colorRegions.begin(), artifacts.colorRegions.end(), [](const auto& region) {
+            return region.parameter == LayoutEditParameter::ColorForeground;
+        })) {
+        const RenderRect titleTextRect =
+            Renderer()
+                .MeasureTextBlock(artifacts.chromeLayout.titleRect,
+                    card->title,
+                    TextStyleId::Title,
+                    TextLayoutOptions::SingleLine(TextHorizontalAlign::Leading, TextVerticalAlign::Center))
+                .textRect;
+        artifacts.colorRegions.push_back(LayoutEditColorRegion{LayoutEditParameter::ColorForeground, titleTextRect});
+    }
 
     layoutResolver_->widgetEditGuides_ = std::move(savedWidgetGuides);
     layoutResolver_->staticEditableAnchorRegions_ = std::move(savedStaticAnchors);

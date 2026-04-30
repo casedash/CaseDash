@@ -145,6 +145,8 @@ TEST(LayoutGuideSheetPlanner, OverviewCalloutsUseDashboardAndCardChromeTargets) 
     bool hasCardTitle = false;
     bool hasCardRadius = false;
     bool hasCardIconSize = false;
+    bool hasForegroundColor = false;
+    bool hasIconColor = false;
     size_t horizontalSizingGuides = 0;
     size_t verticalSizingGuides = 0;
     for (const LayoutGuideSheetCalloutRequest& callout : callouts) {
@@ -155,6 +157,10 @@ TEST(LayoutGuideSheetPlanner, OverviewCalloutsUseDashboardAndCardChromeTargets) 
         hasCardTitle |= callout.key == "card_title";
         hasCardRadius |= callout.parameterLine.find("[card_style] card_radius") != std::string::npos;
         hasCardIconSize |= callout.parameterLine.find("[card_style] header_icon_size") != std::string::npos;
+        hasForegroundColor |= callout.parameterLine.find("[colors] foreground_color") != std::string::npos &&
+                              callout.hoverColorParameter == LayoutEditParameter::ColorForeground;
+        hasIconColor |= callout.parameterLine.find("[colors] icon_color") != std::string::npos &&
+                        callout.hoverColorParameter == LayoutEditParameter::ColorIcon;
         if (callout.hoverLayoutGuide.has_value() && callout.hoverLayoutGuide->renderCardId.empty()) {
             if (callout.hoverLayoutGuide->axis == LayoutGuideAxis::Horizontal) {
                 ++horizontalSizingGuides;
@@ -170,6 +176,8 @@ TEST(LayoutGuideSheetPlanner, OverviewCalloutsUseDashboardAndCardChromeTargets) 
     EXPECT_TRUE(hasCardTitle);
     EXPECT_TRUE(hasCardRadius);
     EXPECT_TRUE(hasCardIconSize);
+    EXPECT_TRUE(hasForegroundColor);
+    EXPECT_TRUE(hasIconColor);
     EXPECT_EQ(horizontalSizingGuides, 1u);
     EXPECT_EQ(verticalSizingGuides, 1u);
 }
