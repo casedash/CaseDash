@@ -69,7 +69,7 @@ User-visible labels and documentation refer to the generated image as a `layout 
 - Overview card title and icon callouts render the corresponding packed card chrome as hovered, including the exact dotted text or icon target outline and the matching anchor shape produced by card-chrome edit-artifact registration.
 - Overview color callouts attach to the same packed card-chrome active text or icon region that live layout editing uses, and color-only callouts do not draw a guide-sheet-only target outline.
 - Overview anchor callouts attach their leader to the visible anchor shape. Anchors that have no live hover target outline do not draw an extra target outline.
-- Representative-card anchor callouts attach their leaders to the resolved drag-anchor rectangle rather than the broader widget or target region.
+- Representative-card anchor callouts attach their leaders to the resolved drag-anchor rectangle rather than the broader widget or target region. Circular radial-distance anchors attach to the closest point on the resolved circle.
 - Representative guides and anchors are not promoted to active or selected styling just because a callout points at them; the panel content renders as it would in the corresponding layout-edit hover state.
 - Representative cards render hover-equivalent state only for active areas that have callouts on that representative card. Card-level or dashboard-level gap and sizing controls that are documented in the overview do not render in hover state on the representative cards.
 - Representative-card layout sizing guide callouts render the guide line itself without the full containing-layout dashed outline to keep the specimen readable.

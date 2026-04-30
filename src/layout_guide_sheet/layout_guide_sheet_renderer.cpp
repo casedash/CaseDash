@@ -1,6 +1,7 @@
 #include "layout_guide_sheet/layout_guide_sheet_renderer.h"
 
 #include <algorithm>
+#include <cmath>
 #include <optional>
 #include <string>
 #include <vector>
@@ -54,6 +55,20 @@ RenderRect OffsetRenderRect(RenderRect rect, int dx, int dy) {
     rect.top += dy;
     rect.bottom += dy;
     return rect;
+}
+
+RenderPoint ClosestEllipseBoundaryPoint(const RenderRect& rect, RenderPoint reference) {
+    const RenderPoint center = rect.Center();
+    const double radiusX = static_cast<double>(std::max(1, rect.Width())) / 2.0;
+    const double radiusY = static_cast<double>(std::max(1, rect.Height())) / 2.0;
+    const double dx = static_cast<double>(reference.x - center.x);
+    const double dy = static_cast<double>(reference.y - center.y);
+    const double normalizedLength = std::sqrt((dx * dx) / (radiusX * radiusX) + (dy * dy) / (radiusY * radiusY));
+    if (normalizedLength <= 0.0) {
+        return RenderPoint{center.x, rect.top};
+    }
+    return RenderPoint{center.x + static_cast<int>(std::lround(dx / normalizedLength)),
+        center.y + static_cast<int>(std::lround(dy / normalizedLength))};
 }
 
 int ScaleNonNegative(DashboardRenderer& renderer, int value) {
@@ -510,6 +525,7 @@ bool LayoutGuideSheetRenderer::SavePng(const std::filesystem::path& imagePath,
         std::optional<RenderRect> hoverAnchorRect;
         std::optional<LayoutEditGapAnchor> hoverGapAnchor;
         bool hoverAnchorDrawTargetOutline = true;
+        bool targetAttachmentOnAnchorCircle = false;
         RenderRect bubbleRect{};
         RenderPoint targetAttachment{};
         RenderPoint bubbleAttachment{};
@@ -536,6 +552,7 @@ bool LayoutGuideSheetRenderer::SavePng(const std::filesystem::path& imagePath,
             std::nullopt,
             std::nullopt,
             true,
+            false,
             {},
             {},
             {},
@@ -739,6 +756,8 @@ bool LayoutGuideSheetRenderer::SavePng(const std::filesystem::path& imagePath,
         if (anchorRegion.has_value()) {
             callout.targetRect = anchorRegion->anchorRect;
             callout.hoverAnchorRect = anchorRegion->anchorRect;
+            callout.targetAttachmentOnAnchorCircle =
+                anchorRegion->shape == AnchorShape::Circle && anchorRegion->dragMode == AnchorDragMode::RadialDistance;
         }
     }
 
@@ -907,17 +926,19 @@ bool LayoutGuideSheetRenderer::SavePng(const std::filesystem::path& imagePath,
                                                      : block.itemX + block.itemWidth + calloutGap;
             callout.bubbleRect = RenderRect{x, y, x + callout.bubbleRect.Width(), y + callout.bubbleRect.Height()};
             callout.exitSide = side;
-            const int dx = cardRect.left - cardPlacements[planned.cardIndex].sourceRect.left;
-            const int dy = cardRect.top - cardPlacements[planned.cardIndex].sourceRect.top;
-            callout.targetAttachment =
-                cardPlacements[planned.cardIndex].overview
-                    ? TransformPoint(planned.target.Center(),
-                          cardPlacements[planned.cardIndex].sourceRect,
-                          cardPlacements[planned.cardIndex].destRect)
-                    : RenderPoint{planned.target.Center().x + dx, planned.target.Center().y + dy};
             callout.bubbleAttachment =
                 RenderPoint{side == RectExitSide::Left ? callout.bubbleRect.right : callout.bubbleRect.left,
                     callout.bubbleRect.Center().y};
+            const int dx = cardRect.left - cardPlacements[planned.cardIndex].sourceRect.left;
+            const int dy = cardRect.top - cardPlacements[planned.cardIndex].sourceRect.top;
+            const RenderRect targetRect = cardPlacements[planned.cardIndex].overview
+                                              ? TransformRect(planned.target,
+                                                    cardPlacements[planned.cardIndex].sourceRect,
+                                                    cardPlacements[planned.cardIndex].destRect)
+                                              : OffsetRenderRect(planned.target, dx, dy);
+            callout.targetAttachment = callout.targetAttachmentOnAnchorCircle
+                                           ? ClosestEllipseBoundaryPoint(targetRect, callout.bubbleAttachment)
+                                           : targetRect.Center();
             y = callout.bubbleRect.bottom + rowGap;
         }
     };
@@ -934,16 +955,18 @@ bool LayoutGuideSheetRenderer::SavePng(const std::filesystem::path& imagePath,
                                                     : block.itemY + block.itemHeight + calloutGap;
             callout.bubbleRect = RenderRect{x, y, x + callout.bubbleRect.Width(), y + callout.bubbleRect.Height()};
             callout.exitSide = side;
-            const int dx = cardRect.left - cardPlacements[planned.cardIndex].sourceRect.left;
-            const int dy = cardRect.top - cardPlacements[planned.cardIndex].sourceRect.top;
-            callout.targetAttachment =
-                cardPlacements[planned.cardIndex].overview
-                    ? TransformPoint(planned.target.Center(),
-                          cardPlacements[planned.cardIndex].sourceRect,
-                          cardPlacements[planned.cardIndex].destRect)
-                    : RenderPoint{planned.target.Center().x + dx, planned.target.Center().y + dy};
             callout.bubbleAttachment = RenderPoint{callout.bubbleRect.Center().x,
                 side == RectExitSide::Top ? callout.bubbleRect.bottom : callout.bubbleRect.top};
+            const int dx = cardRect.left - cardPlacements[planned.cardIndex].sourceRect.left;
+            const int dy = cardRect.top - cardPlacements[planned.cardIndex].sourceRect.top;
+            const RenderRect targetRect = cardPlacements[planned.cardIndex].overview
+                                              ? TransformRect(planned.target,
+                                                    cardPlacements[planned.cardIndex].sourceRect,
+                                                    cardPlacements[planned.cardIndex].destRect)
+                                              : OffsetRenderRect(planned.target, dx, dy);
+            callout.targetAttachment = callout.targetAttachmentOnAnchorCircle
+                                           ? ClosestEllipseBoundaryPoint(targetRect, callout.bubbleAttachment)
+                                           : targetRect.Center();
         }
     };
 
