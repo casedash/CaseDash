@@ -9,7 +9,7 @@
 
 #include "config/config_parser.h"
 #include "config/config_resolution.h"
-#include "layout_guide_sheet/layout_guide_sheet_layout.h"
+#include "layout_guide_sheet/impl/layout_guide_sheet_placement.h"
 #include "layout_guide_sheet/layout_guide_sheet_planner.h"
 #include "telemetry/impl/collector_fake.h"
 #include "util/localization_catalog.h"
@@ -230,29 +230,44 @@ TEST(LayoutGuideSheetPlanner, MergedCalloutsDoNotRepeatOverviewColorParametersOn
     EXPECT_EQ(iconColorCallouts, 1u);
 }
 
-TEST(LayoutGuideSheetPlanner, CalloutGeometryPromotesOuterSideItemsToTopAndBottom) {
+TEST(LayoutGuideSheetPlanner, PlacementPromotesOuterSideItemsToTopAndBottom) {
     const RenderRect card{100, 100, 300, 300};
-    const std::vector<LayoutGuideSheetCalloutGeometryInput> inputs{
-        {card, RenderRect{110, 180, 130, 200}},
-        {card, RenderRect{270, 180, 290, 200}},
-        {card, RenderRect{180, 110, 200, 130}},
-        {card, RenderRect{180, 270, 200, 290}},
-        {card, RenderRect{120, 260, 140, 280}},
-        {card, RenderRect{260, 120, 280, 140}},
+    std::vector<LayoutGuideSheetCardPlacement> cardPlacements{{"cpu", card, card, false}};
+    std::vector<LayoutGuideSheetPlacementCallout> callouts;
+    const auto addCallout = [&](std::string key, RenderRect target) {
+        LayoutGuideSheetPlacementCallout callout;
+        callout.key = std::move(key);
+        callout.sourceCardId = "cpu";
+        callout.targetRect = target;
+        callout.bubbleRect = RenderRect{0, 0, 80, 30};
+        callout.order = callouts.size();
+        callouts.push_back(std::move(callout));
     };
+    addCallout("left-middle", RenderRect{110, 180, 130, 200});
+    addCallout("right-middle", RenderRect{270, 180, 290, 200});
+    addCallout("center-top", RenderRect{180, 110, 200, 130});
+    addCallout("center-bottom", RenderRect{180, 270, 200, 290});
+    addCallout("left-bottom", RenderRect{120, 260, 140, 280});
+    addCallout("right-top", RenderRect{260, 120, 280, 140});
 
-    const std::vector<LayoutGuideSheetCalloutGeometry> planned = PlanLayoutGuideSheetCalloutGeometry(inputs);
+    const LayoutGuideSheetPlacementResult result = PlaceLayoutGuideSheetCallouts(cardPlacements,
+        callouts,
+        LayoutGuideSheetPlacementStyle{10, 12, 4, 20, 0, 1},
+        [](LayoutGuideSheetPlacementCallout&, int) {});
 
-    std::set<LayoutGuideSheetCalloutSide> sides;
-    for (const LayoutGuideSheetCalloutGeometry& geometry : planned) {
-        sides.insert(geometry.side);
+    std::set<LayoutGuideSheetExitSide> sides;
+    for (const LayoutGuideSheetPlacementCallout& callout : callouts) {
+        sides.insert(callout.exitSide);
     }
+    ASSERT_EQ(result.blocks.size(), 1u);
+    EXPECT_TRUE(result.warningCalloutKeys.empty());
     EXPECT_EQ(sides.size(), 4u);
-    EXPECT_TRUE(sides.contains(LayoutGuideSheetCalloutSide::Left));
-    EXPECT_TRUE(sides.contains(LayoutGuideSheetCalloutSide::Right));
-    EXPECT_TRUE(sides.contains(LayoutGuideSheetCalloutSide::Top));
-    EXPECT_TRUE(sides.contains(LayoutGuideSheetCalloutSide::Bottom));
-    EXPECT_EQ(planned[0].side, LayoutGuideSheetCalloutSide::Left);
-    EXPECT_EQ(planned[4].side, LayoutGuideSheetCalloutSide::Bottom);
-    EXPECT_EQ(planned[5].side, LayoutGuideSheetCalloutSide::Top);
+    EXPECT_TRUE(sides.contains(LayoutGuideSheetExitSide::Left));
+    EXPECT_TRUE(sides.contains(LayoutGuideSheetExitSide::Right));
+    EXPECT_TRUE(sides.contains(LayoutGuideSheetExitSide::Top));
+    EXPECT_TRUE(sides.contains(LayoutGuideSheetExitSide::Bottom));
+    EXPECT_EQ(result.blocks.front().leftCallouts, 2u);
+    EXPECT_EQ(result.blocks.front().rightCallouts, 2u);
+    EXPECT_EQ(result.blocks.front().topCallouts, 1u);
+    EXPECT_EQ(result.blocks.front().bottomCallouts, 1u);
 }

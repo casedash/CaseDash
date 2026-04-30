@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "dashboard_renderer/dashboard_renderer.h"
-#include "layout_guide_sheet/layout_guide_sheet_placement.h"
+#include "layout_guide_sheet/impl/layout_guide_sheet_placement.h"
 #include "layout_model/layout_edit_helpers.h"
 
 namespace {
