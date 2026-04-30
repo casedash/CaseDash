@@ -37,6 +37,25 @@ bool LeaderSegmentsIntersect(RenderPoint a, RenderPoint b, RenderPoint c, Render
     return ((abC > 0 && abD < 0) || (abC < 0 && abD > 0)) && ((cdA > 0 && cdB < 0) || (cdA < 0 && cdB > 0));
 }
 
+bool SegmentIntersectsRect(RenderPoint a, RenderPoint b, const RenderRect& rect) {
+    if (rect.IsEmpty()) {
+        return false;
+    }
+    if (rect.Contains(a) || rect.Contains(b)) {
+        return true;
+    }
+    const RenderPoint topLeft{rect.left, rect.top};
+    const RenderPoint topRight{rect.right, rect.top};
+    const RenderPoint bottomLeft{rect.left, rect.bottom};
+    const RenderPoint bottomRight{rect.right, rect.bottom};
+    return LeaderSegmentsIntersect(a, b, topLeft, topRight) || LeaderSegmentsIntersect(a, b, topRight, bottomRight) ||
+           LeaderSegmentsIntersect(a, b, bottomRight, bottomLeft) || LeaderSegmentsIntersect(a, b, bottomLeft, topLeft);
+}
+
+RenderRect TargetSafeRect(RenderPoint target, int radius) {
+    return RenderRect{target.x - radius, target.y - radius, target.x + radius + 1, target.y + radius + 1};
+}
+
 RenderPoint TransformPoint(RenderPoint point, const RenderRect& source, const RenderRect& dest) {
     const double scaleX = source.Width() == 0 ? 1.0 : static_cast<double>(dest.Width()) / source.Width();
     const double scaleY = source.Height() == 0 ? 1.0 : static_cast<double>(dest.Height()) / source.Height();
@@ -707,6 +726,7 @@ bool LayoutGuideSheetRenderer::SavePng(const std::filesystem::path& imagePath,
     const int lineGap = ScaleNonNegative(dashboardRenderer_, sheetStyle.calloutLineGap);
     const int bubbleRadius = ScaleNonNegative(dashboardRenderer_, sheetStyle.calloutRadius);
     const int textLineHeight = std::max(1, dashboardRenderer_.Renderer().TextMetrics().smallText);
+    const int targetSafeRadius = ScaleAtLeast(dashboardRenderer_, sheetStyle.leaderStrokeWidth + 2, 2);
     const int gaugeRingThickness =
         std::max(1, dashboardRenderer_.ScaleLogical(dashboardRenderer_.Config().layout.gauge.ringThickness));
     const auto measureCalloutBubble = [&](Callout& callout, std::optional<int> constrainedWidth = std::nullopt) {
@@ -1127,6 +1147,14 @@ bool LayoutGuideSheetRenderer::SavePng(const std::filesystem::path& imagePath,
                         leaders[i].target, leaders[i].bubble, leaders[j].target, leaders[j].bubble)) {
                     ++intersections;
                 }
+                if (SegmentIntersectsRect(
+                        leaders[i].target, leaders[i].bubble, TargetSafeRect(leaders[j].target, targetSafeRadius))) {
+                    ++intersections;
+                }
+                if (SegmentIntersectsRect(
+                        leaders[j].target, leaders[j].bubble, TargetSafeRect(leaders[i].target, targetSafeRadius))) {
+                    ++intersections;
+                }
             }
         }
         return intersections;
@@ -1318,6 +1346,16 @@ bool LayoutGuideSheetRenderer::SavePng(const std::filesystem::path& imagePath,
         placeTopBottom(plannedByCard[cardIndex].bottom, RectExitSide::Bottom, placement.destRect, block);
     }
 
+    const auto leadersConflict = [&](const Callout& lhs, const Callout& rhs) {
+        return LeaderSegmentsIntersect(
+                   lhs.targetAttachment, lhs.bubbleAttachment, rhs.targetAttachment, rhs.bubbleAttachment) ||
+               SegmentIntersectsRect(lhs.targetAttachment,
+                   lhs.bubbleAttachment,
+                   TargetSafeRect(rhs.targetAttachment, targetSafeRadius)) ||
+               SegmentIntersectsRect(
+                   rhs.targetAttachment, rhs.bubbleAttachment, TargetSafeRect(lhs.targetAttachment, targetSafeRadius));
+    };
+
     const auto validateSideOrder = [&](std::vector<size_t>& plannedIndexes,
                                        RectExitSide side,
                                        const RenderRect& cardRect,
@@ -1334,10 +1372,7 @@ bool LayoutGuideSheetRenderer::SavePng(const std::filesystem::path& imagePath,
                 for (size_t j = i + 1; j < plannedIndexes.size(); ++j) {
                     const Callout& previous = callouts[plannedCallouts[plannedIndexes[i]].calloutIndex];
                     const Callout& current = callouts[plannedCallouts[plannedIndexes[j]].calloutIndex];
-                    if (LeaderSegmentsIntersect(previous.targetAttachment,
-                            previous.bubbleAttachment,
-                            current.targetAttachment,
-                            current.bubbleAttachment)) {
+                    if (leadersConflict(previous, current)) {
                         std::swap(plannedIndexes[i], plannedIndexes[j]);
                         placeSide(plannedIndexes, side, cardRect, block);
                         swapped = true;
@@ -1395,8 +1430,7 @@ bool LayoutGuideSheetRenderer::SavePng(const std::filesystem::path& imagePath,
         if (callout.exitSide != other.exitSide || callout.sourceCardId != other.sourceCardId) {
             return false;
         }
-        return LeaderSegmentsIntersect(
-            callout.targetAttachment, callout.bubbleAttachment, other.targetAttachment, other.bubbleAttachment);
+        return leadersConflict(callout, other);
     };
 
     std::vector<const Callout*> leaders;
