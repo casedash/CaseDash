@@ -391,6 +391,10 @@ bool DashboardRenderer::SaveLayoutGuideSheetSurfacePng(
     return renderer_->SavePng(imagePath, width, height, std::move(draw));
 }
 
+bool DashboardRenderer::RenderLayoutGuideSheetSurfaceOffscreen(int width, int height, std::function<void()> draw) {
+    return renderer_->DrawOffscreen(width, height, std::move(draw));
+}
+
 void DashboardRenderer::BeginLayoutGuideSheetDynamicArtifacts(const DashboardOverlayState& overlayState) {
     activeOverlayState_ = &overlayState;
     layoutResolver_->ClearDynamicEditArtifacts();

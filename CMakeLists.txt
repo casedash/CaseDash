@@ -446,6 +446,9 @@ add_executable(SystemTelemetryBenchmarks
     src/layout_edit/layout_edit_service.cpp
     src/layout_edit/layout_edit_controller.cpp
     src/layout_edit/layout_edit_hit_test.cpp
+    src/layout_edit/layout_edit_tooltip.cpp
+    src/layout_edit/layout_edit_tooltip_payload.cpp
+    src/layout_edit/layout_edit_tooltip_text.cpp
     src/layout_edit/layout_edit_trace_session.cpp
     src/layout_model/layout_edit_service.cpp
     src/layout_edit/impl/layout_snap_solver.cpp
@@ -477,8 +480,10 @@ add_executable(SystemTelemetryBenchmarks
     src/dashboard_renderer/impl/layout_resolver.cpp
     src/layout_guide_sheet/layout_guide_sheet_layout.cpp
     src/layout_guide_sheet/layout_guide_sheet_placement.cpp
+    src/layout_guide_sheet/layout_guide_sheet_planner.cpp
     src/layout_guide_sheet/layout_guide_sheet_renderer.cpp
     src/dashboard_renderer/dashboard_renderer.cpp
+    src/util/localization_catalog.cpp
     src/util/resource_loader.cpp
     src/util/utf8.cpp
     src/util/trace.cpp

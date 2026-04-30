@@ -8,6 +8,7 @@
 #include <iostream>
 #include <optional>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -20,14 +21,18 @@
 #include "layout_edit/layout_edit_service.h"
 #include "layout_edit/layout_edit_trace_session.h"
 #include "layout_edit/layout_edit_tree.h"
+#include "layout_guide_sheet/layout_guide_sheet_planner.h"
+#include "layout_guide_sheet/layout_guide_sheet_renderer.h"
 #include "layout_model/layout_edit_service.h"
 #include "telemetry/metrics.h"
 #include "telemetry/telemetry.h"
 #include "util/enum_string.h"
+#include "util/localization_catalog.h"
 #include "util/trace.h"
 
 #define SYSTEM_TELEMETRY_BENCHMARK_ITEMS(X)                                                                            \
     X(EditLayout, "edit-layout")                                                                                       \
+    X(LayoutGuideSheet, "layout-guide-sheet")                                                                          \
     X(LayoutSwitch, "layout-switch")                                                                                   \
     X(MouseHover, "mouse-hover")                                                                                       \
     X(UpdateTelemetry, "update-telemetry")
@@ -48,6 +53,9 @@ enum class BenchPhase {
     Apply,
     PaintTotal,
     PaintDraw,
+    LayoutGuideActiveRegions,
+    LayoutGuidePlan,
+    LayoutGuideRender,
     Count,
 };
 
@@ -95,6 +103,12 @@ const char* PhaseName(BenchPhase phase) {
             return "paint_total";
         case BenchPhase::PaintDraw:
             return "paint_draw";
+        case BenchPhase::LayoutGuideActiveRegions:
+            return "active_regions";
+        case BenchPhase::LayoutGuidePlan:
+            return "sheet_plan";
+        case BenchPhase::LayoutGuideRender:
+            return "sheet_render";
         case BenchPhase::Count:
             break;
     }
@@ -552,6 +566,14 @@ struct LayoutSwitchBenchTotals {
     LayoutSwitchPhaseTotals phases;
 };
 
+struct LayoutGuideSheetBenchTotals {
+    BenchResult generationLoop;
+    std::array<PhaseStats, kBenchPhaseCount> phases{};
+    std::vector<std::string> traceDetails;
+    size_t selectedCards = 0;
+    size_t callouts = 0;
+};
+
 void RecordPhase(PhaseStats& stats, std::chrono::nanoseconds elapsed) {
     stats.total += elapsed;
     ++stats.samples;
@@ -678,6 +700,69 @@ void PrintTelemetryBenchResult(const BenchResult& result) {
               << result.total.count() << " per_iter_ms=" << result.perIteration.count() << "\n";
 }
 
+LayoutGuideSheetBenchTotals RunLayoutGuideSheetGenerationBenchmark(
+    DashboardRenderer& renderer, const SystemSnapshot& snapshot, const AppConfig& config, size_t iterations) {
+    LayoutGuideSheetBenchTotals totals{};
+    if (iterations == 0) {
+        return totals;
+    }
+
+    InitializeLocalizationCatalog();
+    LayoutGuideSheetRenderer sheetRenderer(renderer);
+    const auto start = Clock::now();
+    for (size_t iteration = 0; iteration < iterations; ++iteration) {
+        DashboardOverlayState overlayState;
+        overlayState.showLayoutEditGuides = true;
+        overlayState.forceLayoutEditAffordances = true;
+        overlayState.hoverOnExposedDashboard = true;
+
+        const auto activeRegionsStart = Clock::now();
+        if (!renderer.PrimeLayoutEditDynamicRegions(snapshot, overlayState)) {
+            throw std::runtime_error("layout guide active-region priming failed: " + renderer.LastError());
+        }
+        const std::vector<LayoutGuideSheetCardSummary> cards = renderer.CollectLayoutGuideSheetCardSummaries();
+        const LayoutEditActiveRegions activeRegions = renderer.CollectLayoutEditActiveRegions(overlayState);
+        totals.phases[PhaseIndex(BenchPhase::LayoutGuideActiveRegions)].total += Clock::now() - activeRegionsStart;
+        ++totals.phases[PhaseIndex(BenchPhase::LayoutGuideActiveRegions)].samples;
+
+        const auto planStart = Clock::now();
+        const std::vector<std::string> selectedCardIds = SelectLayoutGuideSheetCards(cards);
+        const std::vector<LayoutGuideSheetCalloutRequest> overviewCallouts =
+            BuildLayoutGuideSheetOverviewCallouts(config, activeRegions, cards);
+        const std::vector<LayoutGuideSheetCalloutRequest> cardCallouts =
+            BuildLayoutGuideSheetCallouts(config, activeRegions, cards, selectedCardIds);
+        const std::vector<LayoutGuideSheetCalloutRequest> callouts =
+            MergeLayoutGuideSheetCallouts(overviewCallouts, cardCallouts);
+        totals.phases[PhaseIndex(BenchPhase::LayoutGuidePlan)].total += Clock::now() - planStart;
+        ++totals.phases[PhaseIndex(BenchPhase::LayoutGuidePlan)].samples;
+
+        const auto renderStart = Clock::now();
+        std::string errorText;
+        std::vector<std::string> traceDetails;
+        if (!sheetRenderer.RenderOffscreen(snapshot, callouts, selectedCardIds, &traceDetails, &errorText)) {
+            throw std::runtime_error(
+                "layout guide offscreen render failed: " + (errorText.empty() ? renderer.LastError() : errorText));
+        }
+        totals.phases[PhaseIndex(BenchPhase::LayoutGuideRender)].total += Clock::now() - renderStart;
+        ++totals.phases[PhaseIndex(BenchPhase::LayoutGuideRender)].samples;
+        totals.traceDetails = std::move(traceDetails);
+        totals.selectedCards = selectedCardIds.size();
+        totals.callouts = callouts.size();
+    }
+    totals.generationLoop.total = Clock::now() - start;
+    totals.generationLoop.perIteration = totals.generationLoop.total / static_cast<double>(iterations);
+    return totals;
+}
+
+void PrintLayoutGuideSheetBenchResult(const LayoutGuideSheetBenchTotals& totals) {
+    std::cout << std::left << std::setw(14) << "sheet_loop" << " total_ms=" << std::fixed << std::setprecision(2)
+              << totals.generationLoop.total.count() << " per_iter_ms=" << totals.generationLoop.perIteration.count()
+              << "\n";
+    for (const std::string& detail : totals.traceDetails) {
+        std::cout << std::left << std::setw(14) << "sheet_trace" << " " << detail << "\n";
+    }
+}
+
 void PrintPhaseResult(const char* name, const PhaseStats& stats) {
     if (stats.samples == 0) {
         return;
@@ -767,6 +852,43 @@ int RunLayoutSwitchBenchmarkCommand(size_t iterations, double renderScale, Trace
     return 0;
 }
 
+int RunLayoutGuideSheetBenchmarkCommand(size_t iterations, double renderScale, Trace& trace) {
+    const AppConfig config = LoadConfig(SourceConfigPath(), false, BenchmarkConfigParseContext());
+    std::unique_ptr<TelemetryCollector> telemetry = CreateBenchmarkFakeTelemetryCollector(config, trace);
+    if (telemetry == nullptr) {
+        std::cerr << "fake telemetry init failed\n";
+        return 1;
+    }
+
+    const AppConfig runtimeConfig = BuildEffectiveRuntimeConfig(config, telemetry->ResolvedSelections());
+    DashboardRenderer renderer(trace);
+    renderer.SetRenderScale(renderScale);
+    renderer.SetConfig(runtimeConfig);
+    renderer.SetRenderMode(DashboardRenderer::RenderMode::Normal);
+    if (!renderer.Initialize()) {
+        std::cerr << "renderer init failed: " << renderer.LastError() << "\n";
+        return 1;
+    }
+
+    try {
+        const LayoutGuideSheetBenchTotals totals =
+            RunLayoutGuideSheetGenerationBenchmark(renderer, telemetry->Snapshot(), runtimeConfig, iterations);
+        std::cout << "layout_guide_sheet_benchmark iterations=" << iterations << " render_scale=" << renderScale
+                  << " selected_cards=" << totals.selectedCards << " callouts=" << totals.callouts << "\n";
+        PrintLayoutGuideSheetBenchResult(totals);
+        PrintPhaseResult(PhaseName(BenchPhase::LayoutGuideActiveRegions),
+            totals.phases[PhaseIndex(BenchPhase::LayoutGuideActiveRegions)]);
+        PrintPhaseResult(
+            PhaseName(BenchPhase::LayoutGuidePlan), totals.phases[PhaseIndex(BenchPhase::LayoutGuidePlan)]);
+        PrintPhaseResult(
+            PhaseName(BenchPhase::LayoutGuideRender), totals.phases[PhaseIndex(BenchPhase::LayoutGuideRender)]);
+    } catch (const std::exception& ex) {
+        std::cerr << ex.what() << "\n";
+        return 1;
+    }
+    return 0;
+}
+
 int RunMouseHoverBenchmarkCommand(size_t iterations, double renderScale, Trace& trace) {
     const AppConfig config = LoadConfig(SourceConfigPath(), false, BenchmarkConfigParseContext());
     std::unique_ptr<TelemetryCollector> telemetry = CreateBenchmarkFakeTelemetryCollector(config, trace);
@@ -834,6 +956,8 @@ int RunBenchmarkCommand(const BenchmarkCommandLine& commandLine, Trace& trace) {
     switch (commandLine.benchmark) {
         case Benchmark::EditLayout:
             return RunEditLayoutBenchmarkCommand(commandLine.iterations, commandLine.renderScale, trace);
+        case Benchmark::LayoutGuideSheet:
+            return RunLayoutGuideSheetBenchmarkCommand(commandLine.iterations, commandLine.renderScale, trace);
         case Benchmark::LayoutSwitch:
             return RunLayoutSwitchBenchmarkCommand(commandLine.iterations, commandLine.renderScale, trace);
         case Benchmark::MouseHover:

@@ -511,6 +511,39 @@ bool LayoutGuideSheetRenderer::SavePng(const std::filesystem::path& imagePath,
     const std::vector<std::string>& selectedCardIds,
     std::vector<std::string>* traceDetails,
     std::string* errorText) {
+    return Render(
+        snapshot,
+        calloutRequests,
+        selectedCardIds,
+        [&](int width, int height, SurfaceDrawCallback draw) {
+            return dashboardRenderer_.SaveLayoutGuideSheetSurfacePng(imagePath, width, height, std::move(draw));
+        },
+        traceDetails,
+        errorText);
+}
+
+bool LayoutGuideSheetRenderer::RenderOffscreen(const SystemSnapshot& snapshot,
+    const std::vector<LayoutGuideSheetCalloutRequest>& calloutRequests,
+    const std::vector<std::string>& selectedCardIds,
+    std::vector<std::string>* traceDetails,
+    std::string* errorText) {
+    return Render(
+        snapshot,
+        calloutRequests,
+        selectedCardIds,
+        [&](int width, int height, SurfaceDrawCallback draw) {
+            return dashboardRenderer_.RenderLayoutGuideSheetSurfaceOffscreen(width, height, std::move(draw));
+        },
+        traceDetails,
+        errorText);
+}
+
+bool LayoutGuideSheetRenderer::Render(const SystemSnapshot& snapshot,
+    const std::vector<LayoutGuideSheetCalloutRequest>& calloutRequests,
+    const std::vector<std::string>& selectedCardIds,
+    const SurfaceRenderer& renderSurface,
+    std::vector<std::string>* traceDetails,
+    std::string* errorText) {
     dashboardRenderer_.lastError_.clear();
     if (traceDetails != nullptr) {
         traceDetails->clear();
@@ -579,7 +612,9 @@ bool LayoutGuideSheetRenderer::SavePng(const std::filesystem::path& imagePath,
     }
 
     if (cardPlacements.empty()) {
-        const bool saved = dashboardRenderer_.SaveSnapshotPng(imagePath, snapshot, overlayState);
+        const bool saved = renderSurface(dashboardRenderer_.WindowWidth(), dashboardRenderer_.WindowHeight(), [&] {
+            dashboardRenderer_.DrawFrame(snapshot, overlayState);
+        });
         if (!saved && errorText != nullptr) {
             *errorText = dashboardRenderer_.LastError();
         }
@@ -801,7 +836,7 @@ bool LayoutGuideSheetRenderer::SavePng(const std::filesystem::path& imagePath,
         }
     }
 
-    const bool saved = dashboardRenderer_.SaveLayoutGuideSheetSurfacePng(imagePath, sheetWidth, sheetHeight, [&] {
+    const bool saved = renderSurface(sheetWidth, sheetHeight, [&] {
         dashboardRenderer_.Renderer().FillSolidRect(
             RenderRect{0, 0, sheetWidth, sheetHeight}, RenderColorId::Background);
         dashboardRenderer_.BeginLayoutGuideSheetDynamicArtifacts(overlayState);

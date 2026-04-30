@@ -11,13 +11,15 @@ This file records the current benchmark baselines, latest confirmed hotspots, an
 
 - Start the elevated daemon once with `profile_benchmark.cmd /daemon-start` when repeated unattended profiling runs are needed.
 - Measure the repeatable layout-edit benchmark with `build\SystemTelemetryBenchmarks.exe edit-layout 240 2`.
+- Measure the in-memory layout-guide-sheet generation benchmark with `build\SystemTelemetryBenchmarks.exe layout-guide-sheet 20 2`.
 - Measure the repeatable layout-switch benchmark with `build\SystemTelemetryBenchmarks.exe layout-switch 240 2`.
 - Measure the repeatable mouse-hover benchmark with `build\SystemTelemetryBenchmarks.exe mouse-hover 240 2`.
 - Measure the repeatable telemetry-refresh benchmark with `build\SystemTelemetryBenchmarks.exe update-telemetry 240 2`.
-- `SystemTelemetryBenchmarks` accepts the supported benchmark names `edit-layout`, `layout-switch`, `mouse-hover`, and `update-telemetry` as the first argument; starting it without arguments prints that list and exits without running a benchmark. `profile_benchmark.cmd` uses the same required benchmark-name argument for profiling runs.
+- `SystemTelemetryBenchmarks` accepts the supported benchmark names `edit-layout`, `layout-guide-sheet`, `layout-switch`, `mouse-hover`, and `update-telemetry` as the first argument; starting it without arguments prints that list and exits without running a benchmark. `profile_benchmark.cmd` uses the same required benchmark-name argument for profiling runs.
 - Direct benchmark runs create a disabled trace object without an output stream, so trace formatting and writes do not affect benchmark timing.
 - The mouse-hover benchmark moves the layout-edit cursor path from the dashboard's top-left corner to bottom-right corner, resolving hover hits and drawing the resulting overlay state on every step.
 - Capture a benchmark-focused CPU profile with `profile_benchmark.cmd edit-layout 240 2`, `profile_benchmark.cmd layout-switch 240 2`, `profile_benchmark.cmd mouse-hover 240 2`, or `profile_benchmark.cmd update-telemetry 240 2` when a change materially moves that benchmark or when hotspot confirmation is needed.
+- Capture a layout-guide-sheet CPU profile with `profile_benchmark.cmd layout-guide-sheet 20 2`; the benchmark renders the sheet to an in-memory offscreen surface and deliberately excludes PNG encoding and file I/O.
 - The benchmark host forces Direct2D immediate-present mode so direct benchmark runs measure renderer work instead of blocking on desktop-compositor refresh pacing.
 - Treat the timing lines printed in the elevated daemon console during `profile_benchmark.cmd` as profiler-instrumented wall-clock numbers, not as the repeatable baseline; compare regressions against the direct `build\SystemTelemetryBenchmarks.exe` runs instead.
 - Daemon-backed and one-shot elevated runs persist the benchmark stdout and hotspot summary in the request directory and replay both in the caller window after the request finishes, so the requesting shell sees the same timing lines and top hotspots that the elevated process produced.
@@ -56,12 +58,18 @@ This file records the current benchmark baselines, latest confirmed hotspots, an
   - `hover_hit_test avg_ms=0.08`
   - `paint_total avg_ms=2.12` to `2.13`
   - `paint_draw avg_ms=2.12` to `2.13`
+- Current repeatable `layout-guide-sheet` result on the current tree:
+  - `sheet_loop per_iter_ms=193` to `199`
+  - `active_regions avg_ms=4.35` to `4.60`
+  - `sheet_plan avg_ms=1.24` to `1.30`
+  - `sheet_render avg_ms=187.71` to `192.19`
 
 ## Current Confirmed Hotspots
 
 Current useful hotspot signals from the latest daemon-backed WPR capture on the full-D2D tree:
 
 - The latest daemon-backed `update-telemetry` capture under `build\profile_benchmark_daemon\requests\22655_18646_22144\` keeps the benchmark-process inclusive module weight centered on `d2d1.dll`, `DWrite.dll`, `clr.dll`, `TextShaping.dll`, `amdxx64.dll`, and a much smaller remaining `pdh.dll` slice.
+- The latest daemon-backed `layout-guide-sheet` capture under `build\profile_benchmark_daemon\requests\23902_22739_322\` reports `sheet_loop per_iter_ms=198.19` and keeps the remaining benchmark-process inclusive cost centered on `PlaceLayoutGuideSheetCallouts`, especially `SegmentIntersectsRect` and `LeaderSegmentsIntersect`, with offscreen Direct2D/WIC rendering now secondary.
 - The latest usable daemon-backed `edit-layout` capture under `build\profile_benchmark_daemon\requests\21425_18089_27400\` keeps the benchmark-process inclusive module weight centered on `d2d1.dll`, `DWrite.dll`, `TextShaping.dll`, `amdxx64.dll`, and `D3D11.dll`; the exported call tree still under-symbolizes most app-owned leaf functions and does not surface a new dominant geometry-builder hotspot inside the benchmark process.
 - The latest daemon-backed `edit-layout` timing capture under `build\profile_benchmark_daemon\requests\18269_30044_21338\` reports `drag_loop per_iter_ms=2.54`, `snap avg_ms=0.18`, `apply avg_ms=0.08`, and `paint_draw avg_ms=2.27`; its WPR ETL is present, but the exported text summary and call-tree HTML are empty, so it does not replace the latest usable hotspot attribution above.
 - The current uncached capture is mildly collector-bound again on this machine: `TelemetryCollector::UpdateSnapshot()` now lands slightly above repaint in both the direct and daemon-backed runs after restoring the live Gigabyte collection allocation required for real board samples.
@@ -76,6 +84,7 @@ Interpretation:
 - Snap and apply work are no longer the main limiter on this tree; the benchmark now splits mostly between the real collector path and the HWND-backed Direct2D/DirectWrite frame.
 - The direct `update-telemetry` benchmark now measures the real collector path instead of a synthetic snapshot-mutation loop, and the current no-cache split lands at roughly `2.18 ms` in `TelemetryCollector::UpdateSnapshot()` versus `2.04 ms` in repaint on this machine.
 - The direct `layout-switch` benchmark remains paint-bound on this machine after restoring incremental renderer style updates: repaint sits around `2.72` to `2.76 ms` of the `3.60` to `3.66 ms` loop while the dialog refresh work stays around `0.15 ms`.
+- The direct `layout-guide-sheet` benchmark remains placement-score bound after removing the pathological exhaustive stack-order search: the offscreen Direct2D/WIC render is visible in profiles, but the remaining cost is mostly leader intersection scoring.
 - The direct `edit-layout` benchmark remains paint-bound on this tree after restoring incremental renderer style updates: confirmation reruns land around `drag_loop per_iter_ms=2.46` to `2.49`, `snap avg_ms=0.18`, `apply avg_ms=0.08`, and `paint_draw avg_ms=2.20` to `2.23`, so the remaining time sits mostly in the Direct2D, DirectWrite, and driver frame rather than in widget-local layout math.
 - Suppressing layout-edit tooltip refresh while a drag is active does not regress the direct `edit-layout` benchmark; the post-change `240`-iteration run landed at `drag_loop per_iter_ms=2.36`, `snap avg_ms=0.17`, `apply avg_ms=0.08`, and `paint_draw avg_ms=2.11`.
 - The current direct `mouse-hover` benchmark remains paint-bound overall after the direct renderer hover resolver: hover hit testing stays around `0.08 ms` per step while repaint sits around `2.12` to `2.13 ms`.
@@ -112,6 +121,23 @@ These changes produced real wins and remain in the codebase:
   - `build\SystemTelemetryBenchmarks.exe mouse-hover 240 2` landed at `hover_loop per_iter_ms=2.34`, `hover_hit_test avg_ms=0.21`, and `paint_draw avg_ms=2.13`; the confirmation `480`-point run landed at `hover_loop per_iter_ms=2.32`, `hover_hit_test avg_ms=0.21`, and `paint_draw avg_ms=2.12`.
 - Conclusion:
   - The collision-aware anchor placement is safe for the drag benchmark and normal repaint cost; the follow-up hover-resolver optimization below addresses the active-region hit-test cost separately.
+
+### Hypothesis: Layout guide sheet generation is slow because callout placement scoring is combinatorial
+
+- Change:
+  - Add a `layout-guide-sheet` benchmark mode that generates the selected-layout guide sheet into an in-memory offscreen surface, excluding PNG encoding and file I/O.
+  - Replace exhaustive stack-order permutation inside `PlaceLayoutGuideSheetCallouts` with the existing target-Y radial stack order, keep bounded side-split repair for smaller blocks, cache trial target safe rectangles, and reject most segment-safe-rect tests with a bounding-box check before doing segment intersection math.
+- Result:
+  - Helped materially.
+- Observed effect:
+  - Before the placement scoring change, `build\SystemTelemetryBenchmarks.exe layout-guide-sheet 1 2` ran at `sheet_loop per_iter_ms=53444.32`, with `sheet_render avg_ms=53430.97`.
+  - The daemon-backed profile under `build\profile_benchmark_daemon\requests\31300_11234_18822\` put almost all samples in `PlaceLayoutGuideSheetCallouts`, especially `SegmentIntersectsRect` and `LeaderSegmentsIntersect`.
+  - Removing exhaustive stack-order permutation reduced `build\SystemTelemetryBenchmarks.exe layout-guide-sheet 20 2` to about `sheet_loop per_iter_ms=534.93`.
+  - Adding safe-rectangle caching and a segment bounding-box reject reduced the same direct benchmark to about `sheet_loop per_iter_ms=193.40`.
+  - The confirmation daemon-backed profile under `build\profile_benchmark_daemon\requests\23902_22739_322\` landed at `sheet_loop per_iter_ms=198.19`, with remaining cost still led by placement scoring but with Direct2D/WIC offscreen rendering now visible as the next significant bucket.
+  - Disabling global side repair entirely reduced the direct benchmark to about `sheet_loop per_iter_ms=39.92`, but increased leader-intersection warnings and worsened routing quality, so that more aggressive shortcut was rejected.
+- Conclusion:
+  - Layout guide sheet generation should avoid factorial or high-order callout stack permutation. The radial target-Y stack order is the scalable default; future routing improvements should operate on a small set of problematic leaders rather than trying every stack permutation or every side split globally.
 
 ### Hypothesis: Hover hit testing regressed because ordinary hover builds diagnostic active-region payloads
 

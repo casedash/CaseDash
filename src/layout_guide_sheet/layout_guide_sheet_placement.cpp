@@ -30,6 +30,13 @@ bool SegmentIntersectsRect(RenderPoint a, RenderPoint b, const RenderRect& rect)
     if (rect.IsEmpty()) {
         return false;
     }
+    const int segmentLeft = std::min(a.x, b.x);
+    const int segmentRight = std::max(a.x, b.x);
+    const int segmentTop = std::min(a.y, b.y);
+    const int segmentBottom = std::max(a.y, b.y);
+    if (segmentRight < rect.left || segmentLeft > rect.right || segmentBottom < rect.top || segmentTop > rect.bottom) {
+        return false;
+    }
     if (rect.Contains(a) || rect.Contains(b)) {
         return true;
     }
@@ -134,6 +141,7 @@ struct BlockLayout {
 struct TrialLeader {
     RenderPoint target{};
     RenderPoint bubble{};
+    RenderRect targetSafeRect{};
 };
 
 struct OptimizedColumns {
@@ -141,6 +149,8 @@ struct OptimizedColumns {
     int intersections = 0;
     int tieBreak = 0;
 };
+
+inline constexpr size_t kMaxSideRepairCallouts = 20;
 
 RenderPoint TargetAttachmentForCallout(const LayoutGuideSheetPlacementCallout& callout,
     const RenderRect& targetRect,
@@ -350,9 +360,10 @@ LayoutGuideSheetPlacementResult PlaceLayoutGuideSheetCallouts(
                                               : OffsetRenderRect(planned.target,
                                                     cardRect.left - placement.sourceRect.left,
                                                     cardRect.top - placement.sourceRect.top);
-            leaders.push_back(
-                TrialLeader{TargetAttachmentForCallout(callout, targetRect, bubbleAttachment, style.gaugeRingThickness),
-                    bubbleAttachment});
+            const RenderPoint targetAttachment =
+                TargetAttachmentForCallout(callout, targetRect, bubbleAttachment, style.gaugeRingThickness);
+            leaders.push_back(TrialLeader{
+                targetAttachment, bubbleAttachment, TargetSafeRect(targetAttachment, style.targetSafeRadius)});
             y = bubbleRect.bottom + style.rowGap;
         }
     };
@@ -380,14 +391,16 @@ LayoutGuideSheetPlacementResult PlaceLayoutGuideSheetCallouts(
                                               : OffsetRenderRect(planned.target,
                                                     cardRect.left - placement.sourceRect.left,
                                                     cardRect.top - placement.sourceRect.top);
-            leaders.push_back(
-                TrialLeader{TargetAttachmentForCallout(callout, targetRect, bubbleAttachment, style.gaugeRingThickness),
-                    bubbleAttachment});
+            const RenderPoint targetAttachment =
+                TargetAttachmentForCallout(callout, targetRect, bubbleAttachment, style.gaugeRingThickness);
+            leaders.push_back(TrialLeader{
+                targetAttachment, bubbleAttachment, TargetSafeRect(targetAttachment, style.targetSafeRadius)});
         }
     };
 
     const auto countLeaderIntersections = [&](const CardCalloutColumns& columns,
-                                              const LayoutGuideSheetCardPlacement& placement) {
+                                              const LayoutGuideSheetCardPlacement& placement,
+                                              int stopAfter = (std::numeric_limits<int>::max)()) {
         const BlockLayout block = computeBlockForColumns(columns, placement);
         std::vector<TrialLeader> leaders;
         leaders.reserve(columns.top.size() + columns.left.size() + columns.right.size() + columns.bottom.size());
@@ -402,60 +415,25 @@ LayoutGuideSheetPlacementResult PlaceLayoutGuideSheetCallouts(
                 if (LeaderSegmentsIntersect(
                         leaders[i].target, leaders[i].bubble, leaders[j].target, leaders[j].bubble)) {
                     ++intersections;
+                    if (intersections > stopAfter) {
+                        return intersections;
+                    }
                 }
-                if (SegmentIntersectsRect(leaders[i].target,
-                        leaders[i].bubble,
-                        TargetSafeRect(leaders[j].target, style.targetSafeRadius))) {
+                if (SegmentIntersectsRect(leaders[i].target, leaders[i].bubble, leaders[j].targetSafeRect)) {
                     ++intersections;
+                    if (intersections > stopAfter) {
+                        return intersections;
+                    }
                 }
-                if (SegmentIntersectsRect(leaders[j].target,
-                        leaders[j].bubble,
-                        TargetSafeRect(leaders[i].target, style.targetSafeRadius))) {
+                if (SegmentIntersectsRect(leaders[j].target, leaders[j].bubble, leaders[i].targetSafeRect)) {
                     ++intersections;
+                    if (intersections > stopAfter) {
+                        return intersections;
+                    }
                 }
             }
         }
         return intersections;
-    };
-
-    const auto optimizeStackOrder = [&](CardCalloutColumns& columns,
-                                        std::vector<size_t>& stack,
-                                        const std::vector<size_t>& preferredOrder,
-                                        const LayoutGuideSheetCardPlacement& placement) {
-        if (stack.size() < 2) {
-            return;
-        }
-        bool improved = true;
-        size_t passCount = 0;
-        while (improved && passCount < stack.size() * stack.size()) {
-            improved = false;
-            ++passCount;
-            int bestScore = countLeaderIntersections(columns, placement);
-            int bestPenalty = OrderPenalty(stack, preferredOrder);
-            size_t bestI = 0;
-            size_t bestJ = 0;
-            for (size_t i = 0; i < stack.size(); ++i) {
-                for (size_t j = i + 1; j < stack.size(); ++j) {
-                    std::swap(stack[i], stack[j]);
-                    const int score = countLeaderIntersections(columns, placement);
-                    const int penalty = OrderPenalty(stack, preferredOrder);
-                    std::swap(stack[i], stack[j]);
-                    if (score < bestScore || (score == bestScore && penalty < bestPenalty)) {
-                        bestScore = score;
-                        bestPenalty = penalty;
-                        bestI = i;
-                        bestJ = j;
-                    }
-                }
-            }
-            if (bestI != bestJ) {
-                std::swap(stack[bestI], stack[bestJ]);
-                improved = true;
-                if (bestScore == 0) {
-                    return;
-                }
-            }
-        }
     };
 
     const auto optimizePromotionsAndOrder = [&](const CardCalloutColumns& baseColumns,
@@ -494,15 +472,7 @@ LayoutGuideSheetPlacementResult PlaceLayoutGuideSheetCallouts(
                     ErasePlannedIndex(trial.right, topCandidate);
                     trial.top.push_back(topCandidate);
                 }
-                for (size_t pass = 0; pass < 3; ++pass) {
-                    const int before = countLeaderIntersections(trial, placement);
-                    optimizeStackOrder(trial, trial.left, preferredLeft, placement);
-                    optimizeStackOrder(trial, trial.right, preferredRight, placement);
-                    if (countLeaderIntersections(trial, placement) >= before) {
-                        break;
-                    }
-                }
-                const int intersections = countLeaderIntersections(trial, placement);
+                const int intersections = countLeaderIntersections(trial, placement, best.intersections);
                 const int tieBreak = (bottomCandidate == defaultBottom ? 0 : 1000) +
                                      (topCandidate == defaultTop ? 0 : 1000) + OrderPenalty(trial.left, preferredLeft) +
                                      OrderPenalty(trial.right, preferredRight);
@@ -527,7 +497,9 @@ LayoutGuideSheetPlacementResult PlaceLayoutGuideSheetCallouts(
         CardCalloutColumns split = preferredSplit;
         OptimizedColumns best =
             optimizePromotionsAndOrder(split, preferredSplit.left, preferredSplit.right, cardPlacements[cardIndex]);
-        for (size_t pass = 0; best.intersections > 0 && pass < plannedCallouts.size(); ++pass) {
+        const size_t repairCallouts = split.top.size() + split.left.size() + split.right.size() + split.bottom.size();
+        const size_t maxRepairPasses = repairCallouts > kMaxSideRepairCallouts ? 0 : plannedCallouts.size();
+        for (size_t pass = 0; best.intersections > 0 && pass < maxRepairPasses; ++pass) {
             bool improved = false;
             CardCalloutColumns bestSplit = split;
             OptimizedColumns bestCandidate = best;

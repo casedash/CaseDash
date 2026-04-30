@@ -146,6 +146,7 @@ private:
     void WriteTrace(const std::string& text) const;
     bool SaveLayoutGuideSheetSurfacePng(
         const std::filesystem::path& imagePath, int width, int height, std::function<void()> draw);
+    bool RenderLayoutGuideSheetSurfaceOffscreen(int width, int height, std::function<void()> draw);
     void BeginLayoutGuideSheetDynamicArtifacts(const DashboardOverlayState& overlayState);
     void ResolveLayoutGuideSheetDynamicArtifactCollisions();
     void EndLayoutGuideSheetDynamicArtifacts();
