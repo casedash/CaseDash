@@ -1086,6 +1086,7 @@ bool LayoutGuideSheetRenderer::SavePng(const std::filesystem::path& imagePath,
             DashboardOverlayState cardBaseOverlayState = overlayState;
             cardBaseOverlayState.hoverOnExposedDashboard = false;
             cardBaseOverlayState.drawExposedDashboardChrome = false;
+            cardBaseOverlayState.suppressLayoutGuideContainerHighlights = true;
             dashboardRenderer_.DrawLayoutGuideSheetOverlay(
                 cardBaseOverlayState, placement.sourceRect, placement.destRect, metrics);
             for (const Callout& callout : callouts) {
@@ -1095,6 +1096,7 @@ bool LayoutGuideSheetRenderer::SavePng(const std::filesystem::path& imagePath,
                 DashboardOverlayState calloutOverlayState = overlayState;
                 calloutOverlayState.hoverOnExposedDashboard = false;
                 calloutOverlayState.drawExposedDashboardChrome = false;
+                calloutOverlayState.suppressLayoutGuideContainerHighlights = true;
                 calloutOverlayState.hoveredEditableAnchor = callout.hoverAnchorKey;
                 if (callout.hoverWidgetGuide.has_value()) {
                     calloutOverlayState.hoveredEditableWidget = callout.hoverWidgetGuide->widget;

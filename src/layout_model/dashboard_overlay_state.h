@@ -23,6 +23,7 @@ struct DashboardOverlayState {
     bool showLayoutEditGuides = false;
     bool forceLayoutEditAffordances = false;
     bool forceHoverEquivalentColors = false;
+    bool suppressLayoutGuideContainerHighlights = false;
     bool hoverOnExposedDashboard = false;
     bool drawExposedDashboardChrome = true;
     LayoutSimilarityIndicatorMode similarityIndicatorMode = LayoutSimilarityIndicatorMode::ActiveGuide;

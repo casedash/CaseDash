@@ -633,15 +633,17 @@ void DashboardLayoutEditOverlayRenderer::DrawLayoutEditGuides(const DashboardOve
         }
         existing->second = existing->second || active;
     };
-    if (overlayState.hoveredLayoutEditGuide.has_value()) {
-        appendContainerHighlight(overlayState.hoveredLayoutEditGuide->containerRect, false);
-    }
-    if (overlayState.activeLayoutEditGuide.has_value()) {
-        appendContainerHighlight(overlayState.activeLayoutEditGuide->containerRect, true);
-    }
-    for (const auto& [rect, active] : containerHighlights) {
-        const RenderColorId color = active ? ActiveEditColor(overlayState) : RenderColorId::LayoutGuide;
-        DrawDottedHighlightRect(rect, color, UseActiveEditEmphasis(overlayState, active));
+    if (!overlayState.suppressLayoutGuideContainerHighlights) {
+        if (overlayState.hoveredLayoutEditGuide.has_value()) {
+            appendContainerHighlight(overlayState.hoveredLayoutEditGuide->containerRect, false);
+        }
+        if (overlayState.activeLayoutEditGuide.has_value()) {
+            appendContainerHighlight(overlayState.activeLayoutEditGuide->containerRect, true);
+        }
+        for (const auto& [rect, active] : containerHighlights) {
+            const RenderColorId color = active ? ActiveEditColor(overlayState) : RenderColorId::LayoutGuide;
+            DrawDottedHighlightRect(rect, color, UseActiveEditEmphasis(overlayState, active));
+        }
     }
 
     const int lineWidth = (std::max)(1, renderer_.ScaleLogical(1));

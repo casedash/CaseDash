@@ -71,6 +71,7 @@ User-visible labels and documentation refer to the generated image as a `layout 
 - Overview anchor callouts attach their leader to the visible anchor shape. Anchors that have no live hover target outline do not draw an extra target outline.
 - Representative guides and anchors are not promoted to active or selected styling just because a callout points at them; the panel content renders as it would in the corresponding layout-edit hover state.
 - Representative cards render hover-equivalent state only for active areas that have callouts on that representative card. Card-level or dashboard-level gap and sizing controls that are documented in the overview do not render in hover state on the representative cards.
+- Representative-card layout sizing guide callouts render the guide line itself without the full containing-layout dashed outline to keep the specimen readable.
 - When two guides overlap, the sheet follows the live hit-priority and visual-priority rules unless the callout placement needs a small leader-line offset to remain readable.
 
 ## Callouts
