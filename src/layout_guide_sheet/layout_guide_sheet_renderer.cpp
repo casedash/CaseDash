@@ -1098,6 +1098,10 @@ bool LayoutGuideSheetRenderer::SavePng(const std::filesystem::path& imagePath,
                 calloutOverlayState.drawExposedDashboardChrome = false;
                 calloutOverlayState.suppressLayoutGuideContainerHighlights = true;
                 calloutOverlayState.hoveredEditableAnchor = callout.hoverAnchorKey;
+                if (callout.hoverAnchorKey.has_value() &&
+                    callout.hoverAnchorKey->widget.kind == LayoutEditWidgetIdentity::Kind::Widget) {
+                    calloutOverlayState.hoveredEditableWidget = callout.hoverAnchorKey->widget;
+                }
                 if (callout.hoverWidgetGuide.has_value()) {
                     calloutOverlayState.hoveredEditableWidget = callout.hoverWidgetGuide->widget;
                 }
