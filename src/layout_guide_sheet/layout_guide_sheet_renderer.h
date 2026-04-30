@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <filesystem>
 #include <functional>
 #include <string>
@@ -10,6 +11,12 @@
 class DashboardRenderer;
 struct SystemSnapshot;
 
+struct LayoutGuideSheetRenderStats {
+    std::chrono::nanoseconds measure{};
+    std::chrono::nanoseconds placement{};
+    std::chrono::nanoseconds draw{};
+};
+
 class LayoutGuideSheetRenderer {
 public:
     explicit LayoutGuideSheetRenderer(DashboardRenderer& dashboardRenderer);
@@ -19,12 +26,14 @@ public:
         const std::vector<LayoutGuideSheetCalloutRequest>& calloutRequests,
         const std::vector<std::string>& selectedCardIds,
         std::vector<std::string>* traceDetails = nullptr,
-        std::string* errorText = nullptr);
+        std::string* errorText = nullptr,
+        LayoutGuideSheetRenderStats* stats = nullptr);
     bool RenderOffscreen(const SystemSnapshot& snapshot,
         const std::vector<LayoutGuideSheetCalloutRequest>& calloutRequests,
         const std::vector<std::string>& selectedCardIds,
         std::vector<std::string>* traceDetails = nullptr,
-        std::string* errorText = nullptr);
+        std::string* errorText = nullptr,
+        LayoutGuideSheetRenderStats* stats = nullptr);
 
 private:
     using SurfaceDrawCallback = std::function<void()>;
@@ -35,7 +44,8 @@ private:
         const std::vector<std::string>& selectedCardIds,
         const SurfaceRenderer& renderSurface,
         std::vector<std::string>* traceDetails,
-        std::string* errorText);
+        std::string* errorText,
+        LayoutGuideSheetRenderStats* stats);
 
     DashboardRenderer& dashboardRenderer_;
 };

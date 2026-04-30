@@ -1,6 +1,7 @@
 #include "layout_guide_sheet/layout_guide_sheet_renderer.h"
 
 #include <algorithm>
+#include <chrono>
 #include <optional>
 #include <string>
 #include <vector>
@@ -510,7 +511,8 @@ bool LayoutGuideSheetRenderer::SavePng(const std::filesystem::path& imagePath,
     const std::vector<LayoutGuideSheetCalloutRequest>& calloutRequests,
     const std::vector<std::string>& selectedCardIds,
     std::vector<std::string>* traceDetails,
-    std::string* errorText) {
+    std::string* errorText,
+    LayoutGuideSheetRenderStats* stats) {
     return Render(
         snapshot,
         calloutRequests,
@@ -519,14 +521,16 @@ bool LayoutGuideSheetRenderer::SavePng(const std::filesystem::path& imagePath,
             return dashboardRenderer_.SaveLayoutGuideSheetSurfacePng(imagePath, width, height, std::move(draw));
         },
         traceDetails,
-        errorText);
+        errorText,
+        stats);
 }
 
 bool LayoutGuideSheetRenderer::RenderOffscreen(const SystemSnapshot& snapshot,
     const std::vector<LayoutGuideSheetCalloutRequest>& calloutRequests,
     const std::vector<std::string>& selectedCardIds,
     std::vector<std::string>* traceDetails,
-    std::string* errorText) {
+    std::string* errorText,
+    LayoutGuideSheetRenderStats* stats) {
     return Render(
         snapshot,
         calloutRequests,
@@ -535,7 +539,8 @@ bool LayoutGuideSheetRenderer::RenderOffscreen(const SystemSnapshot& snapshot,
             return dashboardRenderer_.RenderLayoutGuideSheetSurfaceOffscreen(width, height, std::move(draw));
         },
         traceDetails,
-        errorText);
+        errorText,
+        stats);
 }
 
 bool LayoutGuideSheetRenderer::Render(const SystemSnapshot& snapshot,
@@ -543,7 +548,18 @@ bool LayoutGuideSheetRenderer::Render(const SystemSnapshot& snapshot,
     const std::vector<std::string>& selectedCardIds,
     const SurfaceRenderer& renderSurface,
     std::vector<std::string>* traceDetails,
-    std::string* errorText) {
+    std::string* errorText,
+    LayoutGuideSheetRenderStats* stats) {
+    const auto recordStats = [&](std::chrono::nanoseconds LayoutGuideSheetRenderStats::* field,
+                                 std::chrono::steady_clock::time_point start) {
+        if (stats != nullptr) {
+            (*stats).*field += std::chrono::steady_clock::now() - start;
+        }
+    };
+    if (stats != nullptr) {
+        *stats = {};
+    }
+    const auto measureStart = std::chrono::steady_clock::now();
     dashboardRenderer_.lastError_.clear();
     if (traceDetails != nullptr) {
         traceDetails->clear();
@@ -561,6 +577,7 @@ bool LayoutGuideSheetRenderer::Render(const SystemSnapshot& snapshot,
         if (errorText != nullptr) {
             *errorText = dashboardRenderer_.LastError();
         }
+        recordStats(&LayoutGuideSheetRenderStats::measure, measureStart);
         return false;
     }
 
@@ -612,9 +629,12 @@ bool LayoutGuideSheetRenderer::Render(const SystemSnapshot& snapshot,
     }
 
     if (cardPlacements.empty()) {
+        recordStats(&LayoutGuideSheetRenderStats::measure, measureStart);
+        const auto drawStart = std::chrono::steady_clock::now();
         const bool saved = renderSurface(dashboardRenderer_.WindowWidth(), dashboardRenderer_.WindowHeight(), [&] {
             dashboardRenderer_.DrawFrame(snapshot, overlayState);
         });
+        recordStats(&LayoutGuideSheetRenderStats::draw, drawStart);
         if (!saved && errorText != nullptr) {
             *errorText = dashboardRenderer_.LastError();
         }
@@ -817,6 +837,7 @@ bool LayoutGuideSheetRenderer::Render(const SystemSnapshot& snapshot,
                 anchorRegion->shape == AnchorShape::Circle && anchorRegion->dragMode == AnchorDragMode::RadialDistance;
         }
     }
+    recordStats(&LayoutGuideSheetRenderStats::measure, measureStart);
 
     const LayoutGuideSheetPlacementStyle placementStyle{sheetMargin,
         calloutGap,
@@ -824,10 +845,12 @@ bool LayoutGuideSheetRenderer::Render(const SystemSnapshot& snapshot,
         ScaleNonNegative(dashboardRenderer_, sheetStyle.blockGap),
         targetSafeRadius,
         gaugeRingThickness};
+    const auto placementStart = std::chrono::steady_clock::now();
     const LayoutGuideSheetPlacementResult placementResult =
         PlaceLayoutGuideSheetCallouts(cardPlacements, callouts, placementStyle, [&](Callout& callout, int width) {
             measureCalloutBubble(callout, width);
         });
+    recordStats(&LayoutGuideSheetRenderStats::placement, placementStart);
     const int sheetWidth = placementResult.sheetWidth;
     const int sheetHeight = placementResult.sheetHeight;
     if (traceDetails != nullptr) {
@@ -836,6 +859,7 @@ bool LayoutGuideSheetRenderer::Render(const SystemSnapshot& snapshot,
         }
     }
 
+    const auto drawStart = std::chrono::steady_clock::now();
     const bool saved = renderSurface(sheetWidth, sheetHeight, [&] {
         dashboardRenderer_.Renderer().FillSolidRect(
             RenderRect{0, 0, sheetWidth, sheetHeight}, RenderColorId::Background);
@@ -947,6 +971,7 @@ bool LayoutGuideSheetRenderer::Render(const SystemSnapshot& snapshot,
             }
         }
     });
+    recordStats(&LayoutGuideSheetRenderStats::draw, drawStart);
     if (!dashboardRenderer_.renderer_->LastError().empty()) {
         dashboardRenderer_.lastError_ = dashboardRenderer_.renderer_->LastError();
     }

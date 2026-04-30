@@ -55,7 +55,9 @@ enum class BenchPhase {
     PaintDraw,
     LayoutGuideActiveRegions,
     LayoutGuidePlan,
-    LayoutGuideRender,
+    LayoutGuideMeasure,
+    LayoutGuidePlacement,
+    LayoutGuideDraw,
     Count,
 };
 
@@ -107,8 +109,12 @@ const char* PhaseName(BenchPhase phase) {
             return "active_regions";
         case BenchPhase::LayoutGuidePlan:
             return "sheet_plan";
-        case BenchPhase::LayoutGuideRender:
-            return "sheet_render";
+        case BenchPhase::LayoutGuideMeasure:
+            return "sheet_measure";
+        case BenchPhase::LayoutGuidePlacement:
+            return "sheet_place";
+        case BenchPhase::LayoutGuideDraw:
+            return "sheet_draw";
         case BenchPhase::Count:
             break;
     }
@@ -736,15 +742,17 @@ LayoutGuideSheetBenchTotals RunLayoutGuideSheetGenerationBenchmark(
         totals.phases[PhaseIndex(BenchPhase::LayoutGuidePlan)].total += Clock::now() - planStart;
         ++totals.phases[PhaseIndex(BenchPhase::LayoutGuidePlan)].samples;
 
-        const auto renderStart = Clock::now();
         std::string errorText;
         std::vector<std::string> traceDetails;
-        if (!sheetRenderer.RenderOffscreen(snapshot, callouts, selectedCardIds, &traceDetails, &errorText)) {
+        LayoutGuideSheetRenderStats renderStats;
+        if (!sheetRenderer.RenderOffscreen(
+                snapshot, callouts, selectedCardIds, &traceDetails, &errorText, &renderStats)) {
             throw std::runtime_error(
                 "layout guide offscreen render failed: " + (errorText.empty() ? renderer.LastError() : errorText));
         }
-        totals.phases[PhaseIndex(BenchPhase::LayoutGuideRender)].total += Clock::now() - renderStart;
-        ++totals.phases[PhaseIndex(BenchPhase::LayoutGuideRender)].samples;
+        RecordPhase(totals.phases[PhaseIndex(BenchPhase::LayoutGuideMeasure)], renderStats.measure);
+        RecordPhase(totals.phases[PhaseIndex(BenchPhase::LayoutGuidePlacement)], renderStats.placement);
+        RecordPhase(totals.phases[PhaseIndex(BenchPhase::LayoutGuideDraw)], renderStats.draw);
         totals.traceDetails = std::move(traceDetails);
         totals.selectedCards = selectedCardIds.size();
         totals.callouts = callouts.size();
@@ -881,7 +889,11 @@ int RunLayoutGuideSheetBenchmarkCommand(size_t iterations, double renderScale, T
         PrintPhaseResult(
             PhaseName(BenchPhase::LayoutGuidePlan), totals.phases[PhaseIndex(BenchPhase::LayoutGuidePlan)]);
         PrintPhaseResult(
-            PhaseName(BenchPhase::LayoutGuideRender), totals.phases[PhaseIndex(BenchPhase::LayoutGuideRender)]);
+            PhaseName(BenchPhase::LayoutGuideMeasure), totals.phases[PhaseIndex(BenchPhase::LayoutGuideMeasure)]);
+        PrintPhaseResult(
+            PhaseName(BenchPhase::LayoutGuidePlacement), totals.phases[PhaseIndex(BenchPhase::LayoutGuidePlacement)]);
+        PrintPhaseResult(
+            PhaseName(BenchPhase::LayoutGuideDraw), totals.phases[PhaseIndex(BenchPhase::LayoutGuideDraw)]);
     } catch (const std::exception& ex) {
         std::cerr << ex.what() << "\n";
         return 1;
