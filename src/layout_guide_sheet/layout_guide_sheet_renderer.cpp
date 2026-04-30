@@ -905,6 +905,22 @@ bool LayoutGuideSheetRenderer::SavePng(const std::filesystem::path& imagePath,
 
     const int rowGap = ScaleNonNegative(dashboardRenderer_, sheetStyle.calloutRowGap);
 
+    const auto targetAttachmentForCallout = [&](const Callout& callout, const RenderRect& targetRect) {
+        const std::optional<RenderPoint> gaugeColorAttachment =
+            GaugeRingColorAttachmentPoint(targetRect, callout.hoverColorParameter, gaugeRingThickness);
+        if (gaugeColorAttachment.has_value()) {
+            return *gaugeColorAttachment;
+        }
+        if (callout.targetAttachmentOnAnchorCircle) {
+            return ClosestEllipseBoundaryPoint(targetRect, callout.bubbleAttachment);
+        }
+        if (callout.hoverWidgetGuide.has_value() &&
+            callout.hoverWidgetGuide->parameter == LayoutEditParameter::ThroughputAxisPadding) {
+            return RenderPoint{targetRect.Center().x, targetRect.top + std::max(0, targetRect.Height()) / 4};
+        }
+        return targetRect.Center();
+    };
+
     struct CardCalloutColumns {
         std::vector<size_t> top;
         std::vector<size_t> left;
@@ -1052,12 +1068,7 @@ bool LayoutGuideSheetRenderer::SavePng(const std::filesystem::path& imagePath,
                                                     cardPlacements[planned.cardIndex].sourceRect,
                                                     cardPlacements[planned.cardIndex].destRect)
                                               : OffsetRenderRect(planned.target, dx, dy);
-            const std::optional<RenderPoint> gaugeColorAttachment =
-                GaugeRingColorAttachmentPoint(targetRect, callout.hoverColorParameter, gaugeRingThickness);
-            callout.targetAttachment = gaugeColorAttachment.has_value() ? *gaugeColorAttachment
-                                       : callout.targetAttachmentOnAnchorCircle
-                                           ? ClosestEllipseBoundaryPoint(targetRect, callout.bubbleAttachment)
-                                           : targetRect.Center();
+            callout.targetAttachment = targetAttachmentForCallout(callout, targetRect);
             y = callout.bubbleRect.bottom + rowGap;
         }
     };
@@ -1083,12 +1094,7 @@ bool LayoutGuideSheetRenderer::SavePng(const std::filesystem::path& imagePath,
                                                     cardPlacements[planned.cardIndex].sourceRect,
                                                     cardPlacements[planned.cardIndex].destRect)
                                               : OffsetRenderRect(planned.target, dx, dy);
-            const std::optional<RenderPoint> gaugeColorAttachment =
-                GaugeRingColorAttachmentPoint(targetRect, callout.hoverColorParameter, gaugeRingThickness);
-            callout.targetAttachment = gaugeColorAttachment.has_value() ? *gaugeColorAttachment
-                                       : callout.targetAttachmentOnAnchorCircle
-                                           ? ClosestEllipseBoundaryPoint(targetRect, callout.bubbleAttachment)
-                                           : targetRect.Center();
+            callout.targetAttachment = targetAttachmentForCallout(callout, targetRect);
         }
     };
 

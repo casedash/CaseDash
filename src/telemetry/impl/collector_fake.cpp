@@ -20,6 +20,8 @@ struct ResolvedNetworkCandidate {
 };
 
 constexpr size_t kSyntheticHistorySamples = 60;
+constexpr double kSyntheticCpuMemoryTotalGb = 63.943493;
+constexpr double kSyntheticCpuMemoryPeakRatio = 0.75;
 
 double SyntheticWave(size_t sampleIndex,
     uint64_t tick,
@@ -180,7 +182,11 @@ TelemetryDump BuildSyntheticTelemetryDump(uint64_t tick) {
 
     const std::vector<double> cpuLoad = BuildSyntheticHistory(tick, 43.0, 18.0, 5.0, 7.0, 8.5);
     const std::vector<double> cpuClock = BuildSyntheticHistory(tick, 4.42, 0.18, 7.0, 0.08, 13.0);
-    const std::vector<double> cpuRam = BuildSyntheticHistory(tick, 27.6, 0.35, 9.0, 0.18, 17.0);
+    std::vector<double> cpuRam = BuildSyntheticHistory(tick, 27.6, 0.35, 9.0, 0.18, 17.0);
+    if (!cpuRam.empty()) {
+        // Keep the fake RAM peak marker clearly visible in generated guide-sheet screenshots.
+        cpuRam[cpuRam.size() / 2] = kSyntheticCpuMemoryTotalGb * kSyntheticCpuMemoryPeakRatio;
+    }
     const std::vector<double> gpuLoad = BuildSyntheticHistory(tick, 72.0, 14.0, 5.6, 8.0, 10.5);
     const std::vector<double> gpuTemp = BuildSyntheticHistory(tick, 62.0, 4.5, 9.0, 1.8, 14.0);
     const std::vector<double> gpuClock = BuildSyntheticHistory(tick, 2085.0, 155.0, 6.3, 65.0, 11.0);
@@ -202,7 +208,7 @@ TelemetryDump BuildSyntheticTelemetryDump(uint64_t tick) {
     snapshot.cpu.name = "AMD Ryzen 9 5900X HyperDrive";
     snapshot.cpu.loadPercent = LastHistorySample(cpuLoad);
     snapshot.cpu.clock = ScalarMetric{LastHistorySample(cpuClock), ScalarMetricUnit::Gigahertz};
-    snapshot.cpu.memory = MemoryMetric{LastHistorySample(cpuRam), 63.943493};
+    snapshot.cpu.memory = MemoryMetric{LastHistorySample(cpuRam), kSyntheticCpuMemoryTotalGb};
 
     snapshot.gpu.name = "AMD Radeon RX 8800 XT FluxDrive";
     snapshot.gpu.loadPercent = LastHistorySample(gpuLoad);
