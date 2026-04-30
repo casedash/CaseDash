@@ -730,6 +730,18 @@ bool LayoutGuideSheetRenderer::SavePng(const std::filesystem::path& imagePath,
 
     const int cardGap = ScaleNonNegative(dashboardRenderer_, sheetStyle.blockGap);
 
+    for (Callout& callout : callouts) {
+        if (callout.sourceCardId == kLayoutGuideSheetOverviewSourceId || !callout.hoverAnchorKey.has_value()) {
+            continue;
+        }
+        const std::optional<LayoutEditAnchorRegion> anchorRegion =
+            dashboardRenderer_.FindEditableAnchorRegion(*callout.hoverAnchorKey);
+        if (anchorRegion.has_value()) {
+            callout.targetRect = anchorRegion->anchorRect;
+            callout.hoverAnchorRect = anchorRegion->anchorRect;
+        }
+    }
+
     struct PlannedCallout {
         size_t calloutIndex = 0;
         size_t cardIndex = 0;
