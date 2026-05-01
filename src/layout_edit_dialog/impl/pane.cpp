@@ -465,6 +465,12 @@ DialogDescendantRedrawScope::~DialogDescendantRedrawScope() {
         EndWindowRedrawSuspension(*it, nullptr, 0);
     }
     if (root_ != nullptr && redrawFlags_ != 0) {
+        RedrawWindow(root_, nullptr, nullptr, RDW_INVALIDATE | RDW_ERASE | RDW_FRAME);
+        for (HWND window : windows_) {
+            if (window != root_ && IsWindow(window) != FALSE && IsWindowVisible(window) != FALSE) {
+                RedrawWindow(window, nullptr, nullptr, RDW_INVALIDATE | RDW_ERASE | RDW_FRAME);
+            }
+        }
         RedrawWindow(root_, nullptr, nullptr, redrawFlags_);
     }
 }

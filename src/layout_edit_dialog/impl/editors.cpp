@@ -1114,6 +1114,7 @@ bool PreviewSelectedTheme(LayoutEditDialogState* state, HWND hwnd) {
             " applied=" + QuoteTraceText(applied ? "true" : "false"));
     if (applied) {
         state->dialog->Refresh();
+        SetFocus(GetDlgItem(hwnd, IDC_LAYOUT_EDIT_THEME_COMBO));
     }
     return applied;
 }

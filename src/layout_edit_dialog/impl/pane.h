@@ -26,7 +26,7 @@ private:
 class DialogDescendantRedrawScope {
 public:
     explicit DialogDescendantRedrawScope(
-        HWND hwnd, UINT redrawFlags = RDW_INVALIDATE | RDW_ALLCHILDREN | RDW_UPDATENOW);
+        HWND hwnd, UINT redrawFlags = RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN | RDW_UPDATENOW);
     ~DialogDescendantRedrawScope();
 
     DialogDescendantRedrawScope(const DialogDescendantRedrawScope&) = delete;
