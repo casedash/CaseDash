@@ -52,6 +52,14 @@ template <typename Meta> std::optional<unsigned int> FindColorFieldValue(const A
     }
 }
 
+template <typename Meta> std::optional<const ColorConfig*> FindColorConfigFieldValue(const AppConfig& config) {
+    if constexpr (std::is_same_v<typename Meta::value_type, ColorConfig>) {
+        return &Meta::RawGet(config);
+    } else {
+        return std::nullopt;
+    }
+}
+
 template <typename Meta> constexpr auto NumericApplyFieldEditFn() {
     if constexpr (std::is_same_v<typename Meta::value_type, int> || std::is_same_v<typename Meta::value_type, double> ||
                   std::is_same_v<typename Meta::value_type, UiFontConfig>) {
@@ -110,6 +118,7 @@ template <typename Meta> const LayoutEditConfigFieldMetadata& GetFieldMetadata()
         &ApplyColorFieldEdit<Meta>,
         &ApplyFontFieldEdit<Meta>,
         &FindFontFieldValue<Meta>,
+        &FindColorConfigFieldValue<Meta>,
     };
     return metadata;
 }

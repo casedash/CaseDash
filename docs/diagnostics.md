@@ -19,6 +19,7 @@ See also: [docs/specifications.md](specifications.md) for user-visible runtime b
 - `/reload` forces a config reload through the normal live-dashboard reload path before exporting outputs.
 - `/fake[:path]` uses the built-in synthetic telemetry source or reloads the selected fake dump file once per second.
 - `/layout:<name>` overrides the active named layout for the current process.
+- `/theme:<name>` overrides the active named theme for the current process.
 - `/default-config` suppresses the executable-side `config.ini` overlay for the current process.
 - `/scale:<value>` overrides the runtime render scale for the current process.
 
@@ -56,12 +57,13 @@ See also: [docs/specifications.md](specifications.md) for user-visible runtime b
 - Without `/exit`, the application starts the normal dashboard UI and keeps requested diagnostics outputs refreshed while the process runs.
 - In UI-attached mode, trace logging continues for the process lifetime and dump or screenshot outputs refresh once per second from the latest snapshot.
 - With `/exit`, the application loads config, performs the first update, optionally exports the requested outputs once, and exits without entering the normal GUI lifetime.
-- `/default-config`, `/layout:<name>`, and `/scale:<value>` stay active for the full process lifetime, including `/reload` runs inside that process.
+- `/default-config`, `/layout:<name>`, `/theme:<name>`, and `/scale:<value>` stay active for the full process lifetime, including `/reload` runs inside that process.
 - `/reload /exit` performs the normal first startup and update path, reloads through the live-dashboard reload logic, then exports from the reloaded state.
 - `/fake:<path>` reloads the selected fake file once per second while the process runs so manual edits affect the next refresh.
 - Screenshot exports use the same Direct2D and DirectWrite scene as the live dashboard draw path, so exported images match live styling, scale, and blank-mode behavior.
 - Layout guide sheet exports select the smallest practical card subset that covers the visible widget types in the selected layout, render those cards as separate specimens with forced layout-edit affordances, and use the same active-region geometry and shared layout-edit tooltip text as live editing; callouts document active areas inside rendered representative cards, render each documented target in its hover-equivalent state, group equivalent metric-definition rows into one representative hovered row, omit callouts for non-rendered cards and outside-card layout guides, use local left and right side stacks with one promoted top and one promoted bottom callout per annotated block when available, grow the canvas to fit tooltip-style callouts around the card column, and refresh once per second in UI-attached diagnostics mode.
 - When `/trace` and `/screenshot` are both enabled, each screenshot export writes `diagnostics:active_region` trace lines from the `LayoutEditActiveRegions` snapshot for mouse-reactive dashboard regions that are present in the exported frame, including card and widget hover regions, layout guides, container-child reorder targets, gap handles, widget guides, text anchors, and color targets. Each line includes the client-coordinate box, visual type, config or layout path, and a short detail string; a `diagnostics:active_regions` summary records the exported count.
+- Headless trace output writes one `diagnostics:resolved_color` line per resolved `[colors]` and `[layout_guide_sheet]` color after startup config resolution and after a successful `/reload`. Each line includes the config section, color name, resolved `#RRGGBBAA` value, and source expression when the color came from a config expression.
 - When `/trace` and `/layout-guide-sheet` are both enabled, each guide-sheet export writes a `diagnostics:layout_guide_sheet` start marker, one `diagnostics:layout_guide_sheet detail` line per collected render detail such as canvas dimensions, leader scores, selected cards, placed callout count, and remaining leader intersections, one detail line per remaining intersection with its card, kind, sides, and callout keys, one `diagnostics:layout_guide_sheet stats` line with selected-card and callout counts plus active-region, planning, measurement, placement, and draw timings, and then an end marker.
 - When `/hover:<x>,<y>` is active during a traced screenshot export, the trace writes one `diagnostics:hover` line with the hover point, resolved target kind, and tooltip text that the live layout-edit UI would show. If no hover target resolves, the line reports `target="none"`.
 - Live layout-edit tooltips use a separate Win32 tooltip window and therefore do not appear in diagnostics screenshots.
@@ -74,7 +76,7 @@ See also: [docs/specifications.md](specifications.md) for user-visible runtime b
 - Required fake-file load failures follow that same rule so `/fake:<path> /exit` returns promptly under trace.
 - Telemetry collectors report initialization failure detail to their caller; diagnostics and dashboard callers own trace or dialog reporting.
 - Layout-edit drag profiling writes one start marker and one end marker per drag with summarized timing instead of high-volume per-frame renderer trace spam.
-- The modeless layout-edit dialog writes focused trace markers for tree rebuild, tree selection, preview, and color-picker flows when trace is enabled.
+- The modeless layout-edit dialog writes focused trace markers for tree rebuild, tree viewport restoration, tree selection, preview, and color-picker flows when trace is enabled.
 
 ## Dump Contract
 
@@ -109,6 +111,7 @@ Recommended checks:
 - Headless `/trace /blank /screenshot /exit`
 - One headless run with explicit output filenames for trace, dump, and screenshot
 - One headless `/trace /default-config /layout:<name> /screenshot /exit`
+- One headless `/trace /default-config /theme:<name> /screenshot /exit`
 - One headless `/trace /default-config /edit-layout /screenshot /exit`
 - One headless `/trace /default-config /layout-guide-sheet /exit`
 - One headless `/trace /default-config /edit-layout /hover:<x>,<y> /screenshot /exit`

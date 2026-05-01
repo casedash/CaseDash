@@ -18,7 +18,7 @@ const MetricDefinitionConfig kRuntimePlaceholderMetricDefinition{
 }  // namespace
 
 ColorConfig ColorConfig::FromRgba(unsigned int value) {
-    return ColorConfig{static_cast<std::uint32_t>(value)};
+    return ColorConfig{static_cast<std::uint32_t>(value), FormatHexColorText(value)};
 }
 
 unsigned int ColorConfig::ToRgb() const {
@@ -91,12 +91,12 @@ AppConfig BuildEffectiveRuntimeConfig(
 }
 
 bool LayoutConfig::operator==(const LayoutConfig& other) const {
-    return colors == other.colors && layoutGuideSheet == other.layoutGuideSheet && dashboard == other.dashboard &&
-           cardStyle == other.cardStyle && metricList == other.metricList && driveUsageList == other.driveUsageList &&
-           throughput == other.throughput && gauge == other.gauge && text == other.text &&
-           networkFooter == other.networkFooter && layoutEditor == other.layoutEditor && fonts == other.fonts &&
-           board == other.board && metrics == other.metrics && layouts == other.layouts && cards == other.cards &&
-           structure == other.structure && cardsLayout == other.cardsLayout;
+    return colors == other.colors && layoutGuideSheet == other.layoutGuideSheet && themes == other.themes &&
+           dashboard == other.dashboard && cardStyle == other.cardStyle && metricList == other.metricList &&
+           driveUsageList == other.driveUsageList && throughput == other.throughput && gauge == other.gauge &&
+           text == other.text && networkFooter == other.networkFooter && layoutEditor == other.layoutEditor &&
+           fonts == other.fonts && board == other.board && metrics == other.metrics && layouts == other.layouts &&
+           cards == other.cards && structure == other.structure && cardsLayout == other.cardsLayout;
 }
 
 bool AppConfig::operator==(const AppConfig& other) const {

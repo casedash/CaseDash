@@ -34,6 +34,7 @@ struct DiagnosticsOptions {
     DiagnosticsLayoutSimilarityMode layoutSimilarityMode = DiagnosticsLayoutSimilarityMode::None;
     double scale = 1.0;
     std::string layoutName;
+    std::string themeName;
     std::string editLayoutWidgetName;
     FilePath tracePath;
     FilePath dumpPath;

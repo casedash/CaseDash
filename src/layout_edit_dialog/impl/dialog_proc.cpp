@@ -185,6 +185,10 @@ std::optional<INT_PTR> HandleLayoutEditDialogProcMessage(HWND hwnd, UINT message
         }
         case WM_DRAWITEM: {
             const auto* draw = reinterpret_cast<const DRAWITEMSTRUCT*>(lParam);
+            if (draw != nullptr && draw->CtlID == IDC_LAYOUT_EDIT_THEME_PREVIEW) {
+                DrawThemePreview(state, *draw);
+                return TRUE;
+            }
             if (draw != nullptr && IsMetricListOrderButtonId(static_cast<int>(draw->CtlID))) {
                 return DrawMetricListOrderButton(draw);
             }
@@ -224,9 +228,46 @@ std::optional<INT_PTR> HandleLayoutEditDialogProcMessage(HWND hwnd, UINT message
                 RefreshLayoutEditValidationState(state, hwnd);
                 return TRUE;
             }
+            if (LOWORD(wParam) == IDC_LAYOUT_EDIT_COLOR_MODE_COMBO && HIWORD(wParam) == CBN_SELCHANGE) {
+                if (state != nullptr && !state->updatingControls) {
+                    RefreshSelectedColorDerivedControls(state, hwnd);
+                    LayoutLayoutEditRightPane(state, hwnd);
+                    PreviewSelectedColor(state, hwnd);
+                    RefreshLayoutEditValidationState(state, hwnd);
+                    RefreshLayoutEditRightPane(hwnd);
+                }
+                return TRUE;
+            }
+            if ((LOWORD(wParam) == IDC_LAYOUT_EDIT_COLOR_BASE_COMBO ||
+                    LOWORD(wParam) == IDC_LAYOUT_EDIT_COLOR_MIX_TARGET_COMBO) &&
+                HIWORD(wParam) == CBN_SELCHANGE) {
+                PreviewSelectedColor(state, hwnd);
+                RefreshLayoutEditValidationState(state, hwnd);
+                return TRUE;
+            }
+            if ((LOWORD(wParam) == IDC_LAYOUT_EDIT_COLOR_ROTATE_CHECK ||
+                    LOWORD(wParam) == IDC_LAYOUT_EDIT_COLOR_MIX_CHECK ||
+                    LOWORD(wParam) == IDC_LAYOUT_EDIT_COLOR_ALPHA_CHECK) &&
+                HIWORD(wParam) == BN_CLICKED) {
+                RefreshSelectedColorDerivedControls(state, hwnd);
+                PreviewSelectedColor(state, hwnd);
+                RefreshLayoutEditValidationState(state, hwnd);
+                return TRUE;
+            }
+            if ((LOWORD(wParam) == IDC_LAYOUT_EDIT_COLOR_ROTATE_EDIT ||
+                    LOWORD(wParam) == IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_EDIT ||
+                    LOWORD(wParam) == IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_EDIT) &&
+                HIWORD(wParam) == EN_CHANGE) {
+                if (state != nullptr && !state->updatingControls) {
+                    SyncDerivedColorSliderFromEdit(hwnd, LOWORD(wParam));
+                }
+                PreviewSelectedColor(state, hwnd);
+                RefreshLayoutEditValidationState(state, hwnd);
+                return TRUE;
+            }
             if (LOWORD(wParam) == IDC_LAYOUT_EDIT_COLOR_HEX_EDIT && HIWORD(wParam) == EN_CHANGE) {
                 if (state != nullptr && !state->updatingControls) {
-                    wchar_t buffer[64] = {};
+                    wchar_t buffer[256] = {};
                     GetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_HEX_EDIT, buffer, ARRAYSIZE(buffer));
                     if (const auto color = TryParseDialogHexColor(buffer); color.has_value()) {
                         state->updatingControls = true;
@@ -290,6 +331,10 @@ std::optional<INT_PTR> HandleLayoutEditDialogProcMessage(HWND hwnd, UINT message
                 RefreshLayoutEditValidationState(state, hwnd);
                 return TRUE;
             }
+            if (LOWORD(wParam) == IDC_LAYOUT_EDIT_THEME_COMBO && HIWORD(wParam) == CBN_SELCHANGE) {
+                PreviewSelectedTheme(state, hwnd);
+                return TRUE;
+            }
             switch (LOWORD(wParam)) {
                 case IDC_LAYOUT_EDIT_REVERT:
                     RevertSelectedLayoutEditField(state, hwnd);
@@ -298,14 +343,13 @@ std::optional<INT_PTR> HandleLayoutEditDialogProcMessage(HWND hwnd, UINT message
                     if (state == nullptr || state->selectedLeaf == nullptr) {
                         return TRUE;
                     }
-                    if (!std::holds_alternative<LayoutEditParameter>(state->selectedLeaf->focusKey) ||
-                        state->selectedLeaf->valueFormat != configschema::ValueFormat::ColorHex) {
+                    const bool colorSelection =
+                        std::holds_alternative<LayoutEditParameter>(state->selectedLeaf->focusKey) ||
+                        std::holds_alternative<ThemeColorEditKey>(state->selectedLeaf->focusKey);
+                    if (!colorSelection || state->selectedLeaf->valueFormat != configschema::ValueFormat::ColorHex) {
                         return TRUE;
                     }
-                    const auto parameter = std::get<LayoutEditParameter>(state->selectedLeaf->focusKey);
-                    const unsigned int currentColor =
-                        FindLayoutEditParameterColorValue(state->dialog->Host().CurrentConfig(), parameter)
-                            .value_or(0x000000FFu);
+                    const unsigned int currentColor = ReadColorDialogValue(hwnd).value_or(0x000000FFu);
                     CHOOSECOLORW chooseColor{};
                     chooseColor.lStructSize = sizeof(chooseColor);
                     chooseColor.hwndOwner = hwnd;
@@ -345,6 +389,16 @@ std::optional<INT_PTR> HandleLayoutEditDialogProcMessage(HWND hwnd, UINT message
                         if (const auto color = ReadColorDialogValue(hwnd); color.has_value()) {
                             SetColorDialogHex(hwnd, *color);
                         }
+                        state->updatingControls = false;
+                        PreviewSelectedColor(state, hwnd);
+                        RefreshLayoutEditValidationState(state, hwnd);
+                    }
+                    return TRUE;
+                }
+                if (IsDerivedColorSlider(sliderId)) {
+                    if (!state->updatingControls) {
+                        state->updatingControls = true;
+                        SetDerivedColorEditFromSlider(hwnd, sliderId);
                         state->updatingControls = false;
                         PreviewSelectedColor(state, hwnd);
                         RefreshLayoutEditValidationState(state, hwnd);

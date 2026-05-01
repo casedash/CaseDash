@@ -54,6 +54,10 @@ std::wstring BuildTooltipText(
     return text;
 }
 
+std::string TooltipColorExpression(const ColorConfig& color) {
+    return color.expression.empty() ? FormatLayoutEditTooltipValue(color.ToRgba()) : color.expression;
+}
+
 std::string LayoutGuideTooltipSectionName(const AppConfig& config, const LayoutEditGuide& guide) {
     if (!guide.editCardId.empty()) {
         return "card." + guide.editCardId;
@@ -216,7 +220,7 @@ std::optional<std::wstring> BuildLayoutEditTooltipTextForPayload(
     std::optional<LayoutContainerEditKey> containerKey;
     double value = 0.0;
     std::optional<UiFontConfig> fontValue;
-    std::optional<unsigned int> colorValue;
+    std::optional<std::string> colorExpressionValue;
     std::optional<std::string> stringValue;
 
     if (const auto* guide = std::get_if<LayoutEditGuide>(&payload)) {
@@ -256,9 +260,9 @@ std::optional<std::wstring> BuildLayoutEditTooltipTextForPayload(
                     fontValue = **currentFont;
                 }
             }
-        } else if (const auto currentColor = FindLayoutEditParameterColorValue(config, *parameter);
-            currentColor.has_value()) {
-            colorValue = *currentColor;
+        } else if (const auto currentColor = FindLayoutEditParameterColorConfigValue(config, *parameter);
+            currentColor.has_value() && *currentColor != nullptr) {
+            colorExpressionValue = TooltipColorExpression(**currentColor);
         }
     } else if (metricKey.has_value()) {
         const MetricDefinitionConfig* definition = FindMetricDefinition(config.layout.metrics, metricKey->metricId);
@@ -322,8 +326,8 @@ std::optional<std::wstring> BuildLayoutEditTooltipTextForPayload(
         if (descriptor->valueFormat == configschema::ValueFormat::FontSpec && fontValue.has_value()) {
             return BuildTooltipText(*descriptor, *fontValue, description);
         }
-        if (descriptor->valueFormat == configschema::ValueFormat::ColorHex && colorValue.has_value()) {
-            return BuildTooltipText(*descriptor, *colorValue, description);
+        if (descriptor->valueFormat == configschema::ValueFormat::ColorHex && colorExpressionValue.has_value()) {
+            return BuildTooltipText(*descriptor, *colorExpressionValue, description);
         }
         return BuildTooltipText(*descriptor, value, description);
     }

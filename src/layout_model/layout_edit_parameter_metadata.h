@@ -25,6 +25,7 @@ struct LayoutEditConfigFieldMetadata {
     bool (*applyColorValue)(AppConfig& config, unsigned int value) = nullptr;
     bool (*applyFontValue)(AppConfig& config, const UiFontConfig& value) = nullptr;
     std::optional<const UiFontConfig*> (*fontValue)(const AppConfig& config) = nullptr;
+    std::optional<const ColorConfig*> (*colorConfigValue)(const AppConfig& config) = nullptr;
 };
 
 struct LayoutEditParameterInfo {

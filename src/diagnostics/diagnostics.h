@@ -73,7 +73,10 @@ std::optional<std::wstring> GetColonSwitchValue(const std::wstring& target);
 std::optional<double> TryParseScaleValue(const std::wstring& text);
 std::optional<double> GetScaleSwitchValue();
 std::optional<std::string> GetLayoutSwitchValue();
+std::optional<std::string> GetThemeSwitchValue();
 bool ApplyDiagnosticsLayoutOverride(
+    AppConfig& config, const DiagnosticsOptions& options, DiagnosticsSession* diagnostics = nullptr);
+bool ApplyDiagnosticsThemeOverride(
     AppConfig& config, const DiagnosticsOptions& options, DiagnosticsSession* diagnostics = nullptr);
 void ApplyDiagnosticsScaleOverride(AppConfig& config, const DiagnosticsOptions& options);
 FilePath ResolveDiagnosticsOutputPath(

@@ -85,6 +85,7 @@ add_executable(SystemTelemetry WIN32
     src/dashboard/dashboard_app.cpp
     src/dashboard/dashboard_shell_ui.cpp
     src/layout_edit_dialog/layout_edit_dialog.cpp
+    src/layout_edit_dialog/theme_preview.cpp
     src/layout_edit_dialog/impl/dialog_proc.cpp
     src/layout_edit_dialog/impl/editors.cpp
     src/layout_edit_dialog/impl/editor_handler_registry.cpp
@@ -111,9 +112,12 @@ add_executable(SystemTelemetry WIN32
     src/layout_edit/layout_edit_tooltip_text.cpp
     src/layout_model/layout_edit_service.cpp
     src/config/config.cpp
+    src/config/color_expression.cpp
+    src/config/color_resolver.cpp
     src/config/config_file_io.cpp
     src/config/metric_catalog.cpp
     src/config/config_parser.cpp
+    src/config/config_runtime_fields.cpp
     src/config/config_writer.cpp
     src/config/config_resolution.cpp
     src/util/localization_catalog.cpp
@@ -199,6 +203,7 @@ set(systemtelemetry_release_speed_sources
     src/layout_edit/layout_edit_tooltip_text.cpp
     src/layout_edit/layout_edit_trace_session.cpp
     src/layout_edit/layout_edit_tree.cpp
+    src/layout_edit_dialog/theme_preview.cpp
     src/layout_guide_sheet/layout_guide_sheet.cpp
     src/layout_guide_sheet/impl/layout_guide_sheet_placement.cpp
     src/layout_guide_sheet/impl/layout_guide_sheet_planner.cpp
@@ -301,6 +306,7 @@ target_compile_definitions(SystemTelemetry PRIVATE
     _UNICODE
     NOMINMAX
     WIN32_LEAN_AND_MEAN
+    _USE_STD_VECTOR_ALGORITHMS=0
 )
 
 target_compile_options(SystemTelemetry PRIVATE
@@ -395,9 +401,12 @@ add_executable(SystemTelemetryTests
     tests/system_info_support_tests.cpp
     tests/telemetry_retained_history_tests.cpp
     src/config/config.cpp
+    src/config/color_expression.cpp
+    src/config/color_resolver.cpp
     src/config/config_file_io.cpp
     src/config/metric_catalog.cpp
     src/config/config_parser.cpp
+    src/config/config_runtime_fields.cpp
     src/config/config_writer.cpp
     src/config/config_resolution.cpp
     src/layout_model/layout_edit_active_region.cpp
@@ -468,6 +477,7 @@ target_compile_definitions(SystemTelemetryTests PRIVATE
     _UNICODE
     NOMINMAX
     WIN32_LEAN_AND_MEAN
+    _USE_STD_VECTOR_ALGORITHMS=0
     SYSTEMTELEMETRY_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
 )
 target_compile_options(SystemTelemetryTests PRIVATE
@@ -514,9 +524,12 @@ add_executable(SystemTelemetryBenchmarks
     src/util/strings.cpp
     src/util/scale.cpp
     src/config/config.cpp
+    src/config/color_expression.cpp
+    src/config/color_resolver.cpp
     src/config/config_file_io.cpp
     src/config/metric_catalog.cpp
     src/config/config_parser.cpp
+    src/config/config_runtime_fields.cpp
     src/config/config_resolution.cpp
     src/telemetry/impl/system_info_support.cpp
     src/telemetry/telemetry.cpp
@@ -544,6 +557,7 @@ add_executable(SystemTelemetryBenchmarks
     src/layout_edit/layout_edit_tree.cpp
     src/layout_edit/layout_edit_parameter_edit.cpp
     src/layout_edit/layout_edit_target_descriptor.cpp
+    src/layout_edit_dialog/theme_preview.cpp
     src/layout_edit/layout_edit_service.cpp
     src/layout_edit/layout_edit_controller.cpp
     src/layout_edit/layout_edit_hit_test.cpp
@@ -605,6 +619,7 @@ target_compile_definitions(SystemTelemetryBenchmarks PRIVATE
     _UNICODE
     NOMINMAX
     WIN32_LEAN_AND_MEAN
+    _USE_STD_VECTOR_ALGORITHMS=0
     SYSTEMTELEMETRY_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
 )
 target_compile_options(SystemTelemetryBenchmarks PRIVATE

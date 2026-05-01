@@ -185,6 +185,20 @@ void ConfigureColorSliders(HWND hwnd) {
         SendDlgItemMessageW(hwnd, channel.sliderId, TBM_SETPAGESIZE, 0, 16);
         SendDlgItemMessageW(hwnd, channel.sliderId, TBM_SETLINESIZE, 0, 1);
     }
+    SendDlgItemMessageW(hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_SLIDER, TBM_SETRANGEMIN, TRUE, -180);
+    SendDlgItemMessageW(hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_SLIDER, TBM_SETRANGEMAX, TRUE, 180);
+    SendDlgItemMessageW(hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_SLIDER, TBM_SETPAGESIZE, 0, 15);
+    SendDlgItemMessageW(hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_SLIDER, TBM_SETLINESIZE, 0, 1);
+
+    SendDlgItemMessageW(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_SLIDER, TBM_SETRANGEMIN, TRUE, 0);
+    SendDlgItemMessageW(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_SLIDER, TBM_SETRANGEMAX, TRUE, 100);
+    SendDlgItemMessageW(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_SLIDER, TBM_SETPAGESIZE, 0, 10);
+    SendDlgItemMessageW(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_SLIDER, TBM_SETLINESIZE, 0, 1);
+
+    SendDlgItemMessageW(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_SLIDER, TBM_SETRANGEMIN, TRUE, 0);
+    SendDlgItemMessageW(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_SLIDER, TBM_SETRANGEMAX, TRUE, 255);
+    SendDlgItemMessageW(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_SLIDER, TBM_SETPAGESIZE, 0, 16);
+    SendDlgItemMessageW(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_SLIDER, TBM_SETLINESIZE, 0, 1);
 }
 
 void SetColorDialogChannel(HWND hwnd, const ColorDialogControls& channel, unsigned int value) {
@@ -455,6 +469,9 @@ std::wstring BuildLayoutEditHintText(const LayoutEditTreeNode* node) {
     }
     if (std::holds_alternative<LayoutCardTitleEditKey>(node->leaf->focusKey)) {
         return L"Edit the card title text. Changes preview live.";
+    }
+    if (std::holds_alternative<ThemeColorEditKey>(node->leaf->focusKey)) {
+        return L"Edit the theme token as #RRGGBBAA or use the RGBA controls and picker.";
     }
     if (const auto* nodeFieldLeaf = std::get_if<LayoutNodeFieldEditKey>(&node->leaf->focusKey);
         nodeFieldLeaf != nullptr) {
