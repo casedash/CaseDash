@@ -102,7 +102,7 @@ TEST(ConfigParser, ResolvesThemeTokensAndDerivedColors) {
                                                        "[colors]\n"
                                                        "accent_color = accent\n"
                                                        "peak_ghost_color = accent(alpha: 0x60)\n"
-                                                       "active_edit_color = accent(rotate_hue: -140)\n"
+                                                       "active_edit_color = guide(rotate_hue: 50)\n"
                                                        "panel_border_color = background(mix: foreground 0.28)\n"
                                                        "muted_text_color = accent(mix: guide 0.37)\n");
 
@@ -110,7 +110,7 @@ TEST(ConfigParser, ResolvesThemeTokensAndDerivedColors) {
 
     EXPECT_EQ(config.layout.colors.accentColor.ToRgba(), 0x00BFFFFFu);
     EXPECT_EQ(config.layout.colors.peakGhostColor.ToRgba(), 0x00BFFF60u);
-    EXPECT_EQ(config.layout.colors.activeEditColor.ToRgba(), 0xD3AB07FFu);
+    EXPECT_EQ(config.layout.colors.activeEditColor.ToRgba(), 0xC79900FFu);
     EXPECT_EQ(config.layout.colors.panelBorderColor.ToRgba(), 0x292929FFu);
     EXPECT_EQ(config.layout.colors.mutedTextColor.ToRgba(), 0x9FABB9FFu);
 
@@ -145,7 +145,7 @@ TEST(ConfigParser, ResolvesLayoutGuideSheetColorsFromThemeAndColorsSection) {
                         "guide = #FF6A00FF\n"
                         "\n"
                         "[colors]\n"
-                        "active_edit_color = accent(rotate_hue: -140)\n"
+                        "active_edit_color = guide(rotate_hue: 50)\n"
                         "muted_text_color = accent(mix: guide 0.37)\n"
                         "\n"
                         "[layout_guide_sheet]\n"
