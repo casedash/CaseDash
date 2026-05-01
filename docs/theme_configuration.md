@@ -87,7 +87,7 @@ The supported options are:
 
 ```text
 rotate_hue: <number>
-mix: <color> <amount>
+mix: <amount> <color>
 alpha: <alpha>
 ```
 
@@ -117,13 +117,13 @@ The language intentionally does not support absolute hue assignment. Theme-relat
 Syntax:
 
 ```text
-mix: <color> <amount>
+mix: <amount> <color>
 ```
 
 Rules:
 
-- `<color>` is an identifier that resolves to a color.
 - `<amount>` must be from `0.0` to `1.0`.
+- `<color>` is an identifier that resolves to a color.
 - `0.0` returns the base color.
 - `1.0` returns the target color.
 - Mixing is evaluated in OKLab.

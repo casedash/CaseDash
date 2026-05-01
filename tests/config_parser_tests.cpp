@@ -103,9 +103,9 @@ TEST(ConfigParser, ResolvesThemeTokensAndDerivedColors) {
                         "[colors]\n"
                         "accent_color = accent\n"
                         "peak_ghost_color = accent(alpha: 0x60)\n"
-                        "active_edit_color = guide(rotate_hue: 46, mix: foreground 0.22)\n"
-                        "panel_border_color = background(mix: accent 0.34)\n"
-                        "muted_text_color = foreground(mix: accent 0.55)\n");
+                        "active_edit_color = guide(rotate_hue: 46, mix: 0.22 foreground)\n"
+                        "panel_border_color = background(mix: 0.34 accent)\n"
+                        "muted_text_color = foreground(mix: 0.55 accent)\n");
 
     const AppConfig config = LoadConfig(path, true, TestConfigParseContext());
 
@@ -120,7 +120,7 @@ TEST(ConfigParser, ResolvesThemeTokensAndDerivedColors) {
 
 TEST(ColorExpression, ParsesAndFormatsDerivedExpressionsInCanonicalOptionOrder) {
     const std::optional<ColorExpression> expression =
-        ParseColorExpression("guide(alpha: 230, mix: active_edit_color 0.35, rotate_hue: 28)");
+        ParseColorExpression("guide(alpha: 230, mix: 0.35 active_edit_color, rotate_hue: 28)");
 
     ASSERT_TRUE(expression.has_value());
     EXPECT_EQ(expression->base, "guide");
@@ -131,7 +131,7 @@ TEST(ColorExpression, ParsesAndFormatsDerivedExpressionsInCanonicalOptionOrder) 
     EXPECT_DOUBLE_EQ(expression->mix->amount, 0.35);
     ASSERT_TRUE(expression->alpha.has_value());
     EXPECT_EQ(*expression->alpha, 230u);
-    EXPECT_EQ(FormatColorExpression(*expression), "guide(rotate_hue: 28, mix: active_edit_color 0.35, alpha: 0xE6)");
+    EXPECT_EQ(FormatColorExpression(*expression), "guide(rotate_hue: 28, mix: 0.35 active_edit_color, alpha: 0xE6)");
 }
 
 TEST(ConfigParser, ResolvesLayoutGuideSheetColorsFromThemeAndColorsSection) {
@@ -146,11 +146,11 @@ TEST(ConfigParser, ResolvesLayoutGuideSheetColorsFromThemeAndColorsSection) {
                         "guide = #FF6A00FF\n"
                         "\n"
                         "[colors]\n"
-                        "active_edit_color = guide(rotate_hue: 46, mix: foreground 0.22)\n"
-                        "muted_text_color = foreground(mix: accent 0.55)\n"
+                        "active_edit_color = guide(rotate_hue: 46, mix: 0.22 foreground)\n"
+                        "muted_text_color = foreground(mix: 0.55 accent)\n"
                         "\n"
                         "[layout_guide_sheet]\n"
-                        "callout_leader_color = foreground(mix: guide 0.59, alpha: 0xE6)\n"
+                        "callout_leader_color = foreground(mix: 0.59 guide, alpha: 0xE6)\n"
                         "callout_border_color = guide(rotate_hue: 53)\n"
                         "callout_description_color = muted_text_color\n");
 

@@ -83,11 +83,11 @@ std::optional<ColorExpression> ParseColorExpression(const std::string& text) {
             if (parts.size() != 2) {
                 return std::nullopt;
             }
-            const double amount = ParseDoubleOrDefault(parts[1], std::numeric_limits<double>::quiet_NaN());
+            const double amount = ParseDoubleOrDefault(parts[0], std::numeric_limits<double>::quiet_NaN());
             if (!std::isfinite(amount) || amount < 0.0 || amount > 1.0) {
                 return std::nullopt;
             }
-            parsed.mix = ColorMixExpression{parts[0], amount};
+            parsed.mix = ColorMixExpression{parts[1], amount};
         } else if (name == "alpha") {
             parsed.alpha = ParseColorExpressionAlphaByte(value);
             if (!parsed.alpha.has_value()) {
@@ -106,7 +106,7 @@ std::string FormatColorExpression(const ColorExpression& expression) {
         options.push_back("rotate_hue: " + FormatDouble(*expression.rotateHue));
     }
     if (expression.mix.has_value()) {
-        options.push_back("mix: " + expression.mix->target + " " + FormatDouble(expression.mix->amount));
+        options.push_back("mix: " + FormatDouble(expression.mix->amount) + " " + expression.mix->target);
     }
     if (expression.alpha.has_value()) {
         options.push_back("alpha: " + FormatAlphaByte(*expression.alpha));
