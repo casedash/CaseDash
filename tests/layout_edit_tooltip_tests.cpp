@@ -2,6 +2,7 @@
 
 #include "layout_edit/layout_edit_parameter_edit.h"
 #include "layout_edit/layout_edit_tooltip.h"
+#include "layout_edit/layout_edit_tooltip_text.h"
 #include "layout_model/layout_edit_hit_priority.h"
 #include "layout_model/layout_edit_parameter_metadata.h"
 
@@ -83,6 +84,20 @@ TEST(LayoutEditTooltip, BuildsColorTooltipFirstLine) {
 
     ASSERT_TRUE(descriptor.has_value());
     EXPECT_EQ(BuildLayoutEditTooltipLine(*descriptor, 0x00BFFFFFu), "[colors] accent_color = #00BFFFFF");
+}
+
+TEST(LayoutEditTooltip, BuildsColorTooltipTextFromColorExpression) {
+    AppConfig config;
+    config.layout.colors.panelBorderColor = ColorConfig{0x002738FFu, "background(mix: 0.34 accent)"};
+
+    LayoutEditColorRegion region;
+    region.parameter = LayoutEditParameter::ColorPanelBorder;
+
+    const std::optional<std::wstring> tooltip = BuildLayoutEditTooltipTextForPayload(config, region, nullptr);
+
+    ASSERT_TRUE(tooltip.has_value());
+    EXPECT_EQ(
+        tooltip->substr(0, tooltip->find(L"\r\n")), L"[colors] panel_border_color = background(mix: 0.34 accent)");
 }
 
 TEST(LayoutEditTooltip, BuildsStringTooltipFirstLine) {

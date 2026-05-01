@@ -122,7 +122,7 @@ User-visible labels and documentation refer to the generated image as a `layout 
 - Bubble fill uses `callout_fill_color` exactly as configured.
 - Bubble borders use `callout_border_color`.
 - Bubble text uses the configured `small` font role. The first line uses the role's configured weight or semibold if the role is regular; the second line uses the role's configured weight.
-- The first line uses `callout_parameter_color`; the second line uses `callout_description_color` and is always reserved when the tooltip has description text.
+- The first line uses `callout_parameter_color` and matches the live layout-edit tooltip text, including configured color expressions for color targets; the second line uses `callout_description_color` and is always reserved when the tooltip has description text.
 - The configured `callout_line_gap` separates the parameter line from the description line.
 - Bubbles do not use drop shadows or blurred backplates because the artifact must stay crisp under screenshot comparison.
 - Guide-sheet-only margins, block spacing, callout spacing, bubble padding, border widths, leader stroke and endpoint sizes, and packed-overview helper stroke and handle sizes come from `[layout_guide_sheet]`.

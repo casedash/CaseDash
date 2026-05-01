@@ -8,6 +8,11 @@ std::optional<unsigned int> FindLayoutEditParameterColorValue(const AppConfig& c
     return GetLayoutEditConfigFieldMetadata(parameter).colorValue(config);
 }
 
+std::optional<const ColorConfig*> FindLayoutEditParameterColorConfigValue(
+    const AppConfig& config, LayoutEditParameter parameter) {
+    return GetLayoutEditConfigFieldMetadata(parameter).colorConfigValue(config);
+}
+
 std::optional<const UiFontConfig*> FindLayoutEditTooltipFontValue(
     const AppConfig& config, LayoutEditParameter parameter) {
     return GetLayoutEditConfigFieldMetadata(parameter).fontValue(config);

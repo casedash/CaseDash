@@ -6,6 +6,8 @@
 
 std::optional<double> FindLayoutEditParameterNumericValue(const AppConfig& config, LayoutEditParameter parameter);
 std::optional<unsigned int> FindLayoutEditParameterColorValue(const AppConfig& config, LayoutEditParameter parameter);
+std::optional<const ColorConfig*> FindLayoutEditParameterColorConfigValue(
+    const AppConfig& config, LayoutEditParameter parameter);
 std::optional<const UiFontConfig*> FindLayoutEditTooltipFontValue(
     const AppConfig& config, LayoutEditParameter parameter);
 bool ApplyLayoutEditParameterValue(AppConfig& config, LayoutEditParameter parameter, double value);
