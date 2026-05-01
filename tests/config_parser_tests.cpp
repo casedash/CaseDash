@@ -105,7 +105,7 @@ TEST(ConfigParser, ResolvesThemeTokensAndDerivedColors) {
                         "peak_ghost_color = accent(alpha: 0x60)\n"
                         "active_edit_color = guide(rotate_hue: 46, mix: foreground 0.22)\n"
                         "panel_border_color = background(mix: accent 0.34)\n"
-                        "muted_text_color = accent(mix: guide 0.37)\n");
+                        "muted_text_color = foreground(mix: accent 0.55)\n");
 
     const AppConfig config = LoadConfig(path, true, TestConfigParseContext());
 
@@ -113,7 +113,7 @@ TEST(ConfigParser, ResolvesThemeTokensAndDerivedColors) {
     EXPECT_EQ(config.layout.colors.peakGhostColor.ToRgba(), 0x00BFFF60u);
     EXPECT_EQ(config.layout.colors.activeEditColor.ToRgba(), 0xD9AD5AFFu);
     EXPECT_EQ(config.layout.colors.panelBorderColor.ToRgba(), 0x002738FFu);
-    EXPECT_EQ(config.layout.colors.mutedTextColor.ToRgba(), 0x9FABB9FFu);
+    EXPECT_EQ(config.layout.colors.mutedTextColor.ToRgba(), 0x99DDFFFFu);
 
     std::filesystem::remove(path);
 }
@@ -147,7 +147,7 @@ TEST(ConfigParser, ResolvesLayoutGuideSheetColorsFromThemeAndColorsSection) {
                         "\n"
                         "[colors]\n"
                         "active_edit_color = guide(rotate_hue: 46, mix: foreground 0.22)\n"
-                        "muted_text_color = accent(mix: guide 0.37)\n"
+                        "muted_text_color = foreground(mix: accent 0.55)\n"
                         "\n"
                         "[layout_guide_sheet]\n"
                         "callout_leader_color = foreground(mix: guide 0.59, alpha: 0xE6)\n"
@@ -158,7 +158,7 @@ TEST(ConfigParser, ResolvesLayoutGuideSheetColorsFromThemeAndColorsSection) {
 
     EXPECT_EQ(config.layout.layoutGuideSheet.calloutLeaderColor.ToRgba(), 0xFFAC84E6u);
     EXPECT_EQ(config.layout.layoutGuideSheet.calloutBorderColor.ToRgba(), 0xC19C00FFu);
-    EXPECT_EQ(config.layout.layoutGuideSheet.calloutDescriptionColor.ToRgba(), 0x9FABB9FFu);
+    EXPECT_EQ(config.layout.layoutGuideSheet.calloutDescriptionColor.ToRgba(), 0x99DDFFFFu);
 
     std::filesystem::remove(path);
 }
