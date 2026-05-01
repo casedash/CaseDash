@@ -260,7 +260,7 @@ TEST(LayoutGuideSheetPlanner, PlacementPromotesOuterSideItemsToTopAndBottom) {
         sides.insert(callout.exitSide);
     }
     ASSERT_EQ(result.blocks.size(), 1u);
-    EXPECT_TRUE(result.warningCalloutKeys.empty());
+    EXPECT_TRUE(result.remainingIntersections.empty());
     EXPECT_EQ(sides.size(), 4u);
     EXPECT_TRUE(sides.contains(LayoutGuideSheetExitSide::Left));
     EXPECT_TRUE(sides.contains(LayoutGuideSheetExitSide::Right));

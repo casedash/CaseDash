@@ -153,6 +153,8 @@ struct OptimizedColumns {
 inline constexpr size_t kMaxAdjacentOrderPasses = 20;
 inline constexpr size_t kMaxSideRepairCallouts = 64;
 inline constexpr size_t kMaxExactOrderCallouts = 8;
+inline constexpr int kLeaderCrossingScore = 100;
+inline constexpr int kTargetSafeZoneScore = 1;
 
 RenderPoint TargetAttachmentForCallout(const LayoutGuideSheetPlacementCallout& callout,
     const RenderRect& targetRect,
@@ -188,6 +190,12 @@ void AppendUnique(std::vector<size_t>& indexes, size_t index) {
     }
 }
 
+void AppendUnique(std::vector<size_t>& indexes, const std::vector<size_t>& source) {
+    for (const size_t index : source) {
+        AppendUnique(indexes, index);
+    }
+}
+
 int OrderPenalty(const std::vector<size_t>& indexes, const std::vector<size_t>& preferredOrder) {
     int penalty = 0;
     for (size_t i = 0; i < indexes.size(); ++i) {
@@ -214,6 +222,10 @@ int SideMembershipPenalty(const CardCalloutColumns& candidate, const CardCallout
         }
     }
     return penalty;
+}
+
+bool ContainsIndex(const std::vector<size_t>& indexes, size_t index) {
+    return std::find(indexes.begin(), indexes.end(), index) != indexes.end();
 }
 
 }  // namespace
@@ -416,19 +428,19 @@ LayoutGuideSheetPlacementResult PlaceLayoutGuideSheetCallouts(
             for (size_t j = i + 1; j < leaders.size(); ++j) {
                 if (LeaderSegmentsIntersect(
                         leaders[i].target, leaders[i].bubble, leaders[j].target, leaders[j].bubble)) {
-                    ++intersections;
+                    intersections += kLeaderCrossingScore;
                     if (intersections > stopAfter) {
                         return intersections;
                     }
                 }
                 if (SegmentIntersectsRect(leaders[i].target, leaders[i].bubble, leaders[j].targetSafeRect)) {
-                    ++intersections;
+                    intersections += kTargetSafeZoneScore;
                     if (intersections > stopAfter) {
                         return intersections;
                     }
                 }
                 if (SegmentIntersectsRect(leaders[j].target, leaders[j].bubble, leaders[i].targetSafeRect)) {
-                    ++intersections;
+                    intersections += kTargetSafeZoneScore;
                     if (intersections > stopAfter) {
                         return intersections;
                     }
@@ -518,7 +530,8 @@ LayoutGuideSheetPlacementResult PlaceLayoutGuideSheetCallouts(
     const auto optimizePromotionsAndOrder = [&](const CardCalloutColumns& baseColumns,
                                                 const std::vector<size_t>& preferredLeft,
                                                 const std::vector<size_t>& preferredRight,
-                                                const LayoutGuideSheetCardPlacement& placement) {
+                                                const LayoutGuideSheetCardPlacement& placement,
+                                                bool allowCrossSidePromotions) {
         OptimizedColumns best;
         best.columns = baseColumns;
         best.intersections = (std::numeric_limits<int>::max)();
@@ -531,6 +544,10 @@ LayoutGuideSheetPlacementResult PlaceLayoutGuideSheetCallouts(
         const size_t noPromotion = (std::numeric_limits<size_t>::max)();
         std::vector<size_t> bottomCandidates = baseColumns.left;
         std::vector<size_t> topCandidates = baseColumns.right;
+        if (allowCrossSidePromotions) {
+            AppendUnique(bottomCandidates, baseColumns.right);
+            AppendUnique(topCandidates, baseColumns.left);
+        }
         if (bottomCandidates.empty()) {
             bottomCandidates.push_back(noPromotion);
         }
@@ -542,14 +559,30 @@ LayoutGuideSheetPlacementResult PlaceLayoutGuideSheetCallouts(
         const size_t defaultTop = baseColumns.right.empty() ? noPromotion : baseColumns.right.front();
         for (const size_t bottomCandidate : bottomCandidates) {
             for (const size_t topCandidate : topCandidates) {
+                if (bottomCandidate != noPromotion && bottomCandidate == topCandidate) {
+                    continue;
+                }
                 CardCalloutColumns trial = baseColumns;
+                const bool bottomFromRight =
+                    allowCrossSidePromotions && ContainsIndex(baseColumns.right, bottomCandidate);
+                const bool topFromLeft = allowCrossSidePromotions && ContainsIndex(baseColumns.left, topCandidate);
                 if (bottomCandidate != noPromotion) {
                     ErasePlannedIndex(trial.left, bottomCandidate);
+                    ErasePlannedIndex(trial.right, bottomCandidate);
                     trial.bottom.push_back(bottomCandidate);
                 }
                 if (topCandidate != noPromotion) {
+                    ErasePlannedIndex(trial.left, topCandidate);
                     ErasePlannedIndex(trial.right, topCandidate);
                     trial.top.push_back(topCandidate);
+                }
+                if (bottomFromRight && defaultBottom != noPromotion && defaultBottom != topCandidate) {
+                    ErasePlannedIndex(trial.left, defaultBottom);
+                    AppendUnique(trial.right, defaultBottom);
+                }
+                if (topFromLeft && defaultTop != noPromotion && defaultTop != bottomCandidate) {
+                    ErasePlannedIndex(trial.right, defaultTop);
+                    AppendUnique(trial.left, defaultTop);
                 }
                 sortSideStacksByTargetY(trial);
                 const int intersections = countLeaderIntersections(trial, placement, best.intersections);
@@ -575,13 +608,75 @@ LayoutGuideSheetPlacementResult PlaceLayoutGuideSheetCallouts(
         return best;
     };
 
+    const auto optimizePromotionsFastThenBroad = [&](const CardCalloutColumns& baseColumns,
+                                                     const std::vector<size_t>& preferredLeft,
+                                                     const std::vector<size_t>& preferredRight,
+                                                     const LayoutGuideSheetCardPlacement& placement) {
+        OptimizedColumns best =
+            optimizePromotionsAndOrder(baseColumns, preferredLeft, preferredRight, placement, false);
+        if (best.intersections >= kLeaderCrossingScore) {
+            OptimizedColumns broad =
+                optimizePromotionsAndOrder(baseColumns, preferredLeft, preferredRight, placement, true);
+            if (broad.intersections < best.intersections ||
+                (broad.intersections == best.intersections && broad.tieBreak < best.tieBreak)) {
+                best = std::move(broad);
+            }
+        }
+        return best;
+    };
+
+    const auto optimizePromotedSideSwaps = [&](CardCalloutColumns& columns,
+                                               const std::vector<size_t>& preferredLeft,
+                                               const std::vector<size_t>& preferredRight,
+                                               const LayoutGuideSheetCardPlacement& placement) {
+        for (size_t pass = 0; pass < kMaxAdjacentOrderPasses; ++pass) {
+            const int currentScore = countLeaderIntersections(columns, placement);
+            int bestScore = currentScore;
+            int bestPenalty = OrderPenalty(columns.left, preferredLeft) + OrderPenalty(columns.right, preferredRight);
+            CardCalloutColumns bestColumns = columns;
+            const auto tryPromotedStackSwap = [&](bool top, bool left) {
+                const std::vector<size_t>& promoted = top ? columns.top : columns.bottom;
+                const std::vector<size_t>& stack = left ? columns.left : columns.right;
+                if (promoted.empty() || stack.empty()) {
+                    return;
+                }
+                for (size_t i = 0; i < stack.size(); ++i) {
+                    CardCalloutColumns trial = columns;
+                    std::vector<size_t>& trialPromoted = top ? trial.top : trial.bottom;
+                    std::vector<size_t>& trialStack = left ? trial.left : trial.right;
+                    std::swap(trialPromoted.front(), trialStack[i]);
+                    sortSideStacksByTargetY(trial);
+                    const int score = countLeaderIntersections(trial, placement, bestScore);
+                    const int penalty =
+                        OrderPenalty(trial.left, preferredLeft) + OrderPenalty(trial.right, preferredRight);
+                    if (score < bestScore || (score == bestScore && penalty < bestPenalty)) {
+                        bestScore = score;
+                        bestPenalty = penalty;
+                        bestColumns = std::move(trial);
+                    }
+                }
+            };
+            tryPromotedStackSwap(true, true);
+            tryPromotedStackSwap(true, false);
+            tryPromotedStackSwap(false, true);
+            tryPromotedStackSwap(false, false);
+            if (bestScore >= currentScore) {
+                return;
+            }
+            columns = std::move(bestColumns);
+            if (bestScore == 0) {
+                return;
+            }
+        }
+    };
+
     std::vector<int> plannedIntersectionScores(cardPlacements.size(), 0);
     std::vector<int> sideRepairPasses(cardPlacements.size(), 0);
     for (size_t cardIndex = 0; cardIndex < cardPlacements.size(); ++cardIndex) {
         const CardCalloutColumns preferredSplit = plannedByCard[cardIndex];
         CardCalloutColumns split = preferredSplit;
-        OptimizedColumns best =
-            optimizePromotionsAndOrder(split, preferredSplit.left, preferredSplit.right, cardPlacements[cardIndex]);
+        OptimizedColumns best = optimizePromotionsFastThenBroad(
+            split, preferredSplit.left, preferredSplit.right, cardPlacements[cardIndex]);
         const size_t repairCallouts = split.top.size() + split.left.size() + split.right.size() + split.bottom.size();
         const size_t maxRepairPasses = repairCallouts > kMaxSideRepairCallouts ? 0 : plannedCallouts.size();
         for (size_t pass = 0; best.intersections > 0 && pass < maxRepairPasses; ++pass) {
@@ -591,7 +686,7 @@ LayoutGuideSheetPlacementResult PlaceLayoutGuideSheetCallouts(
             int bestSidePenalty = SideMembershipPenalty(split, preferredSplit);
             const auto considerSplit = [&](const CardCalloutColumns& candidateSplit) {
                 const OptimizedColumns candidate = optimizePromotionsAndOrder(
-                    candidateSplit, preferredSplit.left, preferredSplit.right, cardPlacements[cardIndex]);
+                    candidateSplit, preferredSplit.left, preferredSplit.right, cardPlacements[cardIndex], false);
                 const int sidePenalty = SideMembershipPenalty(candidateSplit, preferredSplit);
                 if (candidate.intersections < bestCandidate.intersections ||
                     (candidate.intersections == bestCandidate.intersections &&
@@ -633,8 +728,17 @@ LayoutGuideSheetPlacementResult PlaceLayoutGuideSheetCallouts(
             best = std::move(bestCandidate);
             ++sideRepairPasses[cardIndex];
         }
+        if (best.intersections > 0) {
+            OptimizedColumns broad = optimizePromotionsAndOrder(
+                split, preferredSplit.left, preferredSplit.right, cardPlacements[cardIndex], true);
+            if (broad.intersections < best.intersections ||
+                (broad.intersections == best.intersections && broad.tieBreak < best.tieBreak)) {
+                best = std::move(broad);
+            }
+        }
         optimizeExactStackOrder(best.columns, best.columns.left, preferredSplit.left, cardPlacements[cardIndex]);
         optimizeExactStackOrder(best.columns, best.columns.right, preferredSplit.right, cardPlacements[cardIndex]);
+        optimizePromotedSideSwaps(best.columns, preferredSplit.left, preferredSplit.right, cardPlacements[cardIndex]);
         best.intersections = countLeaderIntersections(best.columns, cardPlacements[cardIndex]);
         plannedByCard[cardIndex] = std::move(best.columns);
         plannedIntersectionScores[cardIndex] = best.intersections;
@@ -816,32 +920,43 @@ LayoutGuideSheetPlacementResult PlaceLayoutGuideSheetCallouts(
     }
     result.sheetHeight = cardPlacements.empty() ? style.sheetMargin * 2 : contentBottom + style.sheetMargin;
 
-    const auto leadersConflict = [&](const LayoutGuideSheetPlacementCallout& lhs,
-                                     const LayoutGuideSheetPlacementCallout& rhs) {
-        return LeaderSegmentsIntersect(
-                   lhs.targetAttachment, lhs.bubbleAttachment, rhs.targetAttachment, rhs.bubbleAttachment) ||
-               SegmentIntersectsRect(lhs.targetAttachment,
-                   lhs.bubbleAttachment,
-                   TargetSafeRect(rhs.targetAttachment, style.targetSafeRadius)) ||
-               SegmentIntersectsRect(rhs.targetAttachment,
-                   rhs.bubbleAttachment,
-                   TargetSafeRect(lhs.targetAttachment, style.targetSafeRadius));
-    };
-    const auto sameSideLeaderIntersects = [&](const LayoutGuideSheetPlacementCallout& callout,
-                                              const LayoutGuideSheetPlacementCallout& other) {
-        if (callout.exitSide != other.exitSide || callout.sourceCardId != other.sourceCardId) {
-            return false;
-        }
-        return leadersConflict(callout, other);
-    };
-
     std::vector<const LayoutGuideSheetPlacementCallout*> leaders;
     for (const LayoutGuideSheetPlacementCallout& callout : callouts) {
-        const auto crossingIt = std::find_if(leaders.begin(), leaders.end(), [&](const auto& leader) {
-            return sameSideLeaderIntersects(callout, *leader);
-        });
-        if (crossingIt != leaders.end()) {
-            result.warningCalloutKeys.push_back(callout.key + " <-> " + (*crossingIt)->key);
+        for (const LayoutGuideSheetPlacementCallout* leader : leaders) {
+            if (callout.sourceCardId != leader->sourceCardId) {
+                continue;
+            }
+            if (LeaderSegmentsIntersect(callout.targetAttachment,
+                    callout.bubbleAttachment,
+                    leader->targetAttachment,
+                    leader->bubbleAttachment)) {
+                result.remainingIntersections.push_back(LayoutGuideSheetLeaderIntersectionTrace{callout.sourceCardId,
+                    "leader_cross",
+                    callout.key,
+                    leader->key,
+                    callout.exitSide,
+                    leader->exitSide});
+            }
+            if (SegmentIntersectsRect(callout.targetAttachment,
+                    callout.bubbleAttachment,
+                    TargetSafeRect(leader->targetAttachment, style.targetSafeRadius))) {
+                result.remainingIntersections.push_back(LayoutGuideSheetLeaderIntersectionTrace{callout.sourceCardId,
+                    "target_safe_zone",
+                    callout.key,
+                    leader->key,
+                    callout.exitSide,
+                    leader->exitSide});
+            }
+            if (SegmentIntersectsRect(leader->targetAttachment,
+                    leader->bubbleAttachment,
+                    TargetSafeRect(callout.targetAttachment, style.targetSafeRadius))) {
+                result.remainingIntersections.push_back(LayoutGuideSheetLeaderIntersectionTrace{callout.sourceCardId,
+                    "target_safe_zone",
+                    leader->key,
+                    callout.key,
+                    leader->exitSide,
+                    callout.exitSide});
+            }
         }
         leaders.push_back(&callout);
     }

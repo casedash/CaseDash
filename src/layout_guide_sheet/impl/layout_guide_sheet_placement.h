@@ -68,11 +68,20 @@ struct LayoutGuideSheetPlacementBlockTrace {
     size_t bottomCallouts = 0;
 };
 
+struct LayoutGuideSheetLeaderIntersectionTrace {
+    std::string sourceCardId;
+    std::string kind;
+    std::string firstCalloutKey;
+    std::string secondCalloutKey;
+    LayoutGuideSheetExitSide firstExitSide = LayoutGuideSheetExitSide::Right;
+    LayoutGuideSheetExitSide secondExitSide = LayoutGuideSheetExitSide::Right;
+};
+
 struct LayoutGuideSheetPlacementResult {
     int sheetWidth = 0;
     int sheetHeight = 0;
     std::vector<LayoutGuideSheetPlacementBlockTrace> blocks;
-    std::vector<std::string> warningCalloutKeys;
+    std::vector<LayoutGuideSheetLeaderIntersectionTrace> remainingIntersections;
 };
 
 using LayoutGuideSheetConstrainCalloutWidth =

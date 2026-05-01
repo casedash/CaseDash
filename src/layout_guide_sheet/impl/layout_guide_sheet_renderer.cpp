@@ -13,6 +13,20 @@
 
 namespace {
 
+std::string ExitSideName(LayoutGuideSheetExitSide side) {
+    switch (side) {
+        case LayoutGuideSheetExitSide::Left:
+            return "left";
+        case LayoutGuideSheetExitSide::Right:
+            return "right";
+        case LayoutGuideSheetExitSide::Top:
+            return "top";
+        case LayoutGuideSheetExitSide::Bottom:
+            return "bottom";
+    }
+    return "right";
+}
+
 RenderRect MakeOverviewSquareAnchorRect(int centerX, int centerY, int size) {
     const int half = size / 2;
     return RenderRect{centerX - half, centerY - half, centerX - half + size, centerY - half + size};
@@ -855,8 +869,13 @@ bool LayoutGuideSheetRenderer::Render(const SystemSnapshot& snapshot,
     const int sheetWidth = placementResult.sheetWidth;
     const int sheetHeight = placementResult.sheetHeight;
     if (traceDetails != nullptr) {
-        for (const std::string& calloutKey : placementResult.warningCalloutKeys) {
-            traceDetails->push_back("warning=\"leader_intersection_detected\" callout=" + Trace::QuoteText(calloutKey));
+        for (const LayoutGuideSheetLeaderIntersectionTrace& intersection : placementResult.remainingIntersections) {
+            traceDetails->push_back("intersection_card=" + Trace::QuoteText(intersection.sourceCardId) +
+                                    " intersection_kind=" + Trace::QuoteText(intersection.kind) +
+                                    " first_side=" + Trace::QuoteText(ExitSideName(intersection.firstExitSide)) +
+                                    " first_callout=" + Trace::QuoteText(intersection.firstCalloutKey) +
+                                    " second_side=" + Trace::QuoteText(ExitSideName(intersection.secondExitSide)) +
+                                    " second_callout=" + Trace::QuoteText(intersection.secondCalloutKey));
         }
     }
 
