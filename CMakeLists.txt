@@ -111,6 +111,7 @@ add_executable(SystemTelemetry WIN32
     src/layout_edit/layout_edit_tooltip_text.cpp
     src/layout_model/layout_edit_service.cpp
     src/config/config.cpp
+    src/config/config_file_io.cpp
     src/config/metric_catalog.cpp
     src/config/config_parser.cpp
     src/config/config_writer.cpp
@@ -394,6 +395,7 @@ add_executable(SystemTelemetryTests
     tests/system_info_support_tests.cpp
     tests/telemetry_retained_history_tests.cpp
     src/config/config.cpp
+    src/config/config_file_io.cpp
     src/config/metric_catalog.cpp
     src/config/config_parser.cpp
     src/config/config_writer.cpp
@@ -512,6 +514,7 @@ add_executable(SystemTelemetryBenchmarks
     src/util/strings.cpp
     src/util/scale.cpp
     src/config/config.cpp
+    src/config/config_file_io.cpp
     src/config/metric_catalog.cpp
     src/config/config_parser.cpp
     src/config/config_resolution.cpp

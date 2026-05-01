@@ -774,6 +774,20 @@ These changes produced real wins and remain in the codebase:
 - Conclusion:
   - Keep native production and benchmark code on the no-EH profile. Keep managed exception handling isolated to the C++/CLI provider bridge and keep tests on `/EHsc` where assertion helpers and test support can still use ordinary C++ exceptions.
 
+### Hypothesis: Collapse config writer full-save and diff-save template paths
+
+- Change:
+  - Route full config saves through the same section-difference traversal used by minimal saves, with a null compare config selecting the full-write behavior.
+  - Move duplicated parser and writer UTF-8 config file helpers into `src/config/config_file_io.*`.
+- Result:
+  - Helped executable size through the writer traversal collapse; shared file I/O was neutral after LTCG.
+- Observed effect:
+  - Collapsing the full-save traversal reduced `build\SystemTelemetry.exe` from `1,152,512` bytes to `1,144,832` bytes. `build\SystemTelemetryBenchmarks.exe` stayed at `868,864` bytes because the benchmark target does not link the config writer.
+  - The app section sizes after the writer collapse are `.text=951,016`, `.rdata=120,914`, `.pdata=23,016`, `.rsrc=35,472`, `.data=8,192`, and `.reloc=3,328` bytes.
+  - A parser experiment replacing the card-reference `std::set` with a flat string-view vector regressed the app to `1,145,856` bytes and was reverted.
+- Conclusion:
+  - Keep full and minimal config saves on one writer traversal so future schema growth does not duplicate save-template code. Do not retry the flat card-reference vector in the parser for size.
+
 ## Practical Guidance For Future Experiments
 
 - Do not retry per-segment gauge fills unless the gauge is redesigned to avoid repeated GDI+ path fills entirely.

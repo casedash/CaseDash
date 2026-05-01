@@ -5,17 +5,16 @@
 #include <cctype>
 #include <cerrno>
 #include <climits>
-#include <cstdio>
 #include <cstdlib>
 #include <set>
 #include <type_traits>
 
+#include "config/config_file_io.h"
 #include "config/config_resolution.h"
 #include "config/widget_class.h"
 #include "resource.h"
 #include "util/resource_loader.h"
 #include "util/strings.h"
-#include "util/utf8.h"
 
 namespace {
 
@@ -250,38 +249,6 @@ bool DispatchKnownBindingSection(Owner& owner,
         }
     });
     return handled;
-}
-
-std::string ReadFileUtf8(const FilePath& path) {
-    std::FILE* input = nullptr;
-    if (_wfopen_s(&input, path.c_str(), L"rb") != 0 || input == nullptr) {
-        return {};
-    }
-
-    fseek(input, 0, SEEK_END);
-    const long size = ftell(input);
-    if (size < 0) {
-        fclose(input);
-        return {};
-    }
-    fseek(input, 0, SEEK_SET);
-    std::string text(static_cast<size_t>(size), '\0');
-    if (!text.empty()) {
-        const size_t read = fread(text.data(), 1, text.size(), input);
-        if (read != text.size()) {
-            fclose(input);
-            return {};
-        }
-    }
-    fclose(input);
-    if (text.size() >= 3 && static_cast<unsigned char>(text[0]) == 0xEF &&
-        static_cast<unsigned char>(text[1]) == 0xBB && static_cast<unsigned char>(text[2]) == 0xBF) {
-        text.erase(0, 3);
-    }
-    if (!IsValidUtf8(text)) {
-        return {};
-    }
-    return text;
 }
 
 class LayoutExpressionParser {
@@ -573,7 +540,7 @@ AppConfig LoadConfig(const FilePath& path, bool includeOverlay, const ConfigPars
     AppConfig config;
     ApplyConfigText(LoadEmbeddedConfigTemplate(), config, context);
     if (includeOverlay) {
-        ApplyConfigText(ReadFileUtf8(path), config, context);
+        ApplyConfigText(ReadConfigFileUtf8(path), config, context);
     }
     MarkCardLayoutReferences(config.layout);
     SelectResolvedLayout(config, config.display.layout);
