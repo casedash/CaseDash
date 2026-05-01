@@ -25,6 +25,23 @@ constexpr wchar_t kEngineEnvironmentControlDll[] = L"Gigabyte.Engine.Environment
 constexpr wchar_t kSivUninstallKey[] = L"SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall";
 constexpr wchar_t kBiosKey[] = L"HARDWARE\\DESCRIPTION\\System\\BIOS";
 
+struct GigabyteSivFanReading {
+    std::string title;
+    std::optional<double> rpm;
+};
+
+struct GigabyteSivTemperatureReading {
+    std::string title;
+    std::optional<double> celsius;
+};
+
+struct GigabyteSivSnapshot {
+    bool success = false;
+    std::string diagnostics;
+    std::vector<GigabyteSivFanReading> fans;
+    std::vector<GigabyteSivTemperatureReading> temperatures;
+};
+
 std::optional<std::wstring> FindInstalledSivDirectory() {
     HKEY uninstallKey = nullptr;
     if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, kSivUninstallKey, 0, KEY_READ, &uninstallKey) != ERROR_SUCCESS) {
@@ -97,6 +114,67 @@ void ResetMetricValues(std::vector<NamedScalarMetric>& metrics) {
     }
 }
 
+class GigabyteSivCapture final : public GigabyteSivCaptureSink {
+public:
+    explicit GigabyteSivCapture(Trace& trace) : trace_(trace) {}
+
+    void AddFanReading(const wchar_t* title, double rpm) override {
+        snapshot_.fans.push_back(GigabyteSivFanReading{Utf8FromWide(title != nullptr ? title : L""), rpm});
+    }
+
+    void AddTemperatureReading(const wchar_t* title, double celsius) override {
+        snapshot_.temperatures.push_back(
+            GigabyteSivTemperatureReading{Utf8FromWide(title != nullptr ? title : L""), celsius});
+    }
+
+    void SetDiagnostics(const wchar_t* diagnostics) override {
+        snapshot_.diagnostics = Utf8FromWide(diagnostics != nullptr ? diagnostics : L"");
+    }
+
+    void TraceAssemblyPreload(const wchar_t* path) override {
+        trace_.Write("gigabyte_siv:assembly_preload path=\"" + Utf8FromWide(path != nullptr ? path : L"") + "\"");
+    }
+
+    void TraceMonitorCreated(const wchar_t* typeName) override {
+        trace_.Write(
+            "gigabyte_siv:monitor_created type=\"" + Utf8FromWide(typeName != nullptr ? typeName : L"") + "\"");
+    }
+
+    void TraceInitializeSuccess() override {
+        trace_.Write("gigabyte_siv:initialize_success source=HwRegister");
+    }
+
+    void TraceInitializeException(const wchar_t* diagnostics) override {
+        trace_.Write("gigabyte_siv:initialize_exception " + Utf8FromWide(diagnostics != nullptr ? diagnostics : L""));
+    }
+
+    void TraceSnapshotException(const wchar_t* diagnostics) override {
+        trace_.WriteLazy([&] {
+            return "gigabyte_siv:snapshot_exception " + Utf8FromWide(diagnostics != nullptr ? diagnostics : L"");
+        });
+    }
+
+    GigabyteSivSnapshot FinishSuccess() {
+        snapshot_.success = true;
+        snapshot_.diagnostics =
+            "Gigabyte SIV hardware-monitor query completed. fan_count=" + std::to_string(snapshot_.fans.size()) +
+            " temp_count=" + std::to_string(snapshot_.temperatures.size());
+        trace_.WriteLazy([&] {
+            return "gigabyte_siv:snapshot_done fan_count=" + std::to_string(snapshot_.fans.size()) +
+                   " temp_count=" + std::to_string(snapshot_.temperatures.size());
+        });
+        return std::move(snapshot_);
+    }
+
+    GigabyteSivSnapshot FinishFailure() {
+        return std::move(snapshot_);
+    }
+
+private:
+    Trace& trace_;
+    GigabyteSivSnapshot snapshot_;
+};
+
 class GigabyteSivBoardTelemetryProvider final : public BoardVendorTelemetryProvider {
 public:
     explicit GigabyteSivBoardTelemetryProvider(Trace& trace) : trace_(trace) {}
@@ -168,10 +246,11 @@ public:
             return sample;
         }
 
-        GigabyteSivSnapshot snapshot;
-        std::string captureDiagnostics;
-        if (!runtime_.Capture(*sivDirectory_, snapshot, trace(), captureDiagnostics)) {
-            diagnostics_ = captureDiagnostics;
+        GigabyteSivCapture capture(trace());
+        const bool captured = runtime_.Capture(sivDirectory_->c_str(), capture);
+        GigabyteSivSnapshot snapshot = captured ? capture.FinishSuccess() : capture.FinishFailure();
+        if (!captured) {
+            diagnostics_ = snapshot.diagnostics;
             sample.diagnostics = diagnostics_ + requestedDiagnosticsSuffix_;
             return sample;
         }

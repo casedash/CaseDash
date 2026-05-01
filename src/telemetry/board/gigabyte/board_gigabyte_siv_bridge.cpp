@@ -1,31 +1,22 @@
 #include "telemetry/board/gigabyte/board_gigabyte_siv_bridge.h"
 
 #include <msclr\gcroot.h>
-#include <msclr\marshal_cppstd.h>
+#include <vcclr.h>
 
 #using < mscorlib.dll>
 #using < System.dll>
-
-#include "util/trace.h"
 
 using namespace System;
 using namespace System::Collections;
 using namespace System::IO;
 using namespace System::Reflection;
-using namespace msclr::interop;
 
 namespace {
 
 constexpr wchar_t kEngineEnvironmentControlDll[] = L"Gigabyte.Engine.EnvironmentControl.dll";
 constexpr wchar_t kEnvironmentControlCommonDll[] = L"Gigabyte.EnvironmentControl.Common.dll";
 
-std::string Utf8FromManagedString(String ^ value) {
-    return value == nullptr ? std::string() : marshal_as<std::string>(value);
-}
-
-String ^ ManagedStringFromWide(const std::wstring& value) { return gcnew String(value.c_str()); }
-
-    bool ManagedUnitEquals(String ^ unit, String ^ expected) {
+bool ManagedUnitEquals(String ^ unit, String ^ expected) {
     return String::Equals(unit, expected, StringComparison::OrdinalIgnoreCase);
 }
 
@@ -94,21 +85,21 @@ public:
 };
 
 bool InitializeGigabyteRuntime(
-    GigabyteRuntimeContext ^ context, const std::wstring& sivDirectory, Trace& trace, std::string& diagnostics) {
+    GigabyteRuntimeContext ^ context, const wchar_t* sivDirectory, GigabyteSivCaptureSink& sink) {
     if (context->loaded) {
         return true;
     }
 
-    context->sivDirectory = ManagedStringFromWide(sivDirectory);
+    context->sivDirectory = gcnew String(sivDirectory);
     context->engineAssemblyPath = CombinePath(context->sivDirectory, kEngineEnvironmentControlDll);
     context->commonAssemblyPath = CombinePath(context->sivDirectory, kEnvironmentControlCommonDll);
 
     if (!File::Exists(context->engineAssemblyPath)) {
-        diagnostics = "Gigabyte.Engine.EnvironmentControl.dll was not found.";
+        sink.SetDiagnostics(L"Gigabyte.Engine.EnvironmentControl.dll was not found.");
         return false;
     }
     if (!File::Exists(context->commonAssemblyPath)) {
-        diagnostics = "Gigabyte.EnvironmentControl.Common.dll was not found.";
+        sink.SetDiagnostics(L"Gigabyte.EnvironmentControl.Common.dll was not found.");
         return false;
     }
 
@@ -122,7 +113,8 @@ bool InitializeGigabyteRuntime(
             for each (String ^ filePath in preloadFiles) {
                 try {
                     Assembly::LoadFrom(filePath);
-                    trace.Write("gigabyte_siv:assembly_preload path=\"" + Utf8FromManagedString(filePath) + "\"");
+                    pin_ptr<const wchar_t> pinnedFilePath = PtrToStringChars(filePath);
+                    sink.TraceAssemblyPreload(pinnedFilePath);
                 } catch (Exception ^) {
                 }
             }
@@ -150,7 +142,7 @@ bool InitializeGigabyteRuntime(
             if (context->initializeMethod == nullptr || context->getCurrentMethod == nullptr ||
                 context->titleProperty == nullptr || context->valueProperty == nullptr ||
                 context->unitProperty == nullptr) {
-                diagnostics = "Gigabyte hardware-monitor reflection members were not found.";
+                sink.SetDiagnostics(L"Gigabyte hardware-monitor reflection members were not found.");
                 return false;
             }
 
@@ -164,28 +156,29 @@ bool InitializeGigabyteRuntime(
             context->celsiusUnit = gcnew String(L"\u2103");
             context->degreeCUnit = gcnew String(L"\u00B0C");
 
-            trace.Write("gigabyte_siv:monitor_created type=\"" +
-                        Utf8FromManagedString(context->monitor->GetType()->FullName) + "\"");
+            pin_ptr<const wchar_t> pinnedTypeName = PtrToStringChars(context->monitor->GetType()->FullName);
+            sink.TraceMonitorCreated(pinnedTypeName);
             context->initializeMethod->Invoke(context->monitor, gcnew array<Object ^>{context->sourceHwRegister});
-            trace.Write("gigabyte_siv:initialize_success source=HwRegister");
+            sink.TraceInitializeSuccess();
             context->loaded = true;
-            diagnostics = "Gigabyte SIV hardware-monitor runtime initialized.";
+            sink.SetDiagnostics(L"Gigabyte SIV hardware-monitor runtime initialized.");
             return true;
         } finally {
             Environment::CurrentDirectory = originalDirectory;
         }
     } catch (Exception ^ ex) {
-        diagnostics = Utf8FromManagedString(ex->ToString());
-        trace.Write("gigabyte_siv:initialize_exception " + diagnostics);
+        String ^ exceptionText = ex->ToString();
+        pin_ptr<const wchar_t> pinnedDiagnostics = PtrToStringChars(exceptionText);
+        const wchar_t* diagnostics = pinnedDiagnostics;
+        sink.SetDiagnostics(diagnostics);
+        sink.TraceInitializeException(diagnostics);
         return false;
     }
 }
 
-void CollectManagedSensors(GigabyteRuntimeContext ^ context,
-    Object ^ sensorKind,
-    std::vector<GigabyteSivFanReading>* fans,
-    std::vector<GigabyteSivTemperatureReading>* temperatures) {
-    array<Object ^> ^ args = fans != nullptr ? context->fanArgs : context->temperatureArgs;
+void CollectManagedSensors(
+    GigabyteRuntimeContext ^ context, Object ^ sensorKind, bool collectFans, GigabyteSivCaptureSink& sink) {
+    array<Object ^> ^ args = collectFans ? context->fanArgs : context->temperatureArgs;
     if (args == nullptr) {
         args = gcnew array<Object ^>{sensorKind, nullptr};
     }
@@ -203,53 +196,40 @@ void CollectManagedSensors(GigabyteRuntimeContext ^ context,
         String ^ title = dynamic_cast<String ^>(context->titleProperty->GetValue(sensor, nullptr));
         Object ^ valueObject = context->valueProperty->GetValue(sensor, nullptr);
         String ^ unit = dynamic_cast<String ^>(context->unitProperty->GetValue(sensor, nullptr));
-        const std::string titleUtf8 = Utf8FromManagedString(title);
         const double numericValue = Convert::ToDouble(valueObject, Globalization::CultureInfo::InvariantCulture);
 
-        if (fans != nullptr) {
+        String ^ titleText = title != nullptr ? title : String::Empty;
+        pin_ptr<const wchar_t> pinnedTitle = PtrToStringChars(titleText);
+        if (collectFans) {
             if (!ManagedUnitEquals(unit, context->rpmUnit)) {
                 continue;
             }
-            fans->push_back(GigabyteSivFanReading{titleUtf8, numericValue});
-        } else if (temperatures != nullptr) {
+            sink.AddFanReading(pinnedTitle, numericValue);
+        } else {
             if (!ManagedUnitEquals(unit, context->celsiusUnit) && !ManagedUnitEquals(unit, context->degreeCUnit)) {
                 continue;
             }
-            temperatures->push_back(GigabyteSivTemperatureReading{titleUtf8, numericValue});
+            sink.AddTemperatureReading(pinnedTitle, numericValue);
         }
     }
 }
 
-bool CaptureGigabyteSnapshot(GigabyteRuntimeContext ^ context,
-    const std::wstring& sivDirectory,
-    GigabyteSivSnapshot& snapshot,
-    Trace& trace,
-    std::string& diagnostics) {
-    snapshot = GigabyteSivSnapshot{};
-
-    if (!InitializeGigabyteRuntime(context, sivDirectory, trace, diagnostics)) {
-        snapshot.diagnostics = diagnostics;
+bool CaptureGigabyteSnapshot(
+    GigabyteRuntimeContext ^ context, const wchar_t* sivDirectory, GigabyteSivCaptureSink& sink) {
+    if (!InitializeGigabyteRuntime(context, sivDirectory, sink)) {
         return false;
     }
 
     try {
-        CollectManagedSensors(context, context->sensorFan, &snapshot.fans, nullptr);
-        CollectManagedSensors(context, context->sensorTemperature, nullptr, &snapshot.temperatures);
-        snapshot.success = true;
-
-        snapshot.diagnostics =
-            "Gigabyte SIV hardware-monitor query completed. fan_count=" + std::to_string(snapshot.fans.size()) +
-            " temp_count=" + std::to_string(snapshot.temperatures.size());
-        diagnostics = snapshot.diagnostics;
-        trace.WriteLazy([&] {
-            return "gigabyte_siv:snapshot_done fan_count=" + std::to_string(snapshot.fans.size()) +
-                   " temp_count=" + std::to_string(snapshot.temperatures.size());
-        });
+        CollectManagedSensors(context, context->sensorFan, true, sink);
+        CollectManagedSensors(context, context->sensorTemperature, false, sink);
         return true;
     } catch (Exception ^ ex) {
-        diagnostics = Utf8FromManagedString(ex->ToString());
-        snapshot.diagnostics = diagnostics;
-        trace.WriteLazy([&] { return "gigabyte_siv:snapshot_exception " + diagnostics; });
+        String ^ exceptionText = ex->ToString();
+        pin_ptr<const wchar_t> pinnedDiagnostics = PtrToStringChars(exceptionText);
+        const wchar_t* diagnostics = pinnedDiagnostics;
+        sink.SetDiagnostics(diagnostics);
+        sink.TraceSnapshotException(diagnostics);
         return false;
     }
 }
@@ -266,7 +246,6 @@ GigabyteSivRuntime::GigabyteSivRuntime() : impl_(std::make_unique<Impl>()) {}
 
 GigabyteSivRuntime::~GigabyteSivRuntime() = default;
 
-bool GigabyteSivRuntime::Capture(
-    const std::wstring& sivDirectory, GigabyteSivSnapshot& snapshot, Trace& trace, std::string& diagnostics) {
-    return CaptureGigabyteSnapshot(impl_->context, sivDirectory, snapshot, trace, diagnostics);
+bool GigabyteSivRuntime::Capture(const wchar_t* sivDirectory, GigabyteSivCaptureSink& sink) {
+    return CaptureGigabyteSnapshot(impl_->context, sivDirectory, sink);
 }

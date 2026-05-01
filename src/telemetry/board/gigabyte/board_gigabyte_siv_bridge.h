@@ -1,27 +1,19 @@
 #pragma once
 
 #include <memory>
-#include <optional>
-#include <string>
-#include <vector>
 
-class Trace;
+class GigabyteSivCaptureSink {
+public:
+    virtual ~GigabyteSivCaptureSink() = default;
 
-struct GigabyteSivFanReading {
-    std::string title;
-    std::optional<double> rpm;
-};
-
-struct GigabyteSivTemperatureReading {
-    std::string title;
-    std::optional<double> celsius;
-};
-
-struct GigabyteSivSnapshot {
-    bool success = false;
-    std::string diagnostics;
-    std::vector<GigabyteSivFanReading> fans;
-    std::vector<GigabyteSivTemperatureReading> temperatures;
+    virtual void AddFanReading(const wchar_t* title, double rpm) = 0;
+    virtual void AddTemperatureReading(const wchar_t* title, double celsius) = 0;
+    virtual void SetDiagnostics(const wchar_t* diagnostics) = 0;
+    virtual void TraceAssemblyPreload(const wchar_t* path) = 0;
+    virtual void TraceMonitorCreated(const wchar_t* typeName) = 0;
+    virtual void TraceInitializeSuccess() = 0;
+    virtual void TraceInitializeException(const wchar_t* diagnostics) = 0;
+    virtual void TraceSnapshotException(const wchar_t* diagnostics) = 0;
 };
 
 class GigabyteSivRuntime {
@@ -32,8 +24,7 @@ public:
     GigabyteSivRuntime(const GigabyteSivRuntime&) = delete;
     GigabyteSivRuntime& operator=(const GigabyteSivRuntime&) = delete;
 
-    bool Capture(
-        const std::wstring& sivDirectory, GigabyteSivSnapshot& snapshot, Trace& trace, std::string& diagnostics);
+    bool Capture(const wchar_t* sivDirectory, GigabyteSivCaptureSink& sink);
 
 private:
     struct Impl;

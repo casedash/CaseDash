@@ -723,16 +723,16 @@ These changes produced real wins and remain in the codebase:
 ### Hypothesis: Keep STL-heavy Gigabyte provider logic out of CLR metadata
 
 - Change:
-  - Split the Gigabyte SIV provider into a native provider implementation and a narrow C++/CLI bridge. The native file keeps the provider settings, sensor maps, metric templates, and sample shaping, while the CLR-enabled bridge owns only managed runtime state and reflection calls into the vendor assemblies.
+  - Split the Gigabyte SIV provider into a native provider implementation and a narrow C++/CLI bridge. The native file keeps the provider settings, sensor maps, metric templates, and sample shaping, while the CLR-enabled bridge owns only managed runtime state and reflection calls into the vendor assemblies. Keep native STL containers out of the CLR method boundary by having the bridge call a native capture sink with pinned UTF-16 strings.
 - Result:
   - Helped executable size materially while keeping the single executable and the existing `std::unordered_map`-backed provider lookups.
 - Observed effect:
-  - `build\SystemTelemetry.exe` decreased from `1,440,768` bytes to `1,336,832` bytes.
-  - `build\SystemTelemetryBenchmarks.exe` decreased from `1,078,272` bytes to `974,848` bytes.
-  - The CLR metadata directory in `build\SystemTelemetry.exe` decreased from `126,840` bytes to `45,532` bytes.
-  - The app section sizes after the split are `.text=1,065,788`, `.rdata=193,810`, `.pdata=28,176`, `.rsrc=35,472`, `.data=8,192`, and `.reloc=2,336` bytes.
+  - Splitting the provider reduced `build\SystemTelemetry.exe` from `1,440,768` bytes to `1,336,832` bytes and `build\SystemTelemetryBenchmarks.exe` from `1,078,272` bytes to `974,848` bytes.
+  - Narrowing the CLR method boundary further reduced `build\SystemTelemetry.exe` to `1,309,184` bytes and `build\SystemTelemetryBenchmarks.exe` to `947,200` bytes.
+  - The CLR metadata directory in `build\SystemTelemetry.exe` decreased from `126,840` bytes before the split to `45,532` bytes after the split and `25,904` bytes after the sink boundary.
+  - The app section sizes after the sink boundary are `.text=1,057,052`, `.rdata=174,840`, `.pdata=28,320`, `.rsrc=35,472`, `.data=8,192`, and `.reloc=2,356` bytes.
 - Conclusion:
-  - Keep mixed-mode translation units narrow. Native performance containers are fine, but they should stay in native `.cpp` files so their template spellings and provider implementation details do not inflate CLR metadata.
+  - Keep mixed-mode translation units narrow and avoid STL types in `/clr` method signatures. Native performance containers are fine, but they should stay in native `.cpp` files so their template spellings and provider implementation details do not inflate CLR metadata.
 
 ## Practical Guidance For Future Experiments
 
