@@ -260,6 +260,7 @@ void LayoutEditDialog::Refresh(const std::optional<LayoutEditFocusKey>& preferre
         return;
     }
 
+    const DialogDescendantRedrawScope redrawScope(hwnd_);
     state_->originalConfig = host_.BuildLayoutEditOriginalConfig();
     state_->treeModel = BuildLayoutEditTreeModel(host_.CurrentConfig());
     RefreshLayoutEditDialogControls(state_.get(), hwnd_, preferredFocus, true);
@@ -271,6 +272,7 @@ void LayoutEditDialog::RefreshSelection() {
         return;
     }
 
+    const DialogDescendantRedrawScope redrawScope(hwnd_);
     state_->originalConfig = host_.BuildLayoutEditOriginalConfig();
     RefreshLayoutEditDialogControls(state_.get(), hwnd_, std::nullopt, false);
 }
@@ -307,6 +309,7 @@ bool LayoutEditDialog::SyncSelection(
     }
 
     if (state_ != nullptr) {
+        const DialogDescendantRedrawScope redrawScope(hwnd_);
         state_->originalConfig = host_.BuildLayoutEditOriginalConfig();
         RefreshLayoutEditDialogControls(state_.get(), hwnd_, focusKey, false);
         EnsureVisibleLayoutEditTreeSelection(hwnd_);

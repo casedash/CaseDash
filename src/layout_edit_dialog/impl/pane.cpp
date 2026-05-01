@@ -33,6 +33,40 @@ struct LayoutEditRightPaneMetrics {
 };
 
 constexpr LayoutEditRightPaneMetrics kLayoutEditRightPaneMetrics{};
+constexpr wchar_t kDialogRedrawSuspendCountProperty[] = L"SystemTelemetry.LayoutEdit.RedrawSuspendCount";
+
+int WindowRedrawSuspendCount(HWND hwnd) {
+    return static_cast<int>(reinterpret_cast<intptr_t>(GetPropW(hwnd, kDialogRedrawSuspendCountProperty)));
+}
+
+void BeginWindowRedrawSuspension(HWND hwnd) {
+    if (hwnd == nullptr || IsWindow(hwnd) == FALSE) {
+        return;
+    }
+
+    const int count = WindowRedrawSuspendCount(hwnd);
+    if (count == 0) {
+        SendMessageW(hwnd, WM_SETREDRAW, FALSE, 0);
+    }
+    SetPropW(hwnd, kDialogRedrawSuspendCountProperty, reinterpret_cast<HANDLE>(static_cast<intptr_t>(count + 1)));
+}
+
+void EndWindowRedrawSuspension(HWND hwnd, const RECT* redrawRect, UINT redrawFlags) {
+    if (hwnd == nullptr || IsWindow(hwnd) == FALSE) {
+        return;
+    }
+
+    const int count = WindowRedrawSuspendCount(hwnd);
+    if (count <= 1) {
+        RemovePropW(hwnd, kDialogRedrawSuspendCountProperty);
+        SendMessageW(hwnd, WM_SETREDRAW, TRUE, 0);
+        if (redrawFlags != 0) {
+            RedrawWindow(hwnd, redrawRect, nullptr, redrawFlags);
+        }
+        return;
+    }
+    SetPropW(hwnd, kDialogRedrawSuspendCountProperty, reinterpret_cast<HANDLE>(static_cast<intptr_t>(count - 1)));
+}
 
 bool DialogControlHasClass(HWND hwnd, int controlId, const wchar_t* expectedClassName) {
     HWND control = GetDlgItem(hwnd, controlId);
@@ -370,24 +404,17 @@ void SetDialogRowLabelBounds(
 }  // namespace
 
 DialogRedrawScope::DialogRedrawScope(HWND hwnd, UINT redrawFlags) : hwnd_(hwnd), redrawFlags_(redrawFlags) {
-    if (hwnd_ != nullptr) {
-        SendMessageW(hwnd_, WM_SETREDRAW, FALSE, 0);
-    }
+    BeginWindowRedrawSuspension(hwnd_);
 }
 
 DialogRedrawScope::DialogRedrawScope(HWND hwnd, const RECT& redrawRect, UINT redrawFlags)
     : hwnd_(hwnd), redrawRect_(redrawRect), redrawFlags_(redrawFlags | RDW_ERASE) {
-    if (hwnd_ != nullptr) {
-        SendMessageW(hwnd_, WM_SETREDRAW, FALSE, 0);
-    }
+    BeginWindowRedrawSuspension(hwnd_);
 }
 
 DialogRedrawScope::~DialogRedrawScope() {
-    if (hwnd_ != nullptr) {
-        SendMessageW(hwnd_, WM_SETREDRAW, TRUE, 0);
-        const RECT* rect = redrawRect_.has_value() ? &*redrawRect_ : nullptr;
-        RedrawWindow(hwnd_, rect, nullptr, redrawFlags_);
-    }
+    const RECT* rect = redrawRect_.has_value() ? &*redrawRect_ : nullptr;
+    EndWindowRedrawSuspension(hwnd_, rect, redrawFlags_);
 }
 
 DialogRedrawScope::DialogRedrawScope(DialogRedrawScope&& other) noexcept
@@ -401,11 +428,8 @@ DialogRedrawScope& DialogRedrawScope::operator=(DialogRedrawScope&& other) noexc
     if (this == &other) {
         return *this;
     }
-    if (hwnd_ != nullptr) {
-        SendMessageW(hwnd_, WM_SETREDRAW, TRUE, 0);
-        const RECT* rect = redrawRect_.has_value() ? &*redrawRect_ : nullptr;
-        RedrawWindow(hwnd_, rect, nullptr, redrawFlags_);
-    }
+    const RECT* rect = redrawRect_.has_value() ? &*redrawRect_ : nullptr;
+    EndWindowRedrawSuspension(hwnd_, rect, redrawFlags_);
     hwnd_ = other.hwnd_;
     redrawRect_ = other.redrawRect_;
     redrawFlags_ = other.redrawFlags_;
@@ -413,6 +437,36 @@ DialogRedrawScope& DialogRedrawScope::operator=(DialogRedrawScope&& other) noexc
     other.redrawRect_.reset();
     other.redrawFlags_ = 0;
     return *this;
+}
+
+DialogDescendantRedrawScope::DialogDescendantRedrawScope(HWND hwnd, UINT redrawFlags)
+    : root_(hwnd), redrawFlags_(redrawFlags) {
+    if (root_ == nullptr) {
+        return;
+    }
+
+    windows_.push_back(root_);
+    EnumChildWindows(
+        root_,
+        [](HWND child, LPARAM param) -> BOOL {
+            auto* windows = reinterpret_cast<std::vector<HWND>*>(param);
+            windows->push_back(child);
+            return TRUE;
+        },
+        reinterpret_cast<LPARAM>(&windows_));
+
+    for (HWND window : windows_) {
+        BeginWindowRedrawSuspension(window);
+    }
+}
+
+DialogDescendantRedrawScope::~DialogDescendantRedrawScope() {
+    for (auto it = windows_.rbegin(); it != windows_.rend(); ++it) {
+        EndWindowRedrawSuspension(*it, nullptr, 0);
+    }
+    if (root_ != nullptr && redrawFlags_ != 0) {
+        RedrawWindow(root_, nullptr, nullptr, redrawFlags_);
+    }
 }
 
 void ShowDialogControl(HWND hwnd, int controlId, bool show) {

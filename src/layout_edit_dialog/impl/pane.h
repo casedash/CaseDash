@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <vector>
 
 #include "layout_edit_dialog/impl/state.h"
 
@@ -19,6 +20,21 @@ public:
 private:
     HWND hwnd_ = nullptr;
     std::optional<RECT> redrawRect_;
+    UINT redrawFlags_ = 0;
+};
+
+class DialogDescendantRedrawScope {
+public:
+    explicit DialogDescendantRedrawScope(
+        HWND hwnd, UINT redrawFlags = RDW_INVALIDATE | RDW_ALLCHILDREN | RDW_UPDATENOW);
+    ~DialogDescendantRedrawScope();
+
+    DialogDescendantRedrawScope(const DialogDescendantRedrawScope&) = delete;
+    DialogDescendantRedrawScope& operator=(const DialogDescendantRedrawScope&) = delete;
+
+private:
+    HWND root_ = nullptr;
+    std::vector<HWND> windows_;
     UINT redrawFlags_ = 0;
 };
 

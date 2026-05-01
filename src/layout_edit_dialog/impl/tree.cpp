@@ -3,34 +3,13 @@
 #include <commctrl.h>
 
 #include "layout_edit_dialog/impl/editors.h"
+#include "layout_edit_dialog/impl/pane.h"
 #include "layout_edit_dialog/impl/trace.h"
 #include "layout_model/layout_edit_helpers.h"
 #include "resource.h"
 #include "util/utf8.h"
 
 namespace {
-
-class ScopedWindowRedrawSuspension {
-public:
-    explicit ScopedWindowRedrawSuspension(HWND hwnd) : hwnd_(hwnd) {
-        if (hwnd_ != nullptr) {
-            SendMessageW(hwnd_, WM_SETREDRAW, FALSE, 0);
-        }
-    }
-
-    ~ScopedWindowRedrawSuspension() {
-        if (hwnd_ != nullptr) {
-            SendMessageW(hwnd_, WM_SETREDRAW, TRUE, 0);
-            RedrawWindow(hwnd_, nullptr, nullptr, RDW_ERASE | RDW_FRAME | RDW_INVALIDATE | RDW_UPDATENOW);
-        }
-    }
-
-    ScopedWindowRedrawSuspension(const ScopedWindowRedrawSuspension&) = delete;
-    ScopedWindowRedrawSuspension& operator=(const ScopedWindowRedrawSuspension&) = delete;
-
-private:
-    HWND hwnd_ = nullptr;
-};
 
 void InsertLayoutEditTreeNodes(
     LayoutEditDialogState* state, HWND tree, const std::vector<LayoutEditTreeNode>& nodes, HTREEITEM parent) {
@@ -127,7 +106,7 @@ void RebuildLayoutEditTree(
     if (tree == nullptr) {
         return;
     }
-    const ScopedWindowRedrawSuspension redrawSuspension(tree);
+    const DialogRedrawScope redrawSuspension(tree, RDW_FRAME | RDW_INVALIDATE | RDW_UPDATENOW);
     state->dialog->Host().TraceLayoutEditDialogEvent("layout_edit_dialog:tree_rebuild_begin",
         "preferred_focus=" + QuoteTraceText(preferredFocus.has_value() ? "set" : "none") +
             " filter=" + QuoteTraceText(Utf8FromWide(state->currentFilter)));
