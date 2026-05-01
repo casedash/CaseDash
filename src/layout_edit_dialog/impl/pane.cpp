@@ -425,6 +425,9 @@ int DialogControlVisibleHeight(HWND hwnd, int controlId) {
 
 int DialogControlLayoutHeightForVisibleHeight(HWND hwnd, int controlId, int desiredVisibleHeight) {
     const int currentHeight = DialogControlHeight(hwnd, controlId);
+    if (IsDialogComboBoxControl(hwnd, controlId)) {
+        return desiredVisibleHeight;
+    }
     if (!UsesSingleLineFieldFrame(hwnd, controlId)) {
         return desiredVisibleHeight;
     }
