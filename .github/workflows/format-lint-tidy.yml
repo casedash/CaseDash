@@ -35,6 +35,13 @@ jobs:
         shell: cmd
         run: lint.cmd tidy
 
+      - name: Upload SystemTelemetry executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: SystemTelemetry-exe
+          path: build/SystemTelemetry.exe
+          if-no-files-found: error
+
       - name: Upload clang-tidy report
         if: always()
         uses: actions/upload-artifact@v4

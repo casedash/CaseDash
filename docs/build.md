@@ -69,6 +69,7 @@ install.cmd
 - The `Validation` workflow runs on every push, pull request, and manual dispatch.
 - The workflow checks formatting first with `format.cmd`, then builds with `build.cmd`, runs tests with `test.cmd`, and runs `lint.cmd tidy` on `windows-2025-vs2026`.
 - The repository branch protection requires the `Validation` job before pull requests can merge.
+- The workflow uploads `build\SystemTelemetry.exe` as the `SystemTelemetry-exe` artifact after validation succeeds.
 - The workflow uploads `build\clang_tidy_report.txt` as an artifact when it is produced.
 
 ## Provider Notes
