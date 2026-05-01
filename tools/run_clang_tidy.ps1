@@ -33,6 +33,7 @@ $clangTidyIgnoredUnusedIncludeWarnings = @(
     'src/layout_edit_dialog/impl/trace.h|windows.h',
     'src/layout_edit_dialog/impl/util.h|windows.h',
     'src/layout_edit_dialog/layout_edit_dialog.h|windows.h',
+    'src/layout_edit_dialog/theme_preview.h|windows.h',
     'src/main/autostart.h|windows.h',
     'src/main/config_io.h|windows.h',
     'src/renderer/impl/d2d_renderer.h|windows.h',
