@@ -280,6 +280,7 @@ void ShowColorEditorControls(HWND hwnd, bool showColor, bool supportsDerived, bo
     ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_CHECK, showColor && supportsDerived && derivedMode);
     ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_EDIT, showColor && supportsDerived && derivedMode);
     ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_SLIDER, showColor && supportsDerived && derivedMode);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_DERIVED_HEX_LABEL, showColor && supportsDerived && derivedMode);
 
     const bool showLiteral = showColor && (!supportsDerived || !derivedMode);
     ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_HEX_LABEL, showLiteral);
@@ -623,7 +624,10 @@ void SetColorSamplePreview(LayoutEditDialogState* state, HWND hwnd, unsigned int
     }
     state->previewColor = RGB((color >> 24) & 0xFFu, (color >> 16) & 0xFFu, (color >> 8) & 0xFFu);
     SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_SAMPLE, L"Sample text in the selected color");
+    const std::wstring derivedHexText = L"Hex: " + FormatDialogColorHex(color);
+    SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_DERIVED_HEX_LABEL, derivedHexText.c_str());
     InvalidateRect(GetDlgItem(hwnd, IDC_LAYOUT_EDIT_COLOR_SWATCH), nullptr, TRUE);
+    InvalidateRect(GetDlgItem(hwnd, IDC_LAYOUT_EDIT_COLOR_DERIVED_HEX_LABEL), nullptr, TRUE);
     InvalidateRect(GetDlgItem(hwnd, IDC_LAYOUT_EDIT_COLOR_SAMPLE), nullptr, TRUE);
 }
 
@@ -1072,21 +1076,31 @@ void LayoutLayoutEditRightPane(LayoutEditDialogState* state, HWND hwnd) {
                 innerWidth,
                 true);
             if (derivedMode) {
-                const int sampleRowHeight = std::max(swatchSize, sampleHeight);
+                const int derivedHexLeft = innerLeft + swatchSize + metrics.inlineGap;
+                const int derivedHexWidth = std::max(1, innerRight - derivedHexLeft);
+                const int derivedHexHeight = MeasureTextHeightForControl(hwnd,
+                    IDC_LAYOUT_EDIT_COLOR_DERIVED_HEX_LABEL,
+                    ReadDialogControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_DERIVED_HEX_LABEL),
+                    derivedHexWidth,
+                    true);
+                const int firstRowHeight = std::max(swatchSize, derivedHexHeight);
                 SetDialogControlBounds(hwnd,
                     IDC_LAYOUT_EDIT_COLOR_SWATCH,
                     innerLeft,
-                    cursorY + ((sampleRowHeight - swatchSize) / 2),
+                    cursorY + ((firstRowHeight - swatchSize) / 2),
                     swatchSize,
                     swatchSize);
-                const int sampleLeft = innerLeft + swatchSize + metrics.inlineGap;
                 SetDialogControlBounds(hwnd,
-                    IDC_LAYOUT_EDIT_COLOR_SAMPLE,
-                    sampleLeft,
-                    cursorY + ((sampleRowHeight - sampleHeight) / 2),
-                    std::max(1, innerRight - sampleLeft),
-                    sampleHeight);
-                cursorY += sampleRowHeight + metrics.sampleGap;
+                    IDC_LAYOUT_EDIT_COLOR_DERIVED_HEX_LABEL,
+                    derivedHexLeft,
+                    cursorY + ((firstRowHeight - derivedHexHeight) / 2),
+                    derivedHexWidth,
+                    derivedHexHeight);
+                cursorY += firstRowHeight + metrics.sampleGap;
+
+                SetDialogControlBounds(
+                    hwnd, IDC_LAYOUT_EDIT_COLOR_SAMPLE, innerLeft, cursorY, innerWidth, sampleHeight);
+                cursorY += sampleHeight + metrics.sampleGap;
             } else {
                 SetDialogControlBounds(
                     hwnd, IDC_LAYOUT_EDIT_COLOR_SAMPLE, innerLeft, cursorY, innerWidth, sampleHeight);
@@ -1099,7 +1113,7 @@ void LayoutLayoutEditRightPane(LayoutEditDialogState* state, HWND hwnd) {
                         IDC_LAYOUT_EDIT_COLOR_MIX_TARGET_LABEL,
                         ReadDialogControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_TARGET_LABEL)) +
                         metrics.labelGap);
-                const int valueEditWidth = std::min(52, std::max(40, innerWidth - checkboxWidth));
+                const int valueEditWidth = std::min(72, std::max(58, innerWidth - checkboxWidth));
                 const int valueLeft = innerLeft + checkboxWidth;
                 const int sliderLeft = valueLeft + valueEditWidth + metrics.inlineGap;
                 const int sliderWidth = std::max(40, innerRight - sliderLeft);

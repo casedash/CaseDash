@@ -194,6 +194,6 @@ Theme section behavior:
 - `alpha` exposes an alpha byte value edit and matching slider from `0x00` to `0xFF`.
 - Valid edits preview immediately. Invalid or incomplete derived expressions do not preview and do not replace the last valid pending value.
 - Per-field revert restores the whole color role expression, including its mode and all transformation controls.
-- The dialog displays the effective resolved color preview for both literal and derived roles.
+- The dialog displays the effective resolved color preview for both literal and derived roles. Derived roles also show the resolved `#RRGGBBAA` value as read-only text next to the preview swatch.
 
 `[layout_guide_sheet]` remains diagnostics-only and is not editable through the dialog.
