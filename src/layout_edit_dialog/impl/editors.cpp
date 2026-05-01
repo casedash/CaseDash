@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <array>
-#include <functional>
 
 #include "layout_edit/layout_edit_parameter_edit.h"
 #include "layout_edit/layout_edit_service.h"
@@ -190,8 +189,7 @@ bool IsMetricListRowControlId(int controlId, int baseId, size_t rowCount) {
     return index >= 0 && index < static_cast<int>(rowCount);
 }
 
-bool MutateMetricListOrderRows(
-    LayoutEditDialogState* state, HWND hwnd, const std::function<void(std::vector<std::string>&)>& mutate) {
+template <typename Mutate> bool MutateMetricListOrderRows(LayoutEditDialogState* state, HWND hwnd, Mutate&& mutate) {
     if (state == nullptr || state->updatingControls) {
         return false;
     }

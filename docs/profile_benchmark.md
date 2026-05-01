@@ -708,6 +708,18 @@ These changes produced real wins and remain in the codebase:
 - Conclusion:
   - Keep the size-oriented Release profile. Compare future performance work against benchmarks built with the same Release profile as the app, because comparing against the old non-LTCG benchmark binary overstates the effect of `/Os`.
 
+### Hypothesis: Remove `std::function` from production callback paths
+
+- Change:
+  - Replace production `std::function` use with direct helpers for local recursion and mutation helpers, then switch synchronous renderer, layout-guide-sheet, snap-solver, and placement callbacks to a non-owning `FunctionRef` view.
+- Result:
+  - Helped executable size modestly.
+- Observed effect:
+  - Removing only local helper type erasure reduced `build\SystemTelemetry.exe` from `1,451,008` bytes to `1,445,888` bytes.
+  - Removing production `std::function` entirely reduced `build\SystemTelemetry.exe` further to `1,440,768` bytes and `build\SystemTelemetryBenchmarks.exe` to `1,078,272` bytes.
+- Conclusion:
+  - Keep `FunctionRef` for synchronous callbacks that do not escape the call. Continue to use owning callback storage only when a callback must outlive the call stack.
+
 ## Practical Guidance For Future Experiments
 
 - Do not retry per-segment gauge fills unless the gauge is redesigned to avoid repeated GDI+ path fills entirely.
