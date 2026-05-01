@@ -245,7 +245,6 @@ void RebuildLayoutEditTree(
     if (tree == nullptr) {
         return;
     }
-    const DialogRedrawScope redrawSuspension(tree, RDW_FRAME | RDW_INVALIDATE | RDW_UPDATENOW);
     state->dialog->Host().TraceLayoutEditDialogEvent("layout_edit_dialog:tree_rebuild_begin",
         "preferred_focus=" + QuoteTraceText(preferredFocus.has_value() ? "set" : "none") +
             " filter=" + QuoteTraceText(Utf8FromWide(state->currentFilter)));
@@ -266,40 +265,46 @@ void RebuildLayoutEditTree(
         "preferred_location=" + QuoteTraceText(preferredLocation) + " " +
             BuildTreeViewportSnapshotTraceText(viewportSnapshot));
 
-    state->visibleTreeModel = FilterLayoutEditTreeModel(state->treeModel, Utf8FromWide(state->currentFilter));
-    state->treeItems.clear();
-    TraceTreeViewport(state, tree, "layout_edit_dialog:tree_delete_all_before");
-    TreeView_DeleteAllItems(tree);
-    TraceTreeViewport(state, tree, "layout_edit_dialog:tree_delete_all_after");
-    InsertLayoutEditTreeNodes(state, tree, state->visibleTreeModel.roots, TVI_ROOT);
-    TraceTreeViewport(state,
-        tree,
-        "layout_edit_dialog:tree_insert_done",
-        "roots=" + std::to_string(state->visibleTreeModel.roots.size()) +
-            " items=" + std::to_string(state->treeItems.size()));
-
     HTREEITEM selectedItem = nullptr;
-    if (preferredFocus.has_value()) {
-        selectedItem = FindTreeItemByFocusKey(state, *preferredFocus);
-    }
-    if (selectedItem == nullptr && !preferredLocation.empty()) {
-        selectedItem = FindTreeItemByLocationText(state, preferredLocation);
-    }
-    if (selectedItem == nullptr) {
-        selectedItem = FindFirstLeafTreeItem(*state);
-    }
-    if (selectedItem == nullptr) {
-        selectedItem = FindFirstTreeItem(*state);
+    {
+        const DialogRedrawScope redrawSuspension(tree, RDW_FRAME | RDW_INVALIDATE | RDW_UPDATENOW);
+        state->visibleTreeModel = FilterLayoutEditTreeModel(state->treeModel, Utf8FromWide(state->currentFilter));
+        state->treeItems.clear();
+        TraceTreeViewport(state, tree, "layout_edit_dialog:tree_delete_all_before");
+        TreeView_DeleteAllItems(tree);
+        TraceTreeViewport(state, tree, "layout_edit_dialog:tree_delete_all_after");
+        InsertLayoutEditTreeNodes(state, tree, state->visibleTreeModel.roots, TVI_ROOT);
+        TraceTreeViewport(state,
+            tree,
+            "layout_edit_dialog:tree_insert_done",
+            "roots=" + std::to_string(state->visibleTreeModel.roots.size()) +
+                " items=" + std::to_string(state->treeItems.size()));
+
+        if (preferredFocus.has_value()) {
+            selectedItem = FindTreeItemByFocusKey(state, *preferredFocus);
+        }
+        if (selectedItem == nullptr && !preferredLocation.empty()) {
+            selectedItem = FindTreeItemByLocationText(state, preferredLocation);
+        }
+        if (selectedItem == nullptr) {
+            selectedItem = FindFirstLeafTreeItem(*state);
+        }
+        if (selectedItem == nullptr) {
+            selectedItem = FindFirstTreeItem(*state);
+        }
+
+        if (selectedItem != nullptr) {
+            ExpandTreeAncestors(tree, selectedItem);
+            TraceTreeViewport(state,
+                tree,
+                "layout_edit_dialog:tree_select_item_before",
+                "target={" + BuildTreeItemTraceText(state, tree, selectedItem) + "}");
+            TreeView_SelectItem(tree, selectedItem);
+            TraceTreeViewport(state, tree, "layout_edit_dialog:tree_select_item_after");
+        }
     }
 
     if (selectedItem != nullptr) {
-        ExpandTreeAncestors(tree, selectedItem);
-        TraceTreeViewport(state,
-            tree,
-            "layout_edit_dialog:tree_select_item_before",
-            "target={" + BuildTreeItemTraceText(state, tree, selectedItem) + "}");
-        TreeView_SelectItem(tree, selectedItem);
-        TraceTreeViewport(state, tree, "layout_edit_dialog:tree_select_item_after");
         if (preferredFocus.has_value()) {
             TraceTreeViewport(
                 state, tree, "layout_edit_dialog:tree_ensure_visible_before", "reason=\"preferred_focus\"");
