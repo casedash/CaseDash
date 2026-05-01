@@ -13,6 +13,7 @@ bool PreviewSelectedValue(LayoutEditDialogState* state, HWND hwnd);
 bool PreviewSelectedFont(LayoutEditDialogState* state, HWND hwnd, UINT notificationCode = 0);
 bool PreviewSelectedGlobalFontFamily(LayoutEditDialogState* state, HWND hwnd, UINT notificationCode = 0);
 bool PreviewSelectedColor(LayoutEditDialogState* state, HWND hwnd);
+void RefreshSelectedColorDerivedControls(LayoutEditDialogState* state, HWND hwnd);
 bool SetSelectedDialogColor(LayoutEditDialogState* state, HWND hwnd, unsigned int color);
 bool PreviewSelectedWeights(LayoutEditDialogState* state, HWND hwnd);
 bool PreviewSelectedMetric(LayoutEditDialogState* state, HWND hwnd);

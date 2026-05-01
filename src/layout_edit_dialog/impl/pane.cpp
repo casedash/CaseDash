@@ -220,7 +220,9 @@ std::vector<int> ActiveEditorLabelControls(LayoutEditEditorKind kind, bool showB
         case LayoutEditEditorKind::GlobalFontFamily:
             return {IDC_LAYOUT_EDIT_FONT_FACE_LABEL};
         case LayoutEditEditorKind::Color:
-            return {IDC_LAYOUT_EDIT_COLOR_RED_LABEL,
+            return {IDC_LAYOUT_EDIT_COLOR_MODE_LABEL,
+                IDC_LAYOUT_EDIT_COLOR_BASE_LABEL,
+                IDC_LAYOUT_EDIT_COLOR_RED_LABEL,
                 IDC_LAYOUT_EDIT_COLOR_GREEN_LABEL,
                 IDC_LAYOUT_EDIT_COLOR_BLUE_LABEL,
                 IDC_LAYOUT_EDIT_COLOR_ALPHA_LABEL};
@@ -246,6 +248,54 @@ std::vector<int> ActiveEditorLabelControls(LayoutEditEditorKind kind, bool showB
             return {};
     }
     return {};
+}
+
+bool ColorSelectionSupportsDerived(const LayoutEditDialogState* state) {
+    return state != nullptr && state->selectedLeaf != nullptr &&
+           std::holds_alternative<LayoutEditParameter>(state->selectedLeaf->focusKey) &&
+           state->selectedLeaf->valueFormat == configschema::ValueFormat::ColorHex;
+}
+
+bool ColorEditorDerivedMode(HWND hwnd) {
+    HWND combo = GetDlgItem(hwnd, IDC_LAYOUT_EDIT_COLOR_MODE_COMBO);
+    if (combo == nullptr) {
+        return false;
+    }
+    return SendMessageW(combo, CB_GETCURSEL, 0, 0) == 1;
+}
+
+void ShowColorEditorControls(HWND hwnd, bool showColor, bool supportsDerived, bool derivedMode) {
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_MODE_LABEL, showColor && supportsDerived);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_MODE_COMBO, showColor && supportsDerived);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_BASE_LABEL, showColor && supportsDerived && derivedMode);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_BASE_COMBO, showColor && supportsDerived && derivedMode);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_CHECK, showColor && supportsDerived && derivedMode);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_EDIT, showColor && supportsDerived && derivedMode);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_CHECK, showColor && supportsDerived && derivedMode);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_TARGET_COMBO, showColor && supportsDerived && derivedMode);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_EDIT, showColor && supportsDerived && derivedMode);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_CHECK, showColor && supportsDerived && derivedMode);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_EDIT, showColor && supportsDerived && derivedMode);
+
+    const bool showLiteral = showColor && (!supportsDerived || !derivedMode);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_HEX_LABEL, showLiteral);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_HEX_EDIT, showLiteral);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_RED_LABEL, showLiteral);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_RED_EDIT, showLiteral);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_RED_SLIDER, showLiteral);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_GREEN_LABEL, showLiteral);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_GREEN_EDIT, showLiteral);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_GREEN_SLIDER, showLiteral);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_BLUE_LABEL, showLiteral);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_BLUE_EDIT, showLiteral);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_BLUE_SLIDER, showLiteral);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_LABEL, showLiteral);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_EDIT, showLiteral);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_SLIDER, showLiteral);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_PICK, showLiteral);
+
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_SWATCH, showColor);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_SAMPLE, showColor);
 }
 
 int MeasureLabelColumnWidth(HWND hwnd, const std::vector<int>& labelIds) {
@@ -589,23 +639,7 @@ void ShowLayoutEditEditors(HWND hwnd,
     ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_FONT_WEIGHT_EDIT, showFont);
     ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_FONT_SAMPLE, showFont);
 
-    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_HEX_LABEL, showColor);
-    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_HEX_EDIT, showColor);
-    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_SWATCH, showColor);
-    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_SAMPLE, showColor);
-    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_RED_LABEL, showColor);
-    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_RED_EDIT, showColor);
-    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_RED_SLIDER, showColor);
-    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_GREEN_LABEL, showColor);
-    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_GREEN_EDIT, showColor);
-    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_GREEN_SLIDER, showColor);
-    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_BLUE_LABEL, showColor);
-    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_BLUE_EDIT, showColor);
-    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_BLUE_SLIDER, showColor);
-    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_LABEL, showColor);
-    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_EDIT, showColor);
-    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_SLIDER, showColor);
-    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_PICK, showColor);
+    ShowColorEditorControls(hwnd, showColor, false, false);
 
     ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_WEIGHT_FIRST_LABEL, showWeights);
     ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_WEIGHT_FIRST_EDIT, showWeights);
@@ -900,51 +934,81 @@ void LayoutLayoutEditRightPane(LayoutEditDialogState* state, HWND hwnd) {
             break;
         }
         case LayoutEditEditorKind::Color: {
+            const bool supportsDerived = ColorSelectionSupportsDerived(state);
+            const bool derivedMode = supportsDerived && ColorEditorDerivedMode(hwnd);
+            ShowColorEditorControls(hwnd, true, supportsDerived, derivedMode);
+
+            if (supportsDerived) {
+                const int modeRowHeight = LayoutLabeledControlRow(hwnd,
+                    IDC_LAYOUT_EDIT_COLOR_MODE_LABEL,
+                    IDC_LAYOUT_EDIT_COLOR_MODE_COMBO,
+                    innerLeft,
+                    cursorY,
+                    labelColumnWidth,
+                    metrics.labelGap,
+                    innerWidth - labelColumnWidth - metrics.labelGap,
+                    singleLineFieldHeight);
+                cursorY += modeRowHeight + metrics.rowGap;
+            }
+
             const int swatchSize = std::max(DialogControlHeight(hwnd, IDC_LAYOUT_EDIT_COLOR_SWATCH),
                 DialogControlHeight(hwnd, IDC_LAYOUT_EDIT_COLOR_HEX_EDIT) + 4);
-            const int pickWidth = DialogControlWidth(hwnd, IDC_LAYOUT_EDIT_COLOR_PICK);
-            const int pickHeight = DialogControlHeight(hwnd, IDC_LAYOUT_EDIT_COLOR_PICK);
-            const int hexLabelWidth = MeasureTextWidthForControl(hwnd,
-                                          IDC_LAYOUT_EDIT_COLOR_HEX_LABEL,
-                                          ReadDialogControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_HEX_LABEL)) +
-                                      8;
-            const int hexEditHeight =
-                DialogControlLayoutHeightForVisibleHeight(hwnd, IDC_LAYOUT_EDIT_COLOR_HEX_EDIT, singleLineFieldHeight);
-            const int pickLeft = innerRight - pickWidth;
-            const int hexLabelLeft = innerLeft + swatchSize + metrics.inlineGap;
-            const int hexEditLeft = hexLabelLeft + hexLabelWidth + metrics.labelGap;
-            const int hexEditWidth = std::max(76, pickLeft - metrics.inlineGap - hexEditLeft);
-            const int firstRowHeight = std::max(std::max(swatchSize, singleLineFieldHeight), pickHeight);
-            const int hexLabelHeight = MeasureTextHeightForControl(hwnd,
-                IDC_LAYOUT_EDIT_COLOR_HEX_LABEL,
-                ReadDialogControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_HEX_LABEL),
-                hexLabelWidth,
-                true);
-            SetDialogControlBounds(hwnd,
-                IDC_LAYOUT_EDIT_COLOR_SWATCH,
-                innerLeft,
-                cursorY + ((firstRowHeight - swatchSize) / 2),
-                swatchSize,
-                swatchSize);
-            SetDialogControlBounds(hwnd,
-                IDC_LAYOUT_EDIT_COLOR_HEX_LABEL,
-                hexLabelLeft,
-                cursorY + ((firstRowHeight - hexLabelHeight) / 2),
-                hexLabelWidth,
-                hexLabelHeight);
-            SetDialogControlBounds(hwnd,
-                IDC_LAYOUT_EDIT_COLOR_HEX_EDIT,
-                hexEditLeft,
-                cursorY + ((firstRowHeight - singleLineFieldHeight) / 2),
-                hexEditWidth,
-                hexEditHeight);
-            SetDialogControlBounds(hwnd,
-                IDC_LAYOUT_EDIT_COLOR_PICK,
-                pickLeft,
-                cursorY + ((firstRowHeight - pickHeight) / 2),
-                pickWidth,
-                pickHeight);
-            cursorY += firstRowHeight + metrics.sampleGap;
+            if (derivedMode) {
+                const int baseRowHeight = LayoutLabeledControlRow(hwnd,
+                    IDC_LAYOUT_EDIT_COLOR_BASE_LABEL,
+                    IDC_LAYOUT_EDIT_COLOR_BASE_COMBO,
+                    innerLeft,
+                    cursorY,
+                    labelColumnWidth,
+                    metrics.labelGap,
+                    innerWidth - labelColumnWidth - metrics.labelGap,
+                    singleLineFieldHeight);
+                cursorY += baseRowHeight + metrics.rowGap;
+            } else {
+                const int pickWidth = DialogControlWidth(hwnd, IDC_LAYOUT_EDIT_COLOR_PICK);
+                const int pickHeight = DialogControlHeight(hwnd, IDC_LAYOUT_EDIT_COLOR_PICK);
+                const int hexLabelWidth = MeasureTextWidthForControl(hwnd,
+                                              IDC_LAYOUT_EDIT_COLOR_HEX_LABEL,
+                                              ReadDialogControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_HEX_LABEL)) +
+                                          8;
+                const int hexEditHeight = DialogControlLayoutHeightForVisibleHeight(
+                    hwnd, IDC_LAYOUT_EDIT_COLOR_HEX_EDIT, singleLineFieldHeight);
+                const int pickLeft = innerRight - pickWidth;
+                const int hexLabelLeft = innerLeft + swatchSize + metrics.inlineGap;
+                const int hexEditLeft = hexLabelLeft + hexLabelWidth + metrics.labelGap;
+                const int hexEditWidth = std::max(76, pickLeft - metrics.inlineGap - hexEditLeft);
+                const int firstRowHeight = std::max(std::max(swatchSize, singleLineFieldHeight), pickHeight);
+                const int hexLabelHeight = MeasureTextHeightForControl(hwnd,
+                    IDC_LAYOUT_EDIT_COLOR_HEX_LABEL,
+                    ReadDialogControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_HEX_LABEL),
+                    hexLabelWidth,
+                    true);
+                SetDialogControlBounds(hwnd,
+                    IDC_LAYOUT_EDIT_COLOR_SWATCH,
+                    innerLeft,
+                    cursorY + ((firstRowHeight - swatchSize) / 2),
+                    swatchSize,
+                    swatchSize);
+                SetDialogControlBounds(hwnd,
+                    IDC_LAYOUT_EDIT_COLOR_HEX_LABEL,
+                    hexLabelLeft,
+                    cursorY + ((firstRowHeight - hexLabelHeight) / 2),
+                    hexLabelWidth,
+                    hexLabelHeight);
+                SetDialogControlBounds(hwnd,
+                    IDC_LAYOUT_EDIT_COLOR_HEX_EDIT,
+                    hexEditLeft,
+                    cursorY + ((firstRowHeight - singleLineFieldHeight) / 2),
+                    hexEditWidth,
+                    hexEditHeight);
+                SetDialogControlBounds(hwnd,
+                    IDC_LAYOUT_EDIT_COLOR_PICK,
+                    pickLeft,
+                    cursorY + ((firstRowHeight - pickHeight) / 2),
+                    pickWidth,
+                    pickHeight);
+                cursorY += firstRowHeight + metrics.sampleGap;
+            }
 
             const int sampleHeight = MeasureTextHeightForControl(hwnd,
                 IDC_LAYOUT_EDIT_COLOR_SAMPLE,
@@ -954,56 +1018,104 @@ void LayoutLayoutEditRightPane(LayoutEditDialogState* state, HWND hwnd) {
             SetDialogControlBounds(hwnd, IDC_LAYOUT_EDIT_COLOR_SAMPLE, innerLeft, cursorY, innerWidth, sampleHeight);
             cursorY += sampleHeight + metrics.sampleGap;
 
-            const int valueEditWidth = DialogControlWidth(hwnd, IDC_LAYOUT_EDIT_COLOR_RED_EDIT);
-            const int sliderLeft = innerLeft + labelColumnWidth + metrics.labelGap + valueEditWidth + metrics.inlineGap;
-            const int sliderWidth = std::max(40, innerRight - sliderLeft);
-            const int channelLabelIds[] = {
-                IDC_LAYOUT_EDIT_COLOR_RED_LABEL,
-                IDC_LAYOUT_EDIT_COLOR_GREEN_LABEL,
-                IDC_LAYOUT_EDIT_COLOR_BLUE_LABEL,
-                IDC_LAYOUT_EDIT_COLOR_ALPHA_LABEL,
-            };
-            const int channelEditIds[] = {
-                IDC_LAYOUT_EDIT_COLOR_RED_EDIT,
-                IDC_LAYOUT_EDIT_COLOR_GREEN_EDIT,
-                IDC_LAYOUT_EDIT_COLOR_BLUE_EDIT,
-                IDC_LAYOUT_EDIT_COLOR_ALPHA_EDIT,
-            };
-            const int channelSliderIds[] = {
-                IDC_LAYOUT_EDIT_COLOR_RED_SLIDER,
-                IDC_LAYOUT_EDIT_COLOR_GREEN_SLIDER,
-                IDC_LAYOUT_EDIT_COLOR_BLUE_SLIDER,
-                IDC_LAYOUT_EDIT_COLOR_ALPHA_SLIDER,
-            };
-            for (int i = 0; i < 4; ++i) {
-                const int editHeight =
-                    DialogControlLayoutHeightForVisibleHeight(hwnd, channelEditIds[i], singleLineFieldHeight);
-                const int sliderHeight = DialogControlHeight(hwnd, channelSliderIds[i]);
-                const int rowHeight = std::max(singleLineFieldHeight, sliderHeight);
-                const int labelHeight = MeasureTextHeightForControl(hwnd,
-                    channelLabelIds[i],
-                    ReadDialogControlTextWide(hwnd, channelLabelIds[i]),
-                    labelColumnWidth,
-                    true);
+            if (derivedMode) {
+                const int checkboxWidth = labelColumnWidth + metrics.labelGap + 82;
+                const int shortEditWidth = std::min(72, std::max(52, innerWidth - checkboxWidth));
+                const int rotateHeight = DialogControlLayoutHeightForVisibleHeight(
+                    hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_EDIT, singleLineFieldHeight);
+                SetDialogControlBounds(
+                    hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_CHECK, innerLeft, cursorY, checkboxWidth, singleLineFieldHeight);
                 SetDialogControlBounds(hwnd,
-                    channelLabelIds[i],
-                    innerLeft,
-                    cursorY + ((rowHeight - labelHeight) / 2),
-                    labelColumnWidth,
-                    labelHeight);
+                    IDC_LAYOUT_EDIT_COLOR_ROTATE_EDIT,
+                    innerRight - shortEditWidth,
+                    cursorY,
+                    shortEditWidth,
+                    rotateHeight);
+                cursorY += singleLineFieldHeight + metrics.rowGap;
+
+                const int amountWidth = 58;
+                const int targetLeft = innerLeft + checkboxWidth;
+                const int targetWidth = std::max(58, innerRight - targetLeft - metrics.inlineGap - amountWidth);
+                const int mixTargetHeight = DialogControlLayoutHeightForVisibleHeight(
+                    hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_TARGET_COMBO, singleLineFieldHeight);
+                const int mixAmountHeight = DialogControlLayoutHeightForVisibleHeight(
+                    hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_EDIT, singleLineFieldHeight);
+                SetDialogControlBounds(
+                    hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_CHECK, innerLeft, cursorY, checkboxWidth, singleLineFieldHeight);
+                SetDialogControlBounds(
+                    hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_TARGET_COMBO, targetLeft, cursorY, targetWidth, mixTargetHeight);
                 SetDialogControlBounds(hwnd,
-                    channelEditIds[i],
-                    innerLeft + labelColumnWidth + metrics.labelGap,
-                    cursorY + ((rowHeight - singleLineFieldHeight) / 2),
-                    valueEditWidth,
-                    editHeight);
+                    IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_EDIT,
+                    innerRight - amountWidth,
+                    cursorY,
+                    amountWidth,
+                    mixAmountHeight);
+                cursorY += singleLineFieldHeight + metrics.rowGap;
+
+                const int alphaHeight = DialogControlLayoutHeightForVisibleHeight(
+                    hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_EDIT, singleLineFieldHeight);
+                SetDialogControlBounds(
+                    hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_CHECK, innerLeft, cursorY, checkboxWidth, singleLineFieldHeight);
                 SetDialogControlBounds(hwnd,
-                    channelSliderIds[i],
-                    sliderLeft,
-                    cursorY + ((rowHeight - sliderHeight) / 2),
-                    sliderWidth,
-                    sliderHeight);
-                cursorY += rowHeight + metrics.rowGap;
+                    IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_EDIT,
+                    innerRight - shortEditWidth,
+                    cursorY,
+                    shortEditWidth,
+                    alphaHeight);
+                cursorY += singleLineFieldHeight + metrics.rowGap;
+            } else {
+                const int valueEditWidth = DialogControlWidth(hwnd, IDC_LAYOUT_EDIT_COLOR_RED_EDIT);
+                const int sliderLeft =
+                    innerLeft + labelColumnWidth + metrics.labelGap + valueEditWidth + metrics.inlineGap;
+                const int sliderWidth = std::max(40, innerRight - sliderLeft);
+                const int channelLabelIds[] = {
+                    IDC_LAYOUT_EDIT_COLOR_RED_LABEL,
+                    IDC_LAYOUT_EDIT_COLOR_GREEN_LABEL,
+                    IDC_LAYOUT_EDIT_COLOR_BLUE_LABEL,
+                    IDC_LAYOUT_EDIT_COLOR_ALPHA_LABEL,
+                };
+                const int channelEditIds[] = {
+                    IDC_LAYOUT_EDIT_COLOR_RED_EDIT,
+                    IDC_LAYOUT_EDIT_COLOR_GREEN_EDIT,
+                    IDC_LAYOUT_EDIT_COLOR_BLUE_EDIT,
+                    IDC_LAYOUT_EDIT_COLOR_ALPHA_EDIT,
+                };
+                const int channelSliderIds[] = {
+                    IDC_LAYOUT_EDIT_COLOR_RED_SLIDER,
+                    IDC_LAYOUT_EDIT_COLOR_GREEN_SLIDER,
+                    IDC_LAYOUT_EDIT_COLOR_BLUE_SLIDER,
+                    IDC_LAYOUT_EDIT_COLOR_ALPHA_SLIDER,
+                };
+                for (int i = 0; i < 4; ++i) {
+                    const int editHeight =
+                        DialogControlLayoutHeightForVisibleHeight(hwnd, channelEditIds[i], singleLineFieldHeight);
+                    const int sliderHeight = DialogControlHeight(hwnd, channelSliderIds[i]);
+                    const int rowHeight = std::max(singleLineFieldHeight, sliderHeight);
+                    const int labelHeight = MeasureTextHeightForControl(hwnd,
+                        channelLabelIds[i],
+                        ReadDialogControlTextWide(hwnd, channelLabelIds[i]),
+                        labelColumnWidth,
+                        true);
+                    SetDialogControlBounds(hwnd,
+                        channelLabelIds[i],
+                        innerLeft,
+                        cursorY + ((rowHeight - labelHeight) / 2),
+                        labelColumnWidth,
+                        labelHeight);
+                    SetDialogControlBounds(hwnd,
+                        channelEditIds[i],
+                        innerLeft + labelColumnWidth + metrics.labelGap,
+                        cursorY + ((rowHeight - singleLineFieldHeight) / 2),
+                        valueEditWidth,
+                        editHeight);
+                    SetDialogControlBounds(hwnd,
+                        channelSliderIds[i],
+                        sliderLeft,
+                        cursorY + ((rowHeight - sliderHeight) / 2),
+                        sliderWidth,
+                        sliderHeight);
+                    cursorY += rowHeight + metrics.rowGap;
+                }
             }
 
             const std::wstring hintText = ReadDialogControlTextWide(hwnd, IDC_LAYOUT_EDIT_HINT);

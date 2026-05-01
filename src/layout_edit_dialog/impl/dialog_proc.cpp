@@ -224,6 +224,40 @@ std::optional<INT_PTR> HandleLayoutEditDialogProcMessage(HWND hwnd, UINT message
                 RefreshLayoutEditValidationState(state, hwnd);
                 return TRUE;
             }
+            if (LOWORD(wParam) == IDC_LAYOUT_EDIT_COLOR_MODE_COMBO && HIWORD(wParam) == CBN_SELCHANGE) {
+                if (state != nullptr && !state->updatingControls) {
+                    RefreshSelectedColorDerivedControls(state, hwnd);
+                    LayoutLayoutEditRightPane(state, hwnd);
+                    PreviewSelectedColor(state, hwnd);
+                    RefreshLayoutEditValidationState(state, hwnd);
+                    RefreshLayoutEditRightPane(hwnd);
+                }
+                return TRUE;
+            }
+            if ((LOWORD(wParam) == IDC_LAYOUT_EDIT_COLOR_BASE_COMBO ||
+                    LOWORD(wParam) == IDC_LAYOUT_EDIT_COLOR_MIX_TARGET_COMBO) &&
+                HIWORD(wParam) == CBN_SELCHANGE) {
+                PreviewSelectedColor(state, hwnd);
+                RefreshLayoutEditValidationState(state, hwnd);
+                return TRUE;
+            }
+            if ((LOWORD(wParam) == IDC_LAYOUT_EDIT_COLOR_ROTATE_CHECK ||
+                    LOWORD(wParam) == IDC_LAYOUT_EDIT_COLOR_MIX_CHECK ||
+                    LOWORD(wParam) == IDC_LAYOUT_EDIT_COLOR_ALPHA_CHECK) &&
+                HIWORD(wParam) == BN_CLICKED) {
+                RefreshSelectedColorDerivedControls(state, hwnd);
+                PreviewSelectedColor(state, hwnd);
+                RefreshLayoutEditValidationState(state, hwnd);
+                return TRUE;
+            }
+            if ((LOWORD(wParam) == IDC_LAYOUT_EDIT_COLOR_ROTATE_EDIT ||
+                    LOWORD(wParam) == IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_EDIT ||
+                    LOWORD(wParam) == IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_EDIT) &&
+                HIWORD(wParam) == EN_CHANGE) {
+                PreviewSelectedColor(state, hwnd);
+                RefreshLayoutEditValidationState(state, hwnd);
+                return TRUE;
+            }
             if (LOWORD(wParam) == IDC_LAYOUT_EDIT_COLOR_HEX_EDIT && HIWORD(wParam) == EN_CHANGE) {
                 if (state != nullptr && !state->updatingControls) {
                     wchar_t buffer[256] = {};

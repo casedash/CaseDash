@@ -98,6 +98,161 @@ bool IsLiteralColorExpressionText(const std::string& text) {
     return text.empty() || text.front() == '#';
 }
 
+std::string DefaultDerivedBase(LayoutEditParameter parameter) {
+    switch (parameter) {
+        case LayoutEditParameter::ColorBackground:
+        case LayoutEditParameter::ColorPanelFill:
+        case LayoutEditParameter::ColorGraphBackground:
+        case LayoutEditParameter::ColorPanelBorder:
+        case LayoutEditParameter::ColorTrack:
+        case LayoutEditParameter::ColorGraphAxis:
+        case LayoutEditParameter::ColorGraphMarker:
+            return "background";
+        case LayoutEditParameter::ColorForeground:
+        case LayoutEditParameter::ColorIcon:
+        case LayoutEditParameter::ColorMutedText:
+            return "foreground";
+        case LayoutEditParameter::ColorAccent:
+        case LayoutEditParameter::ColorPeakGhost:
+            return "accent";
+        case LayoutEditParameter::ColorLayoutGuide:
+        case LayoutEditParameter::ColorActiveEdit:
+            return "guide";
+        default:
+            return "accent";
+    }
+}
+
+std::string ReadComboTextUtf8(HWND hwnd, int controlId) {
+    HWND combo = GetDlgItem(hwnd, controlId);
+    if (combo == nullptr) {
+        return {};
+    }
+    const LRESULT selection = SendMessageW(combo, CB_GETCURSEL, 0, 0);
+    if (selection != CB_ERR) {
+        wchar_t buffer[128] = {};
+        SendMessageW(combo, CB_GETLBTEXT, static_cast<WPARAM>(selection), reinterpret_cast<LPARAM>(buffer));
+        return Utf8FromWide(buffer);
+    }
+    return ReadDialogControlTextUtf8(hwnd, controlId);
+}
+
+void PopulateTextCombo(HWND hwnd, int controlId, const std::vector<std::string>& options, std::string_view selected) {
+    HWND combo = GetDlgItem(hwnd, controlId);
+    if (combo == nullptr) {
+        return;
+    }
+    SendMessageW(combo, CB_RESETCONTENT, 0, 0);
+    int selectedIndex = CB_ERR;
+    for (const std::string& option : options) {
+        const std::wstring wideOption = WideFromUtf8(option);
+        const LRESULT index = SendMessageW(combo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(wideOption.c_str()));
+        if (index != CB_ERR && option == selected) {
+            selectedIndex = static_cast<int>(index);
+        }
+    }
+    if (selectedIndex == CB_ERR && SendMessageW(combo, CB_GETCOUNT, 0, 0) > 0) {
+        selectedIndex = 0;
+    }
+    if (selectedIndex != CB_ERR) {
+        SendMessageW(combo, CB_SETCURSEL, static_cast<WPARAM>(selectedIndex), 0);
+    }
+}
+
+std::string FormatDialogDouble(double value) {
+    std::ostringstream stream;
+    stream.precision(12);
+    stream << value;
+    std::string text = stream.str();
+    if (const size_t dot = text.find('.'); dot != std::string::npos) {
+        while (!text.empty() && text.back() == '0') {
+            text.pop_back();
+        }
+        if (!text.empty() && text.back() == '.') {
+            text.pop_back();
+        }
+    }
+    return text;
+}
+
+std::wstring FormatDialogAlphaByte(unsigned int alpha) {
+    constexpr wchar_t kHex[] = L"0123456789ABCDEF";
+    std::wstring text = L"0x00";
+    text[2] = kHex[(alpha >> 4) & 0x0Fu];
+    text[3] = kHex[alpha & 0x0Fu];
+    return text;
+}
+
+bool IsDerivedColorMode(HWND hwnd) {
+    return SendDlgItemMessageW(hwnd, IDC_LAYOUT_EDIT_COLOR_MODE_COMBO, CB_GETCURSEL, 0, 0) == 1;
+}
+
+std::optional<ColorExpression> ReadDerivedColorExpressionFromDialog(HWND hwnd) {
+    ColorExpression expression;
+    expression.base = ReadComboTextUtf8(hwnd, IDC_LAYOUT_EDIT_COLOR_BASE_COMBO);
+    if (expression.base.empty()) {
+        return std::nullopt;
+    }
+    if (IsDlgButtonChecked(hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_CHECK) == BST_CHECKED) {
+        const std::wstring text = ReadDialogControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_EDIT);
+        const auto value = TryParseDialogDouble(text.c_str());
+        if (!value.has_value()) {
+            return std::nullopt;
+        }
+        expression.rotateHue = *value;
+    }
+    if (IsDlgButtonChecked(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_CHECK) == BST_CHECKED) {
+        const std::string target = ReadComboTextUtf8(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_TARGET_COMBO);
+        const std::wstring amountText = ReadDialogControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_EDIT);
+        const auto amount = TryParseDialogDouble(amountText.c_str());
+        if (target.empty() || !amount.has_value() || *amount < 0.0 || *amount > 1.0) {
+            return std::nullopt;
+        }
+        expression.mix = ColorMixExpression{target, *amount};
+    }
+    if (IsDlgButtonChecked(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_CHECK) == BST_CHECKED) {
+        expression.alpha =
+            ParseColorExpressionAlphaByte(ReadDialogControlTextUtf8(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_EDIT));
+        if (!expression.alpha.has_value()) {
+            return std::nullopt;
+        }
+    }
+    return expression;
+}
+
+void PopulateColorExpressionControls(HWND hwnd, LayoutEditParameter parameter, const ColorConfig& color) {
+    const std::optional<ColorExpression> parsed =
+        !color.expression.empty() && !IsLiteralColorExpressionText(color.expression)
+            ? ParseColorExpression(color.expression)
+            : std::nullopt;
+    const bool derived = parsed.has_value();
+    PopulateTextCombo(hwnd, IDC_LAYOUT_EDIT_COLOR_MODE_COMBO, {"Literal", "Derived"}, derived ? "Derived" : "Literal");
+
+    ColorExpression expression = parsed.value_or(ColorExpression{DefaultDerivedBase(parameter)});
+    if (expression.mix.has_value() && expression.mix->target.empty()) {
+        expression.mix->target = "accent";
+    }
+    const std::vector<std::string> tokens = {"background", "foreground", "accent", "guide"};
+    PopulateTextCombo(hwnd, IDC_LAYOUT_EDIT_COLOR_BASE_COMBO, tokens, expression.base);
+    PopulateTextCombo(hwnd,
+        IDC_LAYOUT_EDIT_COLOR_MIX_TARGET_COMBO,
+        tokens,
+        expression.mix.has_value() ? expression.mix->target : "accent");
+    CheckDlgButton(
+        hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_CHECK, expression.rotateHue.has_value() ? BST_CHECKED : BST_UNCHECKED);
+    CheckDlgButton(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_CHECK, expression.mix.has_value() ? BST_CHECKED : BST_UNCHECKED);
+    CheckDlgButton(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_CHECK, expression.alpha.has_value() ? BST_CHECKED : BST_UNCHECKED);
+    SetDlgItemTextW(hwnd,
+        IDC_LAYOUT_EDIT_COLOR_ROTATE_EDIT,
+        WideFromUtf8(FormatDialogDouble(expression.rotateHue.value_or(0.0))).c_str());
+    SetDlgItemTextW(hwnd,
+        IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_EDIT,
+        WideFromUtf8(FormatDialogDouble(expression.mix.has_value() ? expression.mix->amount : 0.5)).c_str());
+    SetDlgItemTextW(hwnd,
+        IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_EDIT,
+        FormatDialogAlphaByte(expression.alpha.value_or(color.Alpha())).c_str());
+}
+
 std::vector<std::string> StandardDateTimeFormats(const LayoutNodeFieldEditKey& key) {
     if (key.widgetClass == WidgetClass::ClockTime) {
         return {"HH:MM",
@@ -540,11 +695,8 @@ void PopulateLayoutEditSelection(LayoutEditDialogState* state, HWND hwnd) {
         } else if (state->selectedLeaf->valueFormat == configschema::ValueFormat::ColorHex) {
             const auto value = FindColorRoleValue(state->dialog->Host().CurrentConfig(), *parameter);
             const unsigned int color = value.has_value() ? value->ToRgba() : 0x000000FFu;
-            if (value.has_value() && !value->expression.empty()) {
-                SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_HEX_EDIT, WideFromUtf8(value->expression).c_str());
-            } else {
-                SetColorDialogHex(hwnd, color);
-            }
+            PopulateColorExpressionControls(hwnd, *parameter, value.value_or(ColorConfig::FromRgba(color)));
+            SetColorDialogHex(hwnd, color);
             SetColorDialogChannel(hwnd, kColorDialogControls[0], (color >> 24) & 0xFFu);
             SetColorDialogChannel(hwnd, kColorDialogControls[1], (color >> 16) & 0xFFu);
             SetColorDialogChannel(hwnd, kColorDialogControls[2], (color >> 8) & 0xFFu);
@@ -556,7 +708,8 @@ void PopulateLayoutEditSelection(LayoutEditDialogState* state, HWND hwnd) {
             std::ostringstream trace;
             trace << BuildTraceNodeText(state->selectedNode) << " editor=\"color\"" << BuildColorDialogTraceValues(hwnd)
                   << " config_value="
-                  << QuoteTraceText(value.has_value() ? FormatTraceColorHex(value->ToRgba()) : "none") << " expression="
+                  << QuoteTraceText(value.has_value() ? FormatTraceColorHex(value->ToRgba()) : "none")
+                  << " mode=" << QuoteTraceText(IsDerivedColorMode(hwnd) ? "derived" : "literal") << " expression="
                   << QuoteTraceText(value.has_value() && !value->expression.empty() ? value->expression : "");
             state->dialog->Host().TraceLayoutEditDialogEvent("layout_edit_dialog:populate_selection", trace.str());
         } else {
@@ -686,6 +839,7 @@ void PopulateLayoutEditSelection(LayoutEditDialogState* state, HWND hwnd) {
 
     SetLayoutEditStatus(state, hwnd, LayoutEditStatusKind::Info, L"Previewing changes in the dashboard.");
     state->activeSelectionValid = true;
+    RefreshSelectedColorDerivedControls(state, hwnd);
     state->updatingControls = false;
     LayoutLayoutEditRightPane(state, hwnd);
     UpdateLayoutEditActionState(state, hwnd);
@@ -721,16 +875,16 @@ LayoutEditValidationResult ValidateCurrentSelectionInput(LayoutEditDialogState* 
             return {true, L""};
         }
         if (state->selectedLeaf->valueFormat == configschema::ValueFormat::ColorHex) {
-            wchar_t hexBuffer[256] = {};
-            GetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_HEX_EDIT, hexBuffer, ARRAYSIZE(hexBuffer));
-            const std::string expressionText = Trim(Utf8FromWide(hexBuffer));
-            if (!expressionText.empty() && IsLiteralColorExpressionText(expressionText) &&
-                !TryParseDialogHexColor(hexBuffer).has_value()) {
-                return {false, L"Enter a #RRGGBBAA color value or a derived color expression."};
+            if (IsDerivedColorMode(hwnd)) {
+                if (!ReadDerivedColorExpressionFromDialog(hwnd).has_value()) {
+                    return {false, L"Complete the derived color controls with valid values."};
+                }
+                return {true, L""};
             }
-            if (!expressionText.empty() && !IsLiteralColorExpressionText(expressionText) &&
-                !ParseColorExpression(expressionText).has_value()) {
-                return {false, L"Enter a valid derived color expression."};
+            wchar_t hexBuffer[64] = {};
+            GetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_HEX_EDIT, hexBuffer, ARRAYSIZE(hexBuffer));
+            if (!std::wstring(hexBuffer).empty() && !TryParseDialogHexColor(hexBuffer).has_value()) {
+                return {false, L"Enter a #RRGGBBAA color value."};
             }
             if (!ReadColorDialogValue(hwnd).has_value()) {
                 return {false, L"Enter each RGBA channel as a whole number between 0 and 255."};
@@ -930,13 +1084,13 @@ bool PreviewSelectedColor(LayoutEditDialogState* state, HWND hwnd) {
         return false;
     }
 
-    const std::string expressionText = Trim(ReadDialogControlTextUtf8(hwnd, IDC_LAYOUT_EDIT_COLOR_HEX_EDIT));
-    const bool derivedExpression = parameter != nullptr && !IsLiteralColorExpressionText(expressionText);
     const auto color = ReadColorDialogValue(hwnd);
+    const bool derivedExpression = parameter != nullptr && IsDerivedColorMode(hwnd);
     bool applied = false;
     if (derivedExpression) {
-        applied = ParseColorExpression(expressionText).has_value() &&
-                  state->dialog->Host().ApplyColorExpressionPreview(*parameter, expressionText);
+        const auto expression = ReadDerivedColorExpressionFromDialog(hwnd);
+        applied = expression.has_value() &&
+                  state->dialog->Host().ApplyColorExpressionPreview(*parameter, FormatColorExpression(*expression));
     } else {
         applied = color.has_value() &&
                   (parameter != nullptr ? state->dialog->Host().ApplyColorPreview(*parameter, *color)
@@ -954,10 +1108,28 @@ bool PreviewSelectedColor(LayoutEditDialogState* state, HWND hwnd) {
     std::ostringstream trace;
     trace << BuildTraceNodeText(state->selectedNode) << BuildColorDialogTraceValues(hwnd)
           << " parsed=" << QuoteTraceText(color.has_value() ? FormatTraceColorHex(*color) : "invalid")
-          << " expression=" << QuoteTraceText(derivedExpression ? expressionText : "")
+          << " mode=" << QuoteTraceText(derivedExpression ? "derived" : "literal")
           << " applied=" << QuoteTraceText(applied ? "true" : "false");
     state->dialog->Host().TraceLayoutEditDialogEvent("layout_edit_dialog:preview_color", trace.str());
     return applied;
+}
+
+void RefreshSelectedColorDerivedControls(LayoutEditDialogState* state, HWND hwnd) {
+    if (state == nullptr || hwnd == nullptr) {
+        return;
+    }
+    const bool derived = IsDerivedColorMode(hwnd);
+    const BOOL rotateEnabled =
+        derived && IsDlgButtonChecked(hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_CHECK) == BST_CHECKED ? TRUE : FALSE;
+    const BOOL mixEnabled =
+        derived && IsDlgButtonChecked(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_CHECK) == BST_CHECKED ? TRUE : FALSE;
+    const BOOL alphaEnabled =
+        derived && IsDlgButtonChecked(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_CHECK) == BST_CHECKED ? TRUE : FALSE;
+    EnableWindow(GetDlgItem(hwnd, IDC_LAYOUT_EDIT_COLOR_BASE_COMBO), derived ? TRUE : FALSE);
+    EnableWindow(GetDlgItem(hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_EDIT), rotateEnabled);
+    EnableWindow(GetDlgItem(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_TARGET_COMBO), mixEnabled);
+    EnableWindow(GetDlgItem(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_EDIT), mixEnabled);
+    EnableWindow(GetDlgItem(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_EDIT), alphaEnabled);
 }
 
 bool SetSelectedDialogColor(LayoutEditDialogState* state, HWND hwnd, unsigned int color) {
@@ -1162,11 +1334,13 @@ bool RevertSelectedLayoutEditField(LayoutEditDialogState* state, HWND hwnd) {
             return applied;
         }
         if (state->selectedLeaf->valueFormat == configschema::ValueFormat::ColorHex) {
-            const auto color = FindLayoutEditParameterColorValue(state->originalConfig, *parameter);
+            const auto color = FindColorRoleValue(state->originalConfig, *parameter);
             if (!color.has_value()) {
                 return false;
             }
-            const bool applied = state->dialog->Host().ApplyColorPreview(*parameter, *color);
+            const bool applied = !color->expression.empty() && !IsLiteralColorExpressionText(color->expression)
+                                     ? state->dialog->Host().ApplyColorExpressionPreview(*parameter, color->expression)
+                                     : state->dialog->Host().ApplyColorPreview(*parameter, color->ToRgba());
             if (applied) {
                 PopulateLayoutEditSelection(state, hwnd);
                 RefreshLayoutEditValidationState(state, hwnd);
