@@ -247,7 +247,7 @@ void DashboardApp::ApplyConfigPlacement() {
 
     const UINT currentDpi = CurrentWindowDpi();
     if (targetDpi != currentDpi) {
-        SetWindowPos(hwnd_, HWND_TOP, left, top, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
+        SetWindowPos(hwnd_, nullptr, left, top, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER);
     }
 
     if ((CurrentWindowDpi() != targetDpi || currentDpi_ != targetDpi ||
@@ -255,7 +255,7 @@ void DashboardApp::ApplyConfigPlacement() {
         !ApplyWindowDpi(targetDpi)) {
         return;
     }
-    SetWindowPos(hwnd_, HWND_TOP, left, top, WindowWidth(), WindowHeight(), SWP_NOACTIVATE);
+    SetWindowPos(hwnd_, nullptr, left, top, WindowWidth(), WindowHeight(), SWP_NOACTIVATE | SWP_NOZORDER);
 }
 
 bool DashboardApp::HandleRenderEnvironmentChange(const char* reason) {
