@@ -254,6 +254,9 @@ std::optional<INT_PTR> HandleLayoutEditDialogProcMessage(HWND hwnd, UINT message
                     LOWORD(wParam) == IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_EDIT ||
                     LOWORD(wParam) == IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_EDIT) &&
                 HIWORD(wParam) == EN_CHANGE) {
+                if (state != nullptr && !state->updatingControls) {
+                    SyncDerivedColorSliderFromEdit(hwnd, LOWORD(wParam));
+                }
                 PreviewSelectedColor(state, hwnd);
                 RefreshLayoutEditValidationState(state, hwnd);
                 return TRUE;
@@ -378,6 +381,16 @@ std::optional<INT_PTR> HandleLayoutEditDialogProcMessage(HWND hwnd, UINT message
                         if (const auto color = ReadColorDialogValue(hwnd); color.has_value()) {
                             SetColorDialogHex(hwnd, *color);
                         }
+                        state->updatingControls = false;
+                        PreviewSelectedColor(state, hwnd);
+                        RefreshLayoutEditValidationState(state, hwnd);
+                    }
+                    return TRUE;
+                }
+                if (IsDerivedColorSlider(sliderId)) {
+                    if (!state->updatingControls) {
+                        state->updatingControls = true;
+                        SetDerivedColorEditFromSlider(hwnd, sliderId);
                         state->updatingControls = false;
                         PreviewSelectedColor(state, hwnd);
                         RefreshLayoutEditValidationState(state, hwnd);

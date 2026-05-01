@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 
 #include "config/color_expression.h"
 #include "layout_edit/layout_edit_parameter_edit.h"
@@ -169,6 +170,24 @@ std::wstring FormatDialogAlphaByte(unsigned int alpha) {
     return text;
 }
 
+int RoundToSliderPosition(double value, int minValue, int maxValue) {
+    return std::clamp(static_cast<int>(std::lround(value)), minValue, maxValue);
+}
+
+void SetDerivedRotateSliderPosition(HWND hwnd, double value) {
+    SendDlgItemMessageW(
+        hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_SLIDER, TBM_SETPOS, TRUE, RoundToSliderPosition(value, -180, 180));
+}
+
+void SetDerivedMixSliderPosition(HWND hwnd, double value) {
+    SendDlgItemMessageW(
+        hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_SLIDER, TBM_SETPOS, TRUE, RoundToSliderPosition(value * 100.0, 0, 100));
+}
+
+void SetDerivedAlphaSliderPosition(HWND hwnd, unsigned int value) {
+    SendDlgItemMessageW(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_SLIDER, TBM_SETPOS, TRUE, std::min(value, 255u));
+}
+
 bool IsDerivedColorMode(HWND hwnd) {
     return SendDlgItemMessageW(hwnd, IDC_LAYOUT_EDIT_COLOR_MODE_COMBO, CB_GETCURSEL, 0, 0) == 1;
 }
@@ -237,6 +256,9 @@ void PopulateColorExpressionControls(HWND hwnd, LayoutEditParameter parameter, c
     SetDlgItemTextW(hwnd,
         IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_EDIT,
         FormatDialogAlphaByte(expression.alpha.value_or(color.Alpha())).c_str());
+    SetDerivedRotateSliderPosition(hwnd, expression.rotateHue.value_or(0.0));
+    SetDerivedMixSliderPosition(hwnd, expression.mix.has_value() ? expression.mix->amount : 0.5);
+    SetDerivedAlphaSliderPosition(hwnd, expression.alpha.value_or(color.Alpha()));
 }
 
 std::vector<std::string> StandardDateTimeFormats(const LayoutNodeFieldEditKey& key) {
@@ -1081,6 +1103,61 @@ bool PreviewSelectedColor(LayoutEditDialogState* state, HWND hwnd) {
     return applied;
 }
 
+bool IsDerivedColorSlider(int sliderId) {
+    return sliderId == IDC_LAYOUT_EDIT_COLOR_ROTATE_SLIDER || sliderId == IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_SLIDER ||
+           sliderId == IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_SLIDER;
+}
+
+void SyncDerivedColorSliderFromEdit(HWND hwnd, int editId) {
+    if (hwnd == nullptr) {
+        return;
+    }
+    if (editId == IDC_LAYOUT_EDIT_COLOR_ROTATE_EDIT) {
+        const auto value = TryParseDialogDouble(ReadDialogControlTextWide(hwnd, editId).c_str());
+        if (value.has_value()) {
+            SetDerivedRotateSliderPosition(hwnd, *value);
+        }
+        return;
+    }
+    if (editId == IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_EDIT) {
+        const auto value = TryParseDialogDouble(ReadDialogControlTextWide(hwnd, editId).c_str());
+        if (value.has_value()) {
+            SetDerivedMixSliderPosition(hwnd, *value);
+        }
+        return;
+    }
+    if (editId == IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_EDIT) {
+        const auto value = ParseColorExpressionAlphaByte(ReadDialogControlTextUtf8(hwnd, editId));
+        if (value.has_value()) {
+            SetDerivedAlphaSliderPosition(hwnd, *value);
+        }
+    }
+}
+
+bool SetDerivedColorEditFromSlider(HWND hwnd, int sliderId) {
+    if (hwnd == nullptr || !IsDerivedColorSlider(sliderId)) {
+        return false;
+    }
+    const int position = static_cast<int>(SendDlgItemMessageW(hwnd, sliderId, TBM_GETPOS, 0, 0));
+    switch (sliderId) {
+        case IDC_LAYOUT_EDIT_COLOR_ROTATE_SLIDER:
+            SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_EDIT, WideFromUtf8(std::to_string(position)).c_str());
+            return true;
+        case IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_SLIDER:
+            SetDlgItemTextW(hwnd,
+                IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_EDIT,
+                WideFromUtf8(FormatDialogDouble(static_cast<double>(position) / 100.0)).c_str());
+            return true;
+        case IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_SLIDER:
+            SetDlgItemTextW(hwnd,
+                IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_EDIT,
+                FormatDialogAlphaByte(static_cast<unsigned int>(position)).c_str());
+            return true;
+        default:
+            return false;
+    }
+}
+
 void RefreshSelectedColorDerivedControls(LayoutEditDialogState* state, HWND hwnd) {
     if (state == nullptr || hwnd == nullptr) {
         return;
@@ -1094,9 +1171,13 @@ void RefreshSelectedColorDerivedControls(LayoutEditDialogState* state, HWND hwnd
         derived && IsDlgButtonChecked(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_CHECK) == BST_CHECKED ? TRUE : FALSE;
     EnableWindow(GetDlgItem(hwnd, IDC_LAYOUT_EDIT_COLOR_BASE_COMBO), derived ? TRUE : FALSE);
     EnableWindow(GetDlgItem(hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_EDIT), rotateEnabled);
+    EnableWindow(GetDlgItem(hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_SLIDER), rotateEnabled);
+    EnableWindow(GetDlgItem(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_TARGET_LABEL), mixEnabled);
     EnableWindow(GetDlgItem(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_TARGET_COMBO), mixEnabled);
     EnableWindow(GetDlgItem(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_EDIT), mixEnabled);
+    EnableWindow(GetDlgItem(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_SLIDER), mixEnabled);
     EnableWindow(GetDlgItem(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_EDIT), alphaEnabled);
+    EnableWindow(GetDlgItem(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_SLIDER), alphaEnabled);
 }
 
 bool SetSelectedDialogColor(LayoutEditDialogState* state, HWND hwnd, unsigned int color) {

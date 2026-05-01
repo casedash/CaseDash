@@ -271,11 +271,15 @@ void ShowColorEditorControls(HWND hwnd, bool showColor, bool supportsDerived, bo
     ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_BASE_COMBO, showColor && supportsDerived && derivedMode);
     ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_CHECK, showColor && supportsDerived && derivedMode);
     ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_EDIT, showColor && supportsDerived && derivedMode);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_SLIDER, showColor && supportsDerived && derivedMode);
     ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_CHECK, showColor && supportsDerived && derivedMode);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_TARGET_LABEL, showColor && supportsDerived && derivedMode);
     ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_TARGET_COMBO, showColor && supportsDerived && derivedMode);
     ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_EDIT, showColor && supportsDerived && derivedMode);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_SLIDER, showColor && supportsDerived && derivedMode);
     ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_CHECK, showColor && supportsDerived && derivedMode);
     ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_EDIT, showColor && supportsDerived && derivedMode);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_SLIDER, showColor && supportsDerived && derivedMode);
 
     const bool showLiteral = showColor && (!supportsDerived || !derivedMode);
     ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_HEX_LABEL, showLiteral);
@@ -1090,8 +1094,15 @@ void LayoutLayoutEditRightPane(LayoutEditDialogState* state, HWND hwnd) {
             }
 
             if (derivedMode) {
-                const int checkboxWidth = labelColumnWidth + metrics.labelGap + 82;
-                const int shortEditWidth = std::min(72, std::max(52, innerWidth - checkboxWidth));
+                const int checkboxWidth = std::max(labelColumnWidth + metrics.labelGap + 82,
+                    MeasureTextWidthForControl(hwnd,
+                        IDC_LAYOUT_EDIT_COLOR_MIX_TARGET_LABEL,
+                        ReadDialogControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_TARGET_LABEL)) +
+                        metrics.labelGap);
+                const int valueEditWidth = std::min(52, std::max(40, innerWidth - checkboxWidth));
+                const int valueLeft = innerLeft + checkboxWidth;
+                const int sliderLeft = valueLeft + valueEditWidth + metrics.inlineGap;
+                const int sliderWidth = std::max(40, innerRight - sliderLeft);
                 const int derivedFieldHeight =
                     std::max({DialogControlLayoutHeightForVisibleHeight(
                                   hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_EDIT, singleLineFieldHeight),
@@ -1101,8 +1112,12 @@ void LayoutLayoutEditRightPane(LayoutEditDialogState* state, HWND hwnd) {
                             hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_EDIT, singleLineFieldHeight),
                         DialogControlLayoutHeightForVisibleHeight(
                             hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_EDIT, singleLineFieldHeight)});
+                const int derivedSliderHeight =
+                    std::max({DialogControlHeight(hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_SLIDER),
+                        DialogControlHeight(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_SLIDER),
+                        DialogControlHeight(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_SLIDER)});
                 const int rotateCheckHeight = DialogControlHeight(hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_CHECK);
-                const int rotateRowHeight = std::max(rotateCheckHeight, derivedFieldHeight);
+                const int rotateRowHeight = std::max({rotateCheckHeight, derivedFieldHeight, derivedSliderHeight});
                 SetDialogRowLabelBounds(hwnd,
                     IDC_LAYOUT_EDIT_COLOR_ROTATE_CHECK,
                     innerLeft,
@@ -1113,41 +1128,64 @@ void LayoutLayoutEditRightPane(LayoutEditDialogState* state, HWND hwnd) {
                     true);
                 SetDialogControlBounds(hwnd,
                     IDC_LAYOUT_EDIT_COLOR_ROTATE_EDIT,
-                    innerRight - shortEditWidth,
+                    valueLeft,
                     cursorY + ((rotateRowHeight - derivedFieldHeight) / 2),
-                    shortEditWidth,
+                    valueEditWidth,
                     derivedFieldHeight);
+                SetDialogControlBounds(hwnd,
+                    IDC_LAYOUT_EDIT_COLOR_ROTATE_SLIDER,
+                    sliderLeft,
+                    cursorY + ((rotateRowHeight - derivedSliderHeight) / 2),
+                    sliderWidth,
+                    derivedSliderHeight);
                 cursorY += rotateRowHeight + metrics.rowGap;
 
-                const int amountWidth = 58;
-                const int targetLeft = innerLeft + checkboxWidth;
-                const int targetWidth = std::max(58, innerRight - targetLeft - metrics.inlineGap - amountWidth);
                 const int mixCheckHeight = DialogControlHeight(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_CHECK);
-                const int mixRowHeight = std::max(mixCheckHeight, derivedFieldHeight);
+                const int mixAmountRowHeight = std::max({mixCheckHeight, derivedFieldHeight, derivedSliderHeight});
                 SetDialogRowLabelBounds(hwnd,
                     IDC_LAYOUT_EDIT_COLOR_MIX_CHECK,
                     innerLeft,
                     cursorY,
                     checkboxWidth,
                     mixCheckHeight,
-                    mixRowHeight,
+                    mixAmountRowHeight,
                     true);
                 SetDialogControlBounds(hwnd,
-                    IDC_LAYOUT_EDIT_COLOR_MIX_TARGET_COMBO,
-                    targetLeft,
-                    cursorY + ((mixRowHeight - derivedFieldHeight) / 2),
-                    targetWidth,
+                    IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_EDIT,
+                    valueLeft,
+                    cursorY + ((mixAmountRowHeight - derivedFieldHeight) / 2),
+                    valueEditWidth,
                     derivedFieldHeight);
                 SetDialogControlBounds(hwnd,
-                    IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_EDIT,
-                    innerRight - amountWidth,
-                    cursorY + ((mixRowHeight - derivedFieldHeight) / 2),
-                    amountWidth,
+                    IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_SLIDER,
+                    sliderLeft,
+                    cursorY + ((mixAmountRowHeight - derivedSliderHeight) / 2),
+                    sliderWidth,
+                    derivedSliderHeight);
+                cursorY += mixAmountRowHeight + metrics.rowGap;
+
+                const int mixTargetLabelHeight = MeasureTextHeightForControl(hwnd,
+                    IDC_LAYOUT_EDIT_COLOR_MIX_TARGET_LABEL,
+                    ReadDialogControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_TARGET_LABEL),
+                    checkboxWidth,
+                    true);
+                const int mixTargetRowHeight = std::max(mixTargetLabelHeight, derivedFieldHeight);
+                SetDialogControlBounds(hwnd,
+                    IDC_LAYOUT_EDIT_COLOR_MIX_TARGET_LABEL,
+                    innerLeft,
+                    cursorY + ((mixTargetRowHeight - mixTargetLabelHeight) / 2),
+                    checkboxWidth,
+                    mixTargetLabelHeight);
+                SetDialogControlBounds(hwnd,
+                    IDC_LAYOUT_EDIT_COLOR_MIX_TARGET_COMBO,
+                    valueLeft,
+                    cursorY + ((mixTargetRowHeight - derivedFieldHeight) / 2),
+                    std::max(1, innerRight - valueLeft),
                     derivedFieldHeight);
-                cursorY += mixRowHeight + metrics.rowGap;
+                cursorY += mixTargetRowHeight + metrics.rowGap;
 
                 const int alphaCheckHeight = DialogControlHeight(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_CHECK);
-                const int alphaRowHeight = std::max(alphaCheckHeight, derivedFieldHeight);
+                const int alphaRowHeight = std::max({alphaCheckHeight, derivedFieldHeight, derivedSliderHeight});
                 SetDialogRowLabelBounds(hwnd,
                     IDC_LAYOUT_EDIT_COLOR_ALPHA_CHECK,
                     innerLeft,
@@ -1158,10 +1196,16 @@ void LayoutLayoutEditRightPane(LayoutEditDialogState* state, HWND hwnd) {
                     true);
                 SetDialogControlBounds(hwnd,
                     IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_EDIT,
-                    innerRight - shortEditWidth,
+                    valueLeft,
                     cursorY + ((alphaRowHeight - derivedFieldHeight) / 2),
-                    shortEditWidth,
+                    valueEditWidth,
                     derivedFieldHeight);
+                SetDialogControlBounds(hwnd,
+                    IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_SLIDER,
+                    sliderLeft,
+                    cursorY + ((alphaRowHeight - derivedSliderHeight) / 2),
+                    sliderWidth,
+                    derivedSliderHeight);
                 cursorY += alphaRowHeight + metrics.rowGap;
             } else {
                 const int valueEditWidth = DialogControlWidth(hwnd, IDC_LAYOUT_EDIT_COLOR_RED_EDIT);

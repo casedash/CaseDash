@@ -189,9 +189,9 @@ Theme section behavior:
 - The base color selector offers the standard active-theme token identifiers: `background`, `foreground`, `accent`, and `guide`.
 - Each transformation has an enable switch. Disabled transformations are omitted from the saved color expression.
 - Enabled transformations are shown and saved in the fixed operation order: `rotate_hue`, then `mix`, then `alpha`.
-- `rotate_hue` exposes a signed degree value.
-- `mix` exposes a target color selector with the same active-theme token identifiers and an amount value from `0.0` to `1.0`.
-- `alpha` exposes an alpha byte value from `0x00` to `0xFF`.
+- `rotate_hue` exposes a signed degree value edit and matching slider.
+- `mix` exposes an amount value edit and matching slider from `0.0` to `1.0`; its target color selector appears on a separate labeled row and offers the same active-theme token identifiers.
+- `alpha` exposes an alpha byte value edit and matching slider from `0x00` to `0xFF`.
 - Valid edits preview immediately. Invalid or incomplete derived expressions do not preview and do not replace the last valid pending value.
 - Per-field revert restores the whole color role expression, including its mode and all transformation controls.
 - The dialog displays the effective resolved color preview for both literal and derived roles.
