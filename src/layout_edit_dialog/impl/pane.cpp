@@ -84,6 +84,20 @@ int DialogComboBoxSelectionHeight(HWND hwnd, int controlId) {
     return 0;
 }
 
+int DialogComboBoxSelectionTop(HWND hwnd, int controlId) {
+    HWND control = GetDlgItem(hwnd, controlId);
+    if (control == nullptr) {
+        return 0;
+    }
+
+    COMBOBOXINFO info{};
+    info.cbSize = sizeof(info);
+    if (GetComboBoxInfo(control, &info) != FALSE) {
+        return std::max(0, static_cast<int>(info.rcItem.top));
+    }
+    return 0;
+}
+
 std::wstring ReadWindowTextWide(HWND window) {
     if (window == nullptr) {
         return {};
@@ -323,9 +337,14 @@ int LayoutLabeledControlRow(HWND hwnd,
         hwnd, labelId, ReadDialogControlTextWide(hwnd, labelId), std::max(1, labelWidth), true);
     const int controlLeft = left + labelWidth + gap;
     const int rowHeight = std::max(forcedRowHeight, std::max(controlHeight, labelHeight));
-    SetDialogControlBounds(
-        hwnd, controlId, controlLeft, top + ((rowHeight - controlHeight) / 2), controlWidth, controlHeight);
-    SetDialogControlBounds(hwnd, labelId, left, top + ((rowHeight - labelHeight) / 2), labelWidth, labelHeight);
+    const int controlTop = top + ((rowHeight - controlHeight) / 2);
+    SetDialogControlBounds(hwnd, controlId, controlLeft, controlTop, controlWidth, controlHeight);
+
+    const int visibleTop = IsDialogComboBoxControl(hwnd, controlId)
+                               ? controlTop + DialogComboBoxSelectionTop(hwnd, controlId)
+                               : controlTop;
+    const int labelTop = visibleTop + ((desiredVisibleControlHeight - labelHeight) / 2);
+    SetDialogControlBounds(hwnd, labelId, left, labelTop, labelWidth, labelHeight);
     return rowHeight;
 }
 
