@@ -4,7 +4,6 @@
 #include <cmath>
 #include <commctrl.h>
 #include <commdlg.h>
-#include <sstream>
 
 #include "dashboard/constants.h"
 #include "dashboard/dashboard_app.h"
@@ -156,35 +155,12 @@ bool IsPredefinedDisplayScale(double scale) {
 }
 
 std::wstring FormatScaleLabel(double scale) {
-    std::ostringstream stream;
-    stream.precision(12);
-    stream << (scale * 100.0);
-    std::string value = stream.str();
-    if (const size_t dot = value.find('.'); dot != std::string::npos) {
-        while (!value.empty() && value.back() == '0') {
-            value.pop_back();
-        }
-        if (!value.empty() && value.back() == '.') {
-            value.pop_back();
-        }
-    }
+    std::string value = FormatDoubleGeneral(scale * 100.0, 12);
     return WideFromUtf8(value + "%");
 }
 
 std::wstring FormatScalePercentageValue(double scale) {
-    std::ostringstream stream;
-    stream.precision(12);
-    stream << (scale * 100.0);
-    std::string value = stream.str();
-    if (const size_t dot = value.find('.'); dot != std::string::npos) {
-        while (!value.empty() && value.back() == '0') {
-            value.pop_back();
-        }
-        if (!value.empty() && value.back() == '.') {
-            value.pop_back();
-        }
-    }
-    return WideFromUtf8(value);
+    return WideFromUtf8(FormatDoubleGeneral(scale * 100.0, 12));
 }
 
 std::wstring FormatLayoutMenuLabel(const LayoutMenuOption& option) {

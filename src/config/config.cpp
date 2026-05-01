@@ -1,6 +1,6 @@
 #include "config/config.h"
 
-#include <sstream>
+#include "util/strings.h"
 
 namespace {
 
@@ -104,12 +104,15 @@ bool AppConfig::operator==(const AppConfig& other) const {
 }
 
 std::string FormatMetricDefinitionValue(const MetricDefinitionConfig& definition) {
-    std::ostringstream stream;
+    std::string text;
     if (definition.telemetryScale) {
-        stream << "*";
+        text = "*";
     } else {
-        stream << definition.scale;
+        text = FormatDoubleGeneral(definition.scale);
     }
-    stream << "," << definition.unit << "," << definition.label;
-    return stream.str();
+    text += ",";
+    text += definition.unit;
+    text += ",";
+    text += definition.label;
+    return text;
 }
