@@ -357,8 +357,16 @@ template <typename Owner, size_t Index = 0> consteval size_t CountReflectedBindi
     }
 }
 
-template <typename Owner, size_t... Index> consteval auto MakeReflectedFieldTuple(std::index_sequence<Index...>) {
-    return std::tuple{reflect_field(FieldTag<Owner, Index>{})...};
+template <typename Owner, size_t... Index>
+consteval auto MakeReflectedFieldTupleType(std::index_sequence<Index...>)
+    -> std::type_identity<std::tuple<ReflectedField<Owner, Index>...>>;
+
+template <typename Owner>
+using ReflectedFieldTuple = typename decltype(MakeReflectedFieldTupleType<Owner>(
+    std::make_index_sequence<CountReflectedFields<Owner>()>{}))::type;
+
+template <typename Owner> constexpr ReflectedFieldTuple<Owner> MakeReflectedFieldTuple() {
+    return {};
 }
 
 template <typename Owner, typename Fn, size_t... Index>
@@ -371,8 +379,8 @@ template <FixedString Name, typename Owner> struct AutoSectionDescriptor {
     using codec_type = typename DefaultSectionCodec<Owner>::codec_type;
 
     static constexpr auto name = Name;
-    static constexpr auto fields =
-        MakeReflectedFieldTuple<Owner>(std::make_index_sequence<CountReflectedFields<Owner>()>{});
+    using fields_type = ReflectedFieldTuple<Owner>;
+    static constexpr fields_type fields = MakeReflectedFieldTuple<Owner>();
 };
 
 template <FixedString Prefix, typename Owner> struct AutoDynamicSectionDescriptor {
@@ -380,8 +388,8 @@ template <FixedString Prefix, typename Owner> struct AutoDynamicSectionDescripto
     using codec_type = typename DefaultSectionCodec<Owner>::codec_type;
 
     static constexpr auto prefix = Prefix;
-    static constexpr auto fields =
-        MakeReflectedFieldTuple<Owner>(std::make_index_sequence<CountReflectedFields<Owner>()>{});
+    using fields_type = ReflectedFieldTuple<Owner>;
+    static constexpr fields_type fields = MakeReflectedFieldTuple<Owner>();
 
     static constexpr bool Matches(std::string_view sectionName) {
         return sectionName.rfind(prefix.view(), 0) == 0;
