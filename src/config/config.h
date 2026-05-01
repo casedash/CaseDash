@@ -189,6 +189,7 @@ struct LayoutGuideSheetConfig {
     CONFIG_VALUE(int, calloutRadius, "callout_radius");
     CONFIG_VALUE(int, calloutBorderWidth, "callout_border_width");
     CONFIG_VALUE(int, leaderStrokeWidth, "leader_stroke_width");
+    CONFIG_VALUE(int, leaderEndpointDiameter, "leader_endpoint_diameter");
     CONFIG_VALUE(int, overviewBorderWidth, "overview_border_width");
     CONFIG_VALUE(int, overviewGuideStrokeWidth, "overview_guide_stroke_width");
     CONFIG_VALUE(int, overviewGuideHitInset, "overview_guide_hit_inset");

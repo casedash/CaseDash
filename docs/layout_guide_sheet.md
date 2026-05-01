@@ -116,7 +116,8 @@ User-visible labels and documentation refer to the generated image as a `layout 
 - Leader lines use the configured `leader_stroke_width`, are solid and square-capped, and are drawn above card content but below bubble borders and text.
 - Leader lines use `callout_leader_color` exactly as configured.
 - The leader starts at the representative target rectangle or anchor shape and ends at the closest compatible point on the bubble border.
-- The leader does not use arrowheads, dots, elbows, curves, glow, or shadow.
+- A small filled circle using `callout_leader_color` marks the bubble-border attachment point. Its diameter comes from `leader_endpoint_diameter`.
+- The leader does not use arrowheads, elbows, curves, glow, or shadow.
 - Bubbles use a rounded rectangle with configured corner radius, horizontal padding, vertical padding, and border width.
 - Bubble fill uses `callout_fill_color` exactly as configured.
 - Bubble borders use `callout_border_color`.
@@ -124,7 +125,7 @@ User-visible labels and documentation refer to the generated image as a `layout 
 - The first line uses `callout_parameter_color`; the second line uses `callout_description_color` and is always reserved when the tooltip has description text.
 - The configured `callout_line_gap` separates the parameter line from the description line.
 - Bubbles do not use drop shadows or blurred backplates because the artifact must stay crisp under screenshot comparison.
-- Guide-sheet-only margins, block spacing, callout spacing, bubble padding, border widths, leader stroke width, and packed-overview helper stroke and handle sizes come from `[layout_guide_sheet]`.
+- Guide-sheet-only margins, block spacing, callout spacing, bubble padding, border widths, leader stroke and endpoint sizes, and packed-overview helper stroke and handle sizes come from `[layout_guide_sheet]`.
 
 ## Bubble Layout Algorithm
 

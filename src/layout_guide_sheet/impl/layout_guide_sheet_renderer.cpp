@@ -32,6 +32,11 @@ RenderRect MakeOverviewSquareAnchorRect(int centerX, int centerY, int size) {
     return RenderRect{centerX - half, centerY - half, centerX - half + size, centerY - half + size};
 }
 
+RenderRect CenteredSquare(RenderPoint center, int size) {
+    const int half = size / 2;
+    return RenderRect{center.x - half, center.y - half, center.x - half + size, center.y - half + size};
+}
+
 RenderPoint TransformPoint(RenderPoint point, const RenderRect& source, const RenderRect& dest) {
     const double scaleX = source.Width() == 0 ? 1.0 : static_cast<double>(dest.Width()) / source.Width();
     const double scaleY = source.Height() == 0 ? 1.0 : static_cast<double>(dest.Height()) / source.Height();
@@ -669,6 +674,7 @@ bool LayoutGuideSheetRenderer::Render(const SystemSnapshot& snapshot,
     const int bubblePaddingY = ScaleNonNegative(dashboardRenderer_, sheetStyle.calloutPaddingY);
     const int lineGap = ScaleNonNegative(dashboardRenderer_, sheetStyle.calloutLineGap);
     const int bubbleRadius = ScaleNonNegative(dashboardRenderer_, sheetStyle.calloutRadius);
+    const int leaderEndpointDiameter = ScaleNonNegative(dashboardRenderer_, sheetStyle.leaderEndpointDiameter);
     const int textLineHeight = std::max(1, dashboardRenderer_.Renderer().TextMetrics().smallText);
     const int targetSafeRadius = ScaleAtLeast(dashboardRenderer_, sheetStyle.leaderStrokeWidth + 2, 2);
     const int gaugeRingThickness =
@@ -979,6 +985,11 @@ bool LayoutGuideSheetRenderer::Render(const SystemSnapshot& snapshot,
                 bubbleRadius,
                 RenderStroke::Solid(RenderColorId::LayoutGuideCalloutBorder,
                     static_cast<float>(ScaleAtLeast(dashboardRenderer_, sheetStyle.calloutBorderWidth, 1))));
+            if (leaderEndpointDiameter > 0) {
+                dashboardRenderer_.Renderer().FillSolidEllipse(
+                    CenteredSquare(callout.bubbleAttachment, leaderEndpointDiameter),
+                    RenderColorId::LayoutGuideCalloutLeader);
+            }
             const RenderRect textRect{callout.bubbleRect.left + bubblePaddingX,
                 callout.bubbleRect.top + bubblePaddingY,
                 callout.bubbleRect.right - bubblePaddingX,
