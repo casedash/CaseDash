@@ -228,12 +228,14 @@ target_compile_options(SystemTelemetry PRIVATE
     /w14505
     /we4505
     /Zi
+    $<$<CONFIG:Release>:/GL>
 )
 
 target_link_options(SystemTelemetry PRIVATE
     $<$<CONFIG:Debug>:/DEBUG>
     $<$<CONFIG:Debug>:/INCREMENTAL>
     $<$<CONFIG:Release>:/OPT:REF>
+    $<$<CONFIG:Release>:/LTCG>
     $<$<CONFIG:Release>:/INCREMENTAL:NO>
     $<$<CONFIG:RelWithDebInfo>:/DEBUG>
     $<$<CONFIG:RelWithDebInfo>:/INCREMENTAL>
