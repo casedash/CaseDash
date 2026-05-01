@@ -40,6 +40,12 @@ bool IsFontsSectionNode(const LayoutEditDialogState* state) {
            state->selectedNode->kind == LayoutEditTreeNodeKind::Section && state->selectedNode->label == "fonts";
 }
 
+bool IsThemeSectionNode(const LayoutEditDialogState* state) {
+    return state != nullptr && state->selectedLeaf == nullptr && state->selectedNode != nullptr &&
+           state->selectedNode->kind == LayoutEditTreeNodeKind::Section &&
+           state->selectedNode->label.rfind("theme.", 0) == 0;
+}
+
 std::optional<ColorConfig> FindThemeColorValue(const AppConfig& config, const ThemeColorEditKey& key) {
     const auto it = std::find_if(config.layout.themes.begin(),
         config.layout.themes.end(),
@@ -585,11 +591,26 @@ bool PopulateDescriptorLayoutEditSelection(LayoutEditDialogState* state, HWND hw
     return handler != nullptr && handler->populate != nullptr && handler->populate(state, hwnd);
 }
 
+std::vector<std::string> ThemeNames(const AppConfig& config) {
+    std::vector<std::string> names;
+    names.reserve(config.layout.themes.size());
+    for (const ThemeConfig& theme : config.layout.themes) {
+        names.push_back(theme.name);
+    }
+    return names;
+}
+
 }  // namespace
 
 LayoutEditEditorKind CurrentLayoutEditEditorKind(const LayoutEditDialogState* state) {
     if (state == nullptr || state->selectedLeaf == nullptr) {
-        return IsFontsSectionNode(state) ? LayoutEditEditorKind::GlobalFontFamily : LayoutEditEditorKind::Summary;
+        if (IsFontsSectionNode(state)) {
+            return LayoutEditEditorKind::GlobalFontFamily;
+        }
+        if (IsThemeSectionNode(state)) {
+            return LayoutEditEditorKind::ThemeSelector;
+        }
+        return LayoutEditEditorKind::Summary;
     }
     if (std::holds_alternative<LayoutWeightEditKey>(state->selectedLeaf->focusKey)) {
         return LayoutEditEditorKind::Weights;
@@ -655,6 +676,24 @@ void PopulateLayoutEditSelection(LayoutEditDialogState* state, HWND hwnd) {
         RefreshLayoutEditRightPane(hwnd);
         state->dialog->Host().TraceLayoutEditDialogEvent("layout_edit_dialog:populate_selection",
             BuildTraceNodeText(state->selectedNode) + " editor=\"font_family\"");
+        return;
+    }
+    if (IsThemeSectionNode(state)) {
+        const AppConfig& config = state->dialog->Host().CurrentConfig();
+        PopulateTextCombo(hwnd, IDC_LAYOUT_EDIT_THEME_COMBO, ThemeNames(config), config.display.theme);
+        DestroyMetricListOrderEditorControls(state);
+        ShowLayoutEditEditors(hwnd, false, false, false, false, false, false, false, false, false, true);
+        SetFontSamplePreview(state, hwnd, std::nullopt, nullptr);
+        SetLayoutEditStatus(state, hwnd, LayoutEditStatusKind::Info, L"Previewing changes in the dashboard.");
+        state->activeSelectionValid = true;
+        state->updatingControls = false;
+        LayoutLayoutEditRightPane(state, hwnd);
+        UpdateLayoutEditActionState(state, hwnd);
+        RefreshLayoutEditRightPane(hwnd);
+        InvalidateRect(GetDlgItem(hwnd, IDC_LAYOUT_EDIT_THEME_PREVIEW), nullptr, TRUE);
+        state->dialog->Host().TraceLayoutEditDialogEvent("layout_edit_dialog:populate_selection",
+            BuildTraceNodeText(state->selectedNode) +
+                " editor=\"theme_selector\" theme=" + QuoteTraceText(config.display.theme));
         return;
     }
     if (state->selectedLeaf == nullptr) {
@@ -959,7 +998,7 @@ void RefreshLayoutEditValidationState(LayoutEditDialogState* state, HWND hwnd) {
     }
     const LayoutEditValidationResult validation = ValidateCurrentSelectionInput(state, hwnd);
     state->activeSelectionValid = validation.valid;
-    if (state->selectedLeaf == nullptr) {
+    if (state->selectedLeaf == nullptr && !IsFontsSectionNode(state) && !IsThemeSectionNode(state)) {
         SetLayoutEditStatus(state, hwnd, LayoutEditStatusKind::Info, L"Select a field to edit it here.");
     } else if (validation.valid) {
         SetLayoutEditStatus(state, hwnd, LayoutEditStatusKind::Info, L"Previewing changes in the dashboard.");
@@ -1060,6 +1099,22 @@ bool PreviewSelectedGlobalFontFamily(LayoutEditDialogState* state, HWND hwnd, UI
     state->dialog->Host().TraceLayoutEditDialogEvent("layout_edit_dialog:preview_font_family",
         BuildTraceNodeText(state->selectedNode) + " family=" + QuoteTraceText(family) +
             " applied=" + QuoteTraceText(applied ? "true" : "false"));
+    return applied;
+}
+
+bool PreviewSelectedTheme(LayoutEditDialogState* state, HWND hwnd) {
+    if (state == nullptr || !IsThemeSectionNode(state) || state->updatingControls) {
+        return false;
+    }
+
+    const std::string themeName = ReadComboTextUtf8(hwnd, IDC_LAYOUT_EDIT_THEME_COMBO);
+    const bool applied = !themeName.empty() && state->dialog->Host().ApplyThemePreview(themeName);
+    state->dialog->Host().TraceLayoutEditDialogEvent("layout_edit_dialog:preview_theme",
+        BuildTraceNodeText(state->selectedNode) + " theme=" + QuoteTraceText(themeName) +
+            " applied=" + QuoteTraceText(applied ? "true" : "false"));
+    if (applied) {
+        state->dialog->Refresh();
+    }
     return applied;
 }
 
@@ -1357,6 +1412,14 @@ bool RevertSelectedLayoutEditField(LayoutEditDialogState* state, HWND hwnd) {
             const bool applied = state->dialog->Host().ApplyFontSetPreview(state->originalConfig.layout.fonts);
             if (applied) {
                 PopulateLayoutEditSelection(state, hwnd);
+                RefreshLayoutEditValidationState(state, hwnd);
+            }
+            return applied;
+        }
+        if (IsThemeSectionNode(state)) {
+            const bool applied = state->dialog->Host().ApplyThemePreview(state->originalConfig.display.theme);
+            if (applied) {
+                state->dialog->Refresh();
                 RefreshLayoutEditValidationState(state, hwnd);
             }
             return applied;

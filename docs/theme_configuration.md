@@ -177,7 +177,9 @@ The modeless `Edit Configuration` dialog exposes theme editing through the exist
 Theme section behavior:
 
 - Only the active `[theme.<name>]` section selected by `[display] theme` appears in the dialog tree.
-- Selecting the active theme section shows one RGBA editor for each standard theme token: `background`, `foreground`, `accent`, and `guide`.
+- Selecting the active theme section shows a theme selector dropdown listing all configured themes. Changing the selector updates `[display] theme`, previews immediately, refreshes the tree to the newly active theme section, and keeps the edit session active.
+- The active theme section editor shows an equilateral triangle preview below the dropdown. The triangle top edge blends from `background` at the left vertex to `foreground` at the right vertex, the bottom-center vertex is `accent`, and a thin vertical line through the triangle uses `guide`.
+- Expanding the active theme section shows one RGBA editor for each standard theme token: `background`, `foreground`, `accent`, and `guide`.
 - Theme token edits preview immediately.
 - Per-field revert works for theme token edits.
 

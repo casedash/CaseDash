@@ -320,6 +320,10 @@ public:
         return shellUi_.ApplyFontSetPreview(fonts);
     }
 
+    bool ApplyThemePreview(const std::string& themeName) override {
+        return shellUi_.ApplyThemePreview(themeName);
+    }
+
     bool ApplyColorPreview(LayoutEditParameter parameter, unsigned int value) override {
         return shellUi_.ApplyColorPreview(parameter, value);
     }
@@ -668,6 +672,20 @@ bool DashboardShellUi::ApplyFontFamilyPreview(const std::string& family) {
 bool DashboardShellUi::ApplyFontSetPreview(const UiFontSetConfig& fonts) {
     AppConfig updatedConfig = CurrentConfig();
     updatedConfig.layout.fonts = fonts;
+    RestoreConfigSnapshot(updatedConfig);
+    return true;
+}
+
+bool DashboardShellUi::ApplyThemePreview(const std::string& themeName) {
+    AppConfig updatedConfig = CurrentConfig();
+    const auto themeIt = std::find_if(updatedConfig.layout.themes.begin(),
+        updatedConfig.layout.themes.end(),
+        [&](const ThemeConfig& theme) { return theme.name == themeName; });
+    if (themeIt == updatedConfig.layout.themes.end()) {
+        return false;
+    }
+    updatedConfig.display.theme = themeName;
+    ResolveConfiguredColors(updatedConfig);
     RestoreConfigSnapshot(updatedConfig);
     return true;
 }

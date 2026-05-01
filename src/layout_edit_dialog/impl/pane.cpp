@@ -1,6 +1,7 @@
 #include "layout_edit_dialog/impl/pane.h"
 
 #include <algorithm>
+#include <cmath>
 #include <commctrl.h>
 
 #include "layout_edit/layout_edit_parameter_edit.h"
@@ -32,6 +33,18 @@ struct LayoutEditRightPaneMetrics {
 };
 
 constexpr LayoutEditRightPaneMetrics kLayoutEditRightPaneMetrics{};
+
+COLORREF ColorConfigToColorRef(const ColorConfig& color) {
+    const unsigned int rgba = color.ToRgba();
+    return RGB((rgba >> 24) & 0xFFu, (rgba >> 16) & 0xFFu, (rgba >> 8) & 0xFFu);
+}
+
+const ThemeConfig* FindActiveTheme(const AppConfig& config) {
+    const auto it = std::find_if(config.layout.themes.begin(),
+        config.layout.themes.end(),
+        [&](const ThemeConfig& theme) { return theme.name == config.display.theme; });
+    return it != config.layout.themes.end() ? &(*it) : nullptr;
+}
 
 bool DialogControlHasClass(HWND hwnd, int controlId, const wchar_t* expectedClassName) {
     HWND control = GetDlgItem(hwnd, controlId);
@@ -242,6 +255,8 @@ std::vector<int> ActiveEditorLabelControls(LayoutEditEditorKind kind, bool showB
         }
         case LayoutEditEditorKind::DateTimeFormat:
             return {IDC_LAYOUT_EDIT_DATETIME_FORMAT_LABEL};
+        case LayoutEditEditorKind::ThemeSelector:
+            return {IDC_LAYOUT_EDIT_THEME_LABEL};
         case LayoutEditEditorKind::MetricListOrder:
         case LayoutEditEditorKind::Numeric:
         case LayoutEditEditorKind::Summary:
@@ -631,6 +646,89 @@ void SetColorSamplePreview(LayoutEditDialogState* state, HWND hwnd, unsigned int
     InvalidateRect(GetDlgItem(hwnd, IDC_LAYOUT_EDIT_COLOR_SAMPLE), nullptr, TRUE);
 }
 
+void DrawThemePreview(LayoutEditDialogState* state, const DRAWITEMSTRUCT& drawItem) {
+    if (state == nullptr || drawItem.hDC == nullptr) {
+        return;
+    }
+    const ThemeConfig* theme = FindActiveTheme(state->dialog->Host().CurrentConfig());
+    if (theme == nullptr) {
+        FillRect(drawItem.hDC, &drawItem.rcItem, GetSysColorBrush(COLOR_3DFACE));
+        return;
+    }
+
+    const RECT rect = drawItem.rcItem;
+    FillRect(drawItem.hDC, &rect, GetSysColorBrush(COLOR_3DFACE));
+    const int availableWidth = std::max(1, static_cast<int>(rect.right - rect.left - 2));
+    const int availableHeight = std::max(1, static_cast<int>(rect.bottom - rect.top - 2));
+    const int side = std::max(1, std::min(availableWidth, static_cast<int>(availableHeight * 2.0 / std::sqrt(3.0))));
+    const int triangleHeight = std::max(1, static_cast<int>(std::lround(side * std::sqrt(3.0) / 2.0)));
+    const double leftX = rect.left + ((rect.right - rect.left - side) / 2.0);
+    const double rightX = leftX + side;
+    const double topY = rect.top + ((rect.bottom - rect.top - triangleHeight) / 2.0);
+    const double bottomX = (leftX + rightX) / 2.0;
+    const double bottomY = topY + triangleHeight;
+
+    const COLORREF background = ColorConfigToColorRef(theme->background);
+    const COLORREF foreground = ColorConfigToColorRef(theme->foreground);
+    const COLORREF accent = ColorConfigToColorRef(theme->accent);
+    const double denom = (topY - bottomY) * (leftX - bottomX) + (bottomX - rightX) * (topY - bottomY);
+    if (std::abs(denom) < 0.0001) {
+        return;
+    }
+    const int minX = static_cast<int>(std::floor(leftX));
+    const int maxX = static_cast<int>(std::ceil(rightX));
+    const int minY = static_cast<int>(std::floor(topY));
+    const int maxY = static_cast<int>(std::ceil(bottomY));
+    for (int y = minY; y <= maxY; ++y) {
+        for (int x = minX; x <= maxX; ++x) {
+            const double sampleX = x + 0.5;
+            const double sampleY = y + 0.5;
+            const double backgroundWeight =
+                ((topY - bottomY) * (sampleX - bottomX) + (bottomX - rightX) * (sampleY - bottomY)) / denom;
+            const double foregroundWeight =
+                ((bottomY - topY) * (sampleX - bottomX) + (leftX - bottomX) * (sampleY - bottomY)) / denom;
+            const double accentWeight = 1.0 - backgroundWeight - foregroundWeight;
+            if (backgroundWeight < -0.001 || foregroundWeight < -0.001 || accentWeight < -0.001) {
+                continue;
+            }
+            SetPixel(drawItem.hDC,
+                x,
+                y,
+                RGB(std::clamp(static_cast<int>(std::lround(backgroundWeight * GetRValue(background) +
+                                                            foregroundWeight * GetRValue(foreground) +
+                                                            accentWeight * GetRValue(accent))),
+                        0,
+                        255),
+                    std::clamp(static_cast<int>(std::lround(backgroundWeight * GetGValue(background) +
+                                                            foregroundWeight * GetGValue(foreground) +
+                                                            accentWeight * GetGValue(accent))),
+                        0,
+                        255),
+                    std::clamp(static_cast<int>(std::lround(backgroundWeight * GetBValue(background) +
+                                                            foregroundWeight * GetBValue(foreground) +
+                                                            accentWeight * GetBValue(accent))),
+                        0,
+                        255)));
+        }
+    }
+
+    HPEN outlinePen = CreatePen(PS_SOLID, 1, GetSysColor(COLOR_WINDOWTEXT));
+    HPEN guidePen = CreatePen(PS_SOLID, 1, ColorConfigToColorRef(theme->guide));
+    HGDIOBJ oldPen = SelectObject(drawItem.hDC, outlinePen);
+    HGDIOBJ oldBrush = SelectObject(drawItem.hDC, GetStockObject(NULL_BRUSH));
+    POINT points[] = {{static_cast<LONG>(std::lround(leftX)), static_cast<LONG>(std::lround(topY))},
+        {static_cast<LONG>(std::lround(rightX)), static_cast<LONG>(std::lround(topY))},
+        {static_cast<LONG>(std::lround(bottomX)), static_cast<LONG>(std::lround(bottomY))}};
+    Polygon(drawItem.hDC, points, 3);
+    SelectObject(drawItem.hDC, guidePen);
+    MoveToEx(drawItem.hDC, static_cast<int>(std::lround(bottomX)), static_cast<int>(std::lround(topY)), nullptr);
+    LineTo(drawItem.hDC, static_cast<int>(std::lround(bottomX)), static_cast<int>(std::lround(bottomY)));
+    SelectObject(drawItem.hDC, oldBrush);
+    SelectObject(drawItem.hDC, oldPen);
+    DeleteObject(guidePen);
+    DeleteObject(outlinePen);
+}
+
 void SetFontSamplePreview(
     LayoutEditDialogState* state, HWND hwnd, std::optional<LayoutEditParameter> parameter, const UiFontConfig* font) {
     if (state == nullptr) {
@@ -684,12 +782,16 @@ void ShowLayoutEditEditors(HWND hwnd,
     bool showBinding,
     bool showMetricListOrder,
     bool showGlobalFontFamily,
-    bool showDateTimeFormat) {
+    bool showDateTimeFormat,
+    bool showThemeSelector) {
     ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_VALUE_EDIT, showNumeric);
     ShowDialogControl(hwnd,
         IDC_LAYOUT_EDIT_SUMMARY,
         !(showNumeric || showFont || showColor || showWeights || showMetric || showMetricListOrder ||
-            showGlobalFontFamily || showDateTimeFormat));
+            showGlobalFontFamily || showDateTimeFormat || showThemeSelector));
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_THEME_LABEL, showThemeSelector);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_THEME_COMBO, showThemeSelector);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_THEME_PREVIEW, showThemeSelector);
 
     ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_FONT_FACE_LABEL, showFont || showGlobalFontFamily);
     ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_FONT_FACE_EDIT, showFont || showGlobalFontFamily);
@@ -721,7 +823,7 @@ void ShowLayoutEditEditors(HWND hwnd,
     ShowDialogControl(hwnd,
         IDC_LAYOUT_EDIT_HINT,
         showNumeric || showFont || showColor || showWeights || showMetric || showMetricListOrder ||
-            showGlobalFontFamily || showDateTimeFormat);
+            showGlobalFontFamily || showDateTimeFormat || showThemeSelector);
 }
 
 void DestroyMetricListOrderEditorControls(LayoutEditDialogState* state) {
@@ -986,6 +1088,33 @@ void LayoutLayoutEditRightPane(LayoutEditDialogState* state, HWND hwnd) {
                 innerWidth - labelColumnWidth - metrics.labelGap,
                 singleLineFieldHeight);
             cursorY += fontFaceRowHeight + metrics.hintGap;
+
+            const std::wstring hintText = ReadDialogControlTextWide(hwnd, IDC_LAYOUT_EDIT_HINT);
+            const int hintHeight = MeasureTextHeightForControl(hwnd, IDC_LAYOUT_EDIT_HINT, hintText, innerWidth);
+            SetDialogControlBounds(hwnd, IDC_LAYOUT_EDIT_HINT, innerLeft, cursorY, innerWidth, hintHeight);
+            contentBottom = cursorY + hintHeight;
+            break;
+        }
+        case LayoutEditEditorKind::ThemeSelector: {
+            const int comboWidth = innerWidth - labelColumnWidth - metrics.labelGap;
+            const int comboHeight =
+                std::max(DialogControlVisibleHeight(hwnd, IDC_LAYOUT_EDIT_THEME_COMBO), singleLineFieldHeight);
+            const int rowHeight = LayoutLabeledControlRow(hwnd,
+                IDC_LAYOUT_EDIT_THEME_LABEL,
+                IDC_LAYOUT_EDIT_THEME_COMBO,
+                innerLeft,
+                cursorY,
+                labelColumnWidth,
+                metrics.labelGap,
+                comboWidth,
+                comboHeight);
+            cursorY += rowHeight + metrics.sampleGap;
+
+            const int previewHeight = std::max(
+                DialogUnitsToPixelsY(hwnd, 86), std::min(maxGroupHeight - metrics.groupPadding, innerWidth * 2 / 3));
+            SetDialogControlBounds(
+                hwnd, IDC_LAYOUT_EDIT_THEME_PREVIEW, innerLeft, cursorY, innerWidth, std::max(1, previewHeight));
+            cursorY += std::max(1, previewHeight) + metrics.hintGap;
 
             const std::wstring hintText = ReadDialogControlTextWide(hwnd, IDC_LAYOUT_EDIT_HINT);
             const int hintHeight = MeasureTextHeightForControl(hwnd, IDC_LAYOUT_EDIT_HINT, hintText, innerWidth);
@@ -1469,6 +1598,9 @@ void LayoutLayoutEditRightPane(LayoutEditDialogState* state, HWND hwnd) {
         case LayoutEditEditorKind::DateTimeFormat:
             BringDialogControlToTop(hwnd, IDC_LAYOUT_EDIT_DATETIME_FORMAT_COMBO);
             break;
+        case LayoutEditEditorKind::ThemeSelector:
+            BringDialogControlToTop(hwnd, IDC_LAYOUT_EDIT_THEME_COMBO);
+            break;
         case LayoutEditEditorKind::MetricListOrder:
             ShowMetricListOrderEditorControls(state, true);
             for (const auto& row : state->metricListRowControls) {
@@ -1499,8 +1631,15 @@ void UpdateLayoutEditActionState(LayoutEditDialogState* state, HWND hwnd) {
     const bool isFontsSection = state != nullptr && state->selectedLeaf == nullptr && state->selectedNode != nullptr &&
                                 state->selectedNode->kind == LayoutEditTreeNodeKind::Section &&
                                 state->selectedNode->label == "fonts";
-    const bool canRevert = state != nullptr && (state->selectedLeaf != nullptr || isFontsSection);
-    SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_REVERT, isFontsSection ? L"Revert Font Changes" : L"Revert Field");
+    const bool isThemeSection = state != nullptr && state->selectedLeaf == nullptr && state->selectedNode != nullptr &&
+                                state->selectedNode->kind == LayoutEditTreeNodeKind::Section &&
+                                state->selectedNode->label.rfind("theme.", 0) == 0;
+    const bool canRevert = state != nullptr && (state->selectedLeaf != nullptr || isFontsSection || isThemeSection);
+    SetDlgItemTextW(hwnd,
+        IDC_LAYOUT_EDIT_REVERT,
+        isFontsSection   ? L"Revert Font Changes"
+        : isThemeSection ? L"Revert Theme"
+                         : L"Revert Field");
     EnableWindow(GetDlgItem(hwnd, IDC_LAYOUT_EDIT_REVERT), canRevert ? TRUE : FALSE);
 }
 

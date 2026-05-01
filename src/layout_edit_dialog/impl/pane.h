@@ -42,6 +42,7 @@ void ConfigureDialogFonts(LayoutEditDialogState* state, HWND hwnd);
 void DestroyDialogFonts(LayoutEditDialogState* state);
 void SetLayoutEditStatus(LayoutEditDialogState* state, HWND hwnd, LayoutEditStatusKind kind, const std::wstring& text);
 void SetColorSamplePreview(LayoutEditDialogState* state, HWND hwnd, unsigned int color);
+void DrawThemePreview(LayoutEditDialogState* state, const DRAWITEMSTRUCT& drawItem);
 void SetFontSamplePreview(
     LayoutEditDialogState* state, HWND hwnd, std::optional<LayoutEditParameter> parameter, const UiFontConfig* font);
 void ShowLayoutEditEditors(HWND hwnd,
@@ -53,7 +54,8 @@ void ShowLayoutEditEditors(HWND hwnd,
     bool showBinding,
     bool showMetricListOrder,
     bool showGlobalFontFamily = false,
-    bool showDateTimeFormat = false);
+    bool showDateTimeFormat = false,
+    bool showThemeSelector = false);
 void DestroyMetricListOrderEditorControls(LayoutEditDialogState* state);
 void EnsureMetricListOrderEditorControls(LayoutEditDialogState* state, HWND hwnd, size_t rowCount);
 void LayoutLayoutEditRightPane(LayoutEditDialogState* state, HWND hwnd);

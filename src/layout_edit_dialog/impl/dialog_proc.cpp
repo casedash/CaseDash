@@ -185,6 +185,10 @@ std::optional<INT_PTR> HandleLayoutEditDialogProcMessage(HWND hwnd, UINT message
         }
         case WM_DRAWITEM: {
             const auto* draw = reinterpret_cast<const DRAWITEMSTRUCT*>(lParam);
+            if (draw != nullptr && draw->CtlID == IDC_LAYOUT_EDIT_THEME_PREVIEW) {
+                DrawThemePreview(state, *draw);
+                return TRUE;
+            }
             if (draw != nullptr && IsMetricListOrderButtonId(static_cast<int>(draw->CtlID))) {
                 return DrawMetricListOrderButton(draw);
             }
@@ -325,6 +329,10 @@ std::optional<INT_PTR> HandleLayoutEditDialogProcMessage(HWND hwnd, UINT message
                 (HIWORD(wParam) == CBN_SELCHANGE || HIWORD(wParam) == CBN_EDITCHANGE)) {
                 PreviewSelectedDateTimeFormat(state, hwnd);
                 RefreshLayoutEditValidationState(state, hwnd);
+                return TRUE;
+            }
+            if (LOWORD(wParam) == IDC_LAYOUT_EDIT_THEME_COMBO && HIWORD(wParam) == CBN_SELCHANGE) {
+                PreviewSelectedTheme(state, hwnd);
                 return TRUE;
             }
             switch (LOWORD(wParam)) {

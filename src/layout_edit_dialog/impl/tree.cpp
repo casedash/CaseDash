@@ -139,7 +139,12 @@ void RebuildLayoutEditTree(
             preferredLocation = "[" + leaf->sectionName + "] " + leaf->memberName;
         }
     } else if (state->selectedNode != nullptr) {
-        preferredLocation = state->selectedNode->locationText;
+        if (state->selectedNode->kind == LayoutEditTreeNodeKind::Section &&
+            state->selectedNode->label.rfind("theme.", 0) == 0) {
+            preferredLocation = "[theme." + state->dialog->Host().CurrentConfig().display.theme + "]";
+        } else {
+            preferredLocation = state->selectedNode->locationText;
+        }
     }
 
     state->visibleTreeModel = FilterLayoutEditTreeModel(state->treeModel, Utf8FromWide(state->currentFilter));
