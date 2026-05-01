@@ -813,6 +813,18 @@ These changes produced real wins and remain in the codebase:
 - Conclusion:
   - Keep config parser and writer field dispatch on the offset descriptor table. This preserves the `config.h` metadata source of truth while making runtime config I/O less template-heavy.
 
+### Hypothesis: Compact snapshot dump field I/O
+
+- Change:
+  - Replace repeated flat snapshot dump read/write chains with offset-based field descriptors for scalar CPU, GPU, network, storage, and time fields.
+  - Replace the dump parser's local `std::map<std::string, std::string>` key store with a flat key/value vector while preserving duplicate-key last-writer behavior.
+- Result:
+  - Helped the distributed executable modestly.
+- Observed effect:
+  - Compacting snapshot dump I/O reduced `build\SystemTelemetry.exe` from `1,135,104` bytes to `1,134,592` bytes.
+- Conclusion:
+  - Keep the flat key/value dump parser and descriptor-driven flat field I/O. Further dump-size work should target the larger variable-length dump sections only if the resulting code stays straightforward.
+
 ## Practical Guidance For Future Experiments
 
 - Do not retry per-segment gauge fills unless the gauge is redesigned to avoid repeated GDI+ path fills entirely.
