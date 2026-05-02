@@ -17,6 +17,7 @@ The dashboard uses only Windows-native telemetry plus supported vendor APIs. It 
 - When the configured target monitor is temporarily unavailable, the runtime keeps watching for it and restores the saved placement there once the monitor becomes enumerable.
 - `Reload Config` reapplies live configuration immediately without restarting.
 - `Save Config` writes only the live values that differ from the loaded executable-side config state, preserving unchanged explicit overrides and unknown lines.
+- For color values, `Save Config` compares the persisted color expression or literal text, so switching themes does not write derived color roles whose expressions are unchanged.
 - When `Save Config` creates a new executable-side `config.ini`, it writes only the values that differ from the embedded defaults.
 - `Save Full Config To...` exports a full config in the embedded-template shape with live values filled in.
 - Save and export omit runtime-only placeholder metric metadata such as `nothing`, even when metric-list bindings still reference that placeholder id.

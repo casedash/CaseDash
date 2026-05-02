@@ -89,6 +89,14 @@ std::string FormatHexColor(ColorConfig color) {
     return FormatHexColorText(color.ToRgba());
 }
 
+std::string FormatColorConfigValue(const ColorConfig& color) {
+    return !color.expression.empty() ? color.expression : FormatHexColor(color);
+}
+
+bool ColorConfigPersistedValueEquals(const ColorConfig& color, const ColorConfig& compareColor) {
+    return FormatColorConfigValue(color) == FormatColorConfigValue(compareColor);
+}
+
 std::string FormatLogicalSize(const LogicalSizeConfig& size) {
     return std::to_string(size.width) + "," + std::to_string(size.height);
 }
@@ -254,10 +262,7 @@ std::string EncodeRuntimeConfigField(const RuntimeConfigFieldDescriptor& field, 
         case RuntimeConfigFieldValueKind::LogicalSize:
             return FormatLogicalSize(*reinterpret_cast<const LogicalSizeConfig*>(address));
         case RuntimeConfigFieldValueKind::HexColor:
-            if (!reinterpret_cast<const ColorConfig*>(address)->expression.empty()) {
-                return reinterpret_cast<const ColorConfig*>(address)->expression;
-            }
-            return FormatHexColor(*reinterpret_cast<const ColorConfig*>(address));
+            return FormatColorConfigValue(*reinterpret_cast<const ColorConfig*>(address));
         case RuntimeConfigFieldValueKind::FontSpec:
             return FormatFontSpec(*reinterpret_cast<const UiFontConfig*>(address));
         case RuntimeConfigFieldValueKind::LayoutExpression:
@@ -287,8 +292,8 @@ bool RuntimeConfigFieldEquals(const RuntimeConfigFieldDescriptor& field, const v
             return *reinterpret_cast<const LogicalSizeConfig*>(address) ==
                    *reinterpret_cast<const LogicalSizeConfig*>(compareAddress);
         case RuntimeConfigFieldValueKind::HexColor:
-            return *reinterpret_cast<const ColorConfig*>(address) ==
-                   *reinterpret_cast<const ColorConfig*>(compareAddress);
+            return ColorConfigPersistedValueEquals(
+                *reinterpret_cast<const ColorConfig*>(address), *reinterpret_cast<const ColorConfig*>(compareAddress));
         case RuntimeConfigFieldValueKind::FontSpec:
             return *reinterpret_cast<const UiFontConfig*>(address) ==
                    *reinterpret_cast<const UiFontConfig*>(compareAddress);

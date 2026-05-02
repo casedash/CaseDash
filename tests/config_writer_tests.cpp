@@ -1,8 +1,11 @@
+#include <algorithm>
 #include <fstream>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <optional>
 #include <sstream>
 
+#include "config/color_resolver.h"
 #include "config/config_parser.h"
 #include "config/config_writer.h"
 #include "telemetry/metrics.h"
@@ -98,6 +101,35 @@ TEST(ConfigWriter, WritesDerivedColorExpressions) {
 
     EXPECT_THAT(output, testing::HasSubstr("accent_color = accent\r\n"));
     EXPECT_THAT(output, testing::HasSubstr("peak_ghost_color = accent(alpha: 0x60)\r\n"));
+}
+
+TEST(ConfigWriter, MinimalSaveIgnoresThemeResolvedColorChangesWhenExpressionsAreUnchanged) {
+    AppConfig compareConfig = LoadConfig(SourceConfigPath(), true, TestConfigParseContext());
+    std::optional<AppConfig> changedThemeConfig;
+    for (const ThemeConfig& theme : compareConfig.layout.themes) {
+        AppConfig candidateConfig = compareConfig;
+        candidateConfig.display.theme = theme.name;
+        ResolveConfiguredColors(candidateConfig);
+        if (candidateConfig.layout.colors.backgroundColor.ToRgba() !=
+            compareConfig.layout.colors.backgroundColor.ToRgba()) {
+            changedThemeConfig = std::move(candidateConfig);
+            break;
+        }
+    }
+    ASSERT_TRUE(changedThemeConfig.has_value());
+
+    const AppConfig& currentConfig = *changedThemeConfig;
+    ASSERT_NE(
+        currentConfig.layout.colors.backgroundColor.ToRgba(), compareConfig.layout.colors.backgroundColor.ToRgba());
+    ASSERT_EQ(
+        currentConfig.layout.colors.backgroundColor.expression, compareConfig.layout.colors.backgroundColor.expression);
+
+    const std::string output = BuildSavedConfigText(
+        "[display]\r\ntheme = " + compareConfig.display.theme + "\r\n", currentConfig, &compareConfig);
+
+    EXPECT_THAT(output, testing::HasSubstr("theme = " + currentConfig.display.theme + "\r\n"));
+    EXPECT_THAT(output, testing::Not(testing::HasSubstr("[colors]\r\n")));
+    EXPECT_THAT(output, testing::Not(testing::HasSubstr("background_color = ")));
 }
 
 TEST(ConfigWriter, FullExportWritesThemeSections) {
