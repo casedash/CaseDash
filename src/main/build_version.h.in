@@ -1,0 +1,14 @@
+#pragma once
+
+namespace casedash::version {
+
+inline constexpr char kVersion[] = "@CASEDASH_VERSION@";
+inline constexpr char kBaseVersion[] = "@CASEDASH_BASE_VERSION@";
+inline constexpr char kBuildKind[] = "@CASEDASH_BUILD_KIND@";
+inline constexpr char kGitCommit[] = "@CASEDASH_GIT_COMMIT@";
+inline constexpr char kGitCommitShort[] = "@CASEDASH_GIT_COMMIT_SHORT@";
+inline constexpr char kGitTag[] = "@CASEDASH_GIT_TAG@";
+inline constexpr bool kOfficialRelease = @CASEDASH_OFFICIAL_RELEASE_CPP@;
+inline constexpr bool kGitDirty = @CASEDASH_GIT_DIRTY_CPP@;
+
+}  // namespace casedash::version

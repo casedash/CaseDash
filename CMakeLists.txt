@@ -6,6 +6,10 @@ if(NOT MSVC)
     message(FATAL_ERROR "CaseDash currently supports MSVC builds only.")
 endif()
 
+include(cmake/CaseDashVersion.cmake)
+casedash_configure_version_metadata()
+message(STATUS "Configuring CaseDash ${CASEDASH_VERSION}")
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -67,6 +71,7 @@ if(NOT MSCOREE_LIB)
 endif()
 add_executable(CaseDash WIN32
     resources/CaseDash.rc
+    ${CASEDASH_VERSION_RC}
     src/main/main.cpp
     src/diagnostics/diagnostics.cpp
     src/layout_guide_sheet/layout_guide_sheet.cpp
@@ -187,6 +192,10 @@ add_executable(CaseDash WIN32
 
 set_source_files_properties(resources/CaseDash.rc PROPERTIES
     OBJECT_DEPENDS "${CMAKE_SOURCE_DIR}/resources/config.ini;${CMAKE_SOURCE_DIR}/resources/localization.ini"
+)
+
+set_source_files_properties(${CASEDASH_VERSION_RC} ${CASEDASH_BENCHMARKS_VERSION_RC} PROPERTIES
+    OBJECT_DEPENDS "${CASEDASH_MANIFEST_PATH}"
 )
 
 set(casedash_release_speed_sources
@@ -344,6 +353,7 @@ target_include_directories(CaseDash PRIVATE
     "${CMAKE_SOURCE_DIR}/src"
     "${CMAKE_SOURCE_DIR}/resources"
     "${CMAKE_SOURCE_DIR}/src/vendor/adlx"
+    "${CASEDASH_GENERATED_DIR}"
 )
 
 target_compile_definitions(CaseDash PRIVATE
@@ -568,6 +578,7 @@ add_test(NAME CaseDashTests COMMAND CaseDashTests)
 
 add_executable(CaseDashBenchmarks
     resources/CaseDash.rc
+    ${CASEDASH_BENCHMARKS_VERSION_RC}
     tests/benchmarks.cpp
     src/util/strings.cpp
     src/util/scale.cpp

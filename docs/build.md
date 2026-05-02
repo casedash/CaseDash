@@ -1,7 +1,7 @@
 # Build And Development
 
 This document owns build prerequisites, developer setup, build and test commands, install flow, and developer entrypoint scripts.
-See also: [docs/project.md](project.md) for repository policy, [docs/diagnostics.md](diagnostics.md) for diagnostics validation commands, and [docs/architecture.md](architecture.md) for subsystem and build-graph structure.
+See also: [docs/project.md](project.md) for repository policy, [docs/diagnostics.md](diagnostics.md) for diagnostics validation commands, [docs/release.md](release.md) for release publication, and [docs/architecture.md](architecture.md) for subsystem and build-graph structure.
 
 ## Requirements
 
@@ -76,6 +76,13 @@ install.cmd
 - The repository branch protection requires the `Validation` job before pull requests can merge.
 - The workflow uploads `build\CaseDash.exe` as the `CaseDash-exe` artifact after validation succeeds.
 - The workflow uploads `build\clang_tidy_report.txt` as an artifact when it is produced.
+
+## Releases
+
+- [docs/release.md](release.md) owns the official release workflow.
+- `VERSION` is the maintained base version used by CMake-generated build metadata.
+- Tagged release builds use tags in the form `v<VERSION>`, such as `v0.1`.
+- The `Release` workflow validates the tag, builds and tests CaseDash, packages `CaseDash.exe`, writes SHA-256 checksums, and creates the GitHub Release.
 
 ## Provider Notes
 

@@ -5,6 +5,7 @@
 #include <commctrl.h>
 #include <commdlg.h>
 
+#include "build_version.h"
 #include "config/color_resolver.h"
 #include "dashboard/constants.h"
 #include "dashboard/dashboard_app.h"
@@ -191,6 +192,24 @@ void SetMenuItemRadioStyle(HMENU menu, UINT commandId) {
 
 std::wstring BuildLayoutEditMenuLabel(const std::wstring& subject) {
     return L"Edit " + subject + L" ...";
+}
+
+std::wstring BuildAboutText() {
+    std::string text = "CaseDash ";
+    text += casedash::version::kVersion;
+    text += "\n";
+    text += casedash::version::kOfficialRelease ? "Official release" : "Development build";
+    if (std::string_view(casedash::version::kGitCommitShort) != "unknown") {
+        text += "\nCommit ";
+        text += casedash::version::kGitCommitShort;
+        if (casedash::version::kGitDirty) {
+            text += " (dirty)";
+        }
+    }
+    text += "\n\nA compact dashboard for dedicated PC telemetry screens.";
+    text += "\nCopyright (c) Roman Elizarov.";
+    text += "\nLicensed under the Apache License 2.0.";
+    return WideFromUtf8(text);
 }
 
 bool IsMetricListAddRowTarget(const LayoutEditController::TooltipTarget& target) {
@@ -610,6 +629,11 @@ bool DashboardShellUi::IsLayoutEditModalUiActive() const {
     return app_.layoutEditModalUiDepth_ > 0;
 }
 
+void DashboardShellUi::ShowAboutDialog() const {
+    const std::wstring text = BuildAboutText();
+    MessageBoxW(app_.hwnd_, text.c_str(), L"About CaseDash", MB_OK | MB_ICONINFORMATION);
+}
+
 void DashboardShellUi::BeginLayoutEditModalUi() {
     app_.TraceLayoutEditUiEvent("layout_edit_modal:begin_request",
         "depth_before=" + QuoteTraceText(std::to_string(app_.layoutEditModalUiDepth_)));
@@ -1019,6 +1043,9 @@ void DashboardShellUi::ExecuteCommand(UINT selected,
                 app_.controller_.SetDisplayScale(app_, *scale);
             }
             break;
+        case kCommandAbout:
+            ShowAboutDialog();
+            break;
         case kCommandExit:
             HandleExitRequest();
             break;
@@ -1314,6 +1341,7 @@ void DashboardShellUi::ShowContextMenu(
     AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(configureDisplayMenu), L"Config To Display");
     AppendMenuW(menu, autoStartFlags, kCommandAutoStart, L"Auto-start on user logon");
     AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(diagnosticsMenu), L"Diagnostics");
+    AppendMenuW(menu, MF_STRING, kCommandAbout, L"About CaseDash");
     AppendMenuW(menu, MF_STRING, kCommandExit, L"Exit");
     const UINT defaultCommand = ResolveDefaultCommand(source, layoutEditTarget);
     SetMenuDefaultItem(menu, defaultCommand, FALSE);

@@ -63,6 +63,6 @@ Linux users: are you interested? What hardware do you have? A Linux port would b
 
 ## Build And Docs
 
-Build and development setup lives in [docs/build.md](docs/build.md). Product behavior is specified in [docs/specifications.md](docs/specifications.md), and the layout/config language in [docs/layout.md](docs/layout.md).
+Build and development setup lives in [docs/build.md](docs/build.md). Release steps live in [docs/release.md](docs/release.md). Product behavior is specified in [docs/specifications.md](docs/specifications.md), and the layout/config language in [docs/layout.md](docs/layout.md).
 
 This project is licensed under the Apache License 2.0. See [LICENSE](LICENSE).

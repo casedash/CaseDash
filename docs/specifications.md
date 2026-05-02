@@ -51,9 +51,10 @@ The dashboard uses only Windows-native telemetry plus supported vendor APIs. It 
 
 ## Runtime Controls And Menus
 
-- Right-clicking the dashboard opens a popup menu with move, raise, reload, save, layout, theme, scale, network, storage-drive, config-to-display, auto-start, diagnostics, and exit actions.
+- Right-clicking the dashboard opens a popup menu with move, raise, reload, save, layout, theme, scale, network, storage-drive, config-to-display, auto-start, diagnostics, about, and exit actions.
 - The `Diagnostics` submenu exposes the same dump, screenshot, layout-guide-sheet, and full-config export formats used by the diagnostics subsystem.
 - The tray icon exposes the same action set as the dashboard menu.
+- `About CaseDash` shows the compiled version, build kind, and commit when available.
 - The dashboard uses normal window Z-order behavior; `Bring On Top` raises it when needed.
 - Double-clicking the tray icon performs `Bring On Top`.
 - The tray menu shows `Bring On Top` as its default action.

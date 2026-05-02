@@ -61,6 +61,7 @@ private:
     std::optional<UnsavedLayoutEditAction> PromptForUnsavedLayoutEditChanges(UnsavedLayoutEditPrompt prompt) const;
     bool HandleReloadConfig();
     bool HandleConfigureDisplay(const DisplayMenuOption& option);
+    void ShowAboutDialog() const;
     bool StopLayoutEditSession(UnsavedLayoutEditPrompt prompt);
     bool OpenLayoutEditDialog();
     bool EnsureLayoutEditDialog(

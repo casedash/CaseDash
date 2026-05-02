@@ -1,0 +1,110 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to build, such as v0.1'
+        required: true
+        type: string
+
+jobs:
+  release:
+    name: Release
+    runs-on: windows-2025-vs2026
+    timeout-minutes: 240
+    permissions:
+      contents: write
+
+    env:
+      CASEDASH_TIDY_TIMEOUT_SECONDS: 1800
+      CASEDASH_TIDY_MAX_PARALLEL: 4
+      CASEDASH_CACHE_ROOT: ${{ github.workspace }}\.github-cache\CaseDash
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Validate release tag
+        shell: pwsh
+        run: |
+          $version = (Get-Content VERSION -Raw).Trim()
+          $expectedTag = "v$version"
+          $actualTag = "${{ inputs.tag || github.ref_name }}"
+          if ($actualTag -ne $expectedTag) {
+            throw "Release tag '$actualTag' does not match VERSION '$version' (expected '$expectedTag')."
+          }
+          "CASE_DASH_RELEASE_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "CASE_DASH_RELEASE_TAG=$actualTag" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Restore vcpkg caches
+        id: vcpkg-cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ${{ github.workspace }}\.github-cache\CaseDash\vcpkg\downloads
+            ${{ github.workspace }}\.github-cache\CaseDash\vcpkg\registries
+          key: vcpkg-windows-2025-vs2026-release-${{ hashFiles('vcpkg.json', 'build.cmd', '.github/workflows/release.yml') }}-${{ github.run_id }}
+          restore-keys: |
+            vcpkg-windows-2025-vs2026-release-${{ hashFiles('vcpkg.json', 'build.cmd', '.github/workflows/release.yml') }}-
+            vcpkg-windows-2025-vs2026-
+
+      - name: Check format
+        shell: cmd
+        run: format.cmd
+
+      - name: Run lint
+        shell: cmd
+        run: lint.cmd
+
+      - name: Build
+        shell: cmd
+        run: build.cmd
+
+      - name: Run tests
+        shell: cmd
+        run: test.cmd
+
+      - name: Package release
+        shell: pwsh
+        run: |
+          $packageDir = Join-Path $env:RUNNER_TEMP "CaseDash-$env:CASE_DASH_RELEASE_VERSION"
+          New-Item -ItemType Directory -Force -Path $packageDir | Out-Null
+          Copy-Item build\CaseDash.exe $packageDir
+          Copy-Item LICENSE $packageDir
+          Copy-Item README.md $packageDir
+          Compress-Archive -Path "$packageDir\*" -DestinationPath "build\CaseDash-$env:CASE_DASH_RELEASE_VERSION.zip" -Force
+          Get-FileHash "build\CaseDash.exe" -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash)  CaseDash.exe" } |
+            Set-Content "build\CaseDash.exe.sha256"
+          Get-FileHash "build\CaseDash-$env:CASE_DASH_RELEASE_VERSION.zip" -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash)  CaseDash-$env:CASE_DASH_RELEASE_VERSION.zip" } |
+            Set-Content "build\CaseDash-$env:CASE_DASH_RELEASE_VERSION.zip.sha256"
+
+      - name: Create GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create $env:CASE_DASH_RELEASE_TAG `
+            build\CaseDash.exe `
+            build\CaseDash.exe.sha256 `
+            "build\CaseDash-$env:CASE_DASH_RELEASE_VERSION.zip" `
+            "build\CaseDash-$env:CASE_DASH_RELEASE_VERSION.zip.sha256" `
+            --title "CaseDash $env:CASE_DASH_RELEASE_VERSION" `
+            --notes "CaseDash $env:CASE_DASH_RELEASE_VERSION"
+
+      - name: Save vcpkg caches
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ${{ github.workspace }}\.github-cache\CaseDash\vcpkg\downloads
+            ${{ github.workspace }}\.github-cache\CaseDash\vcpkg\registries
+          key: ${{ steps.vcpkg-cache-restore.outputs.cache-primary-key }}

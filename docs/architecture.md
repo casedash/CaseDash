@@ -145,7 +145,8 @@ See also: [docs/specifications.md](specifications.md) for normative product beha
 
 ## Resources And Build Graph
 
-- `resources/CaseDash.rc` is the single resource script for the manifest, dialogs, icons, embedded config, and embedded localization catalog.
+- `resources/CaseDash.rc` owns dialogs, icons, embedded config, and the embedded localization catalog.
+- CMake reads `VERSION` and Git metadata during configure, then generates `build\cmake\generated\build_version.h`, target-specific version resource scripts, and the application manifest used by the resource build.
 - `resources/resource.h` owns the resource and control ids used by shell and dialog code.
 - `CMakeLists.txt` is the single native build graph for the app, tests, benchmarks, resources, and the mixed-mode board-provider bridge object libraries.
 - `CMakeLists.txt` enables C4505 as an error for MSVC C++ targets, disables native C++ RTTI with `/GR-`, and keeps Release app and benchmark links non-incremental with `/OPT:REF` and `/LTCG`; those targets compile Release objects with `/Os` and `/GL` by default so benchmarks measure the same size-oriented whole-program optimization profile as the shipped executable. Benchmark-sensitive renderer, widget, layout, telemetry, and benchmark-harness translation units retain `/O2` within that profile, and the C++/CLI board-provider bridges keep their managed cast support in `/clr` translation units.
