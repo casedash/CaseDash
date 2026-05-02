@@ -1,0 +1,27 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package
+    Name="CaseDash"
+    Manufacturer="Roman Elizarov"
+    Version="$(var.ProductVersion)"
+    UpgradeCode="4E1B19A7-7B3F-4E1F-8B2E-7E6B3B0E57A5"
+    Scope="perMachine">
+    <MajorUpgrade DowngradeErrorMessage="A newer version of CaseDash is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Feature Id="MainFeature" Title="CaseDash" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+    </Feature>
+  </Package>
+
+  <Fragment>
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="CaseDash" />
+    </StandardDirectory>
+
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      <Component Id="CaseDashExeComponent" Guid="71D937AF-A37F-43E9-BE22-20C6E4C6554B" Bitness="always64">
+        <File Id="CaseDashExeFile" Source="$(var.CaseDashExePath)" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>
