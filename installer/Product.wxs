@@ -5,7 +5,7 @@
     Version="$(var.ProductVersion)"
     UpgradeCode="4E1B19A7-7B3F-4E1F-8B2E-7E6B3B0E57A5"
     Scope="perMachine">
-    <MajorUpgrade DowngradeErrorMessage="A newer version of CaseDash is already installed." />
+    <MajorUpgrade AllowDowngrades="yes" />
     <MediaTemplate EmbedCab="yes" />
     <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
     <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Run CaseDash now" />
