@@ -1,7 +1,6 @@
-#include "telemetry/fps/fps_service_protocol.h"
+#include "telemetry/fps_service_protocol.h"
 
 #include <cstring>
-#include <limits>
 
 namespace {
 

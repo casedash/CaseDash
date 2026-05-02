@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "telemetry/fps/fps_service_protocol.h"
+#include "telemetry/fps_service_protocol.h"
 
 TEST(FpsServiceProtocol, RecognizesVersionedRequest) {
     const std::vector<char> request = BuildFpsServiceRequest();
@@ -29,13 +29,15 @@ TEST(FpsServiceProtocol, RoundTripsAvailableSample) {
         ParseFpsServiceResponse(response.data(), response.size(), diagnostics);
 
     ASSERT_TRUE(parsed.has_value()) << diagnostics;
-    EXPECT_TRUE(parsed->available);
-    ASSERT_TRUE(parsed->fps.has_value());
-    EXPECT_DOUBLE_EQ(*parsed->fps, 144.5);
-    EXPECT_EQ(parsed->processId, 42u);
-    EXPECT_EQ(parsed->processName, "game.exe");
-    EXPECT_EQ(parsed->diagnostics, "service active");
-    EXPECT_FALSE(parsed->permissionRequired);
+    const FpsTelemetrySample& parsedSample = *parsed;
+    EXPECT_TRUE(parsedSample.available);
+    ASSERT_TRUE(parsedSample.fps.has_value());
+    const double fps = *parsedSample.fps;
+    EXPECT_DOUBLE_EQ(fps, 144.5);
+    EXPECT_EQ(parsedSample.processId, 42u);
+    EXPECT_EQ(parsedSample.processName, "game.exe");
+    EXPECT_EQ(parsedSample.diagnostics, "service active");
+    EXPECT_FALSE(parsedSample.permissionRequired);
 }
 
 TEST(FpsServiceProtocol, RoundTripsPermissionRequiredSample) {
@@ -50,10 +52,11 @@ TEST(FpsServiceProtocol, RoundTripsPermissionRequiredSample) {
         ParseFpsServiceResponse(response.data(), response.size(), diagnostics);
 
     ASSERT_TRUE(parsed.has_value()) << diagnostics;
-    EXPECT_FALSE(parsed->available);
-    EXPECT_FALSE(parsed->fps.has_value());
-    EXPECT_TRUE(parsed->permissionRequired);
-    EXPECT_EQ(parsed->diagnostics, "access denied");
+    const FpsTelemetrySample& parsedSample = *parsed;
+    EXPECT_FALSE(parsedSample.available);
+    EXPECT_FALSE(parsedSample.fps.has_value());
+    EXPECT_TRUE(parsedSample.permissionRequired);
+    EXPECT_EQ(parsedSample.diagnostics, "access denied");
 }
 
 TEST(FpsServiceProtocol, RejectsMalformedResponse) {

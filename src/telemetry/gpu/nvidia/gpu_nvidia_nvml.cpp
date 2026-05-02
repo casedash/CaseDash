@@ -7,7 +7,7 @@
 #include <optional>
 #include <string>
 
-#include "telemetry/fps/fps_etw_provider.h"
+#include "telemetry/fps/fps_service_client_provider.h"
 #include "telemetry/gpu/gpu_vendor.h"
 #include "util/trace.h"
 #include "util/utf8.h"

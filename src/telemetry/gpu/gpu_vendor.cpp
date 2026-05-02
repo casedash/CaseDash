@@ -5,7 +5,7 @@
 #include <optional>
 #include <string>
 
-#include "telemetry/fps/fps_etw_provider.h"
+#include "telemetry/fps/fps_service_client_provider.h"
 #include "telemetry/gpu/amd/gpu_amd_adl.h"
 #include "telemetry/gpu/nvidia/gpu_nvidia_nvml.h"
 #include "util/strings.h"

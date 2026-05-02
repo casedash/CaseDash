@@ -11,8 +11,8 @@
 #include <winsvc.h>
 
 #include "diagnostics/diagnostics.h"
-#include "telemetry/fps/fps_etw_provider.h"
-#include "telemetry/fps/fps_service_protocol.h"
+#include "telemetry/fps_provider.h"
+#include "telemetry/fps_service_protocol.h"
 #include "util/command_line.h"
 #include "util/paths.h"
 #include "util/trace.h"
@@ -311,7 +311,7 @@ void ServePipeClient(HANDLE pipe, FpsTelemetryProvider& fpsProvider) {
 
 void RunPipeServer(HANDLE stopEvent) {
     Trace trace;
-    std::unique_ptr<FpsTelemetryProvider> fpsProvider = CreatePresentedFpsEtwProvider(trace);
+    std::unique_ptr<FpsTelemetryProvider> fpsProvider = CreateFpsServiceTelemetryProvider(trace);
     if (fpsProvider != nullptr) {
         fpsProvider->Initialize();
     }

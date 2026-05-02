@@ -1,3 +1,5 @@
+#include "telemetry/fps/fps_service_client_provider.h"
+
 #include <windows.h>
 
 #include <iterator>
@@ -7,7 +9,7 @@
 #include <vector>
 
 #include "telemetry/fps/fps_etw_provider.h"
-#include "telemetry/fps/fps_service_protocol.h"
+#include "telemetry/fps_service_protocol.h"
 #include "util/trace.h"
 
 namespace {
