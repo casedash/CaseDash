@@ -1,8 +1,8 @@
 # CaseDash
 
-CaseDash is a compact Windows dashboard for dedicated PC telemetry screens: small USB/HDMI panels, case-mounted displays, or a secondary screen beside the main monitor. It presents CPU, GPU, memory, network, storage, board sensors, and time in a glanceable native interface built for always-on visibility.
+CaseDash is a compact dashboard for dedicated PC telemetry screens: small USB/HDMI panels, case-mounted displays, or a secondary screen beside the main monitor. It presents CPU, GPU, memory, network, storage, board sensors, and time in a native interface built for always-on visibility.
 
-It is not a generic hardware-monitoring suite. CaseDash is focused on making a polished sensor panel easy to place, theme, edit, and run every day on a small display. Place it and forget it &mdash; let it work. It is not something you constantly interact with, so there are no keyboard shortcuts and no extra interactivity beyond what is needed to configure it to your liking.
+It is not a generic hardware-monitoring suite. CaseDash is a polished sensor panel you place, configure, and mostly leave alone. There are no keyboard shortcuts or extra controls beyond what is needed to make the panel look right and stay put.
 
 It works on my machines, with the hardware I have. Contributions are welcome for everything else.
 
@@ -14,29 +14,23 @@ It works on my machines, with the hardware I have. Contributions are welcome for
 
 ## Who and why?
 
-It's me, [Roman Elizarov](https://github.com/elizarov), of ICPC and Kotlin fame. Why a native C++ app? Because I can. It is an experiment for myself in what is possible to build: a tiny, fast, native dashboard with a real layout system, rich themes, and no painful pixel pushing. I'd be glad if it is useful for you, too.
+It's me, [Roman Elizarov](https://github.com/elizarov), of ICPC and Kotlin fame. Why a native C++ app? Because I can. It is an experiment in what is possible to build. I'd be glad if it is useful for you, too.
 
 ## Highlights
 
-- Constraint-based layouts that avoid tedious pixel alignment.
-- Live layout editor with visual guides, draggable structure, and focused field editors.
-- Theme system that derives a full dashboard palette from a small set of key colors.
-- Small, fast native executable optimized for dashboard use: just over a 1 MB `.exe`, with frame drawing measured in milliseconds.
+- Constraint-based layouts and a live editor.
+- Theme system that derives a full palette from a small set of key colors.
+- Small native executable: just over a 1 MB `.exe`, with frame drawing measured in milliseconds.
 - Layouts for small panels from 5-inch 800x480 screens up to wide 9-inch 1920x480 screens.
-- Built-in secondary-display setup through `Configure Display`, including wallpaper setup so the dash screen looks intentional even while the app starts.
-- Keeps its configured monitor, position, and scale without extra placement software.
-- Machine-wide auto-start setup works for all users on the PC out of the box.
-- Tray and dashboard menus for layout, theme, scale, device selection, display setup, and auto-start.
+- Built-in display setup that computes full-screen scale, remembers placement, and prepares a matching startup wallpaper.
+- Machine-wide auto-start setup works for all users out of the box.
 
 ## Supported Hardware
-
-- Windows 11 PCs with a small secondary display, commonly 800x480 or similar.
-- CPU, memory, network, storage, clock, and display data from Windows.
 
 Graphics:
 
 - AMD Radeon GPU telemetry through AMD ADLX.
-- NVIDIA GPU telemetry through NVML, plus presented-FPS capture through Windows ETW.
+- NVIDIA GPU telemetry through NVML, plus presented-FPS capture through ETW.
 
 Motherboards:
 
@@ -47,11 +41,11 @@ Motherboards:
 
 1. Download and run `CaseDash.exe`.
 2. Right-click the dashboard or tray icon.
-3. Pick a layout and theme.
-4. Use `Configure Display` to choose the small screen. It computes the correct full-screen scale and configures its startup wallpaper.
+3. Pick a layout and theme, then select storage and network devices if needed.
+4. Use `Configure Display` to choose the small screen.
 5. Enable `Start with Windows` when the panel is ready for daily use.
 
-Configuration is saved beside the executable as `config.ini`; the embedded default config remains the baseline when no local config exists.
+Configuration is saved beside the executable as `config.ini`.
 
 ## Contributions
 
@@ -59,12 +53,12 @@ Contributions are welcome in code, issues, sketches, and plain ideas.
 
 Good areas to explore:
 
-- New themes and new visual ideas. Fancier widgets? Animations? Everything is welcome as long as the core purpose is maintained.
+- New themes and visual ideas. Do you have cool animations in mind?
 - New layouts for different screen sizes and mounting styles.
-- New GPU telemetry modules.
-- New motherboard sensor modules.
+- New GPU telemetry and motherboard sensor modules.
 - Localization: does it need translation? Which languages, and which parts of the UI?
-- All great ideas are welcome. Open an issue and write what you want to achieve.
+
+Open an issue and write what you want to achieve.
 
 Linux users: are you interested? What hardware do you have? A Linux port would be a cool project to undertake; write up your use cases.
 
