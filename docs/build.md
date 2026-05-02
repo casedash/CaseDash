@@ -30,7 +30,9 @@ Always build through the repository entrypoint:
 build.cmd
 ```
 
-`build.cmd` configures and builds the maintained CMake tree under `build\cmake\`, keeps the final executable under `build\`, preserves the repo-root `vcpkg\` manifest install tree across clean builds, and restores `build\cmake\compile_commands.json` for `clangd`-based editors.
+`build.cmd` configures and builds the maintained CMake tree under `build\cmake\`, keeps the final executable under `build\`, preserves the repo-root `vcpkg\` manifest install tree across clean builds, restores `build\cmake\compile_commands.json` for `clangd`-based editors, and keeps vcpkg download plus registry caches in a user-local cache root so fresh worktrees reuse the same bootstrap downloads.
+
+By default the shared cache root is `%LOCALAPPDATA%\SystemTelemetry\cache`, falls back to `%USERPROFILE%\.systemtelemetry\cache` when `LOCALAPPDATA` is unavailable, and can be overridden with `SYSTEMTELEMETRY_CACHE_ROOT`. `build.cmd` exports `VCPKG_DOWNLOADS` and `X_VCPKG_REGISTRIES_CACHE` from that root unless the caller already set them.
 
 ## Test
 
@@ -68,6 +70,7 @@ install.cmd
 ## GitHub Validation
 
 - The `Validation` workflow runs on every push, pull request, and manual dispatch.
+- The workflow restores the shared vcpkg download and registry caches under `%RUNNER_TOOL_CACHE%\SystemTelemetry-cache` before validation, then saves the refreshed cache contents after the run so repeated GitHub-hosted runs reuse the same bootstrap downloads.
 - The workflow checks formatting first with `format.cmd`, then builds with `build.cmd`, runs tests with `test.cmd`, and runs `lint.cmd tidy` on `windows-2025-vs2026`.
 - The repository branch protection requires the `Validation` job before pull requests can merge.
 - The workflow uploads `build\SystemTelemetry.exe` as the `SystemTelemetry-exe` artifact after validation succeeds.
