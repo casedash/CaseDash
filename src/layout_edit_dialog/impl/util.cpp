@@ -21,6 +21,7 @@ constexpr std::string_view kBoardTemperatureMetricPrefix = "board.temp.";
 constexpr std::string_view kBoardFanMetricPrefix = "board.fan.";
 constexpr double kLchChromaSliderScale = 1000.0;
 constexpr double kLchChromaSliderMax = 0.4;
+constexpr double kHsvUnitSliderScale = 1000.0;
 
 int CALLBACK CollectFontFamilyProc(const LOGFONTW* logFont, const TEXTMETRICW*, DWORD, LPARAM lParam) {
     auto* families = reinterpret_cast<std::vector<std::wstring>*>(lParam);
@@ -87,6 +88,13 @@ OklchColor DisplayRoundedLch(OklchColor lch) {
     return lch;
 }
 
+HsvColor DisplayRoundedHsv(HsvColor hsv) {
+    hsv.h = std::clamp(std::round(hsv.h), 0.0, 360.0);
+    hsv.s = std::clamp(RoundToStep(hsv.s, 0.001), 0.0, 1.0);
+    hsv.v = std::clamp(RoundToStep(hsv.v, 0.001), 0.0, 1.0);
+    return hsv;
+}
+
 void SetSliderRange(HWND hwnd, int sliderId, int minValue, int maxValue, int pageSize, int lineSize) {
     SendDlgItemMessageW(hwnd, sliderId, TBM_SETRANGEMIN, TRUE, minValue);
     SendDlgItemMessageW(hwnd, sliderId, TBM_SETRANGEMAX, TRUE, maxValue);
@@ -114,6 +122,24 @@ void SetLchSliderPositions(HWND hwnd, OklchColor lch) {
         std::clamp(static_cast<int>(std::lround(lch.h)), 0, 360));
 }
 
+void SetHsvSliderPositions(HWND hwnd, HsvColor hsv) {
+    SendDlgItemMessageW(hwnd,
+        IDC_LAYOUT_EDIT_COLOR_HSV_HUE_SLIDER,
+        TBM_SETPOS,
+        TRUE,
+        std::clamp(static_cast<int>(std::lround(hsv.h)), 0, 360));
+    SendDlgItemMessageW(hwnd,
+        IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_SLIDER,
+        TBM_SETPOS,
+        TRUE,
+        std::clamp(static_cast<int>(std::lround(hsv.s * kHsvUnitSliderScale)), 0, 1000));
+    SendDlgItemMessageW(hwnd,
+        IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_SLIDER,
+        TBM_SETPOS,
+        TRUE,
+        std::clamp(static_cast<int>(std::lround(hsv.v * kHsvUnitSliderScale)), 0, 1000));
+}
+
 std::optional<OklchColor> ReadColorDialogLch(HWND hwnd) {
     const auto lightness =
         TryParseDialogDouble(ReadControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_EDIT).c_str());
@@ -124,6 +150,18 @@ std::optional<OklchColor> ReadColorDialogLch(HWND hwnd) {
         return std::nullopt;
     }
     return OklchColor{*lightness, *chroma, *hue};
+}
+
+std::optional<HsvColor> ReadColorDialogHsv(HWND hwnd) {
+    const auto hue = TryParseDialogDouble(ReadControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_HUE_EDIT).c_str());
+    const auto saturation =
+        TryParseDialogDouble(ReadControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_EDIT).c_str());
+    const auto value = TryParseDialogDouble(ReadControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_EDIT).c_str());
+    if (!hue.has_value() || !saturation.has_value() || !value.has_value() || *hue < 0.0 || *hue > 360.0 ||
+        *saturation < 0.0 || *saturation > 1.0 || *value < 0.0 || *value > 1.0) {
+        return std::nullopt;
+    }
+    return HsvColor{*hue, *saturation, *value};
 }
 
 void SetRgbColorDialogChannels(HWND hwnd, unsigned int color) {
@@ -275,6 +313,9 @@ void ConfigureColorSliders(HWND hwnd) {
         25,
         1);
     SetSliderRange(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_HUE_SLIDER, 0, 360, 15, 1);
+    SetSliderRange(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_HUE_SLIDER, 0, 360, 15, 1);
+    SetSliderRange(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_SLIDER, 0, 1000, 100, 1);
+    SetSliderRange(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_SLIDER, 0, 1000, 100, 1);
 }
 
 void ConfigureColorViewTabs(HWND hwnd, ColorEditViewMode selectedMode) {
@@ -289,8 +330,16 @@ void ConfigureColorViewTabs(HWND hwnd, ColorEditViewMode selectedMode) {
         TabCtrl_InsertItem(tab, 0, &item);
         item.pszText = const_cast<wchar_t*>(L"LCH");
         TabCtrl_InsertItem(tab, 1, &item);
+        item.pszText = const_cast<wchar_t*>(L"HSV");
+        TabCtrl_InsertItem(tab, 2, &item);
     }
-    TabCtrl_SetCurSel(tab, selectedMode == ColorEditViewMode::Lch ? 1 : 0);
+    int selectedTab = 0;
+    if (selectedMode == ColorEditViewMode::Lch) {
+        selectedTab = 1;
+    } else if (selectedMode == ColorEditViewMode::Hsv) {
+        selectedTab = 2;
+    }
+    TabCtrl_SetCurSel(tab, selectedTab);
 }
 
 void SetColorDialogChannel(HWND hwnd, const ColorDialogControls& channel, unsigned int value) {
@@ -310,6 +359,14 @@ void SetColorDialogLch(HWND hwnd, unsigned int color) {
     SetLchSliderPositions(hwnd, lch);
 }
 
+void SetColorDialogHsv(HWND hwnd, unsigned int color) {
+    const HsvColor hsv = DisplayRoundedHsv(HsvFromColorBytes(ColorBytesFromRgba(color)));
+    SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_HUE_EDIT, FormatDialogRoundedInteger(hsv.h).c_str());
+    SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_EDIT, FormatDialogRoundedDecimal(hsv.s, 3).c_str());
+    SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_EDIT, FormatDialogRoundedDecimal(hsv.v, 3).c_str());
+    SetHsvSliderPositions(hwnd, hsv);
+}
+
 void SetColorDialogRgbFromLch(HWND hwnd) {
     const auto lch = ReadColorDialogLch(hwnd);
     const auto alpha = ParseColorDialogChannel(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_EDIT);
@@ -321,8 +378,23 @@ void SetColorDialogRgbFromLch(HWND hwnd) {
     SetColorDialogHex(hwnd, color);
 }
 
+void SetColorDialogRgbFromHsv(HWND hwnd) {
+    const auto hsv = ReadColorDialogHsv(hwnd);
+    const auto alpha = ParseColorDialogChannel(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_EDIT);
+    if (!hsv.has_value() || !alpha.has_value()) {
+        return;
+    }
+    const unsigned int color = RgbaFromColorBytes(ColorBytesFromHsv(*hsv, static_cast<double>(*alpha)));
+    SetRgbColorDialogChannels(hwnd, color);
+    SetColorDialogHex(hwnd, color);
+}
+
 bool ColorDialogLchValueValid(HWND hwnd) {
     return ReadColorDialogLch(hwnd).has_value();
+}
+
+bool ColorDialogHsvValueValid(HWND hwnd) {
+    return ReadColorDialogHsv(hwnd).has_value();
 }
 
 bool IsColorLchControlId(int controlId) {
@@ -330,9 +402,20 @@ bool IsColorLchControlId(int controlId) {
            controlId == IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_EDIT || controlId == IDC_LAYOUT_EDIT_COLOR_LCH_HUE_EDIT;
 }
 
+bool IsColorHsvControlId(int controlId) {
+    return controlId == IDC_LAYOUT_EDIT_COLOR_HSV_HUE_EDIT || controlId == IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_EDIT ||
+           controlId == IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_EDIT;
+}
+
 bool IsColorLchSliderId(int controlId) {
     return controlId == IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_SLIDER ||
            controlId == IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_SLIDER || controlId == IDC_LAYOUT_EDIT_COLOR_LCH_HUE_SLIDER;
+}
+
+bool IsColorHsvSliderId(int controlId) {
+    return controlId == IDC_LAYOUT_EDIT_COLOR_HSV_HUE_SLIDER ||
+           controlId == IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_SLIDER ||
+           controlId == IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_SLIDER;
 }
 
 void SyncColorLchSliderFromEdit(HWND hwnd, int editId) {
@@ -367,6 +450,36 @@ void SyncColorLchSliderFromEdit(HWND hwnd, int editId) {
     }
 }
 
+void SyncColorHsvSliderFromEdit(HWND hwnd, int editId) {
+    const auto value = TryParseDialogDouble(ReadControlTextWide(hwnd, editId).c_str());
+    if (!value.has_value()) {
+        return;
+    }
+    switch (editId) {
+        case IDC_LAYOUT_EDIT_COLOR_HSV_HUE_EDIT:
+            SendDlgItemMessageW(hwnd,
+                IDC_LAYOUT_EDIT_COLOR_HSV_HUE_SLIDER,
+                TBM_SETPOS,
+                TRUE,
+                std::clamp(static_cast<int>(std::lround(*value)), 0, 360));
+            break;
+        case IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_EDIT:
+            SendDlgItemMessageW(hwnd,
+                IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_SLIDER,
+                TBM_SETPOS,
+                TRUE,
+                std::clamp(static_cast<int>(std::lround(*value * kHsvUnitSliderScale)), 0, 1000));
+            break;
+        case IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_EDIT:
+            SendDlgItemMessageW(hwnd,
+                IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_SLIDER,
+                TBM_SETPOS,
+                TRUE,
+                std::clamp(static_cast<int>(std::lround(*value * kHsvUnitSliderScale)), 0, 1000));
+            break;
+    }
+}
+
 void SetColorLchEditFromSlider(HWND hwnd, int sliderId) {
     const int position = static_cast<int>(SendDlgItemMessageW(hwnd, sliderId, TBM_GETPOS, 0, 0));
     switch (sliderId) {
@@ -382,6 +495,25 @@ void SetColorLchEditFromSlider(HWND hwnd, int sliderId) {
             break;
         case IDC_LAYOUT_EDIT_COLOR_LCH_HUE_SLIDER:
             SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_HUE_EDIT, FormatDialogRoundedInteger(position).c_str());
+            break;
+    }
+}
+
+void SetColorHsvEditFromSlider(HWND hwnd, int sliderId) {
+    const int position = static_cast<int>(SendDlgItemMessageW(hwnd, sliderId, TBM_GETPOS, 0, 0));
+    switch (sliderId) {
+        case IDC_LAYOUT_EDIT_COLOR_HSV_HUE_SLIDER:
+            SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_HUE_EDIT, FormatDialogRoundedInteger(position).c_str());
+            break;
+        case IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_SLIDER:
+            SetDlgItemTextW(hwnd,
+                IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_EDIT,
+                FormatDialogRoundedDecimal(static_cast<double>(position) / kHsvUnitSliderScale, 3).c_str());
+            break;
+        case IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_SLIDER:
+            SetDlgItemTextW(hwnd,
+                IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_EDIT,
+                FormatDialogRoundedDecimal(static_cast<double>(position) / kHsvUnitSliderScale, 3).c_str());
             break;
     }
 }

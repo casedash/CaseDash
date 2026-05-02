@@ -21,6 +21,12 @@ struct OklchColor {
     double h = 0.0;
 };
 
+struct HsvColor {
+    double h = 0.0;
+    double s = 0.0;
+    double v = 0.0;
+};
+
 ColorBytes ColorBytesFromRgba(std::uint32_t rgba);
 std::uint32_t RgbaFromColorBytes(ColorBytes color);
 OklabColor OklabFromColorBytes(ColorBytes color);
@@ -29,5 +35,7 @@ OklchColor OklchFromOklab(OklabColor color);
 OklabColor OklabFromOklch(OklchColor color);
 OklchColor OklchFromColorBytes(ColorBytes color);
 ColorBytes ColorBytesFromOklch(OklchColor color, double alpha);
+HsvColor HsvFromColorBytes(ColorBytes color);
+ColorBytes ColorBytesFromHsv(HsvColor color, double alpha);
 OklabColor MixOklab(OklabColor from, OklabColor to, double amount);
 OklabColor RotateOklabHue(OklabColor color, double degrees);

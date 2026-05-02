@@ -792,6 +792,7 @@ void PopulateLayoutEditSelection(LayoutEditDialogState* state, HWND hwnd) {
             SetColorDialogChannel(hwnd, kColorDialogControls[2], (color >> 8) & 0xFFu);
             SetColorDialogChannel(hwnd, kColorDialogControls[3], color & 0xFFu);
             SetColorDialogLch(hwnd, color);
+            SetColorDialogHsv(hwnd, color);
             ConfigureColorViewTabs(hwnd, state->colorEditViewMode);
             ShowLayoutEditSelectionEditors(state, hwnd, false, false, true, false, false, false);
             SetColorSamplePreview(state, hwnd, color);
@@ -818,6 +819,7 @@ void PopulateLayoutEditSelection(LayoutEditDialogState* state, HWND hwnd) {
         SetColorDialogChannel(hwnd, kColorDialogControls[2], (color >> 8) & 0xFFu);
         SetColorDialogChannel(hwnd, kColorDialogControls[3], color & 0xFFu);
         SetColorDialogLch(hwnd, color);
+        SetColorDialogHsv(hwnd, color);
         ConfigureColorViewTabs(hwnd, state->colorEditViewMode);
         ShowLayoutEditSelectionEditors(state, hwnd, false, false, true, false, false, false);
         SetColorSamplePreview(state, hwnd, color);
@@ -1180,7 +1182,10 @@ bool PreviewSelectedColor(LayoutEditDialogState* state, HWND hwnd) {
 
     const bool derivedExpression = parameter != nullptr && IsDerivedColorMode(hwnd);
     const bool lchLiteralView = !derivedExpression && state->colorEditViewMode == ColorEditViewMode::Lch;
-    const auto color = lchLiteralView && !ColorDialogLchValueValid(hwnd) ? std::nullopt : ReadColorDialogValue(hwnd);
+    const bool hsvLiteralView = !derivedExpression && state->colorEditViewMode == ColorEditViewMode::Hsv;
+    const bool viewValid =
+        (!lchLiteralView || ColorDialogLchValueValid(hwnd)) && (!hsvLiteralView || ColorDialogHsvValueValid(hwnd));
+    const auto color = viewValid ? ReadColorDialogValue(hwnd) : std::nullopt;
     bool applied = false;
     if (derivedExpression) {
         const auto expression = ReadDerivedColorExpressionFromDialog(hwnd);

@@ -96,6 +96,62 @@ ColorBytes ColorBytesFromOklch(OklchColor color, double alpha) {
     return ColorBytesFromOklab(OklabFromOklch(color), alpha);
 }
 
+HsvColor HsvFromColorBytes(ColorBytes color) {
+    const double r = std::clamp(color.r / 255.0, 0.0, 1.0);
+    const double g = std::clamp(color.g / 255.0, 0.0, 1.0);
+    const double b = std::clamp(color.b / 255.0, 0.0, 1.0);
+    const double maxChannel = std::max({r, g, b});
+    const double minChannel = std::min({r, g, b});
+    const double delta = maxChannel - minChannel;
+
+    double hue = 0.0;
+    if (delta > 0.000001) {
+        if (maxChannel == r) {
+            hue = 60.0 * std::fmod(((g - b) / delta), 6.0);
+        } else if (maxChannel == g) {
+            hue = 60.0 * (((b - r) / delta) + 2.0);
+        } else {
+            hue = 60.0 * (((r - g) / delta) + 4.0);
+        }
+    }
+    const double saturation = maxChannel <= 0.0 ? 0.0 : delta / maxChannel;
+    return HsvColor{NormalizeHueDegrees(hue), saturation, maxChannel};
+}
+
+ColorBytes ColorBytesFromHsv(HsvColor color, double alpha) {
+    const double hue = NormalizeHueDegrees(color.h);
+    const double saturation = std::clamp(color.s, 0.0, 1.0);
+    const double value = std::clamp(color.v, 0.0, 1.0);
+    const double chroma = value * saturation;
+    const double hueSection = hue / 60.0;
+    const double x = chroma * (1.0 - std::abs(std::fmod(hueSection, 2.0) - 1.0));
+    const double m = value - chroma;
+
+    double r = 0.0;
+    double g = 0.0;
+    double b = 0.0;
+    if (hueSection < 1.0) {
+        r = chroma;
+        g = x;
+    } else if (hueSection < 2.0) {
+        r = x;
+        g = chroma;
+    } else if (hueSection < 3.0) {
+        g = chroma;
+        b = x;
+    } else if (hueSection < 4.0) {
+        g = x;
+        b = chroma;
+    } else if (hueSection < 5.0) {
+        r = x;
+        b = chroma;
+    } else {
+        r = chroma;
+        b = x;
+    }
+    return ColorBytes{(r + m) * 255.0, (g + m) * 255.0, (b + m) * 255.0, alpha};
+}
+
 OklabColor MixOklab(OklabColor from, OklabColor to, double amount) {
     return OklabColor{
         from.l + (to.l - from.l) * amount, from.a + (to.a - from.a) * amount, from.b + (to.b - from.b) * amount};

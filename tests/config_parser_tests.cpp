@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 
 #include "config/color_expression.h"
+#include "config/color_math.h"
 #include "config/config_parser.h"
 #include "telemetry/metrics.h"
 #include "util/utf8.h"
@@ -130,6 +131,17 @@ TEST(ColorExpression, ParsesAndFormatsDerivedExpressionsInCanonicalOptionOrder) 
     ASSERT_TRUE(expression->alpha.has_value());
     EXPECT_EQ(*expression->alpha, 230u);
     EXPECT_EQ(FormatColorExpression(*expression), "guide(rotate_hue: 28, mix: 0.35 active_edit_color, alpha: 0xE6)");
+}
+
+TEST(ColorMath, ConvertsHsvAndRgbRoundTrip) {
+    const HsvColor cyan = HsvFromColorBytes(ColorBytesFromRgba(0x00BFFFFFu));
+
+    EXPECT_NEAR(cyan.h, 195.0, 0.1);
+    EXPECT_NEAR(cyan.s, 1.0, 0.001);
+    EXPECT_NEAR(cyan.v, 1.0, 0.001);
+
+    EXPECT_EQ(RgbaFromColorBytes(ColorBytesFromHsv(cyan, 255.0)), 0x00BFFFFFu);
+    EXPECT_EQ(RgbaFromColorBytes(ColorBytesFromHsv(HsvColor{0.0, 0.0, 0.5}, 255.0)), 0x808080FFu);
 }
 
 TEST(ConfigParser, ResolvesLayoutGuideSheetColorsFromThemeAndColorsSection) {

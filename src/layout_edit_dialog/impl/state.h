@@ -45,6 +45,7 @@ struct LayoutEditMetricListRowControls {
 enum class ColorEditViewMode {
     Rgb,
     Lch,
+    Hsv,
 };
 
 struct LayoutEditDialogState {

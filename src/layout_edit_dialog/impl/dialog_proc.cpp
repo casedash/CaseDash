@@ -183,11 +183,14 @@ std::optional<INT_PTR> HandleLayoutEditDialogProcMessage(HWND hwnd, UINT message
             if (notify != nullptr && notify->idFrom == IDC_LAYOUT_EDIT_COLOR_VIEW_TAB &&
                 notify->code == TCN_SELCHANGE) {
                 if (state != nullptr) {
-                    state->colorEditViewMode =
-                        TabCtrl_GetCurSel(notify->hwndFrom) == 1 ? ColorEditViewMode::Lch : ColorEditViewMode::Rgb;
+                    const int selectedTab = TabCtrl_GetCurSel(notify->hwndFrom);
+                    state->colorEditViewMode = selectedTab == 1   ? ColorEditViewMode::Lch
+                                               : selectedTab == 2 ? ColorEditViewMode::Hsv
+                                                                  : ColorEditViewMode::Rgb;
                     if (const auto color = ReadColorDialogValue(hwnd); color.has_value()) {
                         state->updatingControls = true;
                         SetColorDialogLch(hwnd, *color);
+                        SetColorDialogHsv(hwnd, *color);
                         state->updatingControls = false;
                     }
                     LayoutLayoutEditRightPane(state, hwnd);
@@ -294,6 +297,7 @@ std::optional<INT_PTR> HandleLayoutEditDialogProcMessage(HWND hwnd, UINT message
                         SetColorDialogChannel(hwnd, kColorDialogControls[2], (*color >> 8) & 0xFFu);
                         SetColorDialogChannel(hwnd, kColorDialogControls[3], *color & 0xFFu);
                         SetColorDialogLch(hwnd, *color);
+                        SetColorDialogHsv(hwnd, *color);
                         state->updatingControls = false;
                     }
                 }
@@ -316,6 +320,7 @@ std::optional<INT_PTR> HandleLayoutEditDialogProcMessage(HWND hwnd, UINT message
                             state->updatingControls = true;
                             SetColorDialogHex(hwnd, *color);
                             SetColorDialogLch(hwnd, *color);
+                            SetColorDialogHsv(hwnd, *color);
                             state->updatingControls = false;
                         }
                     }
@@ -329,6 +334,23 @@ std::optional<INT_PTR> HandleLayoutEditDialogProcMessage(HWND hwnd, UINT message
                     state->updatingControls = true;
                     SyncColorLchSliderFromEdit(hwnd, LOWORD(wParam));
                     SetColorDialogRgbFromLch(hwnd);
+                    if (const auto color = ReadColorDialogValue(hwnd); color.has_value()) {
+                        SetColorDialogHsv(hwnd, *color);
+                    }
+                    state->updatingControls = false;
+                }
+                PreviewSelectedColor(state, hwnd);
+                RefreshLayoutEditValidationState(state, hwnd);
+                return TRUE;
+            }
+            if (IsColorHsvControlId(LOWORD(wParam)) && HIWORD(wParam) == EN_CHANGE) {
+                if (state != nullptr && !state->updatingControls) {
+                    state->updatingControls = true;
+                    SyncColorHsvSliderFromEdit(hwnd, LOWORD(wParam));
+                    SetColorDialogRgbFromHsv(hwnd);
+                    if (const auto color = ReadColorDialogValue(hwnd); color.has_value()) {
+                        SetColorDialogLch(hwnd, *color);
+                    }
                     state->updatingControls = false;
                 }
                 PreviewSelectedColor(state, hwnd);
@@ -424,6 +446,7 @@ std::optional<INT_PTR> HandleLayoutEditDialogProcMessage(HWND hwnd, UINT message
                         if (const auto color = ReadColorDialogValue(hwnd); color.has_value()) {
                             SetColorDialogHex(hwnd, *color);
                             SetColorDialogLch(hwnd, *color);
+                            SetColorDialogHsv(hwnd, *color);
                         }
                         state->updatingControls = false;
                         PreviewSelectedColor(state, hwnd);
@@ -446,6 +469,23 @@ std::optional<INT_PTR> HandleLayoutEditDialogProcMessage(HWND hwnd, UINT message
                         state->updatingControls = true;
                         SetColorLchEditFromSlider(hwnd, sliderId);
                         SetColorDialogRgbFromLch(hwnd);
+                        if (const auto color = ReadColorDialogValue(hwnd); color.has_value()) {
+                            SetColorDialogHsv(hwnd, *color);
+                        }
+                        state->updatingControls = false;
+                        PreviewSelectedColor(state, hwnd);
+                        RefreshLayoutEditValidationState(state, hwnd);
+                    }
+                    return TRUE;
+                }
+                if (IsColorHsvSliderId(sliderId)) {
+                    if (!state->updatingControls) {
+                        state->updatingControls = true;
+                        SetColorHsvEditFromSlider(hwnd, sliderId);
+                        SetColorDialogRgbFromHsv(hwnd);
+                        if (const auto color = ReadColorDialogValue(hwnd); color.has_value()) {
+                            SetColorDialogLch(hwnd, *color);
+                        }
                         state->updatingControls = false;
                         PreviewSelectedColor(state, hwnd);
                         RefreshLayoutEditValidationState(state, hwnd);

@@ -266,7 +266,10 @@ std::vector<int> ActiveEditorLabelControls(LayoutEditEditorKind kind, bool showB
                 IDC_LAYOUT_EDIT_COLOR_ALPHA_LABEL,
                 IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_LABEL,
                 IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_LABEL,
-                IDC_LAYOUT_EDIT_COLOR_LCH_HUE_LABEL};
+                IDC_LAYOUT_EDIT_COLOR_LCH_HUE_LABEL,
+                IDC_LAYOUT_EDIT_COLOR_HSV_HUE_LABEL,
+                IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_LABEL,
+                IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_LABEL};
         case LayoutEditEditorKind::Weights:
             return {IDC_LAYOUT_EDIT_WEIGHT_FIRST_LABEL, IDC_LAYOUT_EDIT_WEIGHT_SECOND_LABEL};
         case LayoutEditEditorKind::Metric: {
@@ -333,7 +336,9 @@ void ShowColorEditorControls(HWND hwnd, bool showColor, bool supportsDerived, bo
 
     const bool showLiteral = showColor && (!supportsDerived || !derivedMode);
     const bool showLch = showLiteral && ColorEditorLchView(hwnd);
-    const bool showRgb = showLiteral && !showLch;
+    HWND tab = GetDlgItem(hwnd, IDC_LAYOUT_EDIT_COLOR_VIEW_TAB);
+    const bool showHsv = showLiteral && tab != nullptr && TabCtrl_GetCurSel(tab) == 2;
+    const bool showRgb = showLiteral && !showLch && !showHsv;
     ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_HEX_LABEL, showLiteral);
     ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_HEX_EDIT, showLiteral);
     ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_VIEW_TAB, showLiteral);
@@ -361,6 +366,18 @@ void ShowColorEditorControls(HWND hwnd, bool showColor, bool supportsDerived, bo
     ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_HUE_EDIT, showLch);
     ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_HUE_SLIDER, showLch);
     ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_HUE_GRADIENT, showLch);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_HUE_LABEL, showHsv);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_HUE_EDIT, showHsv);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_HUE_SLIDER, showHsv);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_HUE_GRADIENT, showHsv);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_LABEL, showHsv);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_EDIT, showHsv);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_SLIDER, showHsv);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_GRADIENT, showHsv);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_LABEL, showHsv);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_EDIT, showHsv);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_SLIDER, showHsv);
+    ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_GRADIENT, showHsv);
     ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_LABEL, showLiteral);
     ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_EDIT, showLiteral);
     ShowDialogControl(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_SLIDER, showLiteral);
@@ -429,6 +446,32 @@ OklchColor CurrentLchForGradient(HWND hwnd) {
     return OklchColor{0.5, 0.0, 0.0};
 }
 
+std::optional<HsvColor> ReadDialogHsvForGradient(HWND hwnd) {
+    const auto hue = TryParseDialogDouble(ReadDialogControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_HUE_EDIT).c_str());
+    const auto saturation =
+        TryParseDialogDouble(ReadDialogControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_EDIT).c_str());
+    const auto value =
+        TryParseDialogDouble(ReadDialogControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_EDIT).c_str());
+    if (!hue.has_value() || !saturation.has_value() || !value.has_value()) {
+        return std::nullopt;
+    }
+    return HsvColor{
+        std::clamp(*hue, 0.0, 360.0),
+        std::clamp(*saturation, 0.0, 1.0),
+        std::clamp(*value, 0.0, 1.0),
+    };
+}
+
+HsvColor CurrentHsvForGradient(HWND hwnd) {
+    if (const auto hsv = ReadDialogHsvForGradient(hwnd); hsv.has_value()) {
+        return *hsv;
+    }
+    if (const auto color = ReadColorDialogValue(hwnd); color.has_value()) {
+        return HsvFromColorBytes(ColorBytesFromRgba(*color));
+    }
+    return HsvColor{0.0, 0.0, 0.0};
+}
+
 COLORREF ColorGradientBarColor(HWND hwnd, int controlId, double position) {
     const double t = std::clamp(position, 0.0, 1.0);
     switch (controlId) {
@@ -449,6 +492,16 @@ COLORREF ColorGradientBarColor(HWND hwnd, int controlId, double position) {
         }
         case IDC_LAYOUT_EDIT_COLOR_LCH_HUE_GRADIENT:
             return ColorRefFromBytes(ColorBytesFromOklch(OklchColor{0.65, kLchGradientChromaMax, t * 360.0}, 255.0));
+        case IDC_LAYOUT_EDIT_COLOR_HSV_HUE_GRADIENT:
+            return ColorRefFromBytes(ColorBytesFromHsv(HsvColor{t * 360.0, 1.0, 1.0}, 255.0));
+        case IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_GRADIENT: {
+            const HsvColor current = CurrentHsvForGradient(hwnd);
+            return ColorRefFromBytes(ColorBytesFromHsv(HsvColor{current.h, t, current.v}, 255.0));
+        }
+        case IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_GRADIENT: {
+            const HsvColor current = CurrentHsvForGradient(hwnd);
+            return ColorRefFromBytes(ColorBytesFromHsv(HsvColor{current.h, current.s, t}, 255.0));
+        }
     }
     return GetSysColor(COLOR_3DFACE);
 }
@@ -785,6 +838,9 @@ void SetColorSamplePreview(LayoutEditDialogState* state, HWND hwnd, unsigned int
     InvalidateRect(GetDlgItem(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_GRADIENT), nullptr, TRUE);
     InvalidateRect(GetDlgItem(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_GRADIENT), nullptr, TRUE);
     InvalidateRect(GetDlgItem(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_HUE_GRADIENT), nullptr, TRUE);
+    InvalidateRect(GetDlgItem(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_HUE_GRADIENT), nullptr, TRUE);
+    InvalidateRect(GetDlgItem(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_GRADIENT), nullptr, TRUE);
+    InvalidateRect(GetDlgItem(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_GRADIENT), nullptr, TRUE);
 }
 
 bool IsColorGradientBarControlId(int controlId) {
@@ -792,7 +848,9 @@ bool IsColorGradientBarControlId(int controlId) {
            controlId == IDC_LAYOUT_EDIT_COLOR_BLUE_GRADIENT ||
            controlId == IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_GRADIENT ||
            controlId == IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_GRADIENT ||
-           controlId == IDC_LAYOUT_EDIT_COLOR_LCH_HUE_GRADIENT;
+           controlId == IDC_LAYOUT_EDIT_COLOR_LCH_HUE_GRADIENT || controlId == IDC_LAYOUT_EDIT_COLOR_HSV_HUE_GRADIENT ||
+           controlId == IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_GRADIENT ||
+           controlId == IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_GRADIENT;
 }
 
 void DrawColorGradientBar(HWND hwnd, const DRAWITEMSTRUCT& drawItem) {
@@ -1471,28 +1529,43 @@ void LayoutLayoutEditRightPane(LayoutEditDialogState* state, HWND hwnd) {
                     derivedSliderHeight);
                 cursorY += alphaRowHeight + metrics.rowGap;
             } else {
-                const int valueEditWidth = std::max(DialogControlWidth(hwnd, IDC_LAYOUT_EDIT_COLOR_RED_EDIT),
-                    DialogControlWidth(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_EDIT));
+                const int valueEditWidth = std::max({DialogControlWidth(hwnd, IDC_LAYOUT_EDIT_COLOR_RED_EDIT),
+                    DialogControlWidth(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_EDIT),
+                    DialogControlWidth(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_EDIT)});
                 const int sliderLeft =
                     innerLeft + labelColumnWidth + metrics.labelGap + valueEditWidth + metrics.inlineGap;
                 const int sliderWidth = std::max(40, innerRight - sliderLeft);
                 const bool lchView = state->colorEditViewMode == ColorEditViewMode::Lch;
+                const bool hsvView = state->colorEditViewMode == ColorEditViewMode::Hsv;
                 const int channelLabelIds[] = {
-                    lchView ? IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_LABEL : IDC_LAYOUT_EDIT_COLOR_RED_LABEL,
-                    lchView ? IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_LABEL : IDC_LAYOUT_EDIT_COLOR_GREEN_LABEL,
-                    lchView ? IDC_LAYOUT_EDIT_COLOR_LCH_HUE_LABEL : IDC_LAYOUT_EDIT_COLOR_BLUE_LABEL};
+                    hsvView ? IDC_LAYOUT_EDIT_COLOR_HSV_HUE_LABEL
+                            : (lchView ? IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_LABEL : IDC_LAYOUT_EDIT_COLOR_RED_LABEL),
+                    hsvView ? IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_LABEL
+                            : (lchView ? IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_LABEL : IDC_LAYOUT_EDIT_COLOR_GREEN_LABEL),
+                    hsvView ? IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_LABEL
+                            : (lchView ? IDC_LAYOUT_EDIT_COLOR_LCH_HUE_LABEL : IDC_LAYOUT_EDIT_COLOR_BLUE_LABEL)};
                 const int channelEditIds[] = {
-                    lchView ? IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_EDIT : IDC_LAYOUT_EDIT_COLOR_RED_EDIT,
-                    lchView ? IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_EDIT : IDC_LAYOUT_EDIT_COLOR_GREEN_EDIT,
-                    lchView ? IDC_LAYOUT_EDIT_COLOR_LCH_HUE_EDIT : IDC_LAYOUT_EDIT_COLOR_BLUE_EDIT};
+                    hsvView ? IDC_LAYOUT_EDIT_COLOR_HSV_HUE_EDIT
+                            : (lchView ? IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_EDIT : IDC_LAYOUT_EDIT_COLOR_RED_EDIT),
+                    hsvView ? IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_EDIT
+                            : (lchView ? IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_EDIT : IDC_LAYOUT_EDIT_COLOR_GREEN_EDIT),
+                    hsvView ? IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_EDIT
+                            : (lchView ? IDC_LAYOUT_EDIT_COLOR_LCH_HUE_EDIT : IDC_LAYOUT_EDIT_COLOR_BLUE_EDIT)};
                 const int channelSliderIds[] = {
-                    lchView ? IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_SLIDER : IDC_LAYOUT_EDIT_COLOR_RED_SLIDER,
-                    lchView ? IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_SLIDER : IDC_LAYOUT_EDIT_COLOR_GREEN_SLIDER,
-                    lchView ? IDC_LAYOUT_EDIT_COLOR_LCH_HUE_SLIDER : IDC_LAYOUT_EDIT_COLOR_BLUE_SLIDER};
-                const int channelGradientIds[] = {
-                    lchView ? IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_GRADIENT : IDC_LAYOUT_EDIT_COLOR_RED_GRADIENT,
-                    lchView ? IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_GRADIENT : IDC_LAYOUT_EDIT_COLOR_GREEN_GRADIENT,
-                    lchView ? IDC_LAYOUT_EDIT_COLOR_LCH_HUE_GRADIENT : IDC_LAYOUT_EDIT_COLOR_BLUE_GRADIENT};
+                    hsvView ? IDC_LAYOUT_EDIT_COLOR_HSV_HUE_SLIDER
+                            : (lchView ? IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_SLIDER : IDC_LAYOUT_EDIT_COLOR_RED_SLIDER),
+                    hsvView ? IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_SLIDER
+                            : (lchView ? IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_SLIDER : IDC_LAYOUT_EDIT_COLOR_GREEN_SLIDER),
+                    hsvView ? IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_SLIDER
+                            : (lchView ? IDC_LAYOUT_EDIT_COLOR_LCH_HUE_SLIDER : IDC_LAYOUT_EDIT_COLOR_BLUE_SLIDER)};
+                const int channelGradientIds[] = {hsvView ? IDC_LAYOUT_EDIT_COLOR_HSV_HUE_GRADIENT
+                                                          : (lchView ? IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_GRADIENT
+                                                                     : IDC_LAYOUT_EDIT_COLOR_RED_GRADIENT),
+                    hsvView
+                        ? IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_GRADIENT
+                        : (lchView ? IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_GRADIENT : IDC_LAYOUT_EDIT_COLOR_GREEN_GRADIENT),
+                    hsvView ? IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_GRADIENT
+                            : (lchView ? IDC_LAYOUT_EDIT_COLOR_LCH_HUE_GRADIENT : IDC_LAYOUT_EDIT_COLOR_BLUE_GRADIENT)};
                 const int alphaEditHeight = DialogControlLayoutHeightForVisibleHeight(
                     hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_EDIT, singleLineFieldHeight);
                 const int alphaSliderHeight = DialogControlHeight(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_SLIDER);
