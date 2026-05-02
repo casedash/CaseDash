@@ -85,9 +85,10 @@ package.cmd
 
 - The `Validation` workflow runs on every push, pull request, and manual dispatch.
 - The workflow restores the shared vcpkg download and registry caches under `.github-cache\CaseDash` inside the checked-out workspace before validation, then saves the refreshed cache contents after the run so repeated GitHub-hosted runs reuse the same bootstrap downloads.
-- The workflow checks formatting first with `format.cmd`, then builds with `build.cmd`, runs tests with `test.cmd`, and runs `lint.cmd tidy` on `windows-2025-vs2026`.
+- The workflow checks formatting first with `format.cmd`, then builds with `build.cmd`, runs tests with `test.cmd`, builds the WiX MSI with `package.cmd`, and runs `lint.cmd tidy` on `windows-2025-vs2026`.
 - The repository branch protection requires the `Validation` job before pull requests can merge.
 - The workflow uploads `build\CaseDash.exe` as the `CaseDash-exe` artifact after validation succeeds.
+- The workflow uploads `build\CaseDash-<VERSION>.msi` and its checksum as the `CaseDash-msi` artifact after validation succeeds.
 - The workflow uploads `build\clang_tidy_report.txt` as an artifact when it is produced.
 
 ## Releases
