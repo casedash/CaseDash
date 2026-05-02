@@ -240,7 +240,7 @@ double GetThroughputGraphMax(const std::vector<const std::vector<double>*>& hist
     return std::max(10.0, std::ceil(maxSmoothedValue / roundingStep) * roundingStep);
 }
 
-double GetStorageGuideStep(double maxGraph) {
+double GetThroughputGuideStep(double maxGraph) {
     return maxGraph > 50.0 ? 50.0 : 5.0;
 }
 
@@ -533,10 +533,6 @@ double ResolveStorageWriteValue(const SystemSnapshot& snapshot) {
     return snapshot.storage.writeMbps;
 }
 
-double ResolveFiveMbpsGuideStep(double) {
-    return 5.0;
-}
-
 const MetricBinding kExactBindings[] = {
     MetricBinding::ExactStaticText("cpu.name", &ResolveCpuNameText),
     MetricBinding::ExactStaticText("gpu.name", &ResolveGpuNameText),
@@ -551,13 +547,13 @@ const MetricBinding kExactBindings[] = {
     MetricBinding::ExactValue("gpu.fps", MetricDisplayStyle::Scalar, &ResolveGpuFpsMetric),
     MetricBinding::ExactValue("gpu.vram", MetricDisplayStyle::Memory, &ResolveGpuMemoryMetric),
     MetricBinding::ExactThroughput(
-        "network.upload", &ResolveNetworkUploadValue, ThroughputGraphGroup::Network, &ResolveFiveMbpsGuideStep),
+        "network.upload", &ResolveNetworkUploadValue, ThroughputGraphGroup::Network, &GetThroughputGuideStep),
     MetricBinding::ExactThroughput(
-        "network.download", &ResolveNetworkDownloadValue, ThroughputGraphGroup::Network, &ResolveFiveMbpsGuideStep),
+        "network.download", &ResolveNetworkDownloadValue, ThroughputGraphGroup::Network, &GetThroughputGuideStep),
     MetricBinding::ExactThroughput(
-        "storage.read", &ResolveStorageReadValue, ThroughputGraphGroup::Storage, &GetStorageGuideStep),
+        "storage.read", &ResolveStorageReadValue, ThroughputGraphGroup::Storage, &GetThroughputGuideStep),
     MetricBinding::ExactThroughput(
-        "storage.write", &ResolveStorageWriteValue, ThroughputGraphGroup::Storage, &GetStorageGuideStep),
+        "storage.write", &ResolveStorageWriteValue, ThroughputGraphGroup::Storage, &GetThroughputGuideStep),
     MetricBinding::ExactSpecialDisplayOnly("drive.activity.read", MetricDisplayStyle::LabelOnly),
     MetricBinding::ExactSpecialDisplayOnly("drive.activity.write", MetricDisplayStyle::LabelOnly),
     MetricBinding::ExactSpecialDisplayOnly("drive.usage", MetricDisplayStyle::Percent),

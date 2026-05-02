@@ -294,6 +294,23 @@ TEST(Metrics, ScalesThroughputGraphsFromSmoothedHistoryInsteadOfCurrentSamples) 
     EXPECT_DOUBLE_EQ(spikingSource.ResolveThroughput("network.upload").maxGraph, 500.0);
 }
 
+TEST(Metrics, UsesCoarseThroughputGuideStepsForLargeNetworkAndStorageGraphs) {
+    const MetricsSectionConfig metrics = BuildMetricsConfig();
+    SystemSnapshot snapshot;
+
+    AddHistorySeries(snapshot, "network.upload", {0.0, 200.0, 350.0});
+    AddHistorySeries(snapshot, "network.download", {0.0, 0.0, 0.0});
+    AddHistorySeries(snapshot, "storage.read", {0.0, 200.0, 350.0});
+    AddHistorySeries(snapshot, "storage.write", {0.0, 0.0, 0.0});
+
+    MetricSource source(snapshot, metrics);
+
+    EXPECT_DOUBLE_EQ(source.ResolveThroughput("network.upload").maxGraph, 300.0);
+    EXPECT_DOUBLE_EQ(source.ResolveThroughput("network.upload").guideStepMbps, 50.0);
+    EXPECT_DOUBLE_EQ(source.ResolveThroughput("storage.read").maxGraph, 300.0);
+    EXPECT_DOUBLE_EQ(source.ResolveThroughput("storage.read").guideStepMbps, 50.0);
+}
+
 TEST(Metrics, FormatsClockTimeAndDateFromConfiguredTokens) {
     SYSTEMTIME time{};
     time.wYear = 2026;
