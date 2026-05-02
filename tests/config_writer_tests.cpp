@@ -166,7 +166,7 @@ TEST(ConfigWriter, FullExportWritesThemeSections) {
                            "theme = dark_cyan\r\n"));
     EXPECT_THAT(output,
         testing::HasSubstr("[theme.dark_cyan]\r\n"
-                           "description = Black dashboard with cyan highlights\r\n"
+                           "description = Black, white, cyan\r\n"
                            "background = #000000FF\r\n"
                            "foreground = #FFFFFFFF\r\n"
                            "accent = #00BFFFFF\r\n"
