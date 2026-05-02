@@ -42,6 +42,11 @@ struct LayoutEditMetricListRowControls {
     int deleteButtonId = 0;
 };
 
+enum class ColorEditViewMode {
+    Rgb,
+    Lch,
+};
+
 struct LayoutEditDialogState {
     LayoutEditDialog* dialog = nullptr;
     AppConfig originalConfig;
@@ -60,6 +65,7 @@ struct LayoutEditDialogState {
     bool activeSelectionValid = true;
     COLORREF previewColor = RGB(255, 255, 255);
     bool updatingControls = false;
+    ColorEditViewMode colorEditViewMode = ColorEditViewMode::Rgb;
     std::vector<LayoutEditMetricListRowControls> metricListRowControls;
     HWND metricListAddRowButton = nullptr;
 };

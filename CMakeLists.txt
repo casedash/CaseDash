@@ -113,6 +113,7 @@ add_executable(SystemTelemetry WIN32
     src/layout_model/layout_edit_service.cpp
     src/config/config.cpp
     src/config/color_expression.cpp
+    src/config/color_math.cpp
     src/config/color_resolver.cpp
     src/config/config_file_io.cpp
     src/config/metric_catalog.cpp
@@ -402,6 +403,7 @@ add_executable(SystemTelemetryTests
     tests/telemetry_retained_history_tests.cpp
     src/config/config.cpp
     src/config/color_expression.cpp
+    src/config/color_math.cpp
     src/config/color_resolver.cpp
     src/config/config_file_io.cpp
     src/config/metric_catalog.cpp
@@ -525,6 +527,7 @@ add_executable(SystemTelemetryBenchmarks
     src/util/scale.cpp
     src/config/config.cpp
     src/config/color_expression.cpp
+    src/config/color_math.cpp
     src/config/color_resolver.cpp
     src/config/config_file_io.cpp
     src/config/metric_catalog.cpp

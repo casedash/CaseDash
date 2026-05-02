@@ -349,6 +349,7 @@ INT_PTR CALLBACK LayoutEditDialog::DialogProc(HWND hwnd, UINT message, WPARAM wP
         SetWindowLongPtrW(hwnd, GWL_EXSTYLE, GetWindowLongPtrW(hwnd, GWL_EXSTYLE) | WS_EX_COMPOSITED);
         state->dialog->UpdateSelectionHighlight(std::nullopt);
         ConfigureColorSliders(hwnd);
+        ConfigureColorViewTabs(hwnd, state->colorEditViewMode);
         ConfigureDialogFonts(state, hwnd);
         if (HWND tree = GetDlgItem(hwnd, IDC_LAYOUT_EDIT_TREE); tree != nullptr) {
             TreeView_SetExtendedStyle(tree, TVS_EX_DOUBLEBUFFER, TVS_EX_DOUBLEBUFFER);

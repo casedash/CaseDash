@@ -179,14 +179,14 @@ Theme section behavior:
 - Only the active `[theme.<name>]` section selected by `[display] theme` appears in the dialog tree.
 - Selecting the active theme section shows a theme selector dropdown listing all configured themes. Changing the selector updates `[display] theme`, previews immediately, refreshes the tree to the newly active theme section, and keeps the edit session active.
 - The active theme section editor shows an equilateral triangle preview below the dropdown. The triangle top edge blends from `background` at the left vertex to `foreground` at the right vertex, the bottom-center vertex is `accent`, and a thin vertical line through the triangle uses `guide`.
-- Expanding the active theme section shows one RGBA editor for each standard theme token: `background`, `foreground`, `accent`, and `guide`.
+- Expanding the active theme section shows one literal color editor for each standard theme token: `background`, `foreground`, `accent`, and `guide`.
 - Theme token edits preview immediately.
 - Per-field revert works for theme token edits.
 
 `[colors]` section behavior:
 
 - Each color role has a mode switch with exactly two choices: `Literal` and `Derived`.
-- `Literal` mode shows the existing RGBA editor and stores `#RRGGBBAA`.
+- `Literal` mode shows the shared literal color editor and stores `#RRGGBBAA`. The editor exposes dialog-local `RGB` and `LCH` tabs for the same color value, with alpha below the tabs as the shared channel.
 - `Derived` mode shows controls for the base color and for each supported transformation: `rotate_hue`, `mix`, and `alpha`.
 - The base color selector offers the standard active-theme token identifiers: `background`, `foreground`, `accent`, and `guide`.
 - Each transformation has an enable switch. Disabled transformations are omitted from the saved color expression.

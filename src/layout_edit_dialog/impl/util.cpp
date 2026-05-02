@@ -6,6 +6,7 @@
 #include <cwchar>
 #include <cwctype>
 
+#include "config/color_math.h"
 #include "layout_edit/layout_edit_service.h"
 #include "layout_edit/layout_edit_target_descriptor.h"
 #include "layout_model/layout_edit_parameter_metadata.h"
@@ -18,6 +19,8 @@ namespace {
 constexpr double kScaleEpsilon = 0.0001;
 constexpr std::string_view kBoardTemperatureMetricPrefix = "board.temp.";
 constexpr std::string_view kBoardFanMetricPrefix = "board.fan.";
+constexpr double kLchChromaSliderScale = 1000.0;
+constexpr double kLchChromaSliderMax = 0.4;
 
 int CALLBACK CollectFontFamilyProc(const LOGFONTW* logFont, const TEXTMETRICW*, DWORD, LPARAM lParam) {
     auto* families = reinterpret_cast<std::vector<std::wstring>*>(lParam);
@@ -48,6 +51,63 @@ const LayoutCardConfig* FindCardById(const AppConfig& config, std::string_view c
     const auto it = std::find_if(
         config.layout.cards.begin(), config.layout.cards.end(), [&](const auto& card) { return card.id == cardId; });
     return it != config.layout.cards.end() ? &(*it) : nullptr;
+}
+
+std::wstring ReadControlTextWide(HWND hwnd, int controlId) {
+    wchar_t buffer[256] = {};
+    GetDlgItemTextW(hwnd, controlId, buffer, ARRAYSIZE(buffer));
+    return buffer;
+}
+
+std::wstring FormatDialogDouble(double value, int precision) {
+    wchar_t buffer[64] = {};
+    swprintf_s(buffer, L"%.*g", precision, value);
+    return buffer;
+}
+
+void SetSliderRange(HWND hwnd, int sliderId, int minValue, int maxValue, int pageSize, int lineSize) {
+    SendDlgItemMessageW(hwnd, sliderId, TBM_SETRANGEMIN, TRUE, minValue);
+    SendDlgItemMessageW(hwnd, sliderId, TBM_SETRANGEMAX, TRUE, maxValue);
+    SendDlgItemMessageW(hwnd, sliderId, TBM_SETPAGESIZE, 0, pageSize);
+    SendDlgItemMessageW(hwnd, sliderId, TBM_SETLINESIZE, 0, lineSize);
+}
+
+void SetLchSliderPositions(HWND hwnd, OklchColor lch) {
+    SendDlgItemMessageW(hwnd,
+        IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_SLIDER,
+        TBM_SETPOS,
+        TRUE,
+        std::clamp(static_cast<int>(std::lround(lch.l * 1000.0)), 0, 1000));
+    SendDlgItemMessageW(hwnd,
+        IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_SLIDER,
+        TBM_SETPOS,
+        TRUE,
+        std::clamp(static_cast<int>(std::lround(lch.c * kLchChromaSliderScale)),
+            0,
+            static_cast<int>(std::lround(kLchChromaSliderMax * kLchChromaSliderScale))));
+    SendDlgItemMessageW(hwnd,
+        IDC_LAYOUT_EDIT_COLOR_LCH_HUE_SLIDER,
+        TBM_SETPOS,
+        TRUE,
+        std::clamp(static_cast<int>(std::lround(lch.h)), 0, 360));
+}
+
+std::optional<OklchColor> ReadColorDialogLch(HWND hwnd) {
+    const auto lightness =
+        TryParseDialogDouble(ReadControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_EDIT).c_str());
+    const auto chroma = TryParseDialogDouble(ReadControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_EDIT).c_str());
+    const auto hue = TryParseDialogDouble(ReadControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_HUE_EDIT).c_str());
+    if (!lightness.has_value() || !chroma.has_value() || !hue.has_value() || *lightness < 0.0 || *lightness > 1.0 ||
+        *chroma < 0.0 || *hue < 0.0 || *hue > 360.0) {
+        return std::nullopt;
+    }
+    return OklchColor{*lightness, *chroma, *hue};
+}
+
+void SetRgbColorDialogChannels(HWND hwnd, unsigned int color) {
+    SetColorDialogChannel(hwnd, kColorDialogControls[0], (color >> 24) & 0xFFu);
+    SetColorDialogChannel(hwnd, kColorDialogControls[1], (color >> 16) & 0xFFu);
+    SetColorDialogChannel(hwnd, kColorDialogControls[2], (color >> 8) & 0xFFu);
 }
 
 }  // namespace
@@ -180,25 +240,35 @@ std::wstring TitleCaseWords(std::string_view text) {
 
 void ConfigureColorSliders(HWND hwnd) {
     for (const auto& channel : kColorDialogControls) {
-        SendDlgItemMessageW(hwnd, channel.sliderId, TBM_SETRANGEMIN, TRUE, 0);
-        SendDlgItemMessageW(hwnd, channel.sliderId, TBM_SETRANGEMAX, TRUE, 255);
-        SendDlgItemMessageW(hwnd, channel.sliderId, TBM_SETPAGESIZE, 0, 16);
-        SendDlgItemMessageW(hwnd, channel.sliderId, TBM_SETLINESIZE, 0, 1);
+        SetSliderRange(hwnd, channel.sliderId, 0, 255, 16, 1);
     }
-    SendDlgItemMessageW(hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_SLIDER, TBM_SETRANGEMIN, TRUE, -180);
-    SendDlgItemMessageW(hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_SLIDER, TBM_SETRANGEMAX, TRUE, 180);
-    SendDlgItemMessageW(hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_SLIDER, TBM_SETPAGESIZE, 0, 15);
-    SendDlgItemMessageW(hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_SLIDER, TBM_SETLINESIZE, 0, 1);
+    SetSliderRange(hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_SLIDER, -180, 180, 15, 1);
+    SetSliderRange(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_SLIDER, 0, 100, 10, 1);
+    SetSliderRange(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_SLIDER, 0, 255, 16, 1);
+    SetSliderRange(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_SLIDER, 0, 1000, 100, 1);
+    SetSliderRange(hwnd,
+        IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_SLIDER,
+        0,
+        static_cast<int>(std::lround(kLchChromaSliderMax * kLchChromaSliderScale)),
+        25,
+        1);
+    SetSliderRange(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_HUE_SLIDER, 0, 360, 15, 1);
+}
 
-    SendDlgItemMessageW(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_SLIDER, TBM_SETRANGEMIN, TRUE, 0);
-    SendDlgItemMessageW(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_SLIDER, TBM_SETRANGEMAX, TRUE, 100);
-    SendDlgItemMessageW(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_SLIDER, TBM_SETPAGESIZE, 0, 10);
-    SendDlgItemMessageW(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_SLIDER, TBM_SETLINESIZE, 0, 1);
-
-    SendDlgItemMessageW(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_SLIDER, TBM_SETRANGEMIN, TRUE, 0);
-    SendDlgItemMessageW(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_SLIDER, TBM_SETRANGEMAX, TRUE, 255);
-    SendDlgItemMessageW(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_SLIDER, TBM_SETPAGESIZE, 0, 16);
-    SendDlgItemMessageW(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_SLIDER, TBM_SETLINESIZE, 0, 1);
+void ConfigureColorViewTabs(HWND hwnd, ColorEditViewMode selectedMode) {
+    HWND tab = GetDlgItem(hwnd, IDC_LAYOUT_EDIT_COLOR_VIEW_TAB);
+    if (tab == nullptr) {
+        return;
+    }
+    if (TabCtrl_GetItemCount(tab) == 0) {
+        TCITEMW item{};
+        item.mask = TCIF_TEXT;
+        item.pszText = const_cast<wchar_t*>(L"RGB");
+        TabCtrl_InsertItem(tab, 0, &item);
+        item.pszText = const_cast<wchar_t*>(L"LCH");
+        TabCtrl_InsertItem(tab, 1, &item);
+    }
+    TabCtrl_SetCurSel(tab, selectedMode == ColorEditViewMode::Lch ? 1 : 0);
 }
 
 void SetColorDialogChannel(HWND hwnd, const ColorDialogControls& channel, unsigned int value) {
@@ -208,6 +278,90 @@ void SetColorDialogChannel(HWND hwnd, const ColorDialogControls& channel, unsign
 
 void SetColorDialogHex(HWND hwnd, unsigned int color) {
     SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_HEX_EDIT, FormatDialogColorHex(color).c_str());
+}
+
+void SetColorDialogLch(HWND hwnd, unsigned int color) {
+    const OklchColor lch = OklchFromColorBytes(ColorBytesFromRgba(color));
+    SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_EDIT, FormatDialogDouble(lch.l, 4).c_str());
+    SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_EDIT, FormatDialogDouble(lch.c, 4).c_str());
+    SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_HUE_EDIT, FormatDialogDouble(lch.h, 4).c_str());
+    SetLchSliderPositions(hwnd, lch);
+}
+
+void SetColorDialogRgbFromLch(HWND hwnd) {
+    const auto lch = ReadColorDialogLch(hwnd);
+    const auto alpha = ParseColorDialogChannel(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_EDIT);
+    if (!lch.has_value() || !alpha.has_value()) {
+        return;
+    }
+    const unsigned int color = RgbaFromColorBytes(ColorBytesFromOklch(*lch, static_cast<double>(*alpha)));
+    SetRgbColorDialogChannels(hwnd, color);
+    SetColorDialogHex(hwnd, color);
+}
+
+bool ColorDialogLchValueValid(HWND hwnd) {
+    return ReadColorDialogLch(hwnd).has_value();
+}
+
+bool IsColorLchControlId(int controlId) {
+    return controlId == IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_EDIT ||
+           controlId == IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_EDIT || controlId == IDC_LAYOUT_EDIT_COLOR_LCH_HUE_EDIT;
+}
+
+bool IsColorLchSliderId(int controlId) {
+    return controlId == IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_SLIDER ||
+           controlId == IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_SLIDER || controlId == IDC_LAYOUT_EDIT_COLOR_LCH_HUE_SLIDER;
+}
+
+void SyncColorLchSliderFromEdit(HWND hwnd, int editId) {
+    const auto value = TryParseDialogDouble(ReadControlTextWide(hwnd, editId).c_str());
+    if (!value.has_value()) {
+        return;
+    }
+    switch (editId) {
+        case IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_EDIT:
+            SendDlgItemMessageW(hwnd,
+                IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_SLIDER,
+                TBM_SETPOS,
+                TRUE,
+                std::clamp(static_cast<int>(std::lround(*value * 1000.0)), 0, 1000));
+            break;
+        case IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_EDIT:
+            SendDlgItemMessageW(hwnd,
+                IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_SLIDER,
+                TBM_SETPOS,
+                TRUE,
+                std::clamp(static_cast<int>(std::lround(*value * kLchChromaSliderScale)),
+                    0,
+                    static_cast<int>(std::lround(kLchChromaSliderMax * kLchChromaSliderScale))));
+            break;
+        case IDC_LAYOUT_EDIT_COLOR_LCH_HUE_EDIT:
+            SendDlgItemMessageW(hwnd,
+                IDC_LAYOUT_EDIT_COLOR_LCH_HUE_SLIDER,
+                TBM_SETPOS,
+                TRUE,
+                std::clamp(static_cast<int>(std::lround(*value)), 0, 360));
+            break;
+    }
+}
+
+void SetColorLchEditFromSlider(HWND hwnd, int sliderId) {
+    const int position = static_cast<int>(SendDlgItemMessageW(hwnd, sliderId, TBM_GETPOS, 0, 0));
+    switch (sliderId) {
+        case IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_SLIDER:
+            SetDlgItemTextW(hwnd,
+                IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_EDIT,
+                FormatDialogDouble(static_cast<double>(position) / 1000.0, 4).c_str());
+            break;
+        case IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_SLIDER:
+            SetDlgItemTextW(hwnd,
+                IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_EDIT,
+                FormatDialogDouble(static_cast<double>(position) / kLchChromaSliderScale, 4).c_str());
+            break;
+        case IDC_LAYOUT_EDIT_COLOR_LCH_HUE_SLIDER:
+            SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_HUE_EDIT, WideFromUtf8(std::to_string(position)).c_str());
+            break;
+    }
 }
 
 std::optional<unsigned int> ParseColorDialogChannel(HWND hwnd, int editId) {

@@ -6,7 +6,7 @@ See also: [docs/specifications.md](specifications.md) for normative product beha
 ## Top-Level Map
 
 - `src/` contains the runtime application, configuration, telemetry, rendering, diagnostics, and layout-edit implementation.
-- `src/config/` contains the config model, parser, writer, schema metadata, color expression parser, theme color resolver, config-facing enum and DTO contracts, and injected metric-catalog view.
+- `src/config/` contains the config model, parser, writer, schema metadata, shared OKLab/OKLCH color math, color expression parser, theme color resolver, config-facing enum and DTO contracts, and injected metric-catalog view.
 - `src/display/` contains monitor enumeration, placement, configure-display, wallpaper application helpers, and display-owned constants.
 - `src/diagnostics/` contains diagnostics session and headless-run orchestration, command-line option parsing, default diagnostics output filenames, snapshot dump I/O, and diagnostics-owned support modules.
 - `src/main/` contains the application entry point, runtime config I/O, login auto-start registry updates, elevation handoff, and main-process constants.
@@ -29,7 +29,7 @@ See also: [docs/specifications.md](specifications.md) for normative product beha
 - The core project layers are ordered `util` -> `config` -> `renderer` and `telemetry` -> `widget` -> `layout_model` -> application-facing packages such as dashboard, dashboard_renderer, diagnostics, display, layout-edit, layout-edit dialog, and main.
 - Dependencies flow downward only. A higher layer may include lower-layer contracts, but a lower layer must not include or call into a higher layer.
 - `src/util/` is the base layer. It contains domain-neutral helpers for text, Win32-backed path and filesystem operations, resources, enum strings, UTF-8 conversion, localization catalog access, numeric safety, DPI scale conversion, and trace emission. Util modules may depend on other util modules, but must not depend on config, telemetry, rendering, UI, diagnostics, or application packages.
-- `src/config/` is the second layer. It owns the persisted config model, parser, writer, resolver, theme color resolver, color expression parser, schema metadata, and config-facing contract types such as widget class, metric display style, and telemetry settings DTOs. Config modules may depend only on config and util modules.
+- `src/config/` is the second layer. It owns the persisted config model, parser, writer, resolver, shared OKLab/OKLCH color math, theme color resolver, color expression parser, schema metadata, and config-facing contract types such as widget class, metric display style, and telemetry settings DTOs. Config modules may depend only on config and util modules.
 - Config must not duplicate runtime catalogs or reach upward to validate runtime concepts. When config parsing needs runtime knowledge, it uses config-owned injection contracts such as `ConfigMetricCatalog`; production code supplies the telemetry-backed implementation from above.
 - `src/telemetry/` is the third layer. It owns live collection, fake collection, snapshot and dump-facing telemetry types, provider bridges, retained history, and the single production metric catalog. Telemetry modules may depend on telemetry, config, and util modules, but must not depend on renderer, widget, dashboard, diagnostics, display, layout-edit, or main modules.
 - Telemetry is allowed to consume config contracts such as telemetry settings and metric display style, and it publishes runtime contracts such as `TelemetryCollector`, `SystemSnapshot`, provider samples, and metric resolution for higher packages.
@@ -86,7 +86,7 @@ See also: [docs/specifications.md](specifications.md) for normative product beha
 - Layout-model helpers own renderer-safe edit-artifact matching, focus and selection resolution, anchor subject extraction, and edit-artifact ordering policy. Layout-edit modules own tooltip-payload interpretation, tooltip formatting, edit-tree construction, current-value lookup, and preview application.
 - Widget layout-node parameter edits use `LayoutNodeFieldEditKey` plus descriptors owned by `src/layout_edit/layout_edit_target_descriptor.*` so tree labels, editor kind, title, hint, tooltip description, trace identity, and value format are declared in one place.
 - Layout-node config mutations stay in `src/layout_edit/layout_edit_service.*`, resolve `{editCardId,nodePath}` through shared helpers, and mirror dashboard-layout edits into the active named layout when the edit targets the live dashboard layout.
-- `LayoutEditDialog` owns the modeless editor window, config-tree selection, right-pane editing, and preview or revert flow, with focused helper modules under `src/layout_edit_dialog/impl/`; descriptor-backed editors route populate, validate, preview, and revert work through editor handlers.
+- `LayoutEditDialog` owns the modeless editor window, config-tree selection, right-pane editing, and preview or revert flow, with focused helper modules under `src/layout_edit_dialog/impl/`; descriptor-backed editors route populate, validate, preview, and revert work through editor handlers. Color editors reuse the shared config color-math module for RGB/LCH conversion instead of carrying dialog-local color-space math.
 - The dashboard renderer exposes copied active-region geometry as a `LayoutEditActiveRegions` value object used by live interaction and diagnostics screenshot validation; layout-edit modules interpret that snapshot for hit testing, snap discovery, tooltip targets, and active-region trace output.
 
 ### Diagnostics
@@ -151,7 +151,7 @@ See also: [docs/specifications.md](specifications.md) for normative product beha
 - The native app target links the shell, controller, config, telemetry, renderer, diagnostics, widget, and layout-edit subsystems into one Win32 executable.
 - `src/telemetry/board/gigabyte/board_gigabyte_siv.cpp` owns the native Gigabyte board provider, sensor-name maps, metric templates, and sample shaping. `src/telemetry/board/gigabyte/board_gigabyte_siv_bridge.cpp` is the only CLR-enabled unit for the vendor .NET assembly reflection calls, keeping STL-heavy provider state out of CLR metadata.
 - The test build also produces `SystemTelemetryBenchmarks`, which exercises the layout-edit drag, layout-switch, theme-change, layout-edit mouse-hover, and telemetry-refresh paths through the same runtime subsystems used by the app. Its supported benchmark names are held in an `enum_string`-backed selector, and each named benchmark owns its top-level command flow in a separate function.
-- `src/layout_edit_dialog/theme_preview.*` owns construction and drawing of the theme selector's color-mix triangle so dialog painting and benchmark coverage use the same preview implementation.
+- `src/layout_edit_dialog/theme_preview.*` owns construction and drawing of the theme selector's color-mix triangle so dialog painting and benchmark coverage use the same preview implementation. The preview uses the shared config color-math module for OKLab color mixing.
 
 ## Source Dependency Graph
 

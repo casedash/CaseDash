@@ -6,6 +6,8 @@
 #include <string_view>
 #include <vector>
 
+#include "config/color_math.h"
+
 namespace {
 
 COLORREF ColorConfigToColorRef(const ColorConfig& color) {
@@ -66,9 +68,9 @@ void FillThemePreviewPixels(std::vector<uint32_t>& pixels, int width, int height
 
     RECT localRect{0, 0, width, height};
     const ThemeTriangleGeometry geometry = BuildThemeTriangleGeometry(localRect, dpi);
-    const COLORREF background = ColorConfigToColorRef(theme.background);
-    const COLORREF foreground = ColorConfigToColorRef(theme.foreground);
-    const COLORREF accent = ColorConfigToColorRef(theme.accent);
+    const OklabColor backgroundLab = OklabFromColorBytes(ColorBytesFromRgba(theme.background.ToRgba()));
+    const OklabColor foregroundLab = OklabFromColorBytes(ColorBytesFromRgba(theme.foreground.ToRgba()));
+    const OklabColor accentLab = OklabFromColorBytes(ColorBytesFromRgba(theme.accent.ToRgba()));
     const double denom = (geometry.topY - geometry.bottomY) * (geometry.leftX - geometry.bottomX) +
                          (geometry.bottomX - geometry.rightX) * (geometry.topY - geometry.bottomY);
     if (std::abs(denom) < 0.0001) {
@@ -93,21 +95,14 @@ void FillThemePreviewPixels(std::vector<uint32_t>& pixels, int width, int height
             if (backgroundWeight < -0.001 || foregroundWeight < -0.001 || accentWeight < -0.001) {
                 continue;
             }
-            const int red = std::clamp(static_cast<int>(std::lround(backgroundWeight * GetRValue(background) +
-                                                                    foregroundWeight * GetRValue(foreground) +
-                                                                    accentWeight * GetRValue(accent))),
-                0,
-                255);
-            const int green = std::clamp(static_cast<int>(std::lround(backgroundWeight * GetGValue(background) +
-                                                                      foregroundWeight * GetGValue(foreground) +
-                                                                      accentWeight * GetGValue(accent))),
-                0,
-                255);
-            const int blue = std::clamp(static_cast<int>(std::lround(backgroundWeight * GetBValue(background) +
-                                                                     foregroundWeight * GetBValue(foreground) +
-                                                                     accentWeight * GetBValue(accent))),
-                0,
-                255);
+            const OklabColor mixedLab{
+                backgroundLab.l * backgroundWeight + foregroundLab.l * foregroundWeight + accentLab.l * accentWeight,
+                backgroundLab.a * backgroundWeight + foregroundLab.a * foregroundWeight + accentLab.a * accentWeight,
+                backgroundLab.b * backgroundWeight + foregroundLab.b * foregroundWeight + accentLab.b * accentWeight};
+            const ColorBytes mixed = ColorBytesFromOklab(mixedLab, 255.0);
+            const int red = std::clamp(static_cast<int>(std::lround(mixed.r)), 0, 255);
+            const int green = std::clamp(static_cast<int>(std::lround(mixed.g)), 0, 255);
+            const int blue = std::clamp(static_cast<int>(std::lround(mixed.b)), 0, 255);
             pixels[static_cast<size_t>(y) * static_cast<size_t>(width) + static_cast<size_t>(x)] =
                 static_cast<uint32_t>(blue) | (static_cast<uint32_t>(green) << 8u) |
                 (static_cast<uint32_t>(red) << 16u);

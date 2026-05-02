@@ -11,6 +11,7 @@
 
 #include "config/config.h"
 #include "layout_edit/layout_edit_tree.h"
+#include "layout_edit_dialog/impl/state.h"
 #include "resource.h"
 
 struct ColorDialogControls {
@@ -49,8 +50,16 @@ std::wstring FormatDialogColorHex(unsigned int color);
 std::optional<unsigned int> TryParseDialogHexColor(const wchar_t* text);
 std::wstring TitleCaseWords(std::string_view text);
 void ConfigureColorSliders(HWND hwnd);
+void ConfigureColorViewTabs(HWND hwnd, ColorEditViewMode selectedMode);
 void SetColorDialogChannel(HWND hwnd, const ColorDialogControls& channel, unsigned int value);
 void SetColorDialogHex(HWND hwnd, unsigned int color);
+void SetColorDialogLch(HWND hwnd, unsigned int color);
+void SetColorDialogRgbFromLch(HWND hwnd);
+bool ColorDialogLchValueValid(HWND hwnd);
+bool IsColorLchControlId(int controlId);
+bool IsColorLchSliderId(int controlId);
+void SyncColorLchSliderFromEdit(HWND hwnd, int editId);
+void SetColorLchEditFromSlider(HWND hwnd, int sliderId);
 std::optional<unsigned int> ParseColorDialogChannel(HWND hwnd, int editId);
 std::optional<unsigned int> ReadColorDialogValue(HWND hwnd);
 const ColorDialogControls* FindColorDialogControlsByEditId(int editId);

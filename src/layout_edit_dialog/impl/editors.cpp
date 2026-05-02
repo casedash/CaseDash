@@ -791,6 +791,8 @@ void PopulateLayoutEditSelection(LayoutEditDialogState* state, HWND hwnd) {
             SetColorDialogChannel(hwnd, kColorDialogControls[1], (color >> 16) & 0xFFu);
             SetColorDialogChannel(hwnd, kColorDialogControls[2], (color >> 8) & 0xFFu);
             SetColorDialogChannel(hwnd, kColorDialogControls[3], color & 0xFFu);
+            SetColorDialogLch(hwnd, color);
+            ConfigureColorViewTabs(hwnd, state->colorEditViewMode);
             ShowLayoutEditSelectionEditors(state, hwnd, false, false, true, false, false, false);
             SetColorSamplePreview(state, hwnd, color);
             traceDetail = " editor=\"color\"" + BuildColorDialogTraceValues(hwnd) + " config_value=" +
@@ -815,6 +817,8 @@ void PopulateLayoutEditSelection(LayoutEditDialogState* state, HWND hwnd) {
         SetColorDialogChannel(hwnd, kColorDialogControls[1], (color >> 16) & 0xFFu);
         SetColorDialogChannel(hwnd, kColorDialogControls[2], (color >> 8) & 0xFFu);
         SetColorDialogChannel(hwnd, kColorDialogControls[3], color & 0xFFu);
+        SetColorDialogLch(hwnd, color);
+        ConfigureColorViewTabs(hwnd, state->colorEditViewMode);
         ShowLayoutEditSelectionEditors(state, hwnd, false, false, true, false, false, false);
         SetColorSamplePreview(state, hwnd, color);
         traceDetail = " editor=\"theme_color\"" + BuildColorDialogTraceValues(hwnd) + " config_value=" +
@@ -1174,8 +1178,9 @@ bool PreviewSelectedColor(LayoutEditDialogState* state, HWND hwnd) {
         return false;
     }
 
-    const auto color = ReadColorDialogValue(hwnd);
     const bool derivedExpression = parameter != nullptr && IsDerivedColorMode(hwnd);
+    const bool lchLiteralView = !derivedExpression && state->colorEditViewMode == ColorEditViewMode::Lch;
+    const auto color = lchLiteralView && !ColorDialogLchValueValid(hwnd) ? std::nullopt : ReadColorDialogValue(hwnd);
     bool applied = false;
     if (derivedExpression) {
         const auto expression = ReadDerivedColorExpressionFromDialog(hwnd);
