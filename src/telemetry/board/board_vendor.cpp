@@ -10,6 +10,39 @@ namespace {
 
 constexpr wchar_t kBiosKey[] = L"HARDWARE\\DESCRIPTION\\System\\BIOS";
 
+class UnsupportedBoardTelemetryProvider final : public BoardVendorTelemetryProvider {
+public:
+    explicit UnsupportedBoardTelemetryProvider(Trace& trace) : trace_(trace) {}
+
+    bool Initialize(const BoardTelemetrySettings& settings) override {
+        boardManufacturer_ = ReadRegistryString(HKEY_LOCAL_MACHINE, kBiosKey, L"BaseBoardManufacturer").value_or("");
+        boardProduct_ = ReadRegistryString(HKEY_LOCAL_MACHINE, kBiosKey, L"BaseBoardProduct").value_or("");
+        sample_.providerName = "Unsupported";
+        sample_.boardManufacturer = boardManufacturer_;
+        sample_.boardProduct = boardProduct_;
+        sample_.requestedFanNames = settings.requestedFanNames;
+        sample_.requestedTemperatureNames = settings.requestedTemperatureNames;
+        sample_.fans = CreateRequestedBoardMetrics(settings.requestedFanNames, ScalarMetricUnit::Rpm);
+        sample_.temperatures =
+            CreateRequestedBoardMetrics(settings.requestedTemperatureNames, ScalarMetricUnit::Celsius);
+        sample_.available = false;
+        sample_.diagnostics = "No supported board telemetry provider matches the baseboard manufacturer.";
+        trace_.Write("unsupported_board:initialize manufacturer=\"" + boardManufacturer_ + "\" product=\"" +
+                     boardProduct_ + "\"");
+        return true;
+    }
+
+    BoardVendorTelemetrySample Sample() override {
+        return sample_;
+    }
+
+private:
+    Trace& trace_;
+    std::string boardManufacturer_;
+    std::string boardProduct_;
+    BoardVendorTelemetrySample sample_;
+};
+
 }  // namespace
 
 std::unique_ptr<BoardVendorTelemetryProvider> CreateBoardVendorTelemetryProvider(Trace& trace) {
@@ -22,5 +55,5 @@ std::unique_ptr<BoardVendorTelemetryProvider> CreateBoardVendorTelemetryProvider
         return CreateGigabyteBoardTelemetryProvider(trace);
     }
 
-    return CreateGigabyteBoardTelemetryProvider(trace);
+    return std::make_unique<UnsupportedBoardTelemetryProvider>(trace);
 }

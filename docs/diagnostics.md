@@ -70,7 +70,7 @@ See also: [docs/specifications.md](specifications.md) for user-visible runtime b
 
 ## Failure And Trace Policy
 
-- The diagnostics trace covers startup, reload, output export, renderer layout data, telemetry collection, vendor-provider activity including `msi_center` and `gigabyte_siv` board-provider markers, and focused interactive layout-edit UI markers for layout switches, modal-menu scope, dialog-tree refresh, hover refresh, tooltip show or hide, and capture-state transitions when `/trace` is enabled.
+- The diagnostics trace covers startup, reload, output export, renderer layout data, telemetry collection, vendor-provider activity including `msi_center`, `gigabyte_siv`, and `unsupported_board` board-provider markers, and focused interactive layout-edit UI markers for layout switches, modal-menu scope, dialog-tree refresh, hover refresh, tooltip show or hide, and capture-state transitions when `/trace` is enabled.
 - Diagnostics failures that occur while opening or writing outputs are written to trace before any error dialog is shown.
 - When `/trace` is enabled, diagnostics failures prefer trace logging plus a failure exit code over blocking modal behavior.
 - Required fake-file load failures follow that same rule so `/fake:<path> /exit` returns promptly under trace.
