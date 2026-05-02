@@ -223,12 +223,12 @@ TelemetryDump BuildSyntheticTelemetryDump(uint64_t tick) {
     const std::vector<double> storageWrite = BuildSyntheticThroughputHistory(
         tick, 44.0, 18.0, 6.0, 11.0, 13.5, 8.5, 52.0, 21.0, 9.0, 2.8, 19.0, 26.0, 4.0, 3.2, 0x5EED1234u);
 
-    snapshot.cpu.name = "AMD Ryzen 9 5900X HyperDrive";
+    snapshot.cpu.name = "DeLorean 88X ChronoCore";
     snapshot.cpu.loadPercent = LastHistorySample(cpuLoad);
     snapshot.cpu.clock = ScalarMetric{LastHistorySample(cpuClock), ScalarMetricUnit::Gigahertz};
     snapshot.cpu.memory = MemoryMetric{LastHistorySample(cpuRam), kSyntheticCpuMemoryTotalGb};
 
-    snapshot.gpu.name = "AMD Radeon RX 8800 XT FluxDrive";
+    snapshot.gpu.name = "FluxDrive 8800 XT";
     snapshot.gpu.loadPercent = LastHistorySample(gpuLoad);
     snapshot.gpu.temperature = ScalarMetric{LastHistorySample(gpuTemp), ScalarMetricUnit::Celsius};
     snapshot.gpu.clock = ScalarMetric{LastHistorySample(gpuClock), ScalarMetricUnit::Megahertz};
