@@ -59,10 +59,32 @@ std::wstring ReadControlTextWide(HWND hwnd, int controlId) {
     return buffer;
 }
 
-std::wstring FormatDialogDouble(double value, int precision) {
+double RoundToStep(double value, double step) {
+    return std::round(value / step) * step;
+}
+
+std::wstring FormatDialogRoundedDecimal(double value, int decimalPlaces) {
     wchar_t buffer[64] = {};
-    swprintf_s(buffer, L"%.*g", precision, value);
-    return buffer;
+    swprintf_s(buffer, L"%.*f", decimalPlaces, value);
+    std::wstring text = buffer;
+    while (!text.empty() && text.back() == L'0') {
+        text.pop_back();
+    }
+    if (!text.empty() && text.back() == L'.') {
+        text.pop_back();
+    }
+    return text.empty() || text == L"-0" ? L"0" : text;
+}
+
+std::wstring FormatDialogRoundedInteger(double value) {
+    return WideFromUtf8(std::to_string(static_cast<int>(std::lround(value))));
+}
+
+OklchColor DisplayRoundedLch(OklchColor lch) {
+    lch.l = std::clamp(RoundToStep(lch.l, 0.001), 0.0, 1.0);
+    lch.c = std::max(0.0, RoundToStep(lch.c, 0.001));
+    lch.h = lch.c == 0.0 ? 0.0 : std::clamp(std::round(lch.h), 0.0, 360.0);
+    return lch;
 }
 
 void SetSliderRange(HWND hwnd, int sliderId, int minValue, int maxValue, int pageSize, int lineSize) {
@@ -281,10 +303,10 @@ void SetColorDialogHex(HWND hwnd, unsigned int color) {
 }
 
 void SetColorDialogLch(HWND hwnd, unsigned int color) {
-    const OklchColor lch = OklchFromColorBytes(ColorBytesFromRgba(color));
-    SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_EDIT, FormatDialogDouble(lch.l, 4).c_str());
-    SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_EDIT, FormatDialogDouble(lch.c, 4).c_str());
-    SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_HUE_EDIT, FormatDialogDouble(lch.h, 4).c_str());
+    const OklchColor lch = DisplayRoundedLch(OklchFromColorBytes(ColorBytesFromRgba(color)));
+    SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_EDIT, FormatDialogRoundedDecimal(lch.l, 3).c_str());
+    SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_EDIT, FormatDialogRoundedDecimal(lch.c, 3).c_str());
+    SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_HUE_EDIT, FormatDialogRoundedInteger(lch.h).c_str());
     SetLchSliderPositions(hwnd, lch);
 }
 
@@ -351,15 +373,15 @@ void SetColorLchEditFromSlider(HWND hwnd, int sliderId) {
         case IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_SLIDER:
             SetDlgItemTextW(hwnd,
                 IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_EDIT,
-                FormatDialogDouble(static_cast<double>(position) / 1000.0, 4).c_str());
+                FormatDialogRoundedDecimal(static_cast<double>(position) / 1000.0, 3).c_str());
             break;
         case IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_SLIDER:
             SetDlgItemTextW(hwnd,
                 IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_EDIT,
-                FormatDialogDouble(static_cast<double>(position) / kLchChromaSliderScale, 4).c_str());
+                FormatDialogRoundedDecimal(static_cast<double>(position) / kLchChromaSliderScale, 3).c_str());
             break;
         case IDC_LAYOUT_EDIT_COLOR_LCH_HUE_SLIDER:
-            SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_HUE_EDIT, WideFromUtf8(std::to_string(position)).c_str());
+            SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_HUE_EDIT, FormatDialogRoundedInteger(position).c_str());
             break;
     }
 }
