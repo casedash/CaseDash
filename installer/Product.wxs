@@ -33,7 +33,7 @@
 
     <UI>
       <Publish
-        Dialog="ExitDialog"
+        Dialog="CaseDashExitDialog"
         Control="Finish"
         Event="DoAction"
         Value="LaunchCaseDash"
