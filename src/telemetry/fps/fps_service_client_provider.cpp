@@ -15,6 +15,7 @@ namespace {
 constexpr DWORD kPipeConnectTimeoutMs = 100;
 constexpr DWORD kPipeReadChunkBytes = 4096;
 constexpr DWORD kMaximumPipeResponseBytes = 16 * 1024;
+constexpr int kServiceRetrySampleInterval = 10;
 
 std::string Win32ErrorText(DWORD status) {
     char message[256]{};
@@ -158,14 +159,71 @@ private:
     bool initialized_ = false;
 };
 
+std::unique_ptr<FpsTelemetryProvider> CreateFpsServiceClientProvider(Trace& trace) {
+    return std::make_unique<FpsServiceClientProvider>(trace);
+}
+
+class FpsHybridProvider final : public FpsTelemetryProvider {
+public:
+    explicit FpsHybridProvider(Trace& trace) : trace_(trace) {}
+
+    bool Initialize() override {
+        if (TryInitializeServiceProvider()) {
+            initialized_ = true;
+            return true;
+        }
+
+        localProvider_ = CreatePresentedFpsEtwProvider(trace_);
+        localProviderInitialized_ = localProvider_ != nullptr && localProvider_->Initialize();
+        initialized_ = localProviderInitialized_;
+        return initialized_;
+    }
+
+    FpsTelemetrySample Sample() override {
+        if (serviceProvider_ != nullptr) {
+            return serviceProvider_->Sample();
+        }
+
+        ++serviceRetrySample_;
+        if (serviceRetrySample_ >= kServiceRetrySampleInterval) {
+            serviceRetrySample_ = 0;
+            if (TryInitializeServiceProvider()) {
+                trace_.Write("fps_provider:service_recovered");
+                return serviceProvider_->Sample();
+            }
+        }
+
+        if (localProvider_ != nullptr) {
+            return localProvider_->Sample();
+        }
+
+        FpsTelemetrySample sample;
+        sample.diagnostics = "No FPS provider initialized.";
+        return sample;
+    }
+
+private:
+    bool TryInitializeServiceProvider() {
+        auto provider = CreateFpsServiceClientProvider(trace_);
+        if (provider != nullptr && provider->Initialize()) {
+            serviceProvider_ = std::move(provider);
+            return true;
+        }
+
+        trace_.Write("fps_provider:service_unavailable fallback=local_etw");
+        return false;
+    }
+
+    Trace& trace_;
+    std::unique_ptr<FpsTelemetryProvider> serviceProvider_;
+    std::unique_ptr<FpsTelemetryProvider> localProvider_;
+    int serviceRetrySample_ = kServiceRetrySampleInterval;
+    bool localProviderInitialized_ = false;
+    bool initialized_ = false;
+};
+
 }  // namespace
 
 std::unique_ptr<FpsTelemetryProvider> CreatePresentedFpsProvider(Trace& trace) {
-    auto serviceProvider = std::make_unique<FpsServiceClientProvider>(trace);
-    if (serviceProvider->Initialize()) {
-        return serviceProvider;
-    }
-
-    trace.Write("fps_provider:service_unavailable fallback=local_etw");
-    return CreatePresentedFpsEtwProvider(trace);
+    return std::make_unique<FpsHybridProvider>(trace);
 }

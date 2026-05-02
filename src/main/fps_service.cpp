@@ -21,6 +21,7 @@ namespace {
 
 constexpr DWORD kServiceStopWaitMs = 10000;
 constexpr DWORD kPipeBufferBytes = 4096;
+constexpr DWORD kPipeRequestBytes = 128;
 
 SERVICE_STATUS_HANDLE g_serviceStatusHandle = nullptr;
 SERVICE_STATUS g_serviceStatus{};
@@ -282,10 +283,22 @@ bool ConnectPipeOrStop(HANDLE pipe, HANDLE stopEvent) {
 }
 
 void ServePipeClient(HANDLE pipe, FpsTelemetryProvider& fpsProvider) {
-    char request[128]{};
-    DWORD read = 0;
-    if (!ReadFile(pipe, request, static_cast<DWORD>(std::size(request)), &read, nullptr) ||
-        !IsFpsServiceRequest(request, read)) {
+    const std::vector<char> expectedRequest = BuildFpsServiceRequest();
+    std::vector<char> request;
+    request.reserve(expectedRequest.size());
+    while (request.size() < expectedRequest.size()) {
+        char buffer[kPipeRequestBytes]{};
+        DWORD read = 0;
+        if (!ReadFile(pipe, buffer, static_cast<DWORD>(std::size(buffer)), &read, nullptr) || read == 0) {
+            return;
+        }
+        request.insert(request.end(), buffer, buffer + read);
+        if (request.size() > expectedRequest.size()) {
+            return;
+        }
+    }
+
+    if (!IsFpsServiceRequest(request.data(), request.size())) {
         return;
     }
 
