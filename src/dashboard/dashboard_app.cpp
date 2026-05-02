@@ -168,7 +168,7 @@ bool DashboardApp::Initialize(HINSTANCE instance) {
         return false;
     }
 
-    INITCOMMONCONTROLSEX icc{sizeof(icc), ICC_STANDARD_CLASSES | ICC_WIN95_CLASSES};
+    INITCOMMONCONTROLSEX icc{sizeof(icc), ICC_STANDARD_CLASSES | ICC_WIN95_CLASSES | ICC_TAB_CLASSES};
     InitCommonControlsEx(&icc);
 
     WNDCLASSEXW wc{};

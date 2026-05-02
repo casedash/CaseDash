@@ -1398,11 +1398,12 @@ void LayoutLayoutEditRightPane(LayoutEditDialogState* state, HWND hwnd) {
                 const int tabInsetBottom = DialogUnitsToPixelsY(hwnd, 6);
                 const int tabHeight = tabHeaderHeight + tabContentHeight + tabInsetBottom;
                 SetDialogControlBounds(hwnd, IDC_LAYOUT_EDIT_COLOR_VIEW_TAB, innerLeft, cursorY, innerWidth, tabHeight);
+                BringDialogControlToTop(hwnd, IDC_LAYOUT_EDIT_COLOR_VIEW_TAB);
                 int tabCursorY = cursorY + tabHeaderHeight;
                 for (int i = 0; i < 3; ++i) {
                     const int rowHeight = channelRowHeights[i];
                     const int rowLeft = innerLeft + tabInsetX;
-                    const int rowLabelWidth = std::max(1, labelColumnWidth - tabInsetX);
+                    const int rowLabelWidth = std::max(1, labelColumnWidth);
                     const int rowEditLeft = rowLeft + rowLabelWidth + metrics.labelGap;
                     const int rowSliderLeft = rowEditLeft + valueEditWidth + metrics.inlineGap;
                     const int rowSliderWidth = std::max(40, innerRight - tabInsetX - rowSliderLeft);
@@ -1429,6 +1430,9 @@ void LayoutLayoutEditRightPane(LayoutEditDialogState* state, HWND hwnd) {
                         tabCursorY + ((rowHeight - labelHeight) / 2),
                         rowLabelWidth,
                         labelHeight);
+                    BringDialogControlToTop(hwnd, channelLabelIds[i]);
+                    BringDialogControlToTop(hwnd, channelEditIds[i]);
+                    BringDialogControlToTop(hwnd, channelSliderIds[i]);
                     tabCursorY += rowHeight + metrics.rowGap;
                 }
                 cursorY += tabHeight + metrics.rowGap;
@@ -1639,6 +1643,9 @@ void LayoutLayoutEditRightPane(LayoutEditDialogState* state, HWND hwnd) {
     const int desiredGroupHeight = std::max(60, (contentBottom - groupTop) + metrics.groupPadding);
     const int groupHeight = std::min(maxGroupHeight, desiredGroupHeight);
     SetDialogControlBounds(hwnd, IDC_LAYOUT_EDIT_EDITOR_GROUP, paneLeft, groupTop, paneWidth, groupHeight);
+    if (HWND group = GetDlgItem(hwnd, IDC_LAYOUT_EDIT_EDITOR_GROUP); group != nullptr) {
+        SetWindowPos(group, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+    }
 
     switch (kind) {
         case LayoutEditEditorKind::Font:
