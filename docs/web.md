@@ -1,6 +1,6 @@
-# Website Specification Proposal
+# Website Specification
 
-This document proposes the public CaseDash website behavior, content, build flow, and generated-asset contracts.
+This document owns the public CaseDash website behavior, content, build flow, and generated-asset contracts.
 
 ## Purpose
 
@@ -172,7 +172,7 @@ Generated screenshots and guide sheets are not committed. Generated files are wr
 
 Website source lives under `web/`.
 
-Proposed layout:
+Source layout:
 
 ```text
 web/
