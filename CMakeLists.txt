@@ -140,6 +140,7 @@ add_executable(SystemTelemetry WIN32
     src/telemetry/impl/collector_fake.cpp
     src/diagnostics/snapshot_dump.cpp
     src/telemetry/gpu/gpu_vendor.cpp
+    src/telemetry/gpu/nvidia/gpu_nvidia_nvml.cpp
     src/telemetry/gpu/amd/gpu_amd_adl.cpp
     src/telemetry/board/board_vendor.cpp
     src/telemetry/board/gigabyte/board_gigabyte_siv.cpp
@@ -225,6 +226,7 @@ set(systemtelemetry_release_speed_sources
     src/telemetry/board/board_vendor.cpp
     src/telemetry/board/gigabyte/board_gigabyte_siv.cpp
     src/telemetry/gpu/gpu_vendor.cpp
+    src/telemetry/gpu/nvidia/gpu_nvidia_nvml.cpp
     src/telemetry/gpu/amd/gpu_amd_adl.cpp
     src/telemetry/impl/collector_board.cpp
     src/telemetry/impl/collector_cpu.cpp
@@ -546,6 +548,7 @@ add_executable(SystemTelemetryBenchmarks
     src/telemetry/impl/collector_fake.cpp
     src/diagnostics/snapshot_dump.cpp
     src/telemetry/gpu/gpu_vendor.cpp
+    src/telemetry/gpu/nvidia/gpu_nvidia_nvml.cpp
     src/telemetry/gpu/amd/gpu_amd_adl.cpp
     src/telemetry/board/board_vendor.cpp
     src/telemetry/board/gigabyte/board_gigabyte_siv.cpp
