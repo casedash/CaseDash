@@ -181,16 +181,15 @@ web-build.cmd
 
 The website build:
 
-1. Builds CaseDash through the project build entrypoint when generated screenshots or guide sheets are stale or missing.
+1. Builds CaseDash through the project build entrypoint when generated website assets are stale or missing.
 2. Reads theme definitions from `resources/config.ini`.
-3. Runs the built executable once per theme for dashboard screenshot generation when the target screenshot is missing.
-4. Runs the built executable once per theme for layout guide sheet generation when the target guide sheet is missing.
-5. Writes theme metadata JSON.
-6. Copies static website source and generated assets into `web/dist/`.
+3. Runs the built executable once per theme to generate that theme's dashboard screenshot, layout guide sheet, and app icon when any of those target files is missing.
+4. Writes theme metadata JSON.
+5. Copies static website source and generated assets into `web/dist/`.
 
-`web-build.cmd clean` removes `web/dist/` before the build and forces every generated screenshot and guide sheet to be rebuilt.
+`web-build.cmd clean` removes `web/dist/` before the build and forces every generated screenshot, guide sheet, and app icon to be rebuilt.
 
-When the build needs screenshots or guide sheets, diagnostics output paths point under `build\` or `web\dist\` so generated diagnostics files do not pollute the repository root.
+When the build needs generated app assets, diagnostics output paths point under `build\` or `web\dist\` so generated diagnostics files do not pollute the repository root.
 
 The generated site is directly openable from `web/dist/index.html` in a local browser. No preview server is required.
 
@@ -208,7 +207,7 @@ Website validation checks:
 - The generated site opens directly from `web/dist/index.html` with no server-only assumptions.
 - Navigation anchors scroll to all required sections.
 - The theme switcher lists every `[theme.<name>]` section from `resources/config.ini`.
-- Theme switching updates colors, screenshot, and layout guide sheet together.
+- Theme switching updates colors, screenshot, layout guide sheet, and app icon together.
 - The page works at desktop, tablet, and phone widths.
 - Text and buttons do not overlap or overflow at narrow widths.
 - Images use explicit dimensions or aspect-ratio constraints to prevent layout shift.
@@ -217,7 +216,7 @@ Website validation checks:
 
 ## Accessibility And Performance
 
-The page is usable without JavaScript except for theme switching and theme-specific asset swapping. The default rendered HTML still shows one valid theme, one screenshot, and one layout guide sheet.
+The page is usable without JavaScript except for theme switching and theme-specific asset swapping. The default rendered HTML still shows one valid theme, one app icon, one screenshot, and one layout guide sheet.
 
 The page respects reduced-motion preferences. Smooth scrolling and theme transitions are disabled or shortened when the visitor prefers reduced motion.
 

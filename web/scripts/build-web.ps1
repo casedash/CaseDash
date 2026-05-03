@@ -133,26 +133,44 @@ function Test-GeneratedFile {
     return ($null -ne $item -and $item.Length -gt 0)
 }
 
-function Invoke-CaseDashExport {
+function Invoke-CaseDashThemeAssetExport {
     param(
         [string]$Theme,
-        [string]$SwitchName,
-        [string]$OutputPath,
-        [string[]]$AdditionalArguments = @()
+        [string]$DashboardPath,
+        [string]$GuidePath,
+        [string]$IconPath
     )
 
-    if (-not $Clean -and (Test-GeneratedFile $OutputPath)) {
-        Write-Host "Reusing $OutputPath"
+    $outputPaths = @($DashboardPath, $GuidePath, $IconPath)
+    $hasAllOutputs = $true
+    foreach ($path in $outputPaths) {
+        if (-not (Test-GeneratedFile $path)) {
+            $hasAllOutputs = $false
+            break
+        }
+    }
+
+    if (-not $Clean -and $hasAllOutputs) {
+        Write-Host "Reusing generated assets for $Theme"
         return
     }
 
-    $arguments = @('/fake', '/default-config', "/theme:$Theme", '/scale:2', "/$SwitchName`:$OutputPath") +
-        $AdditionalArguments + @('/exit')
+    $arguments = @('/fake',
+        '/default-config',
+        "/theme:$Theme",
+        '/scale:2',
+        "/screenshot:$DashboardPath",
+        "/layout-guide-sheet:$GuidePath",
+        "/app-icon:$IconPath",
+        '/app-icon-size:128',
+        '/exit')
     $process = Start-Process -FilePath $exePath -ArgumentList $arguments -Wait -PassThru -NoNewWindow
     if ($process.ExitCode -ne 0) {
-        throw "CaseDash $SwitchName export failed for theme '$Theme' with exit code $($process.ExitCode)."
+        throw "CaseDash website asset export failed for theme '$Theme' with exit code $($process.ExitCode)."
     }
-    Wait-GeneratedFile $OutputPath
+    foreach ($path in $outputPaths) {
+        Wait-GeneratedFile $path
+    }
 }
 
 & (Join-Path $repoRoot 'build.cmd')
@@ -190,13 +208,11 @@ foreach ($theme in $themeConfig.themes) {
     $guidePath = Join-Path $generatedDir $guideName
     $iconPath = Join-Path $generatedDir $iconName
 
-    Invoke-CaseDashExport -Theme $themeId -SwitchName 'screenshot' -OutputPath $dashboardPath
-    Invoke-CaseDashExport -Theme $themeId -SwitchName 'layout-guide-sheet' -OutputPath $guidePath
-    Invoke-CaseDashExport `
+    Invoke-CaseDashThemeAssetExport `
         -Theme $themeId `
-        -SwitchName 'app-icon' `
-        -OutputPath $iconPath `
-        -AdditionalArguments @('/app-icon-size:128')
+        -DashboardPath $dashboardPath `
+        -GuidePath $guidePath `
+        -IconPath $iconPath
 
     $siteThemes += [ordered]@{
         id = $themeId
