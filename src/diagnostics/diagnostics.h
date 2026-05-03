@@ -66,10 +66,6 @@ private:
     std::FILE* traceFile_ = nullptr;
 };
 
-std::vector<std::wstring> GetCommandLineArguments();
-bool HasSwitch(const std::string& target);
-std::optional<std::wstring> GetSwitchValue(const std::wstring& target);
-std::optional<std::wstring> GetColonSwitchValue(const std::wstring& target);
 std::optional<double> TryParseScaleValue(const std::wstring& text);
 std::optional<double> GetScaleSwitchValue();
 std::optional<std::string> GetLayoutSwitchValue();
@@ -85,7 +81,6 @@ std::optional<FilePath> PromptSavePath(HWND owner,
     const wchar_t* defaultFileName,
     const wchar_t* filter,
     const wchar_t* defaultExtension);
-bool CanWriteRuntimeConfig(const FilePath& path);
 int RunElevatedSaveConfigMode(const FilePath& sourcePath, const FilePath& targetPath);
 std::wstring FormatTelemetryInitializeError(std::string_view errorText);
 

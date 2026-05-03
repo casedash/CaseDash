@@ -1,4 +1,4 @@
-#include "main/fps_service.h"
+#include "dashboard/fps_service.h"
 
 #include <iterator>
 #include <memory>
@@ -10,7 +10,6 @@
 #include <vector>
 #include <winsvc.h>
 
-#include "diagnostics/diagnostics.h"
 #include "telemetry/fps_provider.h"
 #include "telemetry/fps_service_protocol.h"
 #include "util/command_line.h"

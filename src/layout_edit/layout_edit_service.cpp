@@ -243,6 +243,22 @@ bool ApplyContainerChildOrder(
     return updated;
 }
 
+bool ApplyGuideWeights(AppConfig& config, const LayoutEditLayoutTarget& target, const std::vector<int>& weights) {
+    if (weights.size() < 2) {
+        return false;
+    }
+    const auto applyWeights = [&](LayoutNodeConfig* node) -> bool {
+        if (node == nullptr || node->children.size() != weights.size()) {
+            return false;
+        }
+        for (size_t i = 0; i < weights.size(); ++i) {
+            node->children[i].weight = std::max(1, weights[i]);
+        }
+        return true;
+    };
+    return ApplyLayoutNodeMutation(config, target.editCardId, target.nodePath, applyWeights);
+}
+
 bool AppendMetricListRow(AppConfig& config, const LayoutEditWidgetIdentity& widget, std::string_view metricRef) {
     if (metricRef.empty()) {
         return false;

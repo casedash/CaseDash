@@ -21,6 +21,7 @@
 #include "layout_guide_sheet/layout_guide_sheet.h"
 #include "telemetry/metrics.h"
 #include "telemetry/telemetry.h"
+#include "util/command_line.h"
 #include "util/paths.h"
 #include "util/scale.h"
 #include "util/strings.h"
@@ -229,52 +230,6 @@ private:
 };
 
 }  // namespace
-
-std::vector<std::wstring> GetCommandLineArguments() {
-    int argc = 0;
-    LPWSTR* argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-    if (argv == nullptr) {
-        return {};
-    }
-
-    std::vector<std::wstring> arguments;
-    arguments.reserve(argc > 1 ? static_cast<size_t>(argc - 1) : 0);
-    for (int i = 1; i < argc; ++i) {
-        arguments.emplace_back(argv[i]);
-    }
-    LocalFree(argv);
-    return arguments;
-}
-
-bool HasSwitch(const std::string& target) {
-    const std::wstring wideTarget = WideFromUtf8(target);
-    for (const std::wstring& argument : GetCommandLineArguments()) {
-        if (_wcsicmp(argument.c_str(), wideTarget.c_str()) == 0) {
-            return true;
-        }
-    }
-    return false;
-}
-
-std::optional<std::wstring> GetSwitchValue(const std::wstring& target) {
-    const std::vector<std::wstring> arguments = GetCommandLineArguments();
-    for (size_t i = 0; i + 1 < arguments.size(); ++i) {
-        if (_wcsicmp(arguments[i].c_str(), target.c_str()) == 0) {
-            return arguments[i + 1];
-        }
-    }
-    return std::nullopt;
-}
-
-std::optional<std::wstring> GetColonSwitchValue(const std::wstring& target) {
-    for (const std::wstring& argument : GetCommandLineArguments()) {
-        if (argument.size() > target.size() && _wcsnicmp(argument.c_str(), target.c_str(), target.size()) == 0 &&
-            argument[target.size()] == L':') {
-            return argument.substr(target.size() + 1);
-        }
-    }
-    return std::nullopt;
-}
 
 std::optional<double> TryParseScaleValue(const std::wstring& text) {
     if (text.empty()) {
@@ -657,41 +612,6 @@ std::optional<FilePath> PromptSavePath(HWND owner,
         return std::nullopt;
     }
     return FilePath(dialog.lpstrFile);
-}
-
-bool CanWriteRuntimeConfig(const FilePath& path) {
-    const std::wstring widePath = path.wstring();
-    if (FileExists(path)) {
-        HANDLE file = CreateFileW(widePath.c_str(),
-            GENERIC_WRITE,
-            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-            nullptr,
-            OPEN_EXISTING,
-            FILE_ATTRIBUTE_NORMAL,
-            nullptr);
-        if (file == INVALID_HANDLE_VALUE) {
-            return false;
-        }
-        CloseHandle(file);
-        return true;
-    }
-
-    const FilePath parent = path.has_parent_path() ? path.parent_path() : CurrentDirectoryPath();
-    const std::wstring probeName = L".config-write-test-" + std::to_wstring(GetCurrentProcessId()) + L"-" +
-                                   std::to_wstring(GetTickCount64()) + L".tmp";
-    const FilePath probePath = parent / probeName;
-    HANDLE probe = CreateFileW(probePath.wstring().c_str(),
-        GENERIC_WRITE,
-        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-        nullptr,
-        CREATE_NEW,
-        FILE_ATTRIBUTE_TEMPORARY | FILE_FLAG_DELETE_ON_CLOSE,
-        nullptr);
-    if (probe == INVALID_HANDLE_VALUE) {
-        return false;
-    }
-    CloseHandle(probe);
-    return true;
 }
 
 TelemetryCollectorOptions BuildTelemetryCollectorOptions(const DiagnosticsOptions& diagnosticsOptions) {

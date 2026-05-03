@@ -5,12 +5,12 @@
 #include <string>
 #include <vector>
 
+#include "dashboard/autostart.h"
 #include "dashboard/constants.h"
 #include "dashboard/dashboard_app.h"
+#include "dashboard/fps_service.h"
 #include "diagnostics/diagnostics.h"
 #include "display/display_config.h"
-#include "main/autostart.h"
-#include "main/fps_service.h"
 #include "util/command_line.h"
 #include "util/file_path.h"
 

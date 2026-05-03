@@ -27,7 +27,7 @@ D2D_INCLUDE_NAMES = {
 }
 LARGE_SOURCE_FILE_LOC_THRESHOLD = 1_000
 PACKAGE_DEPENDENCY_LIMITS = {
-    "dashboard_renderer": {"config", "layout_model", "renderer", "telemetry", "util", "widget"},
+    "dashboard_renderer": {"config", "layout_edit", "layout_model", "renderer", "telemetry", "util", "widget"},
     "layout_edit_dialog": {"config", "layout_edit", "layout_model", "telemetry", "util", "widget"},
     "layout_edit": {"config", "layout_model", "util", "widget"},
     "layout_model": {"config", "renderer", "widget"},

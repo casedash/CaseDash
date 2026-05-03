@@ -9,3 +9,4 @@
 
 FilePath GetRuntimeConfigPath();
 AppConfig LoadRuntimeConfig(const DiagnosticsOptions& options, const ConfigParseContext& context);
+bool CanWriteRuntimeConfig(const FilePath& path);

@@ -1,11 +1,17 @@
-#include "main/autostart.h"
+#include "dashboard/autostart.h"
 
 #include <shellapi.h>
 
-#include "main/constants.h"
-#include "main/fps_service.h"
+#include "dashboard/fps_service.h"
 #include "util/command_line.h"
 #include "util/paths.h"
+
+namespace {
+
+constexpr wchar_t kAutoStartRunSubKey[] = L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
+constexpr wchar_t kAutoStartValueName[] = L"CaseDash";
+
+}  // namespace
 
 std::optional<std::wstring> ReadAutoStartCommand() {
     HKEY key = nullptr;
