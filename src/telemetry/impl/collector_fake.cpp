@@ -234,6 +234,7 @@ TelemetryDump BuildSyntheticTelemetryDump(uint64_t tick) {
     snapshot.gpu.clock = ScalarMetric{LastHistorySample(gpuClock), ScalarMetricUnit::Megahertz};
     snapshot.gpu.fan = ScalarMetric{LastHistorySample(gpuFan), ScalarMetricUnit::Rpm};
     snapshot.gpu.fps = ScalarMetric{LastHistorySample(gpuFps), ScalarMetricUnit::Fps};
+    snapshot.gpu.fpsAppName = "fluxsim";
     snapshot.gpu.vram = MemoryMetric{LastHistorySample(gpuVram), 15.984375};
 
     snapshot.boardTemperatures.push_back(

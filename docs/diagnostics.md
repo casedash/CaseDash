@@ -53,7 +53,7 @@ See also: [docs/specifications.md](specifications.md) for user-visible runtime b
 - Default filenames are `casedash_trace.txt`, `casedash_dump.txt`, `casedash_screenshot.png`, `casedash_layout_guide_sheet.png`, `casedash_app_icon.png`, `casedash_config.ini`, and `casedash_full_config.ini`.
 - Trace output appends UTF-8 text without a BOM and uses the `[trace yyyy-mm-dd hh:mm:ss.mmm]` prefix format.
 - Dump, screenshot, layout-guide-sheet, app-icon, minimal-config, and full-config exports overwrite only their requested target file.
-- `/fake` without a path uses the built-in synthetic baseline and reads no external file.
+- `/fake` without a path uses the built-in synthetic baseline and reads no external file. The built-in baseline uses the themed `fluxsim` FPS application label.
 - `/fake:<path>` reads only the selected dump file.
 - The UI diagnostics save dialogs use the same dump, screenshot, layout-guide-sheet, and full-config formats as the CLI outputs.
 

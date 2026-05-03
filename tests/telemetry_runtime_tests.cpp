@@ -64,6 +64,7 @@ TEST_F(TelemetryRuntimeTest, PublishesInitialAndWorkerUpdates) {
     ASSERT_NE(runtime, nullptr);
     EXPECT_TRUE(WaitForCallbackCount(1));
     EXPECT_GE(runtime->Latest().dump.snapshot.revision, 1u);
+    EXPECT_EQ(runtime->Latest().dump.snapshot.gpu.fpsAppName, "fluxsim");
     EXPECT_TRUE(WaitForCallbackCount(2));
     EXPECT_GE(LatestCallbackUpdate().dump.snapshot.revision, 1u);
     runtime->Shutdown();
