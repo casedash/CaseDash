@@ -51,6 +51,11 @@ TEST(AppIconRenderer, UsesConfiguredForegroundAndAccentColors) {
     EXPECT_TRUE(PixelIsNear(bitmap, 132, 206, 0xFF, 0xFF, 0xFF));
 }
 
+TEST(AppIconRenderer, UsesCardBackgroundForIconBackground) {
+    const AppIconBitmap bitmap = RenderAppIconBitmap(TestIconConfig(), 256);
+    EXPECT_TRUE(PixelIsNear(bitmap, 128, 30, 0x10, 0x18, 0x20));
+}
+
 TEST(AppIconRenderer, ValidatesSupportedSizes) {
     EXPECT_FALSE(IsValidAppIconSize(15));
     EXPECT_TRUE(IsValidAppIconSize(16));

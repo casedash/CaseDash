@@ -49,13 +49,12 @@ IconColor Mix(IconColor left, IconColor right, double amount) {
 
 IconPalette PaletteFromConfig(const AppConfig& config) {
     const ColorsConfig& colors = config.layout.colors;
-    const IconColor background = ColorFromConfig(colors.backgroundColor);
     const IconColor foreground = ColorFromConfig(colors.foregroundColor);
     const IconColor accent = ColorFromConfig(colors.accentColor);
     const IconColor panel = ColorFromConfig(colors.panelFillColor);
     const IconColor muted = ColorFromConfig(colors.mutedTextColor);
     return IconPalette{
-        Mix(background, panel, 0.35),
+        panel,
         foreground,
         accent,
         Mix(muted, foreground, 0.15),
