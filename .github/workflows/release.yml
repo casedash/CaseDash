@@ -26,7 +26,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           ref: ${{ inputs.tag || github.ref }}
@@ -45,7 +45,7 @@ jobs:
 
       - name: Restore vcpkg caches
         id: vcpkg-cache-restore
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: |
             ${{ github.workspace }}\.github-cache\CaseDash\vcpkg\downloads
@@ -108,7 +108,7 @@ jobs:
 
       - name: Save vcpkg caches
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: |
             ${{ github.workspace }}\.github-cache\CaseDash\vcpkg\downloads
@@ -128,14 +128,14 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           ref: ${{ inputs.tag || github.ref }}
 
       - name: Restore vcpkg caches
         id: vcpkg-cache-restore
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: |
             ${{ github.workspace }}\.github-cache\CaseDash\vcpkg\downloads
@@ -150,13 +150,13 @@ jobs:
         run: web-build.cmd
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: web/dist
 
       - name: Save vcpkg caches
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: |
             ${{ github.workspace }}\.github-cache\CaseDash\vcpkg\downloads
@@ -178,4 +178,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
