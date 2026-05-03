@@ -107,34 +107,36 @@
     });
   }
 
-  function observeSections() {
-    if (!("IntersectionObserver" in window) || sections.length === 0) {
+  function updateCurrentSectionFromScroll() {
+    if (sections.length === 0) {
       return;
     }
 
-    const visible = new Map();
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            visible.set(entry.target.id, entry.intersectionRatio);
-          } else {
-            visible.delete(entry.target.id);
-          }
-        });
-
-        const best = Array.from(visible.entries()).sort((a, b) => b[1] - a[1])[0];
-        if (best) {
-          setCurrentSection(best[0]);
-        }
-      },
-      {
-        rootMargin: "-28% 0px -58% 0px",
-        threshold: [0.05, 0.2, 0.4, 0.6, 0.8],
+    const marker = window.scrollY + Math.max(120, window.innerHeight * 0.32);
+    let current = sections[0];
+    sections.forEach((section) => {
+      if (section.offsetTop <= marker) {
+        current = section;
       }
-    );
+    });
+    setCurrentSection(current.id);
+  }
 
-    sections.forEach((section) => observer.observe(section));
+  function observeSections() {
+    let frame = 0;
+    const schedule = () => {
+      if (frame) {
+        return;
+      }
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        updateCurrentSectionFromScroll();
+      });
+    };
+
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    updateCurrentSectionFromScroll();
   }
 
   themes.forEach((theme) => {
