@@ -180,6 +180,7 @@ TEST(Metrics, ResolvesGpuFpsPermissionIssueAsAdminIndicator) {
     const MetricsSectionConfig metrics = BuildMetricsConfig();
     SystemSnapshot snapshot;
     snapshot.gpu.fps = ScalarMetric{std::nullopt, ScalarMetricUnit::Fps, ScalarMetricIssue::PermissionRequired};
+    snapshot.gpu.fpsAppName = "ignored";
     AddHistorySeries(snapshot, "gpu.fps", {72.0, 144.0, 120.0});
 
     MetricSource source(snapshot, metrics);
@@ -187,6 +188,8 @@ TEST(Metrics, ResolvesGpuFpsPermissionIssueAsAdminIndicator) {
     const MetricValue& fps = source.ResolveMetric("gpu.fps");
     EXPECT_EQ(fps.label, "FPS");
     EXPECT_EQ(fps.valueText, "!admin");
+    EXPECT_TRUE(fps.annotationText.empty());
+    EXPECT_FALSE(fps.warningAnnotation);
     EXPECT_EQ(fps.state, MetricValueState::PermissionRequired);
     EXPECT_DOUBLE_EQ(fps.ratio, 0.0);
 }

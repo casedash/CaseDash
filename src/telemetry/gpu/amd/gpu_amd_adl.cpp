@@ -265,6 +265,7 @@ public:
             const FpsTelemetrySample fpsSample = fpsProvider_->Sample();
             fpsDiagnostics_ = fpsSample.diagnostics;
             sample.fpsAppName = fpsSample.processName;
+            sample.fpsPermissionRequired = fpsSample.permissionRequired;
             if (fpsSample.fps.has_value()) {
                 sample.fps = *fpsSample.fps;
                 hasAnyMetric = true;
@@ -273,7 +274,6 @@ public:
                 if (nativeFps.has_value()) {
                     sample.fps = *nativeFps;
                     sample.fpsAppName = "!admin";
-                    sample.fpsPermissionRequired = true;
                     hasAnyMetric = true;
                 }
             }

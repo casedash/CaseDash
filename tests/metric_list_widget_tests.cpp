@@ -1,6 +1,8 @@
+#include <algorithm>
 #include <gtest/gtest.h>
 #include <optional>
 #include <span>
+#include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -10,6 +12,13 @@
 #include "widget/widget_host.h"
 
 namespace {
+
+struct DrawnText {
+    RenderRect rect{};
+    std::string text;
+    TextStyleId style = TextStyleId::Label;
+    RenderColorId color = RenderColorId::Foreground;
+};
 
 class MetricListTestEditArtifacts final : public WidgetEditArtifactRegistrar {
 public:
@@ -73,6 +82,8 @@ public:
         definitions_.push_back(MetricDefinitionConfig{"cpu.ram", MetricDisplayStyle::Memory, true, 0.0, "GB", "RAM"});
         definitions_.push_back(
             MetricDefinitionConfig{"cpu.clock", MetricDisplayStyle::Scalar, false, 5.0, "GHz", "Clock"});
+        definitions_.push_back(
+            MetricDefinitionConfig{"gpu.fps", MetricDisplayStyle::Scalar, false, 240.0, "FPS", "FPS"});
     }
 
     ::Renderer& Renderer() override {
@@ -143,11 +154,20 @@ public:
         return TextLayoutResult{rect};
     }
 
-    void DrawText(
-        const RenderRect&, const std::string&, TextStyleId, RenderColorId, const TextLayoutOptions&) const override {}
+    void DrawText(const RenderRect& rect,
+        const std::string& text,
+        TextStyleId style,
+        RenderColorId color,
+        const TextLayoutOptions&) const override {
+        drawnTexts.push_back(DrawnText{rect, text, style, color});
+    }
 
-    TextLayoutResult DrawTextBlock(
-        const RenderRect& rect, const std::string&, TextStyleId, RenderColorId, const TextLayoutOptions&) override {
+    TextLayoutResult DrawTextBlock(const RenderRect& rect,
+        const std::string& text,
+        TextStyleId style,
+        RenderColorId color,
+        const TextLayoutOptions&) override {
+        drawnTexts.push_back(DrawnText{rect, text, style, color});
         return TextLayoutResult{rect};
     }
 
@@ -255,6 +275,7 @@ public:
     }
 
     MetricListTestEditArtifacts editArtifacts;
+    mutable std::vector<DrawnText> drawnTexts;
 
 private:
     AppConfig config_{};
@@ -271,10 +292,25 @@ MetricListWidget BuildMetricListWidget() {
     return widget;
 }
 
+MetricListWidget BuildGpuFpsMetricListWidget() {
+    MetricListWidget widget;
+    LayoutNodeConfig node;
+    node.parameter = "gpu.fps";
+    widget.Initialize(node);
+    return widget;
+}
+
 int CountPlusAnchors(const MetricListTestRenderer& renderer) {
     return static_cast<int>(std::count_if(renderer.editArtifacts.staticAnchors.begin(),
         renderer.editArtifacts.staticAnchors.end(),
         [](const LayoutEditAnchorRegion& region) { return region.shape == AnchorShape::Plus; }));
+}
+
+MetricsSectionConfig BuildMetricsConfig() {
+    MetricsSectionConfig metrics;
+    metrics.definitions.push_back(
+        MetricDefinitionConfig{"gpu.fps", MetricDisplayStyle::Scalar, false, 240.0, "FPS", "FPS"});
+    return metrics;
 }
 
 }  // namespace
@@ -305,4 +341,72 @@ TEST(MetricListWidget, OmitsNewRowAnchorWhenOnlyPartialRowFits) {
     widget.BuildStaticAnchors(renderer, layout);
 
     EXPECT_EQ(CountPlusAnchors(renderer), 0);
+}
+
+TEST(MetricListWidget, MiddleEllipsizesLongGpuFpsAnnotationBeforeItOverlapsValueText) {
+    MetricListTestRenderer renderer;
+    MetricListWidget widget = BuildGpuFpsMetricListWidget();
+    WidgetLayout layout;
+    layout.rect = RenderRect{0, 0, 200, 29};
+    layout.cardId = "gpu";
+    layout.editCardId = "gpu";
+
+    SystemSnapshot snapshot;
+    snapshot.gpu.fps = ScalarMetric{144.0, ScalarMetricUnit::Fps};
+    snapshot.gpu.fpsAppName = "VeryLongApplicationName";
+    const MetricsSectionConfig metrics = BuildMetricsConfig();
+    MetricSource source(snapshot, metrics);
+
+    widget.ResolveLayoutState(renderer, layout.rect);
+    widget.Draw(renderer, layout, source);
+
+    auto annotationIt = std::find_if(renderer.drawnTexts.begin(), renderer.drawnTexts.end(), [](const DrawnText& text) {
+        return text.text == "Ver...e";
+    });
+    ASSERT_NE(annotationIt, renderer.drawnTexts.end());
+    EXPECT_EQ(annotationIt->style, TextStyleId::Label);
+
+    auto valueIt = std::find_if(renderer.drawnTexts.begin(), renderer.drawnTexts.end(), [](const DrawnText& text) {
+        return text.text == "144 FPS";
+    });
+    ASSERT_NE(valueIt, renderer.drawnTexts.end());
+    EXPECT_LE(valueIt->rect.Width(), 56);
+}
+
+TEST(MetricListWidget, UsesWarningColorForAdminIndicatorInValueAndAnnotationSlots) {
+    MetricListTestRenderer missingFpsRenderer;
+    MetricListWidget widget = BuildGpuFpsMetricListWidget();
+    WidgetLayout layout;
+    layout.rect = RenderRect{0, 0, 200, 29};
+    layout.cardId = "gpu";
+    layout.editCardId = "gpu";
+    const MetricsSectionConfig metrics = BuildMetricsConfig();
+
+    SystemSnapshot missingFpsSnapshot;
+    missingFpsSnapshot.gpu.fps =
+        ScalarMetric{std::nullopt, ScalarMetricUnit::Fps, ScalarMetricIssue::PermissionRequired};
+    MetricSource missingFpsSource(missingFpsSnapshot, metrics);
+
+    widget.ResolveLayoutState(missingFpsRenderer, layout.rect);
+    widget.Draw(missingFpsRenderer, layout, missingFpsSource);
+
+    auto missingFpsIt = std::find_if(missingFpsRenderer.drawnTexts.begin(),
+        missingFpsRenderer.drawnTexts.end(),
+        [](const DrawnText& text) { return text.text == "!admin" && text.style == TextStyleId::Value; });
+    ASSERT_NE(missingFpsIt, missingFpsRenderer.drawnTexts.end());
+    EXPECT_EQ(missingFpsIt->color, RenderColorId::Warning);
+
+    MetricListTestRenderer missingNameRenderer;
+    SystemSnapshot missingNameSnapshot;
+    missingNameSnapshot.gpu.fps = ScalarMetric{90.0, ScalarMetricUnit::Fps, ScalarMetricIssue::PermissionRequired};
+    MetricSource missingNameSource(missingNameSnapshot, metrics);
+
+    widget.ResolveLayoutState(missingNameRenderer, layout.rect);
+    widget.Draw(missingNameRenderer, layout, missingNameSource);
+
+    auto missingNameIt = std::find_if(missingNameRenderer.drawnTexts.begin(),
+        missingNameRenderer.drawnTexts.end(),
+        [](const DrawnText& text) { return text.text == "!admin" && text.style == TextStyleId::Label; });
+    ASSERT_NE(missingNameIt, missingNameRenderer.drawnTexts.end());
+    EXPECT_EQ(missingNameIt->color, RenderColorId::Warning);
 }
