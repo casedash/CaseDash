@@ -23,7 +23,7 @@ See also: [docs/specifications.md](specifications.md) for normative product beha
 - `tests/` contains unit tests for config, layout resolution, retained-history behavior, and the native benchmark host.
 - `tools/` contains shared formatting, lint, tidy, profiling, generated asset, source dependency graph helper scripts, and reusable agent or automation skills under `tools/skills/`.
 - `web/` contains the static website source, browser-side theme switching code, CSS, and website build script that generates `web/dist/` from app-rendered diagnostics assets.
-- `.github/workflows/` contains push and pull request automation for runner-hosted build, test, format, lint, and tidy validation.
+- `.github/workflows/` contains branch push and pull request automation for runner-hosted build, test, format, lint, and tidy validation.
 
 ## Layered Core
 

@@ -15,7 +15,7 @@ See also: [docs/project.md](project.md) for repository policy, [docs/diagnostics
 - AMD Software: Adrenalin Edition when AMD GPU telemetry is required
 - NVIDIA display driver with NVML when NVIDIA GPU telemetry is required
 - Gigabyte SIV installed when Gigabyte board temperature or fan telemetry is required
-- GitHub Actions uses the `windows-2025-vs2026` runner for push and pull request build, test, format, lint, and tidy validation.
+- GitHub Actions uses the `windows-2025-vs2026` runner for branch push and pull request build, test, format, lint, and tidy validation.
 
 ## Current Toolchain
 
@@ -87,7 +87,7 @@ The `Release` workflow deploys the generated site after a successful tagged rele
 
 ## GitHub Validation
 
-- The `Validation` workflow runs on every push, pull request, and manual dispatch.
+- The `Validation` workflow runs on branch pushes, pull requests, and manual dispatch.
 - The workflow restores the shared vcpkg download and registry caches under `.github-cache\CaseDash` inside the checked-out workspace before validation, then saves the refreshed cache contents after the run so repeated GitHub-hosted runs reuse the same bootstrap downloads.
 - The workflow checks formatting first with `format.cmd`, then builds with `build.cmd`, runs tests with `test.cmd`, builds the WiX MSI with `package.cmd`, and runs `lint.cmd tidy` on `windows-2025-vs2026`.
 - The repository branch protection requires the `Validation` job before pull requests can merge.
