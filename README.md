@@ -30,7 +30,11 @@ It's me, [Roman Elizarov](https://github.com/elizarov), of ICPC and Kotlin fame.
 GPUs:
 
 - AMD: Radeon GPU telemetry through AMD ADLX.
-- NVIDIA: GPU telemetry through NVML, plus presented-FPS capture through ETW.
+- NVIDIA: GPU telemetry through NVML.
+
+FPS:
+
+- CaseDash FPS provider: Presented-FPS capture for the active presenting application.
 
 Boards:
 
