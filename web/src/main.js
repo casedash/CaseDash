@@ -2,6 +2,7 @@
   const data = window.CaseDashSite || { themes: [], defaultTheme: "" };
   const themes = data.themes || [];
   const select = document.getElementById("themeSelect");
+  const sectionSelect = document.getElementById("sectionSelect");
   const dashboardImage = document.getElementById("dashboardImage");
   const guideImage = document.getElementById("guideImage");
   const storageKey = "casedash.theme";
@@ -105,10 +106,20 @@
         link.removeAttribute("aria-current");
       }
     });
+    if (sectionSelect && sectionSelect.value !== id) {
+      sectionSelect.value = id;
+    }
   }
 
   function updateCurrentSectionFromScroll() {
     if (sections.length === 0) {
+      return;
+    }
+
+    const pageBottom = window.scrollY + window.innerHeight;
+    const nearPageEnd = pageBottom >= document.documentElement.scrollHeight - 4;
+    if (nearPageEnd) {
+      setCurrentSection(sections[sections.length - 1].id);
       return;
     }
 
@@ -152,6 +163,16 @@
   select.addEventListener("change", () => {
     setTheme(themes.find((theme) => theme.id === select.value));
   });
+
+  if (sectionSelect) {
+    sectionSelect.addEventListener("change", () => {
+      const section = document.getElementById(sectionSelect.value);
+      if (section) {
+        section.scrollIntoView({ behavior: "smooth", block: "start" });
+        setCurrentSection(section.id);
+      }
+    });
+  }
 
   setTheme(themes.find((theme) => theme.id === initialThemeId()) || themes[0]);
   setCurrentSection(sections[0] && sections[0].id);
