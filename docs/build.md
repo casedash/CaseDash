@@ -66,6 +66,16 @@ package.cmd
 
 `package.cmd` runs `build.cmd`, restores the WiX Toolset SDK through MSBuild, builds the minimal x64 per-machine MSI from `installer\`, writes `build\CaseDash-<VERSION>.msi`, and writes the matching SHA-256 checksum. The MSI uses a branded no-license install-directory UI, installs only the `CaseDash.exe` payload into `C:\Program Files\CaseDash`, shows a default-enabled completion option to run CaseDash immediately in front, and treats any other CaseDash MSI product version as replaceable so dev and release packages do not register side by side. Runtime auto-start and FPS service registration remain owned by the app menu. MSI uninstall closes a running `CaseDash.exe` before file removal, then removes the install directory tree, the `CaseDash` machine-wide Run value, and the `CaseDashFpsService` service when present.
 
+## Website
+
+Build the static website through the repository entrypoint:
+
+```bat
+web-build.cmd
+```
+
+`web-build.cmd` runs `build.cmd`, reads themes from `resources\config.ini`, exports one dashboard screenshot and one layout guide sheet per theme through headless diagnostics, writes theme metadata, and produces the directly openable static site under `web\dist\`. Generated website output is not committed.
+
 ## Developer Tooling Entrypoints
 
 - `format.cmd` is the maintained entrypoint for formatting non-vendored C++ sources. Its changed-file mode keeps Git CRLF normalization warnings out of formatter file discovery.
@@ -75,6 +85,7 @@ package.cmd
 - `lint.cmd tidy` runs a full optional `clang-tidy` sweep and commonly needs at least eight minutes on the current toolchain before it can report success or failure. Local development avoids this slow sweep unless explicitly requested. GitHub Actions owns the routine tidy sweep with `CASEDASH_TIDY_TIMEOUT_SECONDS` set to a larger per-file timeout and `CASEDASH_TIDY_MAX_PARALLEL` set for runner stability.
 - `tools\generate_readme_images.ps1` builds the app by default and exports the light and dark README screenshots from built-in fake telemetry with fixed `/scale:2` rendering. Use `-SkipBuild` only when `build\CaseDash.exe` is already current.
 - `package.cmd` is the maintained local entrypoint for producing the release MSI outside the GitHub Release workflow. It normalizes `major.minor` versions from `VERSION` to `major.minor.0` for Windows Installer product-version rules while keeping the output filename on the original `VERSION` text.
+- `web-build.cmd` is the maintained local entrypoint for producing the generated static website under `web\dist\`.
 - CMake enables MSVC warning C4505 and treats it as an error so unreferenced internal functions are caught during normal builds when MSVC can diagnose them.
 - Native C++ targets compile with `/GR-`; production code uses explicit project type tags instead of native RTTI. The C++/CLI Gigabyte bridge keeps managed casts in its `/clr` translation unit.
 - Release app and benchmark builds compile size-oriented code with `/Os` and `/GL`, then link with `/LTCG`, `/OPT:REF`, and non-incremental linking so whole-program optimization and reference elimination reduce the shipped executable while benchmarks measure the same optimization profile. Benchmark-sensitive renderer, widget, layout, telemetry, and benchmark-harness translation units retain `/O2` inside that Release profile so size work does not distort the maintained performance loops. Tests keep the normal Release compile/link path for faster local validation.
