@@ -46,16 +46,6 @@ test.cmd
 
 Diagnostics validation commands live in [docs/diagnostics.md](diagnostics.md).
 
-## Install
-
-Install the already-built runtime through the repository entrypoint:
-
-```bat
-install.cmd
-```
-
-`install.cmd` requests elevation, stops running `CaseDash.exe` instances, waits for them to exit, installs `build\CaseDash.exe` into `C:\Program Files\CaseDash`, and leaves auto-start registration to the runtime menu toggle. The auto-start toggle installs the machine-wide Run entry for per-user dashboard startup and the `CashDashService` LocalSystem service used for privileged collection.
-
 ## Package
 
 Build the runtime and MSI package through the repository entrypoint:
@@ -64,7 +54,7 @@ Build the runtime and MSI package through the repository entrypoint:
 package.cmd
 ```
 
-`package.cmd` runs `build.cmd`, restores the WiX Toolset SDK through MSBuild, builds the x64 per-machine MSI from `installer\`, writes `build\CaseDash-<VERSION>.msi`, and writes the matching SHA-256 checksum. Release asset and installer behavior is maintained in [docs/release.md](release.md).
+`package.cmd` runs `build.cmd`, restores the WiX Toolset SDK through MSBuild, builds the x64 per-machine MSI from `installer\`, writes `build\CaseDash-<VERSION>.msi`, and writes the matching SHA-256 checksum. Local installation uses that MSI package. Release asset and installer behavior is maintained in [docs/release.md](release.md).
 
 ## Website
 
