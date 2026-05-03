@@ -27,15 +27,15 @@ It's me, [Roman Elizarov](https://github.com/elizarov), of ICPC and Kotlin fame.
 
 ## Supported Hardware
 
-Graphics:
+GPUs:
 
-- AMD Radeon GPU telemetry through AMD ADLX.
-- NVIDIA GPU telemetry through NVML, plus presented-FPS capture through ETW.
+- AMD: Radeon GPU telemetry through AMD ADLX.
+- NVIDIA: GPU telemetry through NVML, plus presented-FPS capture through ETW.
 
-Motherboards:
+Boards:
 
-- Gigabyte board temperature and fan telemetry through Gigabyte SIV.
-- MSI board temperature and fan telemetry through MSI Center SDK.
+- MSI: Board temperature and fan telemetry through MSI Center SDK.
+- Gigabyte: Board temperature and fan telemetry through Gigabyte SIV.
 
 ## First Use
 
