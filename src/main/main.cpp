@@ -9,6 +9,7 @@
 #include "dashboard/constants.h"
 #include "dashboard/dashboard_app.h"
 #include "dashboard/fps_service.h"
+#include "diagnostics/crash_report.h"
 #include "diagnostics/diagnostics.h"
 #include "display/display_config.h"
 #include "util/command_line.h"
@@ -140,6 +141,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
     SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
     const DiagnosticsOptions diagnosticsOptions = GetDiagnosticsOptions();
+    InstallCrashReportHandler(diagnosticsOptions);
 
     if (const auto elevatedSaveSource = GetSwitchValue(L"/save-config"); elevatedSaveSource.has_value()) {
         const auto elevatedSaveTarget = GetSwitchValue(L"/save-config-target");

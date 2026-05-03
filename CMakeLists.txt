@@ -74,6 +74,7 @@ add_executable(CaseDash WIN32
     ${CASEDASH_VERSION_RC}
     src/main/main.cpp
     src/diagnostics/diagnostics.cpp
+    src/diagnostics/crash_report.cpp
     src/layout_guide_sheet/layout_guide_sheet.cpp
     src/layout_guide_sheet/impl/layout_guide_sheet_planner.cpp
     src/dashboard/autostart.cpp
@@ -408,6 +409,7 @@ target_link_libraries(CaseDash PRIVATE
     ole32
     oleaut32
     advapi32
+    dbghelp
     wtsapi32
     ${MSCOREE_LIB}
 )
