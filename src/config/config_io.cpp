@@ -1,11 +1,9 @@
-#include "runtime/config_io.h"
+#include "config/config_io.h"
 
 #include <shellapi.h>
 
 #include "config/config_parser.h"
 #include "config/config_writer.h"
-#include "runtime/diagnostics_options.h"
-#include "telemetry/metrics.h"
 #include "util/paths.h"
 #include "util/temp_file.h"
 
@@ -21,23 +19,20 @@ FilePath GetRuntimeConfigPath() {
     return GetExecutableDirectory() / L"config.ini";
 }
 
-ConfigParseContext RuntimeConfigParseContext() {
-    return ConfigParseContext{TelemetryMetricCatalog()};
-}
-
-AppConfig LoadRuntimeConfig(const DiagnosticsOptions& options) {
-    AppConfig config = LoadConfig(GetRuntimeConfigPath(), !options.defaultConfig, RuntimeConfigParseContext());
+AppConfig LoadRuntimeConfig(const DiagnosticsOptions& options, const ConfigParseContext& context) {
+    AppConfig config = LoadConfig(GetRuntimeConfigPath(), !options.defaultConfig, context);
     ApplyDiagnosticsScaleOverride(config, options);
     return config;
 }
 
-bool SaveConfigElevated(const FilePath& targetPath, const AppConfig& config, HWND owner) {
+bool SaveConfigElevated(
+    const FilePath& targetPath, const AppConfig& config, HWND owner, const ConfigParseContext& context) {
     const FilePath tempPath = CreateElevatedSaveConfigTempPath();
     if (tempPath.empty() || targetPath.empty()) {
         return false;
     }
 
-    if (!SaveConfig(tempPath, config, RuntimeConfigParseContext())) {
+    if (!SaveConfig(tempPath, config, context)) {
         RemoveFileIfExists(tempPath);
         return false;
     }

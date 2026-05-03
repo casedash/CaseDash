@@ -6,6 +6,7 @@
 #include <string_view>
 
 #include "config/color_resolver.h"
+#include "config/config_io.h"
 #include "config/config_resolution.h"
 #include "config/config_writer.h"
 #include "diagnostics/constants.h"
@@ -15,7 +16,7 @@
 #include "layout_edit/layout_edit_service.h"
 #include "layout_model/layout_edit_service.h"
 #include "main/autostart.h"
-#include "runtime/config_io.h"
+#include "telemetry/metrics.h"
 #include "util/utf8.h"
 
 namespace {
@@ -59,9 +60,9 @@ std::unique_ptr<DiagnosticsSession> CreateDiagnosticsSession(const DiagnosticsOp
 
 bool SaveRuntimeConfig(const FilePath& path, const AppConfig& config, HWND owner) {
     if (CanWriteRuntimeConfig(path)) {
-        return SaveConfig(path, config, RuntimeConfigParseContext());
+        return SaveConfig(path, config, ConfigParseContext{TelemetryMetricCatalog()});
     }
-    return SaveConfigElevated(path, config, owner);
+    return SaveConfigElevated(path, config, owner, ConfigParseContext{TelemetryMetricCatalog()});
 }
 
 double ClampGaugeSegmentGapForCurrentConfig(const AppConfig& config, double value) {
@@ -145,7 +146,7 @@ bool DashboardController::ApplyConfiguredWallpaper(Trace& trace) {
 
 bool DashboardController::InitializeSession(DashboardShellHost& shell, const DiagnosticsOptions& diagnosticsOptions) {
     state_.lastError.clear();
-    state_.config = LoadRuntimeConfig(diagnosticsOptions);
+    state_.config = LoadRuntimeConfig(diagnosticsOptions, ConfigParseContext{TelemetryMetricCatalog()});
     if (!ApplyDiagnosticsLayoutOverride(state_.config, diagnosticsOptions)) {
         return false;
     }

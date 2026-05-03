@@ -1,4 +1,4 @@
-#include "runtime/diagnostics_options.h"
+#include "config/diagnostics_options.h"
 
 #include "config/config.h"
 

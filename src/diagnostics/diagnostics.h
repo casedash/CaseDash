@@ -11,9 +11,9 @@
 #include <vector>
 
 #include "config/config.h"
+#include "config/diagnostics_options.h"
 #include "dashboard_renderer/dashboard_renderer.h"
 #include "diagnostics/snapshot_dump.h"
-#include "runtime/diagnostics_options.h"
 #include "util/file_path.h"
 #include "util/trace.h"
 

@@ -79,8 +79,8 @@ add_executable(CaseDash WIN32
     src/main/autostart.cpp
     src/main/fps_service.cpp
     src/util/command_line.cpp
-    src/runtime/config_io.cpp
-    src/runtime/diagnostics_options.cpp
+    src/config/config_io.cpp
+    src/config/diagnostics_options.cpp
     src/display/display_config.cpp
     src/display/monitor.cpp
     src/util/file_path.cpp

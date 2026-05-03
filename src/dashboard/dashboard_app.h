@@ -8,12 +8,12 @@
 #include <shellapi.h>
 #include <string>
 
+#include "config/diagnostics_options.h"
 #include "dashboard/dashboard_controller.h"
 #include "display/constants.h"
 #include "display/monitor.h"
 #include "layout_edit/layout_edit_controller.h"
 #include "layout_edit/layout_edit_trace_session.h"
-#include "runtime/diagnostics_options.h"
 #include "util/file_path.h"
 
 class DashboardShellUi;
