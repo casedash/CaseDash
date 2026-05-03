@@ -7,6 +7,7 @@ $distDir = Join-Path $webDir 'dist'
 $assetDir = Join-Path $distDir 'assets'
 $generatedDir = Join-Path $assetDir 'generated'
 $configPath = Join-Path $repoRoot 'resources\config.ini'
+$versionPath = Join-Path $repoRoot 'VERSION'
 $exePath = Join-Path $repoRoot 'build\CaseDash.exe'
 
 function Remove-DirectoryIfPresent {
@@ -136,11 +137,16 @@ if (-not (Test-Path -LiteralPath $exePath)) {
 }
 
 $themeConfig = Read-ThemeConfig $configPath
+$versionText = (Get-Content -LiteralPath $versionPath -TotalCount 1).Trim()
+if (-not $versionText) {
+    throw "VERSION is empty."
+}
 
 Remove-DirectoryIfPresent $distDir
 New-Item -ItemType Directory -Force -Path $generatedDir | Out-Null
 
-Copy-Item -LiteralPath (Join-Path $webDir 'index.html') -Destination (Join-Path $distDir 'index.html') -Force
+$indexHtml = (Get-Content -LiteralPath (Join-Path $webDir 'index.html') -Raw).Replace('{{VERSION}}', $versionText)
+Set-Content -LiteralPath (Join-Path $distDir 'index.html') -Value $indexHtml -Encoding UTF8
 Copy-Directory -Source (Join-Path $webDir 'src') -Destination (Join-Path $distDir 'src')
 
 $siteThemes = @()

@@ -47,6 +47,8 @@ The section includes:
 
 The intro copy stays practical and avoids marketing-only language. The screenshot is the dominant visual object.
 
+The top-left navigation brand shows `CaseDash` plus the current `VERSION` value as small muted `v<version>` text.
+
 ## Features Section
 
 The features section summarizes the product capabilities that matter to end users:

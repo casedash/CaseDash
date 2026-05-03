@@ -58,10 +58,23 @@ code {
   min-height: 64px;
 }
 
+.brand-lockup {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  white-space: nowrap;
+}
+
 .brand {
   font-weight: 700;
   text-decoration: none;
   letter-spacing: 0;
+}
+
+.brand-version {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
 }
 
 .nav-links {
