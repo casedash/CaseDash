@@ -46,7 +46,7 @@ The release assets are the standalone executable, ZIP package, MSI installer, an
 - The MSI installs only `CaseDash.exe` into `C:\Program Files\CaseDash`.
 - The completion page offers a default-enabled option to run CaseDash immediately in front.
 - Any other CaseDash MSI product version is replaceable so dev and release packages do not register side by side.
-- Runtime auto-start and FPS service registration remain owned by the app menu.
-- MSI uninstall closes a running `CaseDash.exe` before file removal, then removes the install directory tree, the `CaseDash` machine-wide Run value, and the `CaseDashFpsService` service when present.
+- Runtime auto-start and service registration remain owned by the app menu.
+- MSI uninstall closes a running `CaseDash.exe` before file removal, then removes the install directory tree, the `CaseDash` machine-wide Run value, and the `CashDashService` service when present.
 
 The release workflow can also be started manually with a tag input, but the tag must still match `VERSION`. The separate `Pages` workflow is manual-only and rebuilds and deploys the website from a selected branch, tag, or commit without creating a release.

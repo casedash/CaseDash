@@ -7,7 +7,7 @@
 
 #include "telemetry/fps_provider.h"
 
-inline constexpr wchar_t kFpsServiceName[] = L"CaseDashFpsService";
+inline constexpr wchar_t kFpsServiceName[] = L"CashDashService";
 inline constexpr wchar_t kFpsServicePipeName[] = L"\\\\.\\pipe\\CaseDashFps";
 
 std::vector<char> BuildFpsServiceRequest();
