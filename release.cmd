@@ -33,7 +33,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-set /p "CONFIRM=Prepare CaseDash %RELEASE_VERSION% release, update VERSION, run validation, commit, tag, and push? Type %RELEASE_VERSION% to continue: "
+set /p "CONFIRM=Prepare CaseDash %RELEASE_VERSION% release, update VERSION if needed, run validation, tag, and push? Type %RELEASE_VERSION% to continue: "
 if not "%CONFIRM%"=="%RELEASE_VERSION%" (
     echo Release cancelled.
     exit /b 1
@@ -42,8 +42,13 @@ if not "%CONFIRM%"=="%RELEASE_VERSION%" (
 > VERSION echo %RELEASE_VERSION%
 
 git add VERSION
-git commit -m "Changed version to %RELEASE_VERSION%"
-if errorlevel 1 exit /b %errorlevel%
+git diff --cached --quiet -- VERSION
+if errorlevel 1 (
+    git commit -m "Changed version to %RELEASE_VERSION%"
+    if errorlevel 1 exit /b %errorlevel%
+) else (
+    echo VERSION already contains %RELEASE_VERSION%; continuing without a version commit.
+)
 
 call "%REPO_ROOT%\format.cmd"
 if errorlevel 1 exit /b %errorlevel%

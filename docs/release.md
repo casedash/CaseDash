@@ -34,7 +34,7 @@ Use the repository release entrypoint:
 release.cmd <version>
 ```
 
-`release.cmd` asks for keyboard confirmation, updates [VERSION](../VERSION), commits the version change, runs format, lint, build, and tests, creates the matching annotated `v<VERSION>` tag, pushes the current branch, and pushes the tag.
+`release.cmd` asks for keyboard confirmation, updates [VERSION](../VERSION) when needed, commits that version change when it exists, runs format, lint, build, and tests, creates the matching annotated `v<VERSION>` tag, pushes the current branch, and pushes the tag.
 
 The `Release` GitHub Actions workflow checks that the tag matches `VERSION`, builds and tests CaseDash, packages the executable, builds the minimal x64 WiX MSI, writes SHA-256 checksums, creates the GitHub Release, builds the static website, and deploys `web\dist\` to GitHub Pages.
 
