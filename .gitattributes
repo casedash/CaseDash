@@ -1,4 +1,5 @@
 * text=auto eol=crlf
 
 *.ico binary
+*.bmp binary
 *.png binary
