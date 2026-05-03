@@ -183,10 +183,12 @@ The website build:
 
 1. Builds CaseDash through the project build entrypoint when generated screenshots or guide sheets are stale or missing.
 2. Reads theme definitions from `resources/config.ini`.
-3. Runs the built executable once per theme for dashboard screenshot generation.
-4. Runs the built executable once per theme for layout guide sheet generation.
+3. Runs the built executable once per theme for dashboard screenshot generation when the target screenshot is missing.
+4. Runs the built executable once per theme for layout guide sheet generation when the target guide sheet is missing.
 5. Writes theme metadata JSON.
 6. Copies static website source and generated assets into `web/dist/`.
+
+`web-build.cmd clean` removes `web/dist/` before the build and forces every generated screenshot and guide sheet to be rebuilt.
 
 When the build needs screenshots or guide sheets, diagnostics output paths point under `build\` or `web\dist\` so generated diagnostics files do not pollute the repository root.
 

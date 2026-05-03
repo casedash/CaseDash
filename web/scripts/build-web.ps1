@@ -1,4 +1,18 @@
+param(
+    [switch]$Clean,
+    [Parameter(ValueFromRemainingArguments = $true)]
+    [string[]]$ExtraArgs
+)
+
 $ErrorActionPreference = 'Stop'
+
+foreach ($arg in $ExtraArgs) {
+    if ($arg -ieq 'clean' -or $arg -ieq '-clean' -or $arg -ieq '/clean') {
+        $Clean = $true
+    } else {
+        throw "Unknown web build option '$arg'. Use 'clean' to force regenerated assets."
+    }
+}
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $webDir = Split-Path -Parent $scriptDir
@@ -112,12 +126,24 @@ function Wait-GeneratedFile {
     throw "Expected generated file was not created: $Path"
 }
 
+function Test-GeneratedFile {
+    param([string]$Path)
+
+    $item = Get-Item -LiteralPath $Path -ErrorAction SilentlyContinue
+    return ($null -ne $item -and $item.Length -gt 0)
+}
+
 function Invoke-CaseDashExport {
     param(
         [string]$Theme,
         [string]$SwitchName,
         [string]$OutputPath
     )
+
+    if (-not $Clean -and (Test-GeneratedFile $OutputPath)) {
+        Write-Host "Reusing $OutputPath"
+        return
+    }
 
     $arguments = @('/fake', '/default-config', "/theme:$Theme", '/scale:2', "/$SwitchName`:$OutputPath", '/exit')
     $process = Start-Process -FilePath $exePath -ArgumentList $arguments -Wait -PassThru -NoNewWindow
@@ -142,11 +168,14 @@ if (-not $versionText) {
     throw "VERSION is empty."
 }
 
-Remove-DirectoryIfPresent $distDir
+if ($Clean) {
+    Remove-DirectoryIfPresent $distDir
+}
 New-Item -ItemType Directory -Force -Path $generatedDir | Out-Null
 
 $indexHtml = (Get-Content -LiteralPath (Join-Path $webDir 'index.html') -Raw).Replace('{{VERSION}}', $versionText)
 Set-Content -LiteralPath (Join-Path $distDir 'index.html') -Value $indexHtml -Encoding UTF8
+Remove-DirectoryIfPresent (Join-Path $distDir 'src')
 Copy-Directory -Source (Join-Path $webDir 'src') -Destination (Join-Path $distDir 'src')
 
 $siteThemes = @()
