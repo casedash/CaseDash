@@ -483,8 +483,7 @@ MetricValue ResolveGpuFpsMetric(const SystemSnapshot& snapshot,
             std::string(kPermissionRequiredText),
             0.0,
             0.0,
-            MetricValueState::PermissionRequired,
-            snapshot.gpu.fpsAppName);
+            MetricValueState::PermissionRequired);
     }
 
     if (!snapshot.gpu.fps.value.has_value()) {

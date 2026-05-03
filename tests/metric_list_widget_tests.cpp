@@ -17,6 +17,7 @@ struct DrawnText {
     RenderRect rect{};
     std::string text;
     TextStyleId style = TextStyleId::Label;
+    RenderColorId color = RenderColorId::Foreground;
 };
 
 class MetricListTestEditArtifacts final : public WidgetEditArtifactRegistrar {
@@ -156,17 +157,17 @@ public:
     void DrawText(const RenderRect& rect,
         const std::string& text,
         TextStyleId style,
-        RenderColorId,
+        RenderColorId color,
         const TextLayoutOptions&) const override {
-        drawnTexts.push_back(DrawnText{rect, text, style});
+        drawnTexts.push_back(DrawnText{rect, text, style, color});
     }
 
     TextLayoutResult DrawTextBlock(const RenderRect& rect,
         const std::string& text,
         TextStyleId style,
-        RenderColorId,
+        RenderColorId color,
         const TextLayoutOptions&) override {
-        drawnTexts.push_back(DrawnText{rect, text, style});
+        drawnTexts.push_back(DrawnText{rect, text, style, color});
         return TextLayoutResult{rect};
     }
 
@@ -370,4 +371,42 @@ TEST(MetricListWidget, MiddleEllipsizesLongGpuFpsAnnotationBeforeItOverlapsValue
     });
     ASSERT_NE(valueIt, renderer.drawnTexts.end());
     EXPECT_LE(valueIt->rect.Width(), 56);
+}
+
+TEST(MetricListWidget, UsesWarningColorForAdminIndicatorInValueAndAnnotationSlots) {
+    MetricListTestRenderer missingFpsRenderer;
+    MetricListWidget widget = BuildGpuFpsMetricListWidget();
+    WidgetLayout layout;
+    layout.rect = RenderRect{0, 0, 200, 29};
+    layout.cardId = "gpu";
+    layout.editCardId = "gpu";
+    const MetricsSectionConfig metrics = BuildMetricsConfig();
+
+    SystemSnapshot missingFpsSnapshot;
+    missingFpsSnapshot.gpu.fps =
+        ScalarMetric{std::nullopt, ScalarMetricUnit::Fps, ScalarMetricIssue::PermissionRequired};
+    MetricSource missingFpsSource(missingFpsSnapshot, metrics);
+
+    widget.ResolveLayoutState(missingFpsRenderer, layout.rect);
+    widget.Draw(missingFpsRenderer, layout, missingFpsSource);
+
+    auto missingFpsIt = std::find_if(missingFpsRenderer.drawnTexts.begin(),
+        missingFpsRenderer.drawnTexts.end(),
+        [](const DrawnText& text) { return text.text == "!admin" && text.style == TextStyleId::Value; });
+    ASSERT_NE(missingFpsIt, missingFpsRenderer.drawnTexts.end());
+    EXPECT_EQ(missingFpsIt->color, RenderColorId::Warning);
+
+    MetricListTestRenderer missingNameRenderer;
+    SystemSnapshot missingNameSnapshot;
+    missingNameSnapshot.gpu.fps = ScalarMetric{90.0, ScalarMetricUnit::Fps, ScalarMetricIssue::PermissionRequired};
+    MetricSource missingNameSource(missingNameSnapshot, metrics);
+
+    widget.ResolveLayoutState(missingNameRenderer, layout.rect);
+    widget.Draw(missingNameRenderer, layout, missingNameSource);
+
+    auto missingNameIt = std::find_if(missingNameRenderer.drawnTexts.begin(),
+        missingNameRenderer.drawnTexts.end(),
+        [](const DrawnText& text) { return text.text == "!admin" && text.style == TextStyleId::Label; });
+    ASSERT_NE(missingNameIt, missingNameRenderer.drawnTexts.end());
+    EXPECT_EQ(missingNameIt->color, RenderColorId::Warning);
 }
