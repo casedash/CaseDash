@@ -69,7 +69,7 @@ The hardware section lists currently supported telemetry families:
 
 - AMD Radeon GPU telemetry through ADLX.
 - NVIDIA GPU telemetry through NVML.
-- CaseDash FPS provider presented-FPS capture for the active presenting application.
+- Presented-FPS capture through ETW via the CaseDash service.
 - MSI board telemetry through MSI Center SDK.
 - Gigabyte board telemetry through SIV.
 
