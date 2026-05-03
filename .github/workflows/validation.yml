@@ -18,11 +18,11 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Restore vcpkg caches
         id: vcpkg-cache-restore
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: |
             ${{ github.workspace }}\.github-cache\CaseDash\vcpkg\downloads
@@ -53,14 +53,14 @@ jobs:
         run: lint.cmd tidy
 
       - name: Upload CaseDash executable
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: CaseDash-exe
           path: build/CaseDash.exe
           if-no-files-found: error
 
       - name: Upload CaseDash MSI
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: CaseDash-msi
           path: |
@@ -70,7 +70,7 @@ jobs:
 
       - name: Upload clang-tidy report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: clang-tidy-report
           path: build/clang_tidy_report.txt
@@ -78,7 +78,7 @@ jobs:
 
       - name: Save vcpkg caches
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: |
             ${{ github.workspace }}\.github-cache\CaseDash\vcpkg\downloads
