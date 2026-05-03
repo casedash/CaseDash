@@ -1,6 +1,6 @@
 # CaseDash
 
-CaseDash is a compact dashboard for dedicated PC telemetry screens: small USB/HDMI panels, case-mounted displays, or a secondary screen beside the main monitor. It presents CPU, GPU, memory, network, storage, board sensors, and time in a native interface built for always-on visibility.
+CaseDash is a compact dashboard for dedicated PC telemetry screens: small USB/HDMI panels, case-mounted displays, or a secondary screen beside the main monitor. It presents CPU, GPU, FPS, memory, network, storage, board sensors, and time in a native interface built for always-on visibility.
 
 It is not a generic hardware-monitoring suite. CaseDash is a polished sensor panel you place, configure, and mostly leave alone. There are no keyboard shortcuts or extra controls beyond what is needed to make the panel look right and stay put.
 
@@ -14,7 +14,7 @@ It works on my machines, with the hardware I have. Contributions are welcome for
 
 ## Who and why?
 
-It's me, [Roman Elizarov](https://github.com/elizarov), of ICPC and Kotlin fame. Why a native C++ app? Because I can. It is an experiment in what is possible to build. I'd be glad if it is useful for you, too.
+It's me, [Roman Elizarov](https://github.com/elizarov) &mdash; ex-project Lead for Kotlin, software development expert, sports programming, ICPC. Why a native C++ app? Because I needed a small, fast, clean software that works for me. But is also an experiment in what is possible to build. I'd be glad if it is useful for you, too.
 
 ## Highlights
 
@@ -34,7 +34,7 @@ GPUs:
 
 FPS:
 
-- CaseDash FPS provider: Presented-FPS capture for the active presenting application.
+- Presented-FPS capture for the active presenting application through ETW via the CaseDash service.
 
 Boards:
 
@@ -57,14 +57,15 @@ Contributions are welcome in code, issues, sketches, and plain ideas.
 
 Good areas to explore:
 
-- New themes and visual ideas. Do you have cool animations in mind?
-- New layouts for different screen sizes and mounting styles.
-- New GPU telemetry and motherboard sensor modules.
-- Localization: does it need translation? Which languages, and which parts of the UI?
+- **New themes and visual ideas.** Do you have cool animations or styling in mind?
+- **New layouts** for different screen sizes and mounting styles.
+- **Localization:** does it need translation? Which languages, and which parts of the UI?
 
 Open an issue and write what you want to achieve.
 
-Linux users: are you interested? What hardware do you have? A Linux port would be a cool project to undertake; write up your use cases.
+- **GPU telemetry and motherboard sensor modules.** Do you have the hardware that is not supported? Open Codex or Claude, give it full access, tell it which vendor software provides fan and temperature information on your machine, let it explore and write the corresponding telemetry provider similar to the other ones here. Grill it to make integration as light as possible, then send detailed PR.
+
+- **Linux users:** are you interested? What hardware do you have? A Linux port would be a cool project to undertake; write up your use cases.
 
 ## Technical Debt
 
