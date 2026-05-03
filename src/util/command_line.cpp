@@ -1,5 +1,7 @@
 #include "util/command_line.h"
 
+#include <windows.h>
+
 #include <algorithm>
 #include <shellapi.h>
 

@@ -9,8 +9,8 @@
 #include <cwctype>
 #include <limits>
 #include <mutex>
-#include <shellapi.h>
 #include <string_view>
+#include <vector>
 
 #include "config/color_resolver.h"
 #include "config/config_io.h"

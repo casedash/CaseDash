@@ -8,7 +8,6 @@
 #include <optional>
 #include <string>
 #include <string_view>
-#include <vector>
 
 #include "config/config.h"
 #include "config/diagnostics_options.h"

@@ -23,8 +23,9 @@ TEST(FpsServiceProtocol, ParsesGenericRequestEnvelope) {
         ParseCashDashServiceRequest(request.data(), request.size(), diagnostics);
 
     ASSERT_TRUE(parsed.has_value()) << diagnostics;
-    EXPECT_EQ(parsed->id, CashDashServiceRequestId::PresentedFpsSample);
-    EXPECT_EQ(parsed->name, "presented_fps_sample");
+    const CashDashServiceRequest& parsedRequest = *parsed;
+    EXPECT_EQ(parsedRequest.id, CashDashServiceRequestId::PresentedFpsSample);
+    EXPECT_EQ(parsedRequest.name, "presented_fps_sample");
 }
 
 TEST(FpsServiceProtocol, RejectsRequestNameMismatch) {
