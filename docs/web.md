@@ -128,6 +128,8 @@ The top-right navigation area contains a theme switcher. The switcher lists all 
 
 The default website theme follows the app's default embedded config theme. If the browser has no stored user choice, the site may choose a light or dark theme based on `prefers-color-scheme` only when that choice maps to a real app theme.
 
+The page favicon follows the browser `prefers-color-scheme` value. The dark favicon uses the `dark_cyan` app icon, and the light favicon uses the `blueprint_light` app icon, matching the README light and dark screenshot representatives.
+
 ## Generated Assets
 
 The website source does not manually mirror screenshots, guide sheets, or theme metadata for each theme.
@@ -136,6 +138,7 @@ The website build generates, for every configured app theme:
 
 - A dashboard screenshot using the default layout.
 - A layout guide sheet using the default layout.
+- An app icon used by the brand mark, theme switcher assets, and light/dark favicon links.
 - A metadata entry with theme id, description, and the four base tokens.
 
 Generated dashboard screenshots use:
@@ -148,7 +151,7 @@ Generated dashboard screenshots use:
 
 Generated layout guide sheets use the same config, fake/default data, scale, and selected theme. The guide sheet generation uses the diagnostics layout-guide-sheet output instead of a separate web-only renderer.
 
-Generated screenshots and guide sheets are not committed. Generated files are written under the web build output so repository roots and documentation image folders stay clean. Generated dashboard screenshots and layout guide sheets are encoded as opaque 24-bit PNGs; generated app icons retain alpha.
+Generated screenshots, guide sheets, and website app icons are not committed. Generated files are written under the web build output so repository roots and documentation image folders stay clean. Generated dashboard screenshots and layout guide sheets are encoded as opaque 24-bit PNGs; generated app icons retain alpha.
 
 ## Source Layout
 
@@ -210,6 +213,7 @@ Website validation checks:
 - Navigation anchors scroll to all required sections.
 - The theme switcher lists every `[theme.<name>]` section from `resources/config.ini`.
 - Theme switching updates colors, screenshot, layout guide sheet, and app icon together.
+- Browser light/dark scheme changes select the matching README-representative favicon.
 - The page works at desktop, tablet, and phone widths.
 - Text and buttons do not overlap or overflow at narrow widths.
 - Images use explicit dimensions or aspect-ratio constraints to prevent layout shift.
