@@ -4,10 +4,9 @@
 #include <mutex>
 
 #include "config/config.h"
-#include "config/config_resolution.h"
 #include "telemetry/impl/collector_real.h"
 #include "telemetry/telemetry.h"
-#include "util/paths.h"
+#include "util/file_path.h"
 
 std::unique_ptr<TelemetryCollector> CreateRealTelemetryCollector(Trace& trace) {
     (void)trace;
