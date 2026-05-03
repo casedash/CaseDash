@@ -81,11 +81,19 @@ code {
 .nav-links a {
   font-size: 0.92rem;
   text-decoration: none;
+  border-bottom: 2px solid transparent;
+  padding: 0.35rem 0 0.28rem;
 }
 
 .nav-links a:hover,
 .text-link:hover {
   color: var(--foreground);
+}
+
+.nav-links a.current,
+.nav-links a[aria-current="true"] {
+  color: var(--foreground);
+  border-bottom-color: var(--accent);
 }
 
 .theme-picker {

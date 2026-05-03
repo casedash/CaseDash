@@ -5,6 +5,10 @@
   const dashboardImage = document.getElementById("dashboardImage");
   const guideImage = document.getElementById("guideImage");
   const storageKey = "casedash.theme";
+  const sectionLinks = Array.from(document.querySelectorAll("[data-section-link]"));
+  const sections = sectionLinks
+    .map((link) => document.getElementById(link.dataset.sectionLink))
+    .filter(Boolean);
 
   function readSavedTheme() {
     try {
@@ -91,6 +95,48 @@
     return data.defaultTheme || (themes[0] && themes[0].id);
   }
 
+  function setCurrentSection(id) {
+    sectionLinks.forEach((link) => {
+      const isCurrent = link.dataset.sectionLink === id;
+      link.classList.toggle("current", isCurrent);
+      if (isCurrent) {
+        link.setAttribute("aria-current", "true");
+      } else {
+        link.removeAttribute("aria-current");
+      }
+    });
+  }
+
+  function observeSections() {
+    if (!("IntersectionObserver" in window) || sections.length === 0) {
+      return;
+    }
+
+    const visible = new Map();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            visible.set(entry.target.id, entry.intersectionRatio);
+          } else {
+            visible.delete(entry.target.id);
+          }
+        });
+
+        const best = Array.from(visible.entries()).sort((a, b) => b[1] - a[1])[0];
+        if (best) {
+          setCurrentSection(best[0]);
+        }
+      },
+      {
+        rootMargin: "-28% 0px -58% 0px",
+        threshold: [0.05, 0.2, 0.4, 0.6, 0.8],
+      }
+    );
+
+    sections.forEach((section) => observer.observe(section));
+  }
+
   themes.forEach((theme) => {
     const option = document.createElement("option");
     option.value = theme.id;
@@ -106,4 +152,6 @@
   });
 
   setTheme(themes.find((theme) => theme.id === initialThemeId()) || themes[0]);
+  setCurrentSection(sections[0] && sections[0].id);
+  observeSections();
 })();
