@@ -25,4 +25,3 @@ bool ApplyMetricListOrder(
 bool ApplyContainerChildOrder(
     AppConfig& config, const LayoutContainerChildOrderEditKey& key, int fromIndex, int toIndex);
 bool AppendMetricListRow(AppConfig& config, const LayoutEditWidgetIdentity& widget, std::string_view metricRef);
-bool ApplyGuideWeights(AppConfig& config, const LayoutEditLayoutTarget& target, const std::vector<int>& weights);

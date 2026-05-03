@@ -16,6 +16,7 @@
 #include "display/display_config.h"
 #include "layout_edit/layout_edit_parameter_edit.h"
 #include "layout_edit/layout_edit_service.h"
+#include "layout_model/layout_edit_service.h"
 #include "telemetry/metrics.h"
 #include "util/paths.h"
 #include "util/temp_file.h"

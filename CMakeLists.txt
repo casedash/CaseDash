@@ -109,6 +109,7 @@ add_executable(CaseDash WIN32
     src/layout_model/layout_edit_helpers.cpp
     src/layout_model/layout_edit_hit_priority.cpp
     src/layout_model/layout_edit_layout_target.cpp
+    src/layout_model/layout_edit_service.cpp
     src/layout_edit/layout_edit_tree.cpp
     src/layout_model/layout_edit_parameter_metadata.cpp
     src/layout_edit/layout_edit_tooltip.cpp
@@ -231,6 +232,7 @@ set(casedash_release_speed_sources
     src/layout_model/layout_edit_hit_priority.cpp
     src/layout_model/layout_edit_layout_target.cpp
     src/layout_model/layout_edit_parameter_metadata.cpp
+    src/layout_model/layout_edit_service.cpp
     src/renderer/renderer.cpp
     src/renderer/render_types.cpp
     src/renderer/impl/d2d_cache.cpp
@@ -469,6 +471,7 @@ add_executable(CaseDashTests
     src/layout_model/layout_edit_helpers.cpp
     src/layout_model/layout_edit_hit_priority.cpp
     src/layout_model/layout_edit_layout_target.cpp
+    src/layout_model/layout_edit_service.cpp
     src/layout_model/dashboard_overlay_state.cpp
     src/layout_edit/layout_edit_tree.cpp
     src/layout_model/layout_edit_parameter_metadata.cpp
@@ -618,6 +621,7 @@ add_executable(CaseDashBenchmarks
     src/layout_model/layout_edit_hit_priority.cpp
     src/layout_model/layout_edit_layout_target.cpp
     src/layout_model/layout_edit_parameter_metadata.cpp
+    src/layout_model/layout_edit_service.cpp
     src/layout_edit/layout_edit_tree.cpp
     src/layout_edit/layout_edit_parameter_edit.cpp
     src/layout_edit/layout_edit_target_descriptor.cpp
