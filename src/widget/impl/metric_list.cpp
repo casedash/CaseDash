@@ -3,10 +3,13 @@
 #include <algorithm>
 #include <cmath>
 #include <optional>
+#include <string>
+#include <string_view>
 
 #include "telemetry/metrics.h"
 #include "util/numeric_safety.h"
 #include "util/strings.h"
+#include "util/utf8.h"
 #include "widget/widget_host.h"
 
 namespace {
@@ -69,6 +72,40 @@ RenderRect OffsetRect(RenderRect rect, int dy) {
     return rect;
 }
 
+std::string FitMiddleEllipsis(const Renderer& renderer, TextStyleId style, std::string_view text, int maxWidth) {
+    if (text.empty() || maxWidth <= 0) {
+        return {};
+    }
+
+    const std::string original(text);
+    if (renderer.MeasureTextWidth(style, original) <= maxWidth) {
+        return original;
+    }
+
+    constexpr std::string_view kEllipsis = "...";
+    if (renderer.MeasureTextWidth(style, kEllipsis) > maxWidth) {
+        return {};
+    }
+    const std::wstring wide = WideFromUtf8(original);
+    if (wide.empty()) {
+        return std::string(kEllipsis);
+    }
+
+    if (wide.size() <= kEllipsis.size() + 2) {
+        return std::string(kEllipsis);
+    }
+
+    const std::wstring lastLetter = wide.substr(wide.size() - 1);
+    for (size_t prefixLength = wide.size() - 2; prefixLength > 0; --prefixLength) {
+        std::string candidate = Utf8FromWide(wide.substr(0, prefixLength) + L"..." + lastLetter);
+        if (renderer.MeasureTextWidth(style, candidate) <= maxWidth) {
+            return candidate;
+        }
+    }
+
+    return std::string(kEllipsis);
+}
+
 void DrawMetricListRow(WidgetHost& renderer,
     const WidgetLayout& widget,
     const MetricListWidget::LayoutState& layout,
@@ -88,10 +125,18 @@ void DrawMetricListRow(WidgetHost& renderer,
         const RenderColorId valueColor =
             row.state == MetricValueState::PermissionRequired ? RenderColorId::Warning : RenderColorId::Foreground;
         RenderRect metricValueRect = valueRect;
+        std::string annotationText;
         if (!row.annotationText.empty()) {
-            const int annotationWidth = renderer.Renderer().MeasureTextWidth(TextStyleId::Label, row.annotationText);
             const int annotationGap = renderer.Renderer().ScaleLogical(6);
-            metricValueRect.right = std::max(metricValueRect.left, valueRect.right - annotationWidth - annotationGap);
+            const int valueWidth = renderer.Renderer().MeasureTextWidth(TextStyleId::Value, row.valueText);
+            const int annotationMaxWidth = valueRect.Width() - valueWidth - annotationGap;
+            annotationText =
+                FitMiddleEllipsis(renderer.Renderer(), TextStyleId::Label, row.annotationText, annotationMaxWidth);
+            if (!annotationText.empty()) {
+                const int annotationWidth = renderer.Renderer().MeasureTextWidth(TextStyleId::Label, annotationText);
+                metricValueRect.right =
+                    std::max(metricValueRect.left, valueRect.right - annotationWidth - annotationGap);
+            }
         }
         const WidgetHost::TextLayoutResult valueLayout = renderer.Renderer().DrawTextBlock(metricValueRect,
             row.valueText,
@@ -111,11 +156,11 @@ void DrawMetricListRow(WidgetHost& renderer,
                     valueLayout, renderer.MakeMetricTextBinding(widget, metricRefs[rowIndex], rowIndex * 2 + 101));
             }
         }
-        if (!row.annotationText.empty()) {
+        if (!annotationText.empty()) {
             const RenderColorId annotationColor =
                 row.warningAnnotation ? RenderColorId::Warning : RenderColorId::MutedText;
             renderer.Renderer().DrawText(valueRect,
-                row.annotationText,
+                annotationText,
                 TextStyleId::Label,
                 annotationColor,
                 TextLayoutOptions::SingleLine(TextHorizontalAlign::Trailing, TextVerticalAlign::Center));
