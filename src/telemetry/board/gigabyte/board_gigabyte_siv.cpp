@@ -25,21 +25,11 @@ constexpr wchar_t kEngineEnvironmentControlDll[] = L"Gigabyte.Engine.Environment
 constexpr wchar_t kSivUninstallKey[] = L"SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall";
 constexpr wchar_t kBiosKey[] = L"HARDWARE\\DESCRIPTION\\System\\BIOS";
 
-struct GigabyteSivFanReading {
-    std::string title;
-    std::optional<double> rpm;
-};
-
-struct GigabyteSivTemperatureReading {
-    std::string title;
-    std::optional<double> celsius;
-};
-
 struct GigabyteSivSnapshot {
     bool success = false;
     std::string diagnostics;
-    std::vector<GigabyteSivFanReading> fans;
-    std::vector<GigabyteSivTemperatureReading> temperatures;
+    std::vector<BoardSensorReading> fans;
+    std::vector<BoardSensorReading> temperatures;
 };
 
 std::optional<std::wstring> FindInstalledSivDirectory() {
@@ -80,51 +70,16 @@ std::optional<std::wstring> FindInstalledSivDirectory() {
     return std::nullopt;
 }
 
-std::string ResolveMappedSensorName(
-    const std::unordered_map<std::string, std::string>& sensorNames, const std::string& logicalName) {
-    const auto it = sensorNames.find(logicalName);
-    if (it != sensorNames.end() && !it->second.empty()) {
-        return it->second;
-    }
-    return logicalName;
-}
-
-template <typename Reading> std::vector<std::string> ExtractSensorNames(const std::vector<Reading>& readings) {
-    std::vector<std::string> names;
-    names.reserve(readings.size());
-    for (const auto& reading : readings) {
-        if (!reading.title.empty()) {
-            names.push_back(reading.title);
-        }
-    }
-    return names;
-}
-
-void AppendRequestedMetricIndex(
-    std::unordered_map<std::string, std::vector<size_t>>& indexBySourceName, std::string sourceName, size_t index) {
-    auto& indices = indexBySourceName[std::move(sourceName)];
-    if (std::find(indices.begin(), indices.end(), index) == indices.end()) {
-        indices.push_back(index);
-    }
-}
-
-void ResetMetricValues(std::vector<NamedScalarMetric>& metrics) {
-    for (auto& metric : metrics) {
-        metric.metric.value.reset();
-    }
-}
-
 class GigabyteSivCapture final : public GigabyteSivCaptureSink {
 public:
     explicit GigabyteSivCapture(Trace& trace) : trace_(trace) {}
 
     void AddFanReading(const wchar_t* title, double rpm) override {
-        snapshot_.fans.push_back(GigabyteSivFanReading{Utf8FromWide(title != nullptr ? title : L""), rpm});
+        snapshot_.fans.push_back(BoardSensorReading{Utf8FromWide(title != nullptr ? title : L""), rpm});
     }
 
     void AddTemperatureReading(const wchar_t* title, double celsius) override {
-        snapshot_.temperatures.push_back(
-            GigabyteSivTemperatureReading{Utf8FromWide(title != nullptr ? title : L""), celsius});
+        snapshot_.temperatures.push_back(BoardSensorReading{Utf8FromWide(title != nullptr ? title : L""), celsius});
     }
 
     void SetDiagnostics(const wchar_t* diagnostics) override {
@@ -208,12 +163,12 @@ public:
         requestedTemperatureIndexBySourceName_.clear();
         requestedFanIndexBySourceName_.clear();
         for (size_t i = 0; i < temperatureMetricTemplate_.size(); ++i) {
-            AppendRequestedMetricIndex(requestedTemperatureIndexBySourceName_,
+            AppendRequestedBoardMetricIndex(requestedTemperatureIndexBySourceName_,
                 ResolveTemperatureSensorName(temperatureMetricTemplate_[i].name),
                 i);
         }
         for (size_t i = 0; i < fanMetricTemplate_.size(); ++i) {
-            AppendRequestedMetricIndex(
+            AppendRequestedBoardMetricIndex(
                 requestedFanIndexBySourceName_, ResolveFanSensorName(fanMetricTemplate_[i].name), i);
         }
         requestedDiagnosticsSuffix_.clear();
@@ -256,31 +211,18 @@ public:
         }
 
         diagnostics_ = snapshot.diagnostics;
-        availableFanNames_ = ExtractSensorNames(snapshot.fans);
-        availableTemperatureNames_ = ExtractSensorNames(snapshot.temperatures);
+        availableFanNames_ = ExtractBoardSensorNames(snapshot.fans);
+        availableTemperatureNames_ = ExtractBoardSensorNames(snapshot.temperatures);
         sample.availableFanNames = availableFanNames_;
         sample.availableTemperatureNames = availableTemperatureNames_;
 
         sample.temperatures = temperatureMetricTemplate_;
         sample.fans = fanMetricTemplate_;
-        ResetMetricValues(sample.temperatures);
-        ResetMetricValues(sample.fans);
-        for (const auto& reading : snapshot.temperatures) {
-            const auto it = requestedTemperatureIndexBySourceName_.find(reading.title);
-            if (it != requestedTemperatureIndexBySourceName_.end()) {
-                for (const size_t index : it->second) {
-                    sample.temperatures[index].metric.value = reading.celsius;
-                }
-            }
-        }
-        for (const auto& reading : snapshot.fans) {
-            const auto it = requestedFanIndexBySourceName_.find(reading.title);
-            if (it != requestedFanIndexBySourceName_.end()) {
-                for (const size_t index : it->second) {
-                    sample.fans[index].metric.value = reading.rpm;
-                }
-            }
-        }
+        ResetBoardMetricValues(sample.temperatures);
+        ResetBoardMetricValues(sample.fans);
+        ApplyBoardSensorReadingsToMetrics(
+            snapshot.temperatures, requestedTemperatureIndexBySourceName_, sample.temperatures);
+        ApplyBoardSensorReadingsToMetrics(snapshot.fans, requestedFanIndexBySourceName_, sample.fans);
         sample.available = HasAvailableMetricValue(sample.temperatures) || HasAvailableMetricValue(sample.fans);
         sample.diagnostics = diagnostics_ + requestedDiagnosticsSuffix_;
         return sample;
@@ -288,11 +230,11 @@ public:
 
 private:
     std::string ResolveTemperatureSensorName(const std::string& logicalName) const {
-        return ResolveMappedSensorName(settings_.temperatureSensorNames, logicalName);
+        return ResolveMappedBoardSensorName(settings_.temperatureSensorNames, logicalName);
     }
 
     std::string ResolveFanSensorName(const std::string& logicalName) const {
-        return ResolveMappedSensorName(settings_.fanSensorNames, logicalName);
+        return ResolveMappedBoardSensorName(settings_.fanSensorNames, logicalName);
     }
 
     Trace& trace() {

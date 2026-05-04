@@ -14,7 +14,7 @@ This document owns executable-size assumptions, constraints, map workflow notes,
 
 ## Current State
 
-- Current measured `build\CaseDash.exe`: `1,326,592` bytes.
+- Current measured `build\CaseDash.exe`: `1,315,328` bytes.
 - Current app map summary: `build\CaseDash.map.summary.txt`.
 - Current largest sections: `.text$mn` about `1.07 MiB`, `.rdata` about `87.4 KiB`, `.rsrc$02` about `34.5 KiB`, `.pdata` about `24.0 KiB`, `.xdata` about `21.6 KiB`.
 - Current largest project objects: `diagnostics.cpp.obj`, `editors.cpp.obj`, `dashboard_app.cpp.obj`, `dashboard_controller.cpp.obj`, `layout_guide_sheet_renderer.cpp.obj`, `dashboard_shell_ui.cpp.obj`, and `layout_resolver.cpp.obj`.
@@ -50,6 +50,8 @@ This document owns executable-size assumptions, constraints, map workflow notes,
 | Embedded resources | Generate compressed embedded config/localization payloads, losslessly recompress PNG/ICO assets, and keep tiny layout-edit grouping tables vector-based. | `1,352,192` to `1,331,712` bytes; `.rsrc$02` about `46.4 KiB` to `34.5 KiB`. |
 | Cold diagnostics and menus | Keep headless diagnostics callback-free, scale menu fixed-array based, and layout-guide-sheet unique-class counting allocation-free. | `1,331,712` to `1,326,592` bytes. |
 | Metric render caches | Keep per-frame `MetricSource` caches and exact metric binding lookup vector-based instead of `std::unordered_map`; these caches have tiny key sets and are hit during rendering. | `1,326,592` to `1,318,400` bytes. A plain-struct cache-entry variant regressed to `1,318,912` bytes, so keep the `std::pair` vector shape for now. |
+| Trace formatting | Keep trace escaping, quoting, and point formatting in `Trace` instead of private copies in diagnostics, dashboard, and layout-edit dialog code. | `1,318,400` to `1,317,376` bytes across the shared trace formatter passes. |
+| Board provider shared helpers | Keep common MSI Center and Gigabyte SIV board sensor mapping, requested-index insertion, metric reset, reading-name extraction, and reading-to-metric application in `system_info_support`. | `1,317,376` to `1,315,328` bytes. |
 
 ## Rejected Or Neutral Experiments
 
@@ -58,6 +60,8 @@ This document owns executable-size assumptions, constraints, map workflow notes,
 - Do not keep `/Gy`, `/Gw`, `/OPT:ICF`, `/GF`, or `/Zc:inline` just because they sound size-oriented; the final retained code-shape wins did not need those extra flags.
 - Do not retry replacing the config parser card-reference `std::set` with a flat string-view vector; it regressed the app size in the measured pass.
 - Do not broadly replace every `std::unordered_map` cache with vectors. The dashboard renderer metric-definition cache regressed the app from `1,318,400` to `1,319,936` bytes in the measured pass.
+- Do not retry simple `ShowContextMenu` submenu-helper extraction. It shrank the individual `ShowContextMenu` symbol but grew `build\CaseDash.exe` from `1,318,400` to `1,319,424` bytes because it moved code into helpers without deleting shared machinery.
+- Do not retry a shared MSI/Gigabyte uninstall-registry scanner with a function-pointer display-name matcher. It grew the app from `1,315,328` to `1,316,352` bytes because the shared helper plus matcher calls outweighed the deleted local loops.
 - Do not reintroduce `std::filesystem`, native app exceptions, production `std::function`, or MSVC STL vectorized algorithm dispatch without a measured app-size and performance reason. `lint.cmd` blocks maintained source and test files from using `std::filesystem` or including `<filesystem>`.
 
 ## Notes

@@ -4,7 +4,6 @@
 #include <cmath>
 #include <cstdio>
 #include <shellapi.h>
-#include <string_view>
 
 #include "config/color_resolver.h"
 #include "config/config_io.h"
@@ -20,38 +19,10 @@
 #include "telemetry/metrics.h"
 #include "util/paths.h"
 #include "util/temp_file.h"
+#include "util/trace.h"
 #include "util/utf8.h"
 
 namespace {
-
-std::string EscapeTraceText(std::string_view text) {
-    std::string escaped;
-    escaped.reserve(text.size());
-    for (const char ch : text) {
-        switch (ch) {
-            case '\\':
-                escaped += "\\\\";
-                break;
-            case '"':
-                escaped += "\\\"";
-                break;
-            case '\r':
-                escaped += "\\r";
-                break;
-            case '\n':
-                escaped += "\\n";
-                break;
-            default:
-                escaped.push_back(ch);
-                break;
-        }
-    }
-    return escaped;
-}
-
-std::string QuoteTraceText(std::string_view text) {
-    return "\"" + EscapeTraceText(text) + "\"";
-}
 
 std::unique_ptr<DiagnosticsSession> CreateDiagnosticsSession(const DiagnosticsOptions& options, Trace& trace) {
     auto session = std::make_unique<DiagnosticsSession>(options, trace);
@@ -218,7 +189,7 @@ bool DashboardController::InitializeSession(DashboardShellHost& shell, const Dia
         if (state_.diagnostics != nullptr) {
             std::string traceText = "diagnostics:telemetry_initialize_failed";
             if (!telemetryError.empty()) {
-                traceText += " detail=" + QuoteTraceText(telemetryError);
+                traceText += " detail=" + Trace::QuoteText(telemetryError);
             }
             state_.diagnostics->WriteTraceMarker(traceText);
         }
@@ -436,14 +407,14 @@ bool DashboardController::SwitchLayout(
     DashboardShellHost& shell, const std::string& layoutName, bool diagnosticsEditLayout) {
     if (state_.diagnostics != nullptr) {
         state_.diagnostics->WriteTraceMarker(
-            "layout_switch:begin current_layout=" + QuoteTraceText(state_.config.display.layout) +
-            " requested_layout=" + QuoteTraceText(layoutName));
+            "layout_switch:begin current_layout=" + Trace::QuoteText(state_.config.display.layout) +
+            " requested_layout=" + Trace::QuoteText(layoutName));
     }
     AppConfig updatedConfig = state_.config;
     if (!SelectLayout(updatedConfig, layoutName)) {
         if (state_.diagnostics != nullptr) {
             state_.diagnostics->WriteTraceMarker(
-                "layout_switch:select_failed requested_layout=" + QuoteTraceText(layoutName));
+                "layout_switch:select_failed requested_layout=" + Trace::QuoteText(layoutName));
         }
         return false;
     }
@@ -454,8 +425,8 @@ bool DashboardController::SwitchLayout(
     if (!shell.Renderer().LastError().empty()) {
         if (state_.diagnostics != nullptr) {
             state_.diagnostics->WriteTraceMarker(
-                "layout_switch:sync_failed requested_layout=" + QuoteTraceText(layoutName) +
-                " renderer_error=" + QuoteTraceText(shell.Renderer().LastError()));
+                "layout_switch:sync_failed requested_layout=" + Trace::QuoteText(layoutName) +
+                " renderer_error=" + Trace::QuoteText(shell.Renderer().LastError()));
         }
         state_.config = previousConfig;
         SyncRuntimeAndRenderer(shell, state_.isEditingLayout || diagnosticsEditLayout);
@@ -468,7 +439,7 @@ bool DashboardController::SwitchLayout(
     RefreshLayoutEditSessionDirtyFlag();
     if (state_.diagnostics != nullptr) {
         state_.diagnostics->WriteTraceMarker(
-            "layout_switch:done active_layout=" + QuoteTraceText(state_.config.display.layout));
+            "layout_switch:done active_layout=" + Trace::QuoteText(state_.config.display.layout));
     }
     return true;
 }

@@ -7,7 +7,6 @@
 #include <cstdlib>
 #include <cwctype>
 #include <limits>
-#include <string_view>
 #include <vector>
 
 #include "config/color_resolver.h"
@@ -31,35 +30,6 @@
 #include "widget/app_icon_geometry.h"
 
 namespace {
-
-std::string EscapeTraceText(std::string_view text) {
-    std::string escaped;
-    escaped.reserve(text.size());
-    for (const char ch : text) {
-        switch (ch) {
-            case '\\':
-                escaped += "\\\\";
-                break;
-            case '"':
-                escaped += "\\\"";
-                break;
-            case '\r':
-                escaped += "\\r";
-                break;
-            case '\n':
-                escaped += "\\n";
-                break;
-            default:
-                escaped.push_back(ch);
-                break;
-        }
-    }
-    return escaped;
-}
-
-std::string QuoteTraceText(std::string_view text) {
-    return "\"" + EscapeTraceText(text) + "\"";
-}
 
 std::optional<int> TryParseInteger(std::wstring_view text) {
     while (!text.empty() && iswspace(text.front()) != 0) {
@@ -94,16 +64,13 @@ std::optional<DiagnosticsHoverPoint> TryParseHoverPointValue(const std::wstring&
     return DiagnosticsHoverPoint{*x, *y};
 }
 
-std::string FormatTracePoint(RenderPoint point) {
-    return std::to_string(point.x) + "," + std::to_string(point.y);
-}
-
 void WriteResolvedColorTraceLine(
     DiagnosticsSession& diagnostics, std::string_view section, std::string_view name, const ColorConfig& color) {
-    std::string text = "diagnostics:resolved_color section=" + QuoteTraceText(section) +
-                       " name=" + QuoteTraceText(name) + " value=" + QuoteTraceText(FormatHexColorText(color.ToRgba()));
+    std::string text = "diagnostics:resolved_color section=" + Trace::QuoteText(section) +
+                       " name=" + Trace::QuoteText(name) +
+                       " value=" + Trace::QuoteText(FormatHexColorText(color.ToRgba()));
     if (!color.expression.empty()) {
-        text += " expression=" + QuoteTraceText(color.expression);
+        text += " expression=" + Trace::QuoteText(color.expression);
     }
     diagnostics.WriteTraceMarker(text);
 }
@@ -319,7 +286,7 @@ void WriteValidationFailureTrace(
 
     Trace trace(traceFile);
     trace.Write(
-        "diagnostics:validation_failed reason=" + QuoteTraceText(reason) + " message=" + QuoteTraceText(message));
+        "diagnostics:validation_failed reason=" + Trace::QuoteText(reason) + " message=" + Trace::QuoteText(message));
     fclose(traceFile);
 }
 
@@ -795,7 +762,7 @@ bool ReloadTelemetryCollectorFromDisk(const FilePath& configPath,
         if (diagnostics != nullptr) {
             std::string traceText = "diagnostics:reload_config_failed";
             if (!reloadError.empty()) {
-                traceText += " detail=" + QuoteTraceText(reloadError);
+                traceText += " detail=" + Trace::QuoteText(reloadError);
             }
             diagnostics->WriteTraceMarker(traceText);
         }
@@ -862,18 +829,20 @@ bool SaveDumpScreenshot(const FilePath& imagePath,
         if (const auto target = controller.CurrentTooltipTarget(); target.has_value()) {
             std::string tooltipError;
             const auto tooltipText = BuildLayoutEditTooltipTextForPayload(config, target->payload, &tooltipError);
-            std::string traceText = "diagnostics:hover point=" + QuoteTraceText(FormatTracePoint(*hoverPoint)) +
-                                    " target=" + QuoteTraceText(LayoutEditTooltipPayloadTraceKind(target->payload));
+            std::string traceText =
+                "diagnostics:hover point=" + Trace::QuoteText(Trace::FormatPoint(hoverPoint->x, hoverPoint->y)) +
+                " target=" + Trace::QuoteText(LayoutEditTooltipPayloadTraceKind(target->payload));
             if (tooltipText.has_value()) {
-                traceText += " tooltip=" + QuoteTraceText(Utf8FromWide(*tooltipText));
+                traceText += " tooltip=" + Trace::QuoteText(Utf8FromWide(*tooltipText));
             } else {
                 traceText +=
-                    " tooltip_error=" + QuoteTraceText(tooltipError.empty() ? "unsupported_target" : tooltipError);
+                    " tooltip_error=" + Trace::QuoteText(tooltipError.empty() ? "unsupported_target" : tooltipError);
             }
             trace.Write(traceText);
         } else {
-            trace.Write("diagnostics:hover point=" + QuoteTraceText(FormatTracePoint(*hoverPoint)) +
-                        " target=" + QuoteTraceText("none"));
+            trace.Write(
+                "diagnostics:hover point=" + Trace::QuoteText(Trace::FormatPoint(hoverPoint->x, hoverPoint->y)) +
+                " target=" + Trace::QuoteText("none"));
         }
     }
     const bool saved = renderer.SaveSnapshotPng(imagePath, snapshot, overlayState);
@@ -925,7 +894,7 @@ int RunDiagnosticsHeadlessMode(const DiagnosticsOptions& diagnosticsOptions) {
     if (telemetry == nullptr) {
         std::string traceText = "diagnostics:telemetry_initialize_failed";
         if (!telemetryError.empty()) {
-            traceText += " detail=" + QuoteTraceText(telemetryError);
+            traceText += " detail=" + Trace::QuoteText(telemetryError);
         }
         diagnostics.WriteTraceMarker(traceText);
         if (diagnostics.ShouldShowDialogs()) {

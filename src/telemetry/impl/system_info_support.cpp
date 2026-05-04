@@ -1,5 +1,8 @@
 #include "telemetry/impl/system_info_support.h"
 
+#include <algorithm>
+#include <utility>
+
 #include "util/utf8.h"
 
 std::vector<NamedScalarMetric> CreateRequestedBoardMetrics(
@@ -25,6 +28,54 @@ void UpdateDiscoveredBoardSensorNames(
     std::vector<std::string>& cachedNames, const std::vector<std::string>& latestNames) {
     if (!latestNames.empty() || cachedNames.empty()) {
         cachedNames = latestNames;
+    }
+}
+
+std::vector<std::string> ExtractBoardSensorNames(const std::vector<BoardSensorReading>& readings) {
+    std::vector<std::string> names;
+    names.reserve(readings.size());
+    for (const auto& reading : readings) {
+        if (!reading.title.empty()) {
+            names.push_back(reading.title);
+        }
+    }
+    return names;
+}
+
+std::string ResolveMappedBoardSensorName(
+    const std::unordered_map<std::string, std::string>& sensorNames, const std::string& logicalName) {
+    const auto it = sensorNames.find(logicalName);
+    if (it != sensorNames.end() && !it->second.empty()) {
+        return it->second;
+    }
+    return logicalName;
+}
+
+void AppendRequestedBoardMetricIndex(
+    std::unordered_map<std::string, std::vector<size_t>>& indexBySourceName, std::string sourceName, size_t index) {
+    auto& indices = indexBySourceName[std::move(sourceName)];
+    if (std::find(indices.begin(), indices.end(), index) == indices.end()) {
+        indices.push_back(index);
+    }
+}
+
+void ResetBoardMetricValues(std::vector<NamedScalarMetric>& metrics) {
+    for (auto& metric : metrics) {
+        metric.metric.value.reset();
+    }
+}
+
+void ApplyBoardSensorReadingsToMetrics(const std::vector<BoardSensorReading>& readings,
+    const std::unordered_map<std::string, std::vector<size_t>>& indexBySourceName,
+    std::vector<NamedScalarMetric>& metrics) {
+    for (const auto& reading : readings) {
+        const auto it = indexBySourceName.find(reading.title);
+        if (it == indexBySourceName.end()) {
+            continue;
+        }
+        for (const size_t index : it->second) {
+            metrics[index].metric.value = reading.value;
+        }
     }
 }
 

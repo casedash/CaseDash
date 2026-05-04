@@ -1,10 +1,10 @@
 #include "layout_edit_dialog/impl/trace.h"
 
-#include <cstdio>
-
 #include "layout_edit/layout_edit_target_descriptor.h"
 #include "layout_edit_dialog/impl/util.h"
 #include "layout_model/layout_edit_parameter_metadata.h"
+#include "util/strings.h"
+#include "util/trace.h"
 
 namespace {
 
@@ -40,39 +40,12 @@ const char* ValueFormatTraceName(configschema::ValueFormat format) {
 
 }  // namespace
 
-std::string EscapeTraceText(std::string_view text) {
-    std::string escaped;
-    escaped.reserve(text.size());
-    for (const char ch : text) {
-        switch (ch) {
-            case '\\':
-                escaped += "\\\\";
-                break;
-            case '"':
-                escaped += "\\\"";
-                break;
-            case '\r':
-                escaped += "\\r";
-                break;
-            case '\n':
-                escaped += "\\n";
-                break;
-            default:
-                escaped.push_back(ch);
-                break;
-        }
-    }
-    return escaped;
-}
-
 std::string QuoteTraceText(std::string_view text) {
-    return "\"" + EscapeTraceText(text) + "\"";
+    return Trace::QuoteText(text);
 }
 
 std::string FormatTraceColorHex(unsigned int color) {
-    char buffer[16] = {};
-    sprintf_s(buffer, "#%08X", color);
-    return buffer;
+    return FormatHexColorText(color);
 }
 
 std::string JoinNodePath(const std::vector<size_t>& path) {
