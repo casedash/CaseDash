@@ -757,7 +757,7 @@ These changes produced real wins and remain in the codebase:
   - Removing only local helper type erasure reduced `build\CaseDash.exe` from `1,451,008` bytes to `1,445,888` bytes.
   - Removing production `std::function` entirely reduced `build\CaseDash.exe` further to `1,440,768` bytes and `build\CaseDashBenchmarks.exe` to `1,078,272` bytes.
 - Conclusion:
-  - Keep `FunctionRef` for synchronous callbacks that do not escape the call. Continue to use owning callback storage only when a callback must outlive the call stack.
+  - Keep `FunctionRef` for synchronous callbacks that do not escape the call. Continue to use purpose-built interfaces when callback ownership must outlive the call stack; `lint.cmd` enforces the project-wide `std::function` ban for maintained source.
 
 ### Hypothesis: Theme preview construction belongs outside the dialog pane
 
