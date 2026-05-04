@@ -24,8 +24,9 @@ SECTION_RE = re.compile(
 SYMBOL_RE = re.compile(
     r"^\s+(?P<section>[0-9A-Fa-f]{4}):(?P<offset>[0-9A-Fa-f]{8})\s+"
     r"(?P<symbol>\S+)\s+(?P<rva>[0-9A-Fa-f]{16})\s+"
-    r"(?:(?P<flags>\S+)\s+)?(?P<owner>\S+)\s*$"
+    r"(?:(?P<flags>(?:\S+\s+)*))?(?P<owner>\S+)\s*$"
 )
+SYMBOL_START_RE = re.compile(r"^\s+[0-9A-Fa-f]{4}:[0-9A-Fa-f]{8}\s+")
 
 
 @dataclass(frozen=True)
@@ -64,10 +65,35 @@ def short_symbol(name: str, width: int = 96) -> str:
     return name if len(name) <= width else name[: width - 3] + "..."
 
 
+def append_symbol(symbols: list[Symbol], raw_line: str) -> bool:
+    symbol_match = SYMBOL_RE.match(raw_line)
+    if not symbol_match:
+        return False
+
+    section = int(symbol_match.group("section"), 16)
+    if section == 0:
+        return True
+
+    owner = symbol_match.group("owner")
+    library, obj = parse_owner(owner)
+    symbols.append(
+        Symbol(
+            section=section,
+            offset=int(symbol_match.group("offset"), 16),
+            symbol=symbol_match.group("symbol"),
+            owner=owner,
+            bucket=obj,
+            library=library,
+        )
+    )
+    return True
+
+
 def read_map(path: Path) -> tuple[list[SectionContribution], list[Symbol]]:
     sections: list[SectionContribution] = []
     symbols: list[Symbol] = []
     in_symbols = False
+    pending_symbol_line: str | None = None
 
     for raw_line in path.read_text(encoding="utf-8", errors="replace").splitlines():
         section_match = SECTION_RE.match(raw_line)
@@ -84,32 +110,32 @@ def read_map(path: Path) -> tuple[list[SectionContribution], list[Symbol]]:
             continue
 
         if "Publics by Value" in raw_line or raw_line.strip() == "Static symbols":
+            if pending_symbol_line is not None:
+                append_symbol(symbols, pending_symbol_line)
+                pending_symbol_line = None
             in_symbols = True
             continue
 
         if not in_symbols:
             continue
 
-        symbol_match = SYMBOL_RE.match(raw_line)
-        if not symbol_match:
+        if not raw_line.strip():
+            if pending_symbol_line is not None:
+                append_symbol(symbols, pending_symbol_line)
+                pending_symbol_line = None
             continue
 
-        section = int(symbol_match.group("section"), 16)
-        if section == 0:
+        if SYMBOL_START_RE.match(raw_line):
+            if pending_symbol_line is not None:
+                append_symbol(symbols, pending_symbol_line)
+            pending_symbol_line = raw_line
             continue
 
-        owner = symbol_match.group("owner")
-        library, obj = parse_owner(owner)
-        symbols.append(
-            Symbol(
-                section=section,
-                offset=int(symbol_match.group("offset"), 16),
-                symbol=symbol_match.group("symbol"),
-                owner=owner,
-                bucket=obj,
-                library=library,
-            )
-        )
+        if pending_symbol_line is not None:
+            pending_symbol_line += raw_line.strip()
+
+    if pending_symbol_line is not None:
+        append_symbol(symbols, pending_symbol_line)
 
     return sections, symbols
 
