@@ -16,6 +16,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+option(CASEDASH_LINK_MAPS "Emit linker map files for CaseDash size analysis." OFF)
+
 foreach(cxx_flags_var IN ITEMS
     CMAKE_CXX_FLAGS
     CMAKE_CXX_FLAGS_DEBUG
@@ -391,6 +393,7 @@ target_link_options(CaseDash PRIVATE
     $<$<CONFIG:Debug>:/INCREMENTAL>
     $<$<CONFIG:Release>:/OPT:REF>
     $<$<CONFIG:Release>:/LTCG>
+    $<$<AND:$<CONFIG:Release>,$<BOOL:${CASEDASH_LINK_MAPS}>>:/MAP:$<TARGET_FILE_DIR:CaseDash>/CaseDash.map>
     $<$<CONFIG:Release>:/INCREMENTAL:NO>
     $<$<CONFIG:RelWithDebInfo>:/DEBUG>
     $<$<CONFIG:RelWithDebInfo>:/INCREMENTAL>
@@ -726,6 +729,7 @@ target_link_options(CaseDashBenchmarks PRIVATE
     $<$<CONFIG:Release>:/DEBUG:FULL>
     $<$<CONFIG:Release>:/OPT:REF>
     $<$<CONFIG:Release>:/LTCG>
+    $<$<AND:$<CONFIG:Release>,$<BOOL:${CASEDASH_LINK_MAPS}>>:/MAP:$<TARGET_FILE_DIR:CaseDashBenchmarks>/CaseDashBenchmarks.map>
     $<$<CONFIG:Release>:/INCREMENTAL:NO>
     $<$<CONFIG:RelWithDebInfo>:/DEBUG>
     $<$<CONFIG:RelWithDebInfo>:/INCREMENTAL>

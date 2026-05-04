@@ -916,6 +916,21 @@ These changes produced real wins and remain in the codebase:
 - Conclusion:
   - Keep color resolution table-driven through runtime config descriptors so future theme/color fields do not need new resolver-side `if` chains.
 
+### Hypothesis: Keep linker map generation as side tooling
+
+- Change:
+  - Add the opt-in `CASEDASH_LINK_MAPS` CMake switch, keep normal `build.cmd` configurations on `CASEDASH_LINK_MAPS=OFF`, and add `build_maps.cmd` for explicit map-producing relinks.
+  - Add `tools\analyze_link_map.py` to summarize MSVC map sections, libraries, project objects, and inferred symbol-size rankings.
+- Result:
+  - Helped future size investigations without changing the normal Release build profile or benchmark runtime behavior.
+- Observed effect:
+  - The fresh side-map build reported `build\CaseDash.exe` section bytes at about `1.30 MiB` and inferred symbol bytes at about `1.27 MiB`.
+  - The largest app section remains `.text$mn` at about `1.09 MiB`, followed by `.rdata` at about `89.2 KiB`, `.rsrc$02` at about `46.4 KiB`, `.pdata` at about `24.7 KiB`, and `.xdata` at about `21.8 KiB`.
+  - The largest project-object suspects in the fresh map are `diagnostics.cpp.obj` at about `72.5 KiB`, `editors.cpp.obj` at about `50.5 KiB`, `CaseDash.rc.res` and `dashboard_app.cpp.obj` at about `46.4 KiB` each, and `dashboard_shell_ui.cpp.obj` at about `42.3 KiB`.
+  - The largest inferred code symbols include `SaveDumpScreenshot` at about `31.0 KiB`, `DashboardShellUi::ShowContextMenu` at about `18.4 KiB`, and `MergeLayoutGuideSheetCallouts` at about `15.6 KiB`.
+- Conclusion:
+  - Keep map generation off the normal build and use `build_maps.cmd` plus the analyzer when deciding future app-size experiments. Prioritize large non-hot-path project objects before touching renderer, widget draw, layout resolver, or telemetry files that are already covered by the maintained benchmarks.
+
 ## Practical Guidance For Future Experiments
 
 - Do not retry per-segment gauge fills unless the gauge is redesigned to avoid repeated GDI+ path fills entirely.
