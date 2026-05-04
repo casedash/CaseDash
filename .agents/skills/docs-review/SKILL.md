@@ -1,6 +1,6 @@
 ---
 name: docs-review
-description: Review and edit repository documentation for steady-state language, single-source information, concise factual wording, and clean structure. Use when Codex is asked to review docs, fix documentation quality, remove changelog-style wording, deduplicate docs, or normalize project documentation.
+description: Review and edit repository documentation. Use when asked to review docs, fix documentation quality, remove changelog-style wording, deduplicate docs, or normalize project documentation.
 ---
 
 # Docs Review
@@ -46,6 +46,19 @@ Use this skill to make repository docs factual, current, and easy to maintain. A
 7. Validate.
    - Re-read changed docs for duplicate facts, historical wording, broken references, and awkward structure.
    - Run available docs checks only when the repository defines them or the user requests them.
+
+## AGENTS.md
+
+For project's AGENTS.md file apply special considerations:
+
+- Keep it extremely short to conserve token. Avoid duplications. 
+  Don't write like this:
+    - Keep `a.md` in sync with A changes before finishing work. 
+    - Keep `b.md` in sync with B  changes before finishing work.
+  Do: Use the following for reference and in sync before finishing work.
+    - `a.md` - A.
+    - `b.md` - B.
+- Keep only high-impact pitfall notes that are likely to recur. Move rare or detailed concerns to the owning documentation file.
 
 ## Output
 

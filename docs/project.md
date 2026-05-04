@@ -23,7 +23,7 @@ See also: [docs/build.md](build.md) for setup and commands, [docs/layout.md](lay
 ## Repository Conventions
 
 - Keep production sources in `src`, tests in `tests`, documentation in `docs`, and embedded assets in `resources`.
-- Keep reusable agent or automation skills in `tools\skills`.
+- Keep reusable agent or automation skills in `.agents\skills`.
 - Use `update_app_icon.cmd` to rebuild the app, export compressed default-theme app-icon PNGs under `build\app_icon\`, and regenerate `resources\app.ico` from those rendered assets.
 - Use `update_installer_dialog_bmp.cmd` to rebuild the app, export the dark_cyan app icon under `build\installer_dialog_bmp\`, and regenerate `installer\CaseDash_WixUIDialogBmp.bmp` from that rendered asset.
 - Use `update_readme_images.cmd` to rebuild committed README screenshots under `docs\image\`.
@@ -60,3 +60,22 @@ See also: [docs/build.md](build.md) for setup and commands, [docs/layout.md](lay
 - Use [docs/diagnostics.md](diagnostics.md) instead of repeating diagnostics command examples elsewhere.
 - Use [docs/layout.md](layout.md) and [resources/config.ini](../resources/config.ini) instead of repeating config key lists elsewhere.
 - Use [docs/profile_benchmark.md](profile_benchmark.md) instead of repeating benchmark workflow or experiment history elsewhere.
+
+## Project Pitfall Notes
+
+- Fake-runtime startup failures stay aligned with the diagnostics dialog policy; direct modal dialogs in `/fake /exit` can make a headless process wait behind the dialog.
+- Win32 dialog templates and control ids live in `resources/CaseDash.rc` and `resources/resource.h`; check those files when shell dialog layout or control placement is wrong.
+- The executable-side `config.ini` overlays the embedded `resources/config.ini` template, and `Save Config` preserves that live file.
+- Embedded `config.ini`, `localization.ini`, and app-icon resource edits depend on explicit `resources/CaseDash.rc` CMake dependencies so incremental builds rebuild the resource object.
+- Restored saved placement across monitors with different DPI scales lets `WM_DPICHANGED` apply the monitor transition before destination window size scaling.
+- Login startup and monitor hotplug can race monitor enumeration; `display.monitor_name` placement keeps watching until the target display becomes enumerable.
+- Gigabyte SIV assembly loading can require the SIV install directory as the process current directory, and the original launch working directory is restored afterward.
+- Repeated unattended profiling runs use `profile_benchmark.cmd /daemon-start` once, then ordinary benchmark invocations queue through the elevated daemon.
+- Failed or regressed benchmark optimization experiments are recorded in `docs/profile_benchmark.md`.
+- If `devenv.cmd` changes Visual Studio toolchains, delete `build\cmake` before the next `build.cmd` run.
+- Formatter and hook discovery starts from broad `*.cpp` and `*.h` pathspecs, then applies the repo eligibility filter because Git pathspecs such as `tests/**/*.cpp` do not cover top-level files.
+- Clang-tidy include-cleaner false-positive filters stay narrow so Win32 umbrella headers and project macro-provider headers do not hide real unused includes.
+- GitHub Actions does not call machine-local `devenv.cmd`; CI resolves Visual Studio through the runner environment and sets `CASEDASH_TIDY_TIMEOUT_SECONDS` for the tidy sweep.
+- `for /f` commands invoke `vswhere.exe` through `call "%VSWHERE%" ...` so `cmd` does not try to execute `C:\Program`.
+- Config-schema reflection descriptors stay type-derived and default-initialized because the GitHub Visual Studio runner can lag the local MSVC toolset.
+- The repo uses CRLF text checkouts; `.githooks/pre-commit` stays a minimal CRLF-tolerant shell launcher, and multi-line hook logic lives in PowerShell.

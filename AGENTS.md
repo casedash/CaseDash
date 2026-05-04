@@ -1,59 +1,33 @@
 ## Documentation
 
-- Keep `docs/specifications.md` in sync with behavior changes before finishing work.
-- Keep `docs/diagnostics.md` in sync with diagnostics-flow and trace/dump/screenshot behavior changes before finishing work.
-- Keep `docs/architecture.md` in sync with structural/code-organization changes before finishing work.
-- Keep `docs/project.md` in sync with project-environment, build/setup, and engineering-constraint changes before finishing work.
-- Keep `docs/profile_benchmark.md` up to date after benchmark or profiling experiments by recording the latest baseline, hotspots, tested hypotheses, and whether each experiment helped or regressed.
-- Keep a single source of truth for every example, format description, and configuration-language reference; when one file is designated as the maintained source, update other docs to refer to it instead of duplicating the same example or format details.
-- Document new requirements briefly in the same style as the existing spec.
-- Keep docs/specs in present-tense steady-state language; describe only the intended behavior and structure, not transitions, historical notes, removals, or migration context.
-- After changing diagnostics behavior, update `docs/diagnostics.md` instead of restating those rules here.
-- Write miniaml commit message. One line, just action that was done starting the verb Added/Chaged/Refactored/Removed/etc and a very short summarization of the change. Focus on code/logic changes, only mention docs work if that was the only explicit task.
+Use the following maintained references and keep them in sync before finishing work:
+
+- `docs/specifications.md` - user-visible runtime behavior.
+- `docs/diagnostics.md` - diagnostics flow, trace, dump, screenshot, app-icon, and validation recipes.
+- `docs/architecture.md` - code organization, subsystem boundaries, and build-graph structure.
+- `docs/project.md` - documentation ownership, repository conventions, engineering constraints, and project pitfall notes.
+- `docs/build.md` - project environment, setup, build commands, validation entrypoints, and tooling constraints.
+- `docs/profile_benchmark.md` - benchmark workflow, baselines, hotspots, tested hypotheses, and experiment results.
+
+Keep a single source of truth for examples, format descriptions, and configuration-language references. Document requirements briefly in the owning spec using present-tense steady-state language.
+
+Write minimal commit messages: one line starting with an action verb such as `Added`, `Changed`, `Refactored`, or `Removed`, followed by a short summary of the code or logic change. Mention docs only when docs are the explicit task.
 
 ## Build And Validation
 
-- Always use `build.cmd` for builds.
-- Run `build.cmd` outside the sandbox; CMake incremental generation/builds need file deletes, renames, and timestamp updates in `build\` that the sandbox denies with `Access is denied`.
-- Keep all build artifacts and temporary compiler files in `build\` so the repository root stays clean.
-- Keep the repo-level `.clang-format` in sync with the dominant non-vendored C++ style, especially the non-aligned wrapped-parameter and wrapped-argument layout used across the project.
-- Use the top-level `format.cmd` entry point for C++ formatting checks and fixes; `format` checks non-vendored project sources and `format fix` applies the repo style to those files.
-- Do not run `lint.cmd tidy` locally unless the user explicitly asks for a local tidy run; the GitHub `Validation` workflow owns the slow `clang-tidy` sweep on push and pull request checks.
-- Do not run build steps and validation runs in parallel; always finish the build first, then run validation commands sequentially against the freshly built artifacts.
-
-Validation workflow:
-
-- Build first with `build.cmd`.
-- Prefer headless verification commands after the build so checks are repeatable and do not depend on manually closing the UI.
-- Use the smallest `/exit` combination that proves the change.
-- When headless validation is meant to exercise the built-in `resources/config.ini` behavior, always add `/default-config` so the executable-side `config.ini` overlay does not mask the embedded defaults.
-- When validation commands specify diagnostics paths explicitly, point them somewhere under `build\` so trace, dump, screenshot, and fake files do not pollute the repository root.
-- Use [docs/diagnostics.md](docs/diagnostics.md) as the single maintained source of truth for post-build diagnostics command examples and what to inspect.
+- Use `build.cmd` for builds, then run validation commands sequentially against the fresh build.
+- Keep build artifacts and temporary compiler files under `build\`.
+- Use `format.cmd` for C++ formatting checks and fixes.
+- Do not run `lint.cmd tidy` locally unless explicitly requested.
+- Prefer headless verification commands after building; use the smallest `/exit` combination that proves the change.
+- Add `/default-config` when validation is meant to exercise the built-in `resources/config.ini`.
+- Put explicit diagnostics outputs under `build\`.
+- Use `docs/diagnostics.md` for diagnostics command examples and inspection guidance.
 
 ## Project Constraints
 
-- Ignore the stray `$null` file at the repository root when it appears; it is a Codex sandbox artifact, not a project file.
-- This project has a single deployment target; do not preserve backwards compatibility for legacy configs unless the user explicitly asks for it.
-- Keep headers declarative: non-template and non-inline-required production logic belongs in `.cpp` files, not in project headers.
-- Add a short code comment when a condition or branch exists to preserve a specific supported case or invariant that is not obvious from the surrounding code.
-- If you trip over a project-specific pitfall and then resolve it, add a short note here for future work so the mistake is less likely to repeat.
-
-## Pitfall Notes
-
-- Keep fake-runtime startup failures aligned with the diagnostics dialog policy; a direct modal dialog in `/fake /exit` can look like `/exit` is broken because the headless process waits behind it.
-- Win32 dialog templates and control ids live in `resources/CaseDash.rc` and `resources/resource.h`; when a shell dialog layout or control placement looks wrong, check those files before tracing through `src/dashboard_shell_ui.cpp`.
-- If rebuilt defaults seem unchanged, check the executable-side `config.ini` first; it overlays the embedded `resources/config.ini` template and `Save Config` preserves that live file.
-- If embedded `config.ini` or `localization.ini` edits seem ignored after an incremental build, keep `resources/CaseDash.rc` wired to those payload files through explicit CMake dependencies so the resource object rebuilds.
-- If regenerated icon resources seem ignored after an incremental build, keep `resources/CaseDash.rc` explicitly dependent on `resources/app.ico` so the resource object rebuilds.
-- When restoring saved placement across monitors with different DPI scales, do not pre-scale the destination window size before the move; let `WM_DPICHANGED` apply the monitor transition first or the bounds can be double-scaled.
-- Login startup and monitor hotplug can race ahead of monitor enumeration; when `display.monitor_name` is configured, keep a placement watch armed until the target display becomes enumerable instead of locking in a fallback monitor.
-- Gigabyte SIV assembly loading may temporarily need the SIV install directory as the process current directory, but always restore the original launch working directory afterward so diagnostics paths and Save dialogs keep using the startup folder.
-- `profile_benchmark.cmd` supports `/daemon-start`; start that elevated helper once when unattended benchmark runs need to be triggered repeatedly from the sandbox, then let ordinary benchmark invocations queue through the daemon so each request rebuilds in the elevated console before profiling without prompting for UAC each time.
-- When a benchmark optimization experiment fails or regresses, record that hypothesis and the observed benchmark result in `docs/profile_benchmark.md` before finishing so future work can avoid repeating it blindly.
-- If `devenv.cmd` changes between Visual Studio toolchains, delete `build\cmake` before the next `build.cmd` run so CMake, MSVC, and the vcpkg-detected compiler do not mix mismatched compiler and STL versions.
-- Git pathspecs such as `tests/**/*.cpp` do not cover top-level files like `tests/benchmarks.cpp`; formatter and hook discovery should start from broad `*.cpp` and `*.h` pathspecs, then apply the repo eligibility filter.
-- When extending clang-tidy to standalone header runs, keep include-cleaner's explicit false-positive filters narrow; Win32 umbrella headers and project macro-provider headers can otherwise hide real unused header includes.
-- GitHub Actions must not call the machine-local `devenv.cmd`; CI bootstraps Visual Studio through runner discovery and gives `clang-tidy` a larger per-file timeout through `CASEDASH_TIDY_TIMEOUT_SECONDS`.
-- When using `vswhere.exe` from a `for /f` command, invoke it through `call "%VSWHERE%" ...` so `cmd` does not try to execute `C:\Program`.
-- The GitHub Visual Studio runner can lag the local MSVC toolset; keep config-schema reflection descriptors type-derived and default-initialized instead of materializing deeply nested constexpr initializer tuples.
-- The repo uses CRLF text checkouts; keep `.githooks/pre-commit` as a minimal CRLF-tolerant shell launcher and put multi-line hook logic in PowerShell.
+- Ignore the stray `$null` file at the repository root; it is a Codex sandbox artifact.
+- This project does not main backwards compatibility; do not preserve legacy config compatibility unless explicitly requested.
+- Keep headers declarative; non-template and non-inline-required production logic belongs in `.cpp` files.
+- Add a short code comment when a condition preserves a supported case or invariant that is not obvious nearby.
+- If you resolve a project-specific pitfall, record it in the owning documentation file.
