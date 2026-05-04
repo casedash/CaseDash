@@ -139,6 +139,27 @@ std::vector<WidgetClass> UniqueWidgetClasses(const LayoutGuideSheetCardSummary& 
     return classes;
 }
 
+size_t UniqueWidgetClassCount(const LayoutGuideSheetCardSummary& card) {
+    WidgetClass classes[16] = {};
+    size_t count = 0;
+    for (WidgetClass widgetClass : card.widgetClasses) {
+        if (!IsRepresentativeWidgetClass(widgetClass)) {
+            continue;
+        }
+        bool seen = false;
+        for (size_t i = 0; i < count; ++i) {
+            if (classes[i] == widgetClass) {
+                seen = true;
+                break;
+            }
+        }
+        if (!seen) {
+            classes[count++] = widgetClass;
+        }
+    }
+    return count;
+}
+
 bool IsContainerChildOrderAnchor(const LayoutEditActiveRegionPayload& payload) {
     const auto* anchor = std::get_if<LayoutEditAnchorRegion>(&payload);
     return anchor != nullptr && std::holds_alternative<LayoutContainerChildOrderEditKey>(anchor->key.subject);
@@ -286,7 +307,7 @@ std::vector<std::string> SelectLayoutGuideSheetCards(const std::vector<LayoutGui
                 continue;
             }
             indexes.push_back(i);
-            widgetCount += UniqueWidgetClasses(cards[i]).size();
+            widgetCount += UniqueWidgetClassCount(cards[i]);
             AddCardCoverage(covered, cards[i]);
         }
         const size_t coverage = CoverageCount(covered, universe);

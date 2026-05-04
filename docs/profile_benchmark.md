@@ -994,6 +994,23 @@ These changes produced real wins and remain in the codebase:
 - Conclusion:
   - Keep generated compressed text resources, losslessly optimized PNG payloads, and vector-based tiny grouping tables. These changes reduce shipped bytes without deferring work to external files, changing visible assets, or adding frame-time work outside cold startup/config paths and layout-edit affordance construction.
 
+### Hypothesis: Compact cold diagnostics and menu scaffolding without weakening hot render paths
+
+- Change:
+  - Stop copying full `TelemetryUpdate` payloads through the headless diagnostics callback; headless diagnostics now lets the runtime collect, then reads the thread-safe `Latest()` snapshot directly.
+  - Replace the scale menu's tiny heap vector/sort/unique path with fixed ordered insertion, and remove the stored scale label string from `ScaleMenuOption`.
+  - Avoid a temporary vector allocation when counting unique widget classes during layout-guide-sheet card selection.
+- Result:
+  - Helped shipped app size while preserving the single executable and existing diagnostics, menu, display-scale, and layout-guide-sheet behavior.
+- Observed effect:
+  - `build\CaseDash.exe` decreased from `1,331,712` bytes to `1,326,592` bytes.
+  - `DashboardShellUi::ShowContextMenu` decreased from about `18.4 KiB` before this pass to about `15.1 KiB` in the fresh map.
+  - `diagnostics.cpp.obj` decreased from about `71.1 KiB` before the headless callback cleanup to about `61.6 KiB`.
+  - `build\CaseDash.map.summary.txt` reports final section bytes at about `1.26 MiB`, with `.text$mn` still the dominant section at about `1.07 MiB`.
+  - Final direct benchmark checks in a noisy paint-heavy session landed at `edit-layout drag_loop=2.86 ms`, `update-telemetry update_loop=5.75 ms`, `layout-switch switch_loop=4.27 ms`, `mouse-hover hover_loop=2.53 ms`, `theme-change theme_loop=5.64 ms`, and `layout-guide-sheet sheet_loop=99.09 ms`. Earlier and later reruns in the same session moved mostly with paint cost, not the small cold-path code changes.
+- Conclusion:
+  - Keep headless diagnostics callback-free and keep tiny fixed menu data off heap containers. Release `/Gy`, `/Gw`, `/OPT:ICF`, `/GF`, and `/Zc:inline` experiments were rejected because the final code-shape wins did not need extra release flags.
+
 ## Practical Guidance For Future Experiments
 
 - Do not retry per-segment gauge fills unless the gauge is redesigned to avoid repeated GDI+ path fills entirely.

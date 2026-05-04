@@ -1336,32 +1336,37 @@ void DashboardShellUi::ShowContextMenu(
     {
         ScaleMenuOption option;
         option.commandId = kCommandScaleBase;
-        option.label = "Default";
         option.selected = !HasExplicitDisplayScale(state.config.display.scale);
         option.isDefault = true;
         state.scaleMenuOptions.push_back(option);
     }
-    std::vector<double> scaleEntries(std::begin(kPredefinedDisplayScales), std::end(kPredefinedDisplayScales));
-    if (HasExplicitDisplayScale(state.config.display.scale) && !IsPredefinedDisplayScale(state.config.display.scale)) {
-        scaleEntries.push_back(state.config.display.scale);
+    double scaleEntries[std::size(kPredefinedDisplayScales) + 1] = {};
+    size_t scaleEntryCount = 0;
+    for (double predefinedScale : kPredefinedDisplayScales) {
+        scaleEntries[scaleEntryCount++] = predefinedScale;
     }
-    std::sort(scaleEntries.begin(), scaleEntries.end());
-    scaleEntries.erase(std::unique(scaleEntries.begin(),
-                           scaleEntries.end(),
-                           [](double left, double right) { return AreScalesEqual(left, right); }),
-        scaleEntries.end());
-    for (size_t i = 0; i < scaleEntries.size() && (kCommandScaleBase + 1 + i) <= kCommandScaleMax; ++i) {
+    if (HasExplicitDisplayScale(state.config.display.scale) && !IsPredefinedDisplayScale(state.config.display.scale)) {
+        size_t insertAt = 0;
+        while (insertAt < scaleEntryCount && scaleEntries[insertAt] < state.config.display.scale) {
+            ++insertAt;
+        }
+        for (size_t i = scaleEntryCount; i > insertAt; --i) {
+            scaleEntries[i] = scaleEntries[i - 1];
+        }
+        scaleEntries[insertAt] = state.config.display.scale;
+        ++scaleEntryCount;
+    }
+    for (size_t i = 0; i < scaleEntryCount && (kCommandScaleBase + 1 + i) <= kCommandScaleMax; ++i) {
         ScaleMenuOption option;
         option.commandId = kCommandScaleBase + 1 + static_cast<UINT>(i);
         option.scale = scaleEntries[i];
-        option.label = Utf8FromWide(FormatScaleLabel(option.scale));
         option.selected = HasExplicitDisplayScale(state.config.display.scale) &&
                           AreScalesEqual(state.config.display.scale, option.scale);
         option.isCustomEntry = !IsPredefinedDisplayScale(option.scale);
         state.scaleMenuOptions.push_back(std::move(option));
     }
     for (const auto& option : state.scaleMenuOptions) {
-        const std::wstring label = WideFromUtf8(option.label);
+        const std::wstring label = option.isDefault ? L"Default" : FormatScaleLabel(option.scale);
         const UINT flags = MF_STRING | (option.selected ? MF_CHECKED : MF_UNCHECKED);
         AppendMenuW(scaleMenu, flags, option.commandId, label.c_str());
         SetMenuItemRadioStyle(scaleMenu, option.commandId);

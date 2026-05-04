@@ -3,12 +3,10 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
-#include <condition_variable>
 #include <cstdio>
 #include <cstdlib>
 #include <cwctype>
 #include <limits>
-#include <mutex>
 #include <string_view>
 #include <vector>
 
@@ -111,31 +109,51 @@ void WriteResolvedColorTraceLine(
 }
 
 void WriteResolvedColorTrace(DiagnosticsSession& diagnostics, const AppConfig& config) {
+    struct ColorsTraceField {
+        const char* name;
+        const ColorConfig ColorsConfig::* color;
+    };
+
+    static constexpr ColorsTraceField kColorFields[] = {
+        {"background_color", &ColorsConfig::backgroundColor},
+        {"foreground_color", &ColorsConfig::foregroundColor},
+        {"icon_color", &ColorsConfig::iconColor},
+        {"accent_color", &ColorsConfig::accentColor},
+        {"peak_ghost_color", &ColorsConfig::peakGhostColor},
+        {"warning_color", &ColorsConfig::warningColor},
+        {"layout_guide_color", &ColorsConfig::layoutGuideColor},
+        {"active_edit_color", &ColorsConfig::activeEditColor},
+        {"panel_border_color", &ColorsConfig::panelBorderColor},
+        {"muted_text_color", &ColorsConfig::mutedTextColor},
+        {"track_color", &ColorsConfig::trackColor},
+        {"panel_fill_color", &ColorsConfig::panelFillColor},
+        {"graph_background_color", &ColorsConfig::graphBackgroundColor},
+        {"graph_axis_color", &ColorsConfig::graphAxisColor},
+        {"graph_marker_color", &ColorsConfig::graphMarkerColor},
+    };
+
+    struct LayoutGuideSheetTraceField {
+        const char* name;
+        const ColorConfig LayoutGuideSheetConfig::* color;
+    };
+
+    static constexpr LayoutGuideSheetTraceField kSheetColorFields[] = {
+        {"callout_leader_color", &LayoutGuideSheetConfig::calloutLeaderColor},
+        {"callout_fill_color", &LayoutGuideSheetConfig::calloutFillColor},
+        {"callout_border_color", &LayoutGuideSheetConfig::calloutBorderColor},
+        {"callout_parameter_color", &LayoutGuideSheetConfig::calloutParameterColor},
+        {"callout_description_color", &LayoutGuideSheetConfig::calloutDescriptionColor},
+    };
+
     const ColorsConfig& colors = config.layout.colors;
-    WriteResolvedColorTraceLine(diagnostics, "colors", "background_color", colors.backgroundColor);
-    WriteResolvedColorTraceLine(diagnostics, "colors", "foreground_color", colors.foregroundColor);
-    WriteResolvedColorTraceLine(diagnostics, "colors", "icon_color", colors.iconColor);
-    WriteResolvedColorTraceLine(diagnostics, "colors", "accent_color", colors.accentColor);
-    WriteResolvedColorTraceLine(diagnostics, "colors", "peak_ghost_color", colors.peakGhostColor);
-    WriteResolvedColorTraceLine(diagnostics, "colors", "warning_color", colors.warningColor);
-    WriteResolvedColorTraceLine(diagnostics, "colors", "layout_guide_color", colors.layoutGuideColor);
-    WriteResolvedColorTraceLine(diagnostics, "colors", "active_edit_color", colors.activeEditColor);
-    WriteResolvedColorTraceLine(diagnostics, "colors", "panel_border_color", colors.panelBorderColor);
-    WriteResolvedColorTraceLine(diagnostics, "colors", "muted_text_color", colors.mutedTextColor);
-    WriteResolvedColorTraceLine(diagnostics, "colors", "track_color", colors.trackColor);
-    WriteResolvedColorTraceLine(diagnostics, "colors", "panel_fill_color", colors.panelFillColor);
-    WriteResolvedColorTraceLine(diagnostics, "colors", "graph_background_color", colors.graphBackgroundColor);
-    WriteResolvedColorTraceLine(diagnostics, "colors", "graph_axis_color", colors.graphAxisColor);
-    WriteResolvedColorTraceLine(diagnostics, "colors", "graph_marker_color", colors.graphMarkerColor);
+    for (const ColorsTraceField& field : kColorFields) {
+        WriteResolvedColorTraceLine(diagnostics, "colors", field.name, colors.*field.color);
+    }
 
     const LayoutGuideSheetConfig& sheet = config.layout.layoutGuideSheet;
-    WriteResolvedColorTraceLine(diagnostics, "layout_guide_sheet", "callout_leader_color", sheet.calloutLeaderColor);
-    WriteResolvedColorTraceLine(diagnostics, "layout_guide_sheet", "callout_fill_color", sheet.calloutFillColor);
-    WriteResolvedColorTraceLine(diagnostics, "layout_guide_sheet", "callout_border_color", sheet.calloutBorderColor);
-    WriteResolvedColorTraceLine(
-        diagnostics, "layout_guide_sheet", "callout_parameter_color", sheet.calloutParameterColor);
-    WriteResolvedColorTraceLine(
-        diagnostics, "layout_guide_sheet", "callout_description_color", sheet.calloutDescriptionColor);
+    for (const LayoutGuideSheetTraceField& field : kSheetColorFields) {
+        WriteResolvedColorTraceLine(diagnostics, "layout_guide_sheet", field.name, sheet.*field.color);
+    }
 }
 
 class DiagnosticsLayoutEditHost final : public LayoutEditHost {
@@ -901,33 +919,9 @@ int RunDiagnosticsHeadlessMode(const DiagnosticsOptions& diagnosticsOptions) {
     WriteResolvedColorTrace(diagnostics, config);
     diagnostics.WriteTraceMarker("diagnostics:telemetry_initialize_begin");
 
-    std::mutex telemetryMutex;
-    std::condition_variable telemetryCv;
-    TelemetryUpdate telemetryUpdate;
-    bool telemetryUpdated = false;
-
-    struct HeadlessTelemetrySink final : TelemetryUpdateSink {
-        HeadlessTelemetrySink(std::mutex& mutex, std::condition_variable& cv, TelemetryUpdate& latest, bool& updated)
-            : mutex(mutex), cv(cv), latest(latest), updated(updated) {}
-
-        std::mutex& mutex;
-        std::condition_variable& cv;
-        TelemetryUpdate& latest;
-        bool& updated;
-
-        void OnTelemetryUpdate(const TelemetryUpdate& update) override {
-            {
-                const std::lock_guard lock(mutex);
-                latest = update;
-                updated = true;
-            }
-            cv.notify_all();
-        }
-    } telemetryCallback(telemetryMutex, telemetryCv, telemetryUpdate, telemetryUpdated);
-
     std::string telemetryError;
     std::unique_ptr<TelemetryRuntime> telemetry =
-        InitializeTelemetryRuntimeInstance(config, diagnosticsOptions, trace, &telemetryCallback, &telemetryError);
+        InitializeTelemetryRuntimeInstance(config, diagnosticsOptions, trace, nullptr, &telemetryError);
     if (telemetry == nullptr) {
         std::string traceText = "diagnostics:telemetry_initialize_failed";
         if (!telemetryError.empty()) {
@@ -944,12 +938,7 @@ int RunDiagnosticsHeadlessMode(const DiagnosticsOptions& diagnosticsOptions) {
     diagnostics.WriteTraceMarker("diagnostics:telemetry_initialized");
     Sleep(1000);
     diagnostics.WriteTraceMarker("diagnostics:update_snapshot_begin");
-    {
-        std::unique_lock lock(telemetryMutex);
-        telemetryUpdated = false;
-        telemetryCv.wait_for(lock, std::chrono::seconds(2), [&] { return telemetryUpdated; });
-    }
-    telemetryUpdate = telemetry->Latest();
+    TelemetryUpdate telemetryUpdate = telemetry->Latest();
     diagnostics.WriteTraceMarker("diagnostics:update_snapshot_done");
     if (diagnosticsOptions.reload) {
         std::string reloadError;
@@ -959,7 +948,7 @@ int RunDiagnosticsHeadlessMode(const DiagnosticsOptions& diagnosticsOptions) {
                 diagnosticsOptions,
                 trace,
                 &diagnostics,
-                &telemetryCallback,
+                nullptr,
                 &reloadError)) {
             if (diagnostics.ShouldShowDialogs() && !reloadError.empty()) {
                 const std::wstring message = FormatTelemetryInitializeError(reloadError);
