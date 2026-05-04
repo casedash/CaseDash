@@ -30,6 +30,7 @@ See also: [docs/build.md](build.md) for setup and commands, [docs/layout.md](lay
 - Use `tools\update_app_icon.ps1` to rebuild the app, export compressed default-theme app-icon PNGs under `build\app_icon\`, and regenerate `resources\app.ico` from those rendered assets.
 - `package.cmd` generates the WiX dialog bitmap under `build\installer_dialog_bmp\` from the dark_cyan app icon before building the MSI; generated installer bitmaps are not committed.
 - Use `tools\update_readme_images.ps1` to update committed README screenshots under `docs\image\`.
+- Use `tools\generate_social_preview.ps1` to generate the GitHub social preview PNG under `build\social_preview\` from dark_cyan fake telemetry and a rendered app icon.
 - Keep generated build outputs inside `build\`, with `web\dist\` as the generated website output and the repo-root `vcpkg\` directory as the deliberate persistent exception for manifest-installed dependencies.
 - Keep shared vcpkg download and registry caches outside the worktree in the user-local cache root that `build.cmd` exports through `VCPKG_DOWNLOADS` and `X_VCPKG_REGISTRIES_CACHE`.
 - Keep GitHub-restored dependency caches under `.github-cache\`, which is ignored and owned by the validation workflow.

@@ -130,6 +130,8 @@ The page favicon follows the browser `prefers-color-scheme` value. The dark favi
 
 The website source does not manually mirror screenshots, guide sheets, or theme metadata for each theme.
 
+GitHub social preview artwork is generated separately by `tools\generate_social_preview.ps1`. The script writes a 1280 x 640 PNG under `build\social_preview\` by default, using the `dark_cyan` theme, fake telemetry, the built-in default config, a generated dashboard screenshot, and a generated app icon from the executable. The composition shows the app icon, white `CaseDash` wordmark, the motto `Compact Windows dashboard for dedicated PC screens`, the repository link, and the centered-right fake dashboard screenshot without feature-list boxes.
+
 The website build generates, for every configured app theme:
 
 - A dashboard screenshot using the default layout.
