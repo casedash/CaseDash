@@ -3,7 +3,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
-#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "config/config.h"
@@ -63,7 +63,7 @@ public:
     };
 
     struct ThroughputSharedState {
-        std::unordered_map<std::string, std::vector<double>> historyByMetricRef;
+        std::vector<std::pair<std::string, std::vector<double>>> historyByMetricRef;
         double networkMaxGraph = 10.0;
         double storageMaxGraph = 10.0;
         double timeMarkerOffsetSamples = 0.0;
@@ -83,13 +83,13 @@ public:
 private:
     const SystemSnapshot& snapshot_;
     const MetricsSectionConfig& metrics_;
-    mutable std::unordered_map<std::string, std::string> textCache_;
-    mutable std::unordered_map<std::string, MetricValue> metricCache_;
-    mutable std::unordered_map<std::string, std::vector<MetricValue>> metricListCache_;
-    mutable std::unordered_map<std::string, ThroughputCacheEntry> throughputCache_;
+    mutable std::vector<std::pair<std::string, std::string>> textCache_;
+    mutable std::vector<std::pair<std::string, MetricValue>> metricCache_;
+    mutable std::vector<std::pair<std::string, std::vector<MetricValue>>> metricListCache_;
+    mutable std::vector<std::pair<std::string, ThroughputCacheEntry>> throughputCache_;
     mutable std::optional<ThroughputSharedState> throughputSharedState_;
     mutable std::optional<std::string> networkFooterCache_;
     mutable std::optional<std::vector<DriveRow>> driveRowsCache_;
-    mutable std::unordered_map<std::string, std::string> clockTimeCache_;
-    mutable std::unordered_map<std::string, std::string> clockDateCache_;
+    mutable std::vector<std::pair<std::string, std::string>> clockTimeCache_;
+    mutable std::vector<std::pair<std::string, std::string>> clockDateCache_;
 };

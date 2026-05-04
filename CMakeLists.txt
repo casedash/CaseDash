@@ -161,7 +161,6 @@ add_executable(CaseDash WIN32
     src/util/resource_loader.cpp
     src/layout_edit/impl/layout_snap_solver.cpp
     src/util/numeric_safety.cpp
-    src/util/scale.cpp
     src/telemetry/impl/system_info_support.cpp
     src/telemetry/telemetry.cpp
     src/telemetry/impl/collector.cpp
@@ -175,7 +174,6 @@ add_executable(CaseDash WIN32
     src/telemetry/impl/collector_storage_selection.cpp
     src/telemetry/impl/collector_network.cpp
     src/telemetry/impl/collector_real.cpp
-    src/telemetry/impl/collector.cpp
     src/telemetry/impl/collector_fake.cpp
     src/diagnostics/snapshot_dump.cpp
     src/telemetry/fps_provider.cpp

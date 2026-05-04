@@ -588,22 +588,11 @@ const MetricBinding kPrefixBindings[] = {
     MetricBinding::PrefixValue(kBoardFanPrefix, MetricDisplayStyle::Scalar, &ResolveBoardFanMetric),
 };
 
-const std::unordered_map<std::string_view, const MetricBinding*>& ExactMetricBindingIndex() {
-    static const auto index = [] {
-        std::unordered_map<std::string_view, const MetricBinding*> bindings;
-        bindings.reserve(std::size(kExactBindings));
-        for (const auto& binding : kExactBindings) {
-            bindings.emplace(binding.key, &binding);
-        }
-        return bindings;
-    }();
-    return index;
-}
-
 MetricBindingMatch FindMetricBinding(std::string_view metricRef) {
-    const auto exactIt = ExactMetricBindingIndex().find(metricRef);
-    if (exactIt != ExactMetricBindingIndex().end()) {
-        return MetricBindingMatch{exactIt->second, {}};
+    for (const auto& binding : kExactBindings) {
+        if (binding.key == metricRef) {
+            return MetricBindingMatch{&binding, {}};
+        }
     }
     for (const auto& binding : kPrefixBindings) {
         if (metricRef.rfind(binding.key, 0) == 0) {
@@ -628,10 +617,24 @@ std::optional<MetricValue> ResolveMetricValue(
     return match.binding->resolveMetric(snapshot, *definition, metricRef, match.logicalName);
 }
 
+template <typename Value>
+Value* FindCachedValue(std::vector<std::pair<std::string, Value>>& cache, std::string_view key) {
+    for (auto& entry : cache) {
+        if (entry.first == key) {
+            return &entry.second;
+        }
+    }
+    return nullptr;
+}
+
 const std::vector<double>* FindThroughputHistory(
     const MetricSource::ThroughputSharedState& state, std::string_view metricRef) {
-    const auto it = state.historyByMetricRef.find(std::string(metricRef));
-    return it != state.historyByMetricRef.end() ? &it->second : nullptr;
+    for (const auto& entry : state.historyByMetricRef) {
+        if (entry.first == metricRef) {
+            return &entry.second;
+        }
+    }
+    return nullptr;
 }
 
 double ResolveThroughputGraphMax(const MetricSource::ThroughputSharedState& state, const MetricBinding& binding) {
@@ -649,14 +652,14 @@ double ResolveThroughputGraphMax(const MetricSource::ThroughputSharedState& stat
 void InitializeThroughputSharedState(const SystemSnapshot& snapshot, MetricSource::ThroughputSharedState& state) {
     std::vector<const std::vector<double>*> networkHistories;
     std::vector<const std::vector<double>*> storageHistories;
+    state.historyByMetricRef.reserve(4);
     for (const auto& binding : kExactBindings) {
         if (!BindingSupportsPayload(binding, MetricPayloadKind::Throughput)) {
             continue;
         }
-        auto [it, inserted] = state.historyByMetricRef.emplace(std::string(binding.key),
+        state.historyByMetricRef.emplace_back(std::string(binding.key),
             SmoothThroughputHistory(ResolveRetainedHistorySamples(snapshot, std::string(binding.key))));
-        (void)inserted;
-        const auto* history = &it->second;
+        const auto* history = &state.historyByMetricRef.back().second;
         if (binding.throughputGroup == ThroughputGraphGroup::Network) {
             networkHistories.push_back(history);
         } else if (binding.throughputGroup == ThroughputGraphGroup::Storage) {
@@ -818,9 +821,8 @@ MetricSource::MetricSource(const SystemSnapshot& snapshot, const MetricsSectionC
     : snapshot_(snapshot), metrics_(metrics) {}
 
 const std::string& MetricSource::ResolveText(const std::string& metricRef) const {
-    const auto cached = textCache_.find(metricRef);
-    if (cached != textCache_.end()) {
-        return cached->second;
+    if (const auto* cached = FindCachedValue(textCache_, metricRef); cached != nullptr) {
+        return *cached;
     }
 
     std::string resolved = "N/A";
@@ -829,20 +831,21 @@ const std::string& MetricSource::ResolveText(const std::string& metricRef) const
         match.binding->resolveText != nullptr) {
         resolved = match.binding->resolveText(snapshot_, match.logicalName);
     }
-    return textCache_.emplace(metricRef, std::move(resolved)).first->second;
+    textCache_.emplace_back(metricRef, std::move(resolved));
+    return textCache_.back().second;
 }
 
 const MetricValue& MetricSource::ResolveMetric(const std::string& metricRef) const {
-    const auto cached = metricCache_.find(metricRef);
-    if (cached != metricCache_.end()) {
-        return cached->second;
+    if (const auto* cached = FindCachedValue(metricCache_, metricRef); cached != nullptr) {
+        return *cached;
     }
 
     MetricValue metric;
     if (auto resolved = ResolveMetricValue(snapshot_, metrics_, metricRef); resolved.has_value()) {
         metric = std::move(*resolved);
     }
-    return metricCache_.emplace(metricRef, std::move(metric)).first->second;
+    metricCache_.emplace_back(metricRef, std::move(metric));
+    return metricCache_.back().second;
 }
 
 const std::vector<MetricValue>& MetricSource::ResolveMetricList(const std::vector<std::string>& metricRefs) const {
@@ -852,9 +855,8 @@ const std::vector<MetricValue>& MetricSource::ResolveMetricList(const std::vecto
         key += '\n';
     }
 
-    const auto cached = metricListCache_.find(key);
-    if (cached != metricListCache_.end()) {
-        return cached->second;
+    if (const auto* cached = FindCachedValue(metricListCache_, key); cached != nullptr) {
+        return *cached;
     }
 
     std::vector<MetricValue> rows;
@@ -864,13 +866,13 @@ const std::vector<MetricValue>& MetricSource::ResolveMetricList(const std::vecto
             rows.push_back(*row);
         }
     }
-    return metricListCache_.emplace(key, std::move(rows)).first->second;
+    metricListCache_.emplace_back(std::move(key), std::move(rows));
+    return metricListCache_.back().second;
 }
 
 const ThroughputMetric& MetricSource::ResolveThroughput(const std::string& metricRef) const {
-    const auto cached = throughputCache_.find(metricRef);
-    if (cached != throughputCache_.end()) {
-        return cached->second.metric;
+    if (const auto* cached = FindCachedValue(throughputCache_, metricRef); cached != nullptr) {
+        return cached->metric;
     }
 
     if (!throughputSharedState_.has_value()) {
@@ -899,7 +901,8 @@ const ThroughputMetric& MetricSource::ResolveThroughput(const std::string& metri
         metric.label = definition->label;
         metric.valueText = FormatMetricValueText(*definition, metricRef, metric.valueMbps);
     }
-    return throughputCache_.emplace(metricRef, ThroughputCacheEntry{metric}).first->second.metric;
+    throughputCache_.emplace_back(metricRef, ThroughputCacheEntry{metric});
+    return throughputCache_.back().second.metric;
 }
 
 const std::string& MetricSource::ResolveNetworkFooter() const {
@@ -947,18 +950,18 @@ const std::vector<DriveRow>& MetricSource::ResolveDriveRows() const {
 
 const std::string& MetricSource::ResolveClockTime(std::string_view format) const {
     const std::string key(format);
-    const auto cached = clockTimeCache_.find(key);
-    if (cached != clockTimeCache_.end()) {
-        return cached->second;
+    if (const auto* cached = FindCachedValue(clockTimeCache_, key); cached != nullptr) {
+        return *cached;
     }
-    return clockTimeCache_.emplace(key, FormatClockTime(snapshot_.now, format)).first->second;
+    clockTimeCache_.emplace_back(key, FormatClockTime(snapshot_.now, format));
+    return clockTimeCache_.back().second;
 }
 
 const std::string& MetricSource::ResolveClockDate(std::string_view format) const {
     const std::string key(format);
-    const auto cached = clockDateCache_.find(key);
-    if (cached != clockDateCache_.end()) {
-        return cached->second;
+    if (const auto* cached = FindCachedValue(clockDateCache_, key); cached != nullptr) {
+        return *cached;
     }
-    return clockDateCache_.emplace(key, FormatClockDate(snapshot_.now, format)).first->second;
+    clockDateCache_.emplace_back(key, FormatClockDate(snapshot_.now, format));
+    return clockDateCache_.back().second;
 }
