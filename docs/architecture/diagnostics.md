@@ -15,6 +15,7 @@
 ## Boundaries
 
 - Diagnostics orchestrates exports but uses live runtime state and the shared renderer scene instead of a separate rendering implementation.
+- Renderer owns generated pixel-buffer PNG encoding; diagnostics may delegate app-icon bitmap writes to renderer instead of owning PNG compression details.
 - `src/util/trace.*` owns trace line emission plus generic trace value formatting and quoting helpers.
 - Layout-guide-sheet planning and rendering live in `layout_guide_sheet`; diagnostics owns the export command and trace records.
 - Diagnostics behavior and validation recipes are specified in [docs/diagnostics.md](../diagnostics.md).

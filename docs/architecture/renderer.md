@@ -5,7 +5,7 @@
 ## Responsibilities
 
 - Provide primitive drawing for text, rectangles, rounded rectangles, ellipses, lines, arcs, polylines, filled paths, clips, and translations.
-- Own live HWND rendering, text measurement, shared offscreen bitmap rendering for screenshot export and validation priming, and icon loading.
+- Own live HWND rendering, text measurement, shared offscreen bitmap rendering for screenshot export and validation priming, icon loading, and compressed PNG encoding for generated renderer-owned pixel buffers.
 - Keep resolved RGBA palettes private and map render color ids internally.
 - Decode embedded panel icons through WIC and upload render-target-local Direct2D bitmaps as needed.
 - Use non-owning `FunctionRef` views for synchronous draw and measurement callbacks; callback storage remains owned by the caller.

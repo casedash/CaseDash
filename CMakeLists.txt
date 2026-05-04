@@ -166,6 +166,7 @@ add_executable(CaseDash WIN32
     src/layout_model/dashboard_overlay_state.cpp
     src/widget/card_chrome_layout.cpp
     src/renderer/renderer.cpp
+    src/renderer/png_export.cpp
     src/renderer/render_types.cpp
     src/renderer/impl/d2d_renderer.cpp
     src/renderer/impl/d2d_cache.cpp
@@ -241,6 +242,7 @@ set(casedash_release_speed_sources
     src/layout_model/layout_edit_parameter_metadata.cpp
     src/layout_model/layout_edit_service.cpp
     src/renderer/renderer.cpp
+    src/renderer/png_export.cpp
     src/renderer/render_types.cpp
     src/renderer/impl/d2d_cache.cpp
     src/renderer/impl/d2d_render_conversions.cpp
@@ -506,6 +508,7 @@ add_executable(CaseDashTests
     src/telemetry/metrics.cpp
     src/widget/card_chrome_layout.cpp
     src/renderer/renderer.cpp
+    src/renderer/png_export.cpp
     src/widget/widget.cpp
     src/widget/layout_edit_types.cpp
     src/widget/impl/card_chrome.cpp
@@ -531,6 +534,7 @@ add_executable(CaseDashTests
     src/layout_guide_sheet/impl/layout_guide_sheet_renderer.cpp
     src/dashboard_renderer/dashboard_renderer.cpp
     src/diagnostics/snapshot_dump.cpp
+    src/diagnostics/app_icon_export.cpp
     src/layout_guide_sheet/layout_guide_sheet.cpp
     src/layout_guide_sheet/impl/layout_guide_sheet_planner.cpp
     src/telemetry/impl/collector_fake.cpp
@@ -654,6 +658,7 @@ add_executable(CaseDashBenchmarks
     src/layout_model/dashboard_overlay_state.cpp
     src/widget/card_chrome_layout.cpp
     src/renderer/renderer.cpp
+    src/renderer/png_export.cpp
     src/renderer/render_types.cpp
     src/renderer/impl/d2d_renderer.cpp
     src/renderer/impl/d2d_cache.cpp

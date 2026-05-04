@@ -1,7 +1,10 @@
 #include <cstdlib>
 #include <gtest/gtest.h>
+#include <optional>
 
 #include "config/config.h"
+#include "diagnostics/app_icon_export.h"
+#include "util/file_path.h"
 #include "widget/app_icon_geometry.h"
 
 namespace {
@@ -63,4 +66,20 @@ TEST(AppIconRenderer, ValidatesSupportedSizes) {
     EXPECT_TRUE(IsValidAppIconSize(16));
     EXPECT_TRUE(IsValidAppIconSize(1024));
     EXPECT_FALSE(IsValidAppIconSize(1025));
+}
+
+TEST(AppIconRenderer, SavesCompressedPng) {
+    const FilePath outputPath = TempDirectoryPath() / "casedash_test_app_icon.png";
+    RemoveFileIfExists(outputPath);
+
+    std::string errorText;
+    ASSERT_TRUE(SaveAppIconPng(outputPath, TestIconConfig(), 128, &errorText)) << errorText;
+
+    const std::optional<std::string> png = ReadFileBinary(outputPath);
+    ASSERT_TRUE(png.has_value());
+    ASSERT_GE(png->size(), 8u);
+    EXPECT_EQ(png->substr(0, 8), std::string("\x89PNG\r\n\x1A\n", 8u));
+    EXPECT_LT(png->size(), 20u * 1024u);
+
+    RemoveFileIfExists(outputPath);
 }

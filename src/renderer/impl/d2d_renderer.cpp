@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "renderer/impl/d2d_render_conversions.h"
+#include "renderer/png_export.h"
 #include "resource.h"
 #include "util/strings.h"
 #include "util/utf8.h"
@@ -445,99 +446,12 @@ bool D2DRenderer::SaveWicBitmapPng(IWICBitmap* bitmap, const FilePath& imagePath
         return false;
     }
 
-    Microsoft::WRL::ComPtr<IWICStream> stream;
-    HRESULT hr = wicFactory_->CreateStream(stream.GetAddressOf());
-    if (FAILED(hr) || stream == nullptr) {
-        lastError_ = "renderer:screenshot_stream_failed hr=" + FormatHresult(hr);
+    std::string errorText;
+    if (!SaveWicBitmapSourcePng(
+            wicFactory_.Get(), bitmap, imagePath, PngPixelFormat::BgrOpaque, "renderer:screenshot", &errorText)) {
+        lastError_ = std::move(errorText);
         return false;
     }
-
-    hr = stream->InitializeFromFilename(imagePath.c_str(), GENERIC_WRITE);
-    if (FAILED(hr)) {
-        lastError_ = "renderer:screenshot_stream_open_failed hr=" + FormatHresult(hr) + " path=\"" +
-                     Utf8FromWide(imagePath.wstring()) + "\"";
-        return false;
-    }
-
-    Microsoft::WRL::ComPtr<IWICBitmapEncoder> encoder;
-    hr = wicFactory_->CreateEncoder(GUID_ContainerFormatPng, nullptr, encoder.GetAddressOf());
-    if (FAILED(hr) || encoder == nullptr) {
-        lastError_ = "renderer:screenshot_encoder_failed hr=" + FormatHresult(hr);
-        return false;
-    }
-
-    hr = encoder->Initialize(stream.Get(), WICBitmapEncoderNoCache);
-    if (FAILED(hr)) {
-        lastError_ = "renderer:screenshot_encoder_init_failed hr=" + FormatHresult(hr);
-        return false;
-    }
-
-    Microsoft::WRL::ComPtr<IWICBitmapFrameEncode> frame;
-    hr = encoder->CreateNewFrame(frame.GetAddressOf(), nullptr);
-    if (FAILED(hr) || frame == nullptr) {
-        lastError_ = "renderer:screenshot_frame_failed hr=" + FormatHresult(hr);
-        return false;
-    }
-
-    hr = frame->Initialize(nullptr);
-    if (FAILED(hr)) {
-        lastError_ = "renderer:screenshot_frame_init_failed hr=" + FormatHresult(hr);
-        return false;
-    }
-
-    UINT width = 0;
-    UINT height = 0;
-    hr = bitmap->GetSize(&width, &height);
-    if (FAILED(hr)) {
-        lastError_ = "renderer:screenshot_bitmap_size_failed hr=" + FormatHresult(hr);
-        return false;
-    }
-
-    hr = frame->SetSize(width, height);
-    if (FAILED(hr)) {
-        lastError_ = "renderer:screenshot_frame_size_failed hr=" + FormatHresult(hr);
-        return false;
-    }
-
-    Microsoft::WRL::ComPtr<IWICFormatConverter> converter;
-    hr = wicFactory_->CreateFormatConverter(converter.GetAddressOf());
-    if (FAILED(hr) || converter == nullptr) {
-        lastError_ = "renderer:screenshot_converter_failed hr=" + FormatHresult(hr);
-        return false;
-    }
-
-    hr = converter->Initialize(
-        bitmap, GUID_WICPixelFormat24bppBGR, WICBitmapDitherTypeNone, nullptr, 0.0, WICBitmapPaletteTypeCustom);
-    if (FAILED(hr)) {
-        lastError_ = "renderer:screenshot_converter_init_failed hr=" + FormatHresult(hr);
-        return false;
-    }
-
-    WICPixelFormatGUID pixelFormat = GUID_WICPixelFormat24bppBGR;
-    hr = frame->SetPixelFormat(&pixelFormat);
-    if (FAILED(hr)) {
-        lastError_ = "renderer:screenshot_frame_format_failed hr=" + FormatHresult(hr);
-        return false;
-    }
-
-    hr = frame->WriteSource(converter.Get(), nullptr);
-    if (FAILED(hr)) {
-        lastError_ = "renderer:screenshot_frame_write_failed hr=" + FormatHresult(hr);
-        return false;
-    }
-
-    hr = frame->Commit();
-    if (FAILED(hr)) {
-        lastError_ = "renderer:screenshot_frame_commit_failed hr=" + FormatHresult(hr);
-        return false;
-    }
-
-    hr = encoder->Commit();
-    if (FAILED(hr)) {
-        lastError_ = "renderer:screenshot_commit_failed hr=" + FormatHresult(hr);
-        return false;
-    }
-
     return true;
 }
 

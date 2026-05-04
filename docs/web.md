@@ -147,7 +147,7 @@ Generated dashboard screenshots use:
 
 Generated layout guide sheets use the same config, fake/default data, scale, and selected theme. The guide sheet generation uses the diagnostics layout-guide-sheet output instead of a separate web-only renderer.
 
-Generated screenshots, guide sheets, and website app icons are not committed. Generated files are written under the web build output so repository roots and documentation image folders stay clean. Generated dashboard screenshots and layout guide sheets are encoded as opaque 24-bit PNGs; generated app icons retain alpha.
+Generated screenshots, guide sheets, and website app icons are not committed. Generated files are written under the web build output so repository roots and documentation image folders stay clean. Generated dashboard screenshots and layout guide sheets are encoded as opaque 24-bit PNGs; generated app icons retain alpha and use compressed PNG output.
 
 ## Source Layout
 
