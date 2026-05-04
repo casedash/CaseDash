@@ -15,7 +15,7 @@ Use the following maintained references and keep them in sync before finishing w
 
 Keep a single source of truth for examples, format descriptions, and configuration-language references. Document requirements briefly in the owning spec using present-tense steady-state language.
 
-Write minimal commit messages: one line starting with an action verb such as `Added`, `Changed`, `Refactored`, or `Removed`, followed by a short summary of the code or logic change. Mention docs only when docs are the explicit task.
+Write commit messages with a concise subject starting with an action verb. Good examples include `Added`, `Changed`, `Fixed`, `Improved`, `Refactored`, and `Removed`. For batches with multiple meaningful changes, add a short body with tight bullets describing what changed or improved. Mention docs only when docs are the explicit task.
 
 ## Build And Validation
 
