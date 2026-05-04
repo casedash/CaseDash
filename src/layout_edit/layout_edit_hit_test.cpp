@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
-#include <set>
 #include <string>
 #include <tuple>
 
@@ -89,9 +88,14 @@ std::vector<LayoutEditWidgetRegion> CollectSimilarityIndicatorWidgets(
             return std::tie(cardId, widgetClass, extent, edgeStart, edgeEnd) <
                    std::tie(other.cardId, other.widgetClass, other.extent, other.edgeStart, other.edgeEnd);
         }
+
+        bool operator==(const SimilarityRepresentativeKey& other) const {
+            return cardId == other.cardId && widgetClass == other.widgetClass && extent == other.extent &&
+                   edgeStart == other.edgeStart && edgeEnd == other.edgeEnd;
+        }
     };
 
-    std::set<SimilarityRepresentativeKey> seenKeys;
+    std::vector<SimilarityRepresentativeKey> seenKeys;
     std::vector<LayoutEditWidgetRegion> widgets;
     for (const LayoutEditActiveRegion& region : regions) {
         if (region.kind != LayoutEditActiveRegionKind::WidgetHover) {
@@ -116,9 +120,10 @@ std::vector<LayoutEditWidgetRegion> CollectSimilarityIndicatorWidgets(
             key.edgeStart = widget.rect.top;
             key.edgeEnd = widget.rect.bottom;
         }
-        if (!seenKeys.insert(std::move(key)).second) {
+        if (std::find(seenKeys.begin(), seenKeys.end(), key) != seenKeys.end()) {
             continue;
         }
+        seenKeys.push_back(std::move(key));
         widgets.push_back(widget);
     }
     return widgets;
@@ -423,6 +428,10 @@ std::vector<LayoutGuideSnapCandidate> CollectLayoutGuideSnapCandidates(
             }
             return extent < other.extent;
         }
+
+        bool operator==(const SimilarityTypeKey& other) const {
+            return widgetClass == other.widgetClass && extent == other.extent;
+        }
     };
 
     std::vector<LayoutEditWidgetRegion> allWidgets = CollectSimilarityIndicatorWidgets(regions, guide.axis);
@@ -439,16 +448,17 @@ std::vector<LayoutGuideSnapCandidate> CollectLayoutGuideSnapCandidates(
         if (startExtent <= 0) {
             continue;
         }
-        std::set<SimilarityTypeKey> seenTargets;
+        std::vector<SimilarityTypeKey> seenTargets;
         for (size_t i = 0; i < allWidgets.size(); ++i) {
             const LayoutEditWidgetRegion& target = allWidgets[i];
             if (MatchesWidgetIdentity(target.widget, affected.widget) || target.widgetClass != affected.widgetClass) {
                 continue;
             }
             const SimilarityTypeKey typeKey{target.widgetClass, WidgetExtentForAxis(target, guide.axis)};
-            if (!seenTargets.insert(typeKey).second) {
+            if (std::find(seenTargets.begin(), seenTargets.end(), typeKey) != seenTargets.end()) {
                 continue;
             }
+            seenTargets.push_back(typeKey);
             candidates.push_back(LayoutGuideSnapCandidate{
                 affected.widget,
                 typeKey.extent,

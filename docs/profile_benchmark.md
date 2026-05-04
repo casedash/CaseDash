@@ -963,6 +963,22 @@ These changes produced real wins and remain in the codebase:
 - Conclusion:
   - Keep the benchmark executable opt-in. Routine validation and release builds do not need it, while profiling and direct benchmark work can still request it explicitly.
 
+### Hypothesis: Replace small fixed lookups with compact scans and dense buckets
+
+- Change:
+  - Replace `EnumFromString`'s per-enum static `std::unordered_map` with a linear scan over the existing constexpr name table.
+  - Replace the renderer's icon deduplication `std::set`, layout-edit similarity `std::set` instances, snap extent `std::map`, and layout resolver widget-class `std::map` with compact vectors or dense enum-indexed buckets.
+  - Define `_HAS_EXCEPTIONS=0` for the C++/CLI bridge targets as well as the native app target, while preserving the managed `try`/`catch` blocks used by the hardware-provider bridge code.
+- Result:
+  - Helped shipped app size modestly without splitting the executable, dropping features, or moving maintained performance loops out of range.
+- Observed effect:
+  - `build\CaseDash.exe` decreased from `1,360,896` bytes to `1,352,192` bytes in the side-map build.
+  - The fresh app map reports `loadcfg.obj` at about `28.8 KiB`, down from about `31.0 KiB`, after removing native exception support from the bridge targets.
+  - Direct benchmark checks landed at `edit-layout drag_loop=2.32 ms`, `update-telemetry update_loop=4.83 ms`, `layout-switch switch_loop=3.64 ms`, `mouse-hover hover_loop=2.19 ms`, `theme-change theme_loop=4.73 ms`, and `layout-guide-sheet sheet_loop=87.04 ms`.
+  - Broadly removing the maintained `/O2` per-source speed list and adding `/GF` were tested and rejected because they did not reduce `build\CaseDash.exe`.
+- Conclusion:
+  - Keep the compact fixed-table lookups, dense widget-class grouping, small-vector caches, and bridge exception setting. The remaining 10% target is not visible in the current map as one safe code-shape change; larger savings likely require deeper rewrites of large cold subsystems while preserving the single-executable feature set.
+
 ## Practical Guidance For Future Experiments
 
 - Do not retry per-segment gauge fills unless the gauge is redesigned to avoid repeated GDI+ path fills entirely.

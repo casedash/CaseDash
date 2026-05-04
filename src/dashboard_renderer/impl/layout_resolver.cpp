@@ -1,7 +1,6 @@
 #include "dashboard_renderer/impl/layout_resolver.h"
 
 #include <algorithm>
-#include <map>
 
 #include "dashboard_renderer/dashboard_renderer.h"
 #include "layout_model/layout_edit_parameter_metadata.h"
@@ -983,16 +982,19 @@ bool DashboardLayoutResolver::ResolveLayout(DashboardRenderer& renderer, bool in
     }
 
     if (includeWidgetState) {
-        std::map<WidgetClass, std::vector<WidgetLayout*>> widgetGroups;
+        std::vector<std::vector<WidgetLayout*>> widgetGroups(EnumStringTraits<WidgetClass>::names.size());
         for (auto& card : resolvedLayout_.cards) {
             for (auto& widget : card.widgets) {
                 if (widget.widget == nullptr) {
                     continue;
                 }
-                widgetGroups[widget.widget->Class()].push_back(&widget);
+                const size_t classIndex = static_cast<size_t>(widget.widget->Class());
+                if (classIndex < widgetGroups.size()) {
+                    widgetGroups[classIndex].push_back(&widget);
+                }
             }
         }
-        for (auto& [_, group] : widgetGroups) {
+        for (auto& group : widgetGroups) {
             if (!group.empty() && group.front()->widget != nullptr) {
                 group.front()->widget->FinalizeLayoutGroup(renderer, group);
             }

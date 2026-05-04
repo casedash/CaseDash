@@ -1,7 +1,7 @@
 #include "layout_edit/impl/layout_snap_solver.h"
 
 #include <algorithm>
-#include <map>
+#include <utility>
 
 namespace layout_snap_solver {
 
@@ -32,14 +32,16 @@ std::optional<int> FindNearestSnapWeight(int currentWeight,
             continue;
         }
 
-        std::map<int, std::optional<int>> extentCache;
+        std::vector<std::pair<int, std::optional<int>>> extentCache;
         auto evaluateCached = [&](int firstWeight) -> std::optional<int> {
-            const auto cached = extentCache.find(firstWeight);
+            const auto cached = std::find_if(extentCache.begin(), extentCache.end(), [firstWeight](const auto& entry) {
+                return entry.first == firstWeight;
+            });
             if (cached != extentCache.end()) {
                 return cached->second;
             }
             std::optional<int> extent = evaluateExtent(firstWeight);
-            extentCache.emplace(firstWeight, extent);
+            extentCache.emplace_back(firstWeight, extent);
             return extent;
         };
 

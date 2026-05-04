@@ -329,6 +329,7 @@ target_compile_definitions(CaseDashGigabyte PRIVATE
     _UNICODE
     NOMINMAX
     WIN32_LEAN_AND_MEAN
+    _HAS_EXCEPTIONS=0
 )
 
 target_compile_definitions(CaseDashMsi PRIVATE
@@ -336,6 +337,7 @@ target_compile_definitions(CaseDashMsi PRIVATE
     _UNICODE
     NOMINMAX
     WIN32_LEAN_AND_MEAN
+    _HAS_EXCEPTIONS=0
 )
 
 target_compile_options(CaseDashGigabyte PRIVATE
@@ -373,6 +375,7 @@ target_compile_definitions(CaseDash PRIVATE
     _UNICODE
     NOMINMAX
     WIN32_LEAN_AND_MEAN
+    _HAS_EXCEPTIONS=0
     _USE_STD_VECTOR_ALGORITHMS=0
 )
 

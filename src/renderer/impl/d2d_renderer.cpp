@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
-#include <set>
 #include <utility>
 
 #include "renderer/impl/d2d_render_conversions.h"
@@ -1055,11 +1054,16 @@ bool D2DRenderer::LoadIcons() {
     if (wicFactory_ == nullptr && !InitializeWic()) {
         return false;
     }
-    std::set<std::string> uniqueIcons(style_.iconNames.begin(), style_.iconNames.end());
-    for (const auto& iconName : uniqueIcons) {
+    std::vector<std::string> uniqueIcons;
+    uniqueIcons.reserve(style_.iconNames.size());
+    for (const auto& iconName : style_.iconNames) {
         if (iconName.empty()) {
             continue;
         }
+        if (std::find(uniqueIcons.begin(), uniqueIcons.end(), iconName) != uniqueIcons.end()) {
+            continue;
+        }
+        uniqueIcons.push_back(iconName);
         const UINT resourceId = GetIconResourceId(iconName);
         if (resourceId == 0) {
             lastError_ = "renderer:icon_unknown name=\"" + iconName + "\"";
