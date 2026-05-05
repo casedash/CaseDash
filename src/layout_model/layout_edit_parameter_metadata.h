@@ -27,7 +27,6 @@ struct LayoutEditConfigFieldMetadata {
 
 struct LayoutEditParameterInfo {
     LayoutEditParameter parameter = LayoutEditParameter::MetricListLabelWidth;
-    const LayoutEditConfigFieldMetadata* field = nullptr;
 };
 
 const LayoutEditParameterInfo& GetLayoutEditParameterInfo(LayoutEditParameter parameter);

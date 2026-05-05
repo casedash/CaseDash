@@ -57,19 +57,20 @@ std::string HumanizeSnakeCase(std::string_view value) {
     return text;
 }
 
-template <typename Meta> const LayoutEditConfigFieldMetadata& GetFieldMetadata() {
-    static const LayoutEditConfigFieldMetadata metadata{
-        Meta::section_name,
-        Meta::parameter_name,
-        Meta::traits_type::value_format,
-        RuntimeFieldValueKindFor<typename Meta::value_type>(),
-        RuntimeFieldPolicyFor<typename Meta::traits_type::policy_tag>(),
-        RootFieldOffset<Meta>(),
-    };
-    return metadata;
-}
+#define CASEDASH_DECLARE_LAYOUT_EDIT_PARAMETER_METADATA(name, meta)                                                    \
+    {meta::section_name,                                                                                               \
+        meta::parameter_name,                                                                                          \
+        meta::traits_type::value_format,                                                                               \
+        RuntimeFieldValueKindFor<typename meta::value_type>(),                                                         \
+        RuntimeFieldPolicyFor<typename meta::traits_type::policy_tag>(),                                               \
+        RootFieldOffset<meta>()},
 
-#define CASEDASH_DECLARE_LAYOUT_EDIT_PARAMETER_INFO(name, meta) {Parameter::name, &GetFieldMetadata<meta>()},
+const LayoutEditConfigFieldMetadata kParameterFields[] = {
+    CASEDASH_LAYOUT_EDIT_PARAMETER_ITEMS(CASEDASH_DECLARE_LAYOUT_EDIT_PARAMETER_METADATA)};
+
+#undef CASEDASH_DECLARE_LAYOUT_EDIT_PARAMETER_METADATA
+
+#define CASEDASH_DECLARE_LAYOUT_EDIT_PARAMETER_INFO(name, meta) {Parameter::name},
 
 const LayoutEditParameterInfo kParameterInfo[] = {
     CASEDASH_LAYOUT_EDIT_PARAMETER_ITEMS(CASEDASH_DECLARE_LAYOUT_EDIT_PARAMETER_INFO)};
@@ -77,6 +78,7 @@ const LayoutEditParameterInfo kParameterInfo[] = {
 #undef CASEDASH_DECLARE_LAYOUT_EDIT_PARAMETER_INFO
 
 constexpr size_t kParameterInfoCount = sizeof(kParameterInfo) / sizeof(kParameterInfo[0]);
+static_assert(kParameterInfoCount == sizeof(kParameterFields) / sizeof(kParameterFields[0]));
 static_assert(kParameterInfoCount == static_cast<size_t>(Parameter::Count));
 
 }  // namespace
@@ -86,7 +88,7 @@ const LayoutEditParameterInfo& GetLayoutEditParameterInfo(LayoutEditParameter pa
 }
 
 const LayoutEditConfigFieldMetadata& GetLayoutEditConfigFieldMetadata(LayoutEditParameter parameter) {
-    return *GetLayoutEditParameterInfo(parameter).field;
+    return kParameterFields[static_cast<size_t>(parameter)];
 }
 
 bool IsFontLayoutEditParameter(LayoutEditParameter parameter) {

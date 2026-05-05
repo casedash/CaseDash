@@ -769,6 +769,18 @@ target_sources(CaseDashBenchmarks PRIVATE
     $<TARGET_OBJECTS:CaseDashGigabyte>
     $<TARGET_OBJECTS:CaseDashMsi>
 )
+
+get_target_property(casedash_release_inline_limited_sources CaseDash SOURCES)
+get_target_property(casedash_benchmarks_sources CaseDashBenchmarks SOURCES)
+list(APPEND casedash_release_inline_limited_sources ${casedash_benchmarks_sources})
+list(FILTER casedash_release_inline_limited_sources INCLUDE REGEX "\\.cpp$")
+list(REMOVE_DUPLICATES casedash_release_inline_limited_sources)
+list(REMOVE_ITEM casedash_release_inline_limited_sources ${casedash_release_noinline_sources})
+# Size: /Ob1 measured smaller for normal Release sources while the cold-path list keeps /Ob0.
+set_property(SOURCE ${casedash_release_inline_limited_sources} APPEND PROPERTY
+    COMPILE_OPTIONS "$<$<CONFIG:Release>:/Ob1>"
+)
+
 target_include_directories(CaseDashBenchmarks PRIVATE
     "${CMAKE_SOURCE_DIR}/src"
     "${CMAKE_SOURCE_DIR}/resources"

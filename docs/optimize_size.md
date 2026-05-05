@@ -14,11 +14,11 @@ This document owns executable-size assumptions, constraints, map workflow notes,
 
 ## Current State
 
-- Current measured `build\CaseDash.exe`: `1,097,728` bytes.
+- Current measured `build\CaseDash.exe`: `1,076,224` bytes.
 - Current app map summary: `build\CaseDash.map.summary.txt`.
-- Current largest sections: `.text$mn` about `852.8 KiB`, `.rdata` about `89.7 KiB`, `.pdata` about `41.6 KiB`, `.rsrc$02` about `32.5 KiB`, and `.xdata` about `20.5 KiB`.
-- Current largest project objects: `diagnostics.cpp.obj`, `editors.cpp.obj`, `dashboard_app.cpp.obj`, `dashboard_shell_ui.cpp.obj`, `dashboard_controller.cpp.obj`, `CaseDash.rc.res`, `dashboard_renderer.cpp.obj`, `layout_resolver.cpp.obj`, `layout_guide_sheet_renderer.cpp.obj`, and `d2d_renderer.cpp.obj`.
-- Last validation: `format.cmd`, `build.cmd`, `test.cmd`, `build\CaseDash.exe /default-config /fake /exit /trace:build\validation_size_noinline_trace.txt /dump:build\validation_size_noinline_dump.txt /screenshot:build\validation_size_noinline_screenshot.png /layout-guide-sheet:build\validation_size_noinline_sheet.png /save-full-config:build\validation_size_noinline_full_config.ini`, `build.cmd Release /benchmarks`, `build\CaseDashBenchmarks.exe layout-switch 240 2`, `build\CaseDashBenchmarks.exe theme-change 240 2`, `build\CaseDashBenchmarks.exe edit-layout 240 2`, `build\CaseDashBenchmarks.exe mouse-hover 240 2`, and `build_maps.cmd`.
+- Current largest sections: `.text$mn` about `830.4 KiB`, `.rdata` about `91.0 KiB`, `.pdata` about `47.8 KiB`, `.rsrc$02` about `28.8 KiB`, and `.xdata` about `21.3 KiB`.
+- Current largest project objects: `diagnostics.cpp.obj`, `editors.cpp.obj`, `dashboard_shell_ui.cpp.obj`, `layout_resolver.cpp.obj`, `dashboard_controller.cpp.obj`, `dashboard_app.cpp.obj`, `CaseDash.rc.res`, `layout_guide_sheet_renderer.cpp.obj`, `layout_edit_controller.cpp.obj`, and `metrics.cpp.obj`.
+- Last validation: `format.cmd`, `tools\update_app_icon.ps1 -SkipBuild`, `build.cmd`, `test.cmd`, `build\CaseDash.exe /default-config /fake /exit /trace:build\validation_size_inline_icon_metadata_trace.txt /dump:build\validation_size_inline_icon_metadata_dump.txt /screenshot:build\validation_size_inline_icon_metadata_screenshot.png /layout-guide-sheet:build\validation_size_inline_icon_metadata_sheet.png /app-icon:build\validation_size_inline_icon_metadata_app_icon.png /app-icon-size:64 /save-full-config:build\validation_size_inline_icon_metadata_full_config.ini`, `build.cmd Release /benchmarks`, `build\CaseDashBenchmarks.exe layout-switch 240 2`, `build\CaseDashBenchmarks.exe theme-change 240 2`, `build\CaseDashBenchmarks.exe edit-layout 240 2`, `build\CaseDashBenchmarks.exe mouse-hover 240 2`, and `build_maps.cmd`.
 
 ## Workflow
 
@@ -88,6 +88,9 @@ This document owns executable-size assumptions, constraints, map workflow notes,
 | Text resource atlas | Compress the embedded default config and localization catalog as one LZSS text atlas with the config length followed by both files instead of two separate compressed RCDATA resources. Keep source validation for embedded text in the generator, not the runtime loader. | `1,171,456` to `1,170,432` bytes; `.rsrc$02` dropped from about `33.5 KiB` to `32.5 KiB`. The generated compressed text payload dropped from `6,066` to `5,790` bytes. Follow-up removal of runtime UTF-8/BOM cleanup stayed file-size neutral at `1,170,432` bytes but reduced `.text$mn` from about `949.9 KiB` to `949.6 KiB`. |
 | Snapshot dump descriptor storage | Keep fixed flat dump field metadata in static array storage instead of a function-local vector. | `1,170,432` to `1,168,896` bytes; `snapshot_dump.cpp.obj` dropped from about `21.9 KiB` to `20.9 KiB`, and `.text$mn` dropped to about `947.9 KiB`. |
 | Cold UI and diagnostics inlining | Keep explicit `/Ob2` out of the default MSVC Release flags and append `/Ob0` only to startup, diagnostics, config I/O, modeless layout-edit dialog, display, and dashboard-shell orchestration translation units. | `1,168,896` to `1,097,728` bytes; `.text$mn` dropped from about `947.9 KiB` to `852.8 KiB` while `.pdata` grew from about `20.8 KiB` to `41.6 KiB`. |
+| Limited release inlining | Keep `/Ob1` source-scoped for normal app and benchmark Release `.cpp` sources outside the cold `/Ob0` list, while benchmark-sensitive sources still keep `/O2`. | `1,097,728` to `1,084,416` bytes in the measured pass; source scoping avoids `/Ob1` and `/Ob0` override warnings. |
+| Fallback ICO frame set | Keep the embedded fallback `resources\app.ico` at `16`, `20`, `24`, `32`, `40`, `48`, `64`, and `256` pixel frames; omit the redundant `128` frame because the runtime themed icon path renders arbitrary sizes and the shell can scale the retained high-resolution fallback. | `resources\app.ico` dropped from `18,898` to `15,080` bytes, and the executable dropped by `4,096` bytes in the measured pass. |
+| Layout-edit parameter metadata | Keep one ordered layout-edit parameter metadata array plus a parameter-only info table instead of per-parameter function-local metadata statics and unused info-table field pointers. | Final measured executable is `1,076,224` bytes; `layout_edit_parameter_metadata.cpp.obj` is about `11.7 KiB` instead of about `15.8 KiB`. |
 
 ## Rejected Or Neutral Experiments
 
@@ -133,6 +136,11 @@ This document owns executable-size assumptions, constraints, map workflow notes,
 - Do not replace config runtime fixed-field parsing with a local comma scanner. That trial regressed the executable from `1,168,896` to `1,169,920` bytes versus the existing `SplitTrimmed` shape.
 - Direct enum dispatch for layout node field descriptors was executable-neutral at `1,168,896` bytes. Keep the current fixed descriptor array and `std::find_if` shape unless a broader descriptor change deletes more surrounding code.
 - Do not broaden the cold `/Ob0` pass into tooltip text, trace formatting, resource loading, localization, config resolution/runtime fields, metric catalog, or layout-edit metadata. That broader trial regressed the executable from `1,097,728` to `1,124,864` bytes because the extra function bodies and unwind metadata outweighed deleted inline expansion.
+- Do not add `/Ob0` to widget implementation files just because they are smaller local draw helpers. That trial regressed the executable from `1,097,728` to `1,100,288` bytes.
+- `/Gy` plus `/OPT:ICF` stayed executable-neutral at `1,084,416` bytes after the limited-inlining pass, so keep function packaging out of the retained release profile for now.
+- `/O1` on top of the limited-inlining pass regressed the executable from `1,084,416` to `1,084,928` bytes; keep the maintained `/Os` default plus targeted `/O2` source list.
+- `/GF` did not reduce the shipped executable in the measured pass; keep string pooling off unless a broader literal-boundary change proves a win.
+- `/Zc:threadSafeInit-` saved bytes during the static-metadata investigation and reached `1,075,712` bytes after the retained metadata and icon changes, but it is not kept because the accepted code/data deletions already exceed the 20 KiB target without changing function-local static synchronization semantics globally.
 - Do not reintroduce `std::filesystem`, native app exceptions, production `std::function`, or MSVC STL vectorized algorithm dispatch without a measured app-size and performance reason. `lint.cmd` blocks maintained source and test files from using `std::filesystem` or including `<filesystem>`.
 
 ## Notes
