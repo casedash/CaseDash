@@ -357,13 +357,15 @@ void DashboardController::SaveDumpAs(DashboardShellHost& shell) {
     }
     std::FILE* output = nullptr;
     if (_wfopen_s(&output, path->c_str(), L"wb") != 0 || output == nullptr) {
-        shell.ShowError(WideFromUtf8("Failed to open dump file:\n" + Utf8FromWide(path->wstring())));
+        const std::string pathText = Utf8FromWide(path->wstring());
+        shell.ShowError(WideFromUtf8("Failed to open dump file:\n" + pathText));
         return;
     }
     const bool written = WriteTelemetryDump(output, state_.telemetryUpdate.dump);
     fclose(output);
     if (!written) {
-        shell.ShowError(WideFromUtf8("Failed to write dump file:\n" + Utf8FromWide(path->wstring())));
+        const std::string pathText = Utf8FromWide(path->wstring());
+        shell.ShowError(WideFromUtf8("Failed to write dump file:\n" + pathText));
     }
 }
 
@@ -391,7 +393,8 @@ void DashboardController::SaveScreenshotAs(DashboardShellHost& shell, const Diag
                       RenderPoint{diagnosticsOptions.hoverPoint->x, diagnosticsOptions.hoverPoint->y})
                 : std::nullopt,
             &errorText)) {
-        std::string message = "Failed to save screenshot:\n" + Utf8FromWide(path->wstring());
+        const std::string pathText = Utf8FromWide(path->wstring());
+        std::string message = "Failed to save screenshot:\n" + pathText;
         if (!errorText.empty()) {
             message += "\n\n" + errorText;
         }
@@ -415,7 +418,8 @@ void DashboardController::SaveLayoutGuideSheetAs(DashboardShellHost& shell) {
             shell.CurrentRenderScale(),
             shell.TraceLog(),
             &errorText)) {
-        std::string message = "Failed to save layout guide sheet:\n" + Utf8FromWide(path->wstring());
+        const std::string pathText = Utf8FromWide(path->wstring());
+        std::string message = "Failed to save layout guide sheet:\n" + pathText;
         if (!errorText.empty()) {
             message += "\n\n" + errorText;
         }
@@ -430,7 +434,8 @@ void DashboardController::SaveFullConfigAs(DashboardShellHost& shell) {
         return;
     }
     if (!SaveFullConfig(*path, BuildCurrentConfigForSaving(shell))) {
-        shell.ShowError(WideFromUtf8("Failed to save full config file:\n" + Utf8FromWide(path->wstring())));
+        const std::string pathText = Utf8FromWide(path->wstring());
+        shell.ShowError(WideFromUtf8("Failed to save full config file:\n" + pathText));
     }
 }
 

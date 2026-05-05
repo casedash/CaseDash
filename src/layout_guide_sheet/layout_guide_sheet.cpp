@@ -99,8 +99,9 @@ bool SaveLayoutGuideSheetPng(const FilePath& imagePath,
     LayoutGuideSheetPipelineStats collectedStats;
     LayoutGuideSheetPipelineStats* outputStats = stats != nullptr ? stats : &collectedStats;
     *outputStats = {};
-    trace.Write("diagnostics:layout_guide_sheet start path=\"" + Utf8FromWide(imagePath.wstring()) + "\" layout=\"" +
-                config.display.layout + "\"");
+    const std::string imagePathText = Utf8FromWide(imagePath.wstring());
+    trace.Write(
+        "diagnostics:layout_guide_sheet start path=\"" + imagePathText + "\" layout=\"" + config.display.layout + "\"");
 
     DashboardRenderer renderer(trace);
     renderer.SetRenderScale(scale);
@@ -137,7 +138,7 @@ bool SaveLayoutGuideSheetPng(const FilePath& imagePath,
         trace.Write("diagnostics:layout_guide_sheet detail " + detail);
     }
     WritePipelineStatsTrace(trace, *outputStats);
-    trace.Write("diagnostics:layout_guide_sheet end path=\"" + Utf8FromWide(imagePath.wstring()) + "\"");
+    trace.Write("diagnostics:layout_guide_sheet end path=\"" + imagePathText + "\"");
     return true;
 }
 

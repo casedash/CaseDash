@@ -226,11 +226,11 @@ std::optional<double> TryParseScaleValue(const std::wstring& text) {
         return std::nullopt;
     }
 
-    std::string narrow = Utf8FromWide(text);
-    std::replace(narrow.begin(), narrow.end(), ',', '.');
-    char* end = nullptr;
-    const double value = std::strtod(narrow.c_str(), &end);
-    if (end == narrow.c_str() || end == nullptr || *end != '\0' || !std::isfinite(value) || value <= 0.0) {
+    std::wstring normalized(text);
+    std::replace(normalized.begin(), normalized.end(), L',', L'.');
+    wchar_t* end = nullptr;
+    const double value = std::wcstod(normalized.c_str(), &end);
+    if (end == normalized.c_str() || end == nullptr || *end != L'\0' || !std::isfinite(value) || value <= 0.0) {
         return std::nullopt;
     }
     return value;
@@ -544,9 +544,9 @@ bool DiagnosticsSession::WriteOutputs(const TelemetryDump& dump, const AppConfig
         const bool dumpWritten = WriteTelemetryDump(dumpFile, dump);
         fclose(dumpFile);
         if (!dumpWritten) {
-            const std::wstring message =
-                WideFromUtf8("Failed to write dump file:\n" + Utf8FromWide(dumpPath_.wstring()));
-            ReportError("diagnostics:dump_write_failed path=\"" + Utf8FromWide(dumpPath_.wstring()) + "\"", message);
+            const std::string pathText = Utf8FromWide(dumpPath_.wstring());
+            const std::wstring message = WideFromUtf8("Failed to write dump file:\n" + pathText);
+            ReportError("diagnostics:dump_write_failed path=\"" + pathText + "\"", message);
             return false;
         }
     }
@@ -566,10 +566,9 @@ bool DiagnosticsSession::WriteOutputs(const TelemetryDump& dump, const AppConfig
                 ? std::optional<RenderPoint>(RenderPoint{options_.hoverPoint->x, options_.hoverPoint->y})
                 : std::nullopt,
             &screenshotError)) {
-        const std::wstring message =
-            WideFromUtf8("Failed to save screenshot:\n" + Utf8FromWide(screenshotPath_.wstring()));
-        std::string traceText =
-            "diagnostics:screenshot_save_failed path=\"" + Utf8FromWide(screenshotPath_.wstring()) + "\"";
+        const std::string pathText = Utf8FromWide(screenshotPath_.wstring());
+        const std::wstring message = WideFromUtf8("Failed to save screenshot:\n" + pathText);
+        std::string traceText = "diagnostics:screenshot_save_failed path=\"" + pathText + "\"";
         if (!screenshotError.empty()) {
             traceText += " detail=\"" + screenshotError + "\"";
         }
@@ -584,10 +583,9 @@ bool DiagnosticsSession::WriteOutputs(const TelemetryDump& dump, const AppConfig
                                          ResolveSavedScreenshotScale(config),
                                          trace_,
                                          &layoutGuideSheetError)) {
-        const std::wstring message =
-            WideFromUtf8("Failed to save layout guide sheet:\n" + Utf8FromWide(layoutGuideSheetPath_.wstring()));
-        std::string traceText =
-            "diagnostics:layout_guide_sheet_save_failed path=\"" + Utf8FromWide(layoutGuideSheetPath_.wstring()) + "\"";
+        const std::string pathText = Utf8FromWide(layoutGuideSheetPath_.wstring());
+        const std::wstring message = WideFromUtf8("Failed to save layout guide sheet:\n" + pathText);
+        std::string traceText = "diagnostics:layout_guide_sheet_save_failed path=\"" + pathText + "\"";
         if (!layoutGuideSheetError.empty()) {
             traceText += " detail=\"" + layoutGuideSheetError + "\"";
         }
@@ -597,9 +595,10 @@ bool DiagnosticsSession::WriteOutputs(const TelemetryDump& dump, const AppConfig
 
     std::string appIconError;
     if (options_.appIcon && !SaveRenderedAppIcon(appIconPath_, config, options_.appIconSize, &appIconError)) {
-        const std::wstring message = WideFromUtf8("Failed to save app icon:\n" + Utf8FromWide(appIconPath_.wstring()));
-        std::string traceText = "diagnostics:app_icon_save_failed path=\"" + Utf8FromWide(appIconPath_.wstring()) +
-                                "\" size=" + std::to_string(options_.appIconSize);
+        const std::string pathText = Utf8FromWide(appIconPath_.wstring());
+        const std::wstring message = WideFromUtf8("Failed to save app icon:\n" + pathText);
+        std::string traceText =
+            "diagnostics:app_icon_save_failed path=\"" + pathText + "\" size=" + std::to_string(options_.appIconSize);
         if (!appIconError.empty()) {
             traceText += " detail=\"" + appIconError + "\"";
         }
@@ -607,22 +606,22 @@ bool DiagnosticsSession::WriteOutputs(const TelemetryDump& dump, const AppConfig
         return false;
     }
     if (options_.appIcon) {
-        WriteTraceMarker("diagnostics:app_icon_saved path=\"" + Utf8FromWide(appIconPath_.wstring()) +
-                         "\" size=" + std::to_string(options_.appIconSize));
+        const std::string pathText = Utf8FromWide(appIconPath_.wstring());
+        WriteTraceMarker(
+            "diagnostics:app_icon_saved path=\"" + pathText + "\" size=" + std::to_string(options_.appIconSize));
     }
 
     if (options_.saveConfig && !SaveConfig(saveConfigPath_, config, ConfigParseContext{TelemetryMetricCatalog()})) {
-        const std::wstring message =
-            WideFromUtf8("Failed to save config file:\n" + Utf8FromWide(saveConfigPath_.wstring()));
-        ReportError("diagnostics:config_save_failed path=\"" + Utf8FromWide(saveConfigPath_.wstring()) + "\"", message);
+        const std::string pathText = Utf8FromWide(saveConfigPath_.wstring());
+        const std::wstring message = WideFromUtf8("Failed to save config file:\n" + pathText);
+        ReportError("diagnostics:config_save_failed path=\"" + pathText + "\"", message);
         return false;
     }
 
     if (options_.saveFullConfig && !SaveFullConfig(saveFullConfigPath_, config)) {
-        const std::wstring message =
-            WideFromUtf8("Failed to save full config file:\n" + Utf8FromWide(saveFullConfigPath_.wstring()));
-        ReportError("diagnostics:full_config_save_failed path=\"" + Utf8FromWide(saveFullConfigPath_.wstring()) + "\"",
-            message);
+        const std::string pathText = Utf8FromWide(saveFullConfigPath_.wstring());
+        const std::wstring message = WideFromUtf8("Failed to save full config file:\n" + pathText);
+        ReportError("diagnostics:full_config_save_failed path=\"" + pathText + "\"", message);
         return false;
     }
 
@@ -630,11 +629,9 @@ bool DiagnosticsSession::WriteOutputs(const TelemetryDump& dump, const AppConfig
 }
 
 void DiagnosticsSession::ShowFileOpenError(const char* label, const FilePath& path) {
-    const std::wstring message =
-        WideFromUtf8(std::string("Failed to open ") + label + ":\n" + Utf8FromWide(path.wstring()));
-    ReportError("diagnostics:file_open_failed label=\"" + std::string(label) + "\" path=\"" +
-                    Utf8FromWide(path.wstring()) + "\"",
-        message);
+    const std::string pathText = Utf8FromWide(path.wstring());
+    const std::wstring message = WideFromUtf8(std::string("Failed to open ") + label + ":\n" + pathText);
+    ReportError("diagnostics:file_open_failed label=\"" + std::string(label) + "\" path=\"" + pathText + "\"", message);
 }
 
 FilePath ResolveDiagnosticsOutputPath(

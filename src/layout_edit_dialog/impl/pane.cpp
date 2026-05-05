@@ -329,7 +329,7 @@ HFONT CreateDerivedDialogFont(HWND hwnd, int controlId, int weight, int heightDe
     return nullptr;
 }
 
-std::wstring BuildFontSampleText(LayoutEditParameter parameter) {
+std::wstring_view FontSampleText(LayoutEditParameter parameter) {
     switch (parameter) {
         case LayoutEditParameter::FontTitle:
             return L"Card Title";
@@ -845,8 +845,8 @@ int MeasureTextWidthForControl(HWND hwnd, int controlId, std::wstring_view text)
     HFONT font = reinterpret_cast<HFONT>(SendMessageW(control, WM_GETFONT, 0, 0));
     HFONT previous = font != nullptr ? reinterpret_cast<HFONT>(SelectObject(dc, font)) : nullptr;
     SIZE size{};
-    const std::wstring measuredText = text.empty() ? std::wstring(L" ") : std::wstring(text);
-    GetTextExtentPoint32W(dc, measuredText.c_str(), static_cast<int>(measuredText.size()), &size);
+    const std::wstring_view measuredText = text.empty() ? std::wstring_view(L" ", 1) : text;
+    GetTextExtentPoint32W(dc, measuredText.data(), static_cast<int>(measuredText.size()), &size);
     if (previous != nullptr) {
         SelectObject(dc, previous);
     }
@@ -866,9 +866,9 @@ int MeasureTextHeightForControl(HWND hwnd, int controlId, std::wstring_view text
     HFONT font = reinterpret_cast<HFONT>(SendMessageW(control, WM_GETFONT, 0, 0));
     HFONT previous = font != nullptr ? reinterpret_cast<HFONT>(SelectObject(dc, font)) : nullptr;
     RECT rect{0, 0, std::max(1, width), 0};
-    std::wstring measuredText = text.empty() ? std::wstring(L" ") : std::wstring(text);
+    const std::wstring_view measuredText = text.empty() ? std::wstring_view(L" ", 1) : text;
     UINT flags = DT_NOPREFIX | DT_CALCRECT | (singleLine ? DT_SINGLELINE : DT_WORDBREAK);
-    DrawTextW(dc, measuredText.c_str(), static_cast<int>(measuredText.size()), &rect, flags);
+    DrawTextW(dc, measuredText.data(), static_cast<int>(measuredText.size()), &rect, flags);
     if (previous != nullptr) {
         SelectObject(dc, previous);
     }
@@ -1000,9 +1000,9 @@ void SetFontSamplePreview(
     }
     DestroyDialogFont(state->fontSampleFont);
     state->fontSampleFont = nullptr;
-    const std::wstring sampleText =
-        font != nullptr && parameter.has_value() ? BuildFontSampleText(*parameter) : std::wstring();
-    SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_FONT_SAMPLE, sampleText.c_str());
+    const std::wstring_view sampleText =
+        font != nullptr && parameter.has_value() ? FontSampleText(*parameter) : std::wstring_view();
+    SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_FONT_SAMPLE, sampleText.empty() ? L"" : sampleText.data());
     if (font == nullptr || !parameter.has_value()) {
         return;
     }

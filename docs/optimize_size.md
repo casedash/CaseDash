@@ -14,11 +14,11 @@ This document owns executable-size assumptions, constraints, map workflow notes,
 
 ## Current State
 
-- Current measured `build\CaseDash.exe`: `1,236,992` bytes.
+- Current measured `build\CaseDash.exe`: `1,232,384` bytes.
 - Current app map summary: `build\CaseDash.map.summary.txt`.
-- Current largest sections: `.text$mn` about `1011.0 KiB`, `.rdata` about `88.3 KiB`, `.rsrc$02` about `34.5 KiB`, `.pdata` about `22.5 KiB`, `.xdata` about `20.3 KiB`.
+- Current largest sections: `.text$mn` about `1006.6 KiB`, `.rdata` about `88.5 KiB`, `.rsrc$02` about `34.5 KiB`, `.pdata` about `22.4 KiB`, `.xdata` about `20.1 KiB`.
 - Current largest project objects: `diagnostics.cpp.obj`, `editors.cpp.obj`, `dashboard_app.cpp.obj`, `layout_resolver.cpp.obj`, `dashboard_shell_ui.cpp.obj`, `layout_guide_sheet_renderer.cpp.obj`, `dashboard_controller.cpp.obj`, and `layout_edit_controller.cpp.obj`.
-- Last validation: `format.cmd`, `build_maps.cmd /benchmarks`, `test.cmd`, `build\CaseDashBenchmarks.exe edit-layout 240 2`, and `build\CaseDash.exe /default-config /fake /exit /trace:build\validation_size_trace.txt /dump:build\validation_size_dump.txt`.
+- Last validation: `format.cmd changed`, `build.cmd`, `build_maps.cmd`, `test.cmd`, and `build\CaseDash.exe /default-config /fake /exit /trace:build\validation_size_trace.txt /dump:build\validation_size_dump.txt`.
 
 ## Workflow
 
@@ -27,33 +27,6 @@ This document owns executable-size assumptions, constraints, map workflow notes,
 - Inspect the maintained summary at `build\CaseDash.map.summary.txt`.
 - For ad hoc map inspection, run `python tools\analyze_link_map.py build\CaseDash.map --top 25`.
 - When a size change can affect hot code, build benchmarks with `build.cmd Release /benchmarks` and use [docs/profile_benchmark.md](profile_benchmark.md) for timing validation.
-
-## Active TODO
-
-- [x] Remove runtime config descriptor owner construction; field offsets are static facts.
-- [x] Replace small-list `std::stable_sort` and direct `std::sort`/`std::unique` template machinery where concrete non-template helpers are enough.
-- [x] Reduce `std::vector<size_t>` layout node path churn with push/pop path reuse.
-- [x] Check repeated trace string assembly for shared non-template helpers.
-- [x] Trim layout-edit tree builders that return large `std::optional<LayoutEditTreeNode>` values.
-- [x] Recheck hash-table users and keep only measured small-cache/vector wins.
-- [x] Remove cold combo/list `std::initializer_list` and vector-construction patterns found in the map.
-- [x] Check remaining layout-edit dialog `std::max({...})` initializer-list rows.
-- [x] Check repeated app-shell/controller config-apply tails.
-- [x] Check `DashboardShellUiDialogHost` applier-interface idea; measured wins came from deleting copied work and sharing controller tails, not adding another virtual interface.
-- [x] Check lazy storage for cold layout-edit saved-layout snapshots.
-- [x] Check remaining unordered/hash/template candidates in the current top objects without touching perf-critical caches blindly.
-- [x] Trial UTF-8-only tooltip text assembly; symbol shrank but executable stayed flat, so keep as code-shape cleanup and continue the broader audit separately.
-- [x] Trial flat board sensor binding container; rejected because it grew the main executable.
-- [x] Remove `EqualsInsensitive(std::wstring)` and `SortUniqueWideStringsCaseInsensitive` from `util`; move remaining wide-string needs to boundary-local code or UTF-8 conversion.
-- [x] Audit command-line wide-string vector construction; remove the full-argv vector API from normal switch scans.
-- [x] Replace repeated layout-edit selection editor boolean packs with enum-based visibility selection.
-- [ ] Audit remaining wide-string-heavy UI, file-path, and vendor-boundary paths. Prefer UTF-8 manipulation until a Win32/vendor call only when the map proves a size win and the path is cold or conversion-neutral.
-- [ ] Check remaining top cold symbols for repeated UI and diagnostics code patterns.
-- [ ] Measure release hardening metadata behind `_load_config_used`, Guard CF, XFG, and CastGuard before making any policy call. Preserve compiler hardening unless the size target explicitly accepts that tradeoff.
-- [ ] Audit cold layout-edit helpers that return `std::optional` wrappers around small values or vectors. Prefer bool plus out-parameter only when the map shows deleted template or copy machinery.
-- [x] Trial in-place layout guide snap-weight updates so the drag path does not return `std::optional<std::vector<int>>` for the common already-owned weight vector.
-- [ ] Check diagnostics output failure paths for repeated `FilePath` UTF-16 to UTF-8 conversions; reuse one cold formatted path string when it deletes code instead of only moving it.
-- [x] Refresh final map state and validation notes.
 
 ## Kept Decisions
 
@@ -97,6 +70,7 @@ This document owns executable-size assumptions, constraints, map workflow notes,
 | Process path capture | Reuse `util/paths` fixed-buffer executable and working-directory helpers for elevated relaunch instead of keeping a second vector-based path reader in `main.cpp`. | `1,241,088` to `1,239,040` bytes. |
 | Command-line switch scans | Keep command-line switch lookup on a narrow argv scanner and a purpose-built elevated-relaunch helper instead of materializing `std::vector<std::wstring>` for every scan. | `1,239,040` to `1,237,504` bytes. |
 | Layout-edit editor visibility | Select the active layout-edit selection editor by enum in one helper instead of repeating long boolean visibility packs at each populate branch. | `1,237,504` to `1,236,480` bytes. |
+| Wide string boundary pass | Keep layout-edit dialog combo/text setters, fixed-buffer checks, color numeric formatting, font sample text, diagnostics output errors, and file-path traces on UTF-8 or stack-buffer helpers until the Win32 boundary. | `1,236,992` to `1,232,384` bytes in the current measured pass. |
 
 ## Rejected Or Neutral Experiments
 
@@ -119,6 +93,10 @@ This document owns executable-size assumptions, constraints, map workflow notes,
 - Manual loops for command-line wide-string trim and path normalization regressed by 512 bytes versus the existing STL algorithm shape; keep the measured algorithm code there.
 - A shared module-path helper for executable and crash-report module paths regressed by 512 bytes; keep the duplicated local shapes.
 - In-place layout guide snap-weight updates shrank the local drag symbol from about 5.8 KiB to 5.7 KiB and benchmarked in range, but the shipped executable stayed flat at `1,236,992` bytes. Keep it only as copy-avoidance cleanup, not as a size lever.
+- Release hardening metadata is not a practical size lever. `/guard:cf- /guard:ehcont- /volatileMetadata-` plus `/GUARD:NO /EMITVOLATILEMETADATA:NO` did not reduce the executable; keep the normal compiler hardening profile unless a future size target explicitly accepts that security tradeoff.
+- Do not chase small `std::optional` rewrites. Keep `std::optional` for small values, pointers, and clear modern C++ intent; only revisit optional-shaped APIs when the payload or caller structure is large and a map proves a real win.
+- Dashboard shell UTF-8 menu label helpers regressed the executable from `1,235,456` to `1,236,480` bytes in the measured trial. Keep the existing wide menu label construction unless a broader menu architecture change deletes more code.
+- Dashboard controller and layout-guide-sheet path reuse were executable-neutral in isolation. Keep local reuse when it clarifies cold file-output paths, but do not treat it as a primary size lever.
 - Do not reintroduce `std::filesystem`, native app exceptions, production `std::function`, or MSVC STL vectorized algorithm dispatch without a measured app-size and performance reason. `lint.cmd` blocks maintained source and test files from using `std::filesystem` or including `<filesystem>`.
 
 ## Notes
@@ -127,5 +105,6 @@ This document owns executable-size assumptions, constraints, map workflow notes,
 - Prefer deleting template instantiations, exception/RTTI machinery, duplicated descriptor paths, and cold-path heap containers over adding compression or decoding work to hot paths.
 - Prefer vectors and compact scans for tiny fixed domains. For string-to-value maps that are genuinely performance-sensitive and not tiny, consider a narrow non-template project-owned hash helper under `src/util` instead of repeating broad STL hash-table instantiations.
 - Leave concise `Size:` comments next to measured non-obvious source choices, especially where a normal cleanup would reintroduce larger STL containers, templates, or full-config copies.
-- UTF-8 boundary discipline is plausible mostly in UI, diagnostics, command-line, and vendor-boundary code. Do not push extra UTF-8 to UTF-16 conversions into renderer or telemetry hot loops without benchmark evidence.
+- UTF-8 boundary discipline is plausible mostly in UI, diagnostics, command-line, and vendor-boundary code. The current systematic audit concentrated on the highest-density wide-string files: layout-edit dialog `pane`, `util`, and `editors`, diagnostics output handling, and dashboard/menu boundaries. Do not push extra UTF-8 to UTF-16 conversions into renderer or telemetry hot loops without benchmark evidence.
+- `std::optional` is not a standalone size target. Preserve it for small values and pointer-like lookups; the earlier tree-builder win came from avoiding large cold payload copies, not from removing optional itself.
 - The current 10% savings target is not visible as one safe map item. Larger remaining wins likely require deeper cold-subsystem compaction while keeping the renderer and telemetry benchmarks in range.

@@ -440,9 +440,10 @@ std::optional<INT_PTR> HandleLayoutEditDialogProcMessage(HWND hwnd, UINT message
                 const int sliderId = GetDlgCtrlID(reinterpret_cast<HWND>(lParam));
                 if (const auto* channel = FindColorDialogControlsBySliderId(sliderId); channel != nullptr) {
                     if (!state->updatingControls) {
-                        const LRESULT position = SendDlgItemMessageW(hwnd, channel->sliderId, TBM_GETPOS, 0, 0);
+                        const int position =
+                            static_cast<int>(SendDlgItemMessageW(hwnd, channel->sliderId, TBM_GETPOS, 0, 0));
                         state->updatingControls = true;
-                        SetDlgItemTextW(hwnd, channel->editId, WideFromUtf8(std::to_string(position)).c_str());
+                        SetDialogControlInteger(hwnd, channel->editId, position);
                         if (const auto color = ReadColorDialogValue(hwnd); color.has_value()) {
                             SetColorDialogHex(hwnd, *color);
                             SetColorDialogLch(hwnd, *color);

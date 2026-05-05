@@ -85,21 +85,21 @@ double RoundToStep(double value, double step) {
     return std::round(value / step) * step;
 }
 
-std::wstring FormatDialogRoundedDecimal(double value, int decimalPlaces) {
+void SetDialogControlRoundedDecimal(HWND hwnd, int controlId, double value, int decimalPlaces) {
     wchar_t buffer[64] = {};
     swprintf_s(buffer, L"%.*f", decimalPlaces, value);
-    std::wstring text = buffer;
-    while (!text.empty() && text.back() == L'0') {
-        text.pop_back();
+    size_t length = wcslen(buffer);
+    while (length > 0 && buffer[length - 1] == L'0') {
+        buffer[--length] = L'\0';
     }
-    if (!text.empty() && text.back() == L'.') {
-        text.pop_back();
+    if (length > 0 && buffer[length - 1] == L'.') {
+        buffer[--length] = L'\0';
     }
-    return text.empty() || text == L"-0" ? L"0" : text;
+    SetDlgItemTextW(hwnd, controlId, length == 0 || wcscmp(buffer, L"-0") == 0 ? L"0" : buffer);
 }
 
-std::wstring FormatDialogRoundedInteger(double value) {
-    return WideFromUtf8(std::to_string(static_cast<int>(std::lround(value))));
+void SetDialogControlRoundedInteger(HWND hwnd, int controlId, double value) {
+    SetDialogControlInteger(hwnd, controlId, static_cast<int>(std::lround(value)));
 }
 
 OklchColor DisplayRoundedLch(OklchColor lch) {
@@ -249,6 +249,35 @@ std::string ReadDialogControlTextUtf8(HWND hwnd, int controlId) {
     return Utf8FromWide(buffer);
 }
 
+void SetDialogControlTextUtf8(HWND hwnd, int controlId, std::string_view text) {
+    const std::wstring wideText = WideFromUtf8(text);
+    SetDlgItemTextW(hwnd, controlId, wideText.c_str());
+}
+
+void SetDialogControlInteger(HWND hwnd, int controlId, int value) {
+    wchar_t buffer[32] = {};
+    swprintf_s(buffer, L"%d", value);
+    SetDlgItemTextW(hwnd, controlId, buffer);
+}
+
+void SetDialogControlIntegerOrEmpty(HWND hwnd, int controlId, int value, bool hasValue) {
+    if (hasValue) {
+        SetDialogControlInteger(hwnd, controlId, value);
+    } else {
+        SetDlgItemTextW(hwnd, controlId, L"");
+    }
+}
+
+void SetWindowTextUtf8(HWND hwnd, std::string_view text) {
+    const std::wstring wideText = WideFromUtf8(text);
+    SetWindowTextW(hwnd, wideText.c_str());
+}
+
+LRESULT AddComboStringUtf8(HWND combo, std::string_view text) {
+    const std::wstring wideText = WideFromUtf8(text);
+    return SendMessageW(combo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(wideText.c_str()));
+}
+
 std::wstring FormatDialogColorHex(unsigned int color) {
     wchar_t buffer[16] = {};
     swprintf_s(buffer, L"#%08X", color);
@@ -348,7 +377,7 @@ void ConfigureColorViewTabs(HWND hwnd, ColorEditViewMode selectedMode) {
 }
 
 void SetColorDialogChannel(HWND hwnd, const ColorDialogControls& channel, unsigned int value) {
-    SetDlgItemTextW(hwnd, channel.editId, WideFromUtf8(std::to_string(value)).c_str());
+    SetDialogControlInteger(hwnd, channel.editId, static_cast<int>(value));
     SendDlgItemMessageW(hwnd, channel.sliderId, TBM_SETPOS, TRUE, value);
 }
 
@@ -358,17 +387,17 @@ void SetColorDialogHex(HWND hwnd, unsigned int color) {
 
 void SetColorDialogLch(HWND hwnd, unsigned int color) {
     const OklchColor lch = DisplayRoundedLch(OklchFromColorBytes(ColorBytesFromRgba(color)));
-    SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_EDIT, FormatDialogRoundedDecimal(lch.l, 3).c_str());
-    SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_EDIT, FormatDialogRoundedDecimal(lch.c, 3).c_str());
-    SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_HUE_EDIT, FormatDialogRoundedInteger(lch.h).c_str());
+    SetDialogControlRoundedDecimal(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_EDIT, lch.l, 3);
+    SetDialogControlRoundedDecimal(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_EDIT, lch.c, 3);
+    SetDialogControlRoundedInteger(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_HUE_EDIT, lch.h);
     SetLchSliderPositions(hwnd, lch);
 }
 
 void SetColorDialogHsv(HWND hwnd, unsigned int color) {
     const HsvColor hsv = DisplayRoundedHsv(HsvFromColorBytes(ColorBytesFromRgba(color)));
-    SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_HUE_EDIT, FormatDialogRoundedInteger(hsv.h).c_str());
-    SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_EDIT, FormatDialogRoundedDecimal(hsv.s, 3).c_str());
-    SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_EDIT, FormatDialogRoundedDecimal(hsv.v, 3).c_str());
+    SetDialogControlRoundedInteger(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_HUE_EDIT, hsv.h);
+    SetDialogControlRoundedDecimal(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_EDIT, hsv.s, 3);
+    SetDialogControlRoundedDecimal(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_EDIT, hsv.v, 3);
     SetHsvSliderPositions(hwnd, hsv);
 }
 
@@ -489,17 +518,15 @@ void SetColorLchEditFromSlider(HWND hwnd, int sliderId) {
     const int position = static_cast<int>(SendDlgItemMessageW(hwnd, sliderId, TBM_GETPOS, 0, 0));
     switch (sliderId) {
         case IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_SLIDER:
-            SetDlgItemTextW(hwnd,
-                IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_EDIT,
-                FormatDialogRoundedDecimal(static_cast<double>(position) / 1000.0, 3).c_str());
+            SetDialogControlRoundedDecimal(
+                hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_EDIT, static_cast<double>(position) / 1000.0, 3);
             break;
         case IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_SLIDER:
-            SetDlgItemTextW(hwnd,
-                IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_EDIT,
-                FormatDialogRoundedDecimal(static_cast<double>(position) / kLchChromaSliderScale, 3).c_str());
+            SetDialogControlRoundedDecimal(
+                hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_EDIT, static_cast<double>(position) / kLchChromaSliderScale, 3);
             break;
         case IDC_LAYOUT_EDIT_COLOR_LCH_HUE_SLIDER:
-            SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_HUE_EDIT, FormatDialogRoundedInteger(position).c_str());
+            SetDialogControlInteger(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_HUE_EDIT, position);
             break;
     }
 }
@@ -508,17 +535,17 @@ void SetColorHsvEditFromSlider(HWND hwnd, int sliderId) {
     const int position = static_cast<int>(SendDlgItemMessageW(hwnd, sliderId, TBM_GETPOS, 0, 0));
     switch (sliderId) {
         case IDC_LAYOUT_EDIT_COLOR_HSV_HUE_SLIDER:
-            SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_HUE_EDIT, FormatDialogRoundedInteger(position).c_str());
+            SetDialogControlInteger(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_HUE_EDIT, position);
             break;
         case IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_SLIDER:
-            SetDlgItemTextW(hwnd,
+            SetDialogControlRoundedDecimal(hwnd,
                 IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_EDIT,
-                FormatDialogRoundedDecimal(static_cast<double>(position) / kHsvUnitSliderScale, 3).c_str());
+                static_cast<double>(position) / kHsvUnitSliderScale,
+                3);
             break;
         case IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_SLIDER:
-            SetDlgItemTextW(hwnd,
-                IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_EDIT,
-                FormatDialogRoundedDecimal(static_cast<double>(position) / kHsvUnitSliderScale, 3).c_str());
+            SetDialogControlRoundedDecimal(
+                hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_EDIT, static_cast<double>(position) / kHsvUnitSliderScale, 3);
             break;
     }
 }
@@ -633,8 +660,7 @@ void PopulateMetricBindingComboBox(
     SendMessageW(combo, CB_SETMINVISIBLE, 10, 0);
     int selectedIndex = CB_ERR;
     for (const auto& option : options) {
-        const std::wstring wideOption = WideFromUtf8(option);
-        const LRESULT index = SendMessageW(combo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(wideOption.c_str()));
+        const LRESULT index = AddComboStringUtf8(combo, option);
         if (index != CB_ERR && selectedIndex == CB_ERR && option == selectedBinding) {
             selectedIndex = static_cast<int>(index);
         }
@@ -643,7 +669,7 @@ void PopulateMetricBindingComboBox(
     if (selectedIndex != CB_ERR) {
         SendMessageW(combo, CB_SETCURSEL, static_cast<WPARAM>(selectedIndex), 0);
     } else {
-        SetWindowTextW(combo, WideFromUtf8(std::string(selectedBinding)).c_str());
+        SetWindowTextUtf8(combo, selectedBinding);
     }
 
     EnableWindow(combo, enableSelection ? TRUE : FALSE);

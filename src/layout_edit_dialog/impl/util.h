@@ -35,6 +35,11 @@ std::optional<double> TryParseDialogDouble(const wchar_t* text);
 std::optional<int> TryParseDialogInteger(const wchar_t* text);
 std::string LayoutGuideChildName(const LayoutNodeConfig& node);
 std::string ReadDialogControlTextUtf8(HWND hwnd, int controlId);
+void SetDialogControlTextUtf8(HWND hwnd, int controlId, std::string_view text);
+void SetDialogControlInteger(HWND hwnd, int controlId, int value);
+void SetDialogControlIntegerOrEmpty(HWND hwnd, int controlId, int value, bool hasValue);
+void SetWindowTextUtf8(HWND hwnd, std::string_view text);
+LRESULT AddComboStringUtf8(HWND combo, std::string_view text);
 
 std::wstring FormatDialogColorHex(unsigned int color);
 std::optional<unsigned int> TryParseDialogHexColor(const wchar_t* text);
