@@ -545,7 +545,7 @@ void DashboardLayoutEditOverlayRenderer::DrawSelectedTreeNodeHighlight(
     if (const auto* widgetClass = std::get_if<WidgetClass>(&*overlayState.selectedTreeHighlight)) {
         for (const auto& card : layoutResolver_.resolvedLayout_.cards) {
             for (const auto& widget : card.widgets) {
-                if (widget.widget != nullptr && widget.widget->Class() == *widgetClass) {
+                if (widget.widget != nullptr && widget.widgetClass == *widgetClass) {
                     DrawDottedHighlightRect(widget.rect, color, activeEmphasis);
                 }
             }
@@ -617,7 +617,7 @@ void DashboardLayoutEditOverlayRenderer::DrawSelectedTreeNodeHighlight(
         if (*special == LayoutEditSelectionHighlightSpecial::AllTexts) {
             for (const auto& card : layoutResolver_.resolvedLayout_.cards) {
                 for (const auto& widget : card.widgets) {
-                    if (widget.widget != nullptr && widget.widget->Class() == WidgetClass::Text) {
+                    if (widget.widget != nullptr && widget.widgetClass == WidgetClass::Text) {
                         DrawDottedHighlightRect(widget.rect, color, activeEmphasis);
                     }
                 }
@@ -947,11 +947,11 @@ void DashboardLayoutEditOverlayRenderer::DrawLayoutSimilarityIndicators(
         if (affectedExtent <= 0 || affected->widget == nullptr) {
             continue;
         }
-        const SimilarityTypeKey typeKey{affected->widget->Class(), affectedExtent};
+        const SimilarityTypeKey typeKey{affected->widgetClass, affectedExtent};
         bool hasExactMatch = false;
         for (const WidgetLayout* candidate : allWidgets) {
             if (candidate == affected || candidate->widget == nullptr ||
-                candidate->widget->Class() != affected->widget->Class()) {
+                candidate->widgetClass != affected->widgetClass) {
                 continue;
             }
             const int candidateExtent = renderer_.WidgetExtentForAxis(*candidate, axis);

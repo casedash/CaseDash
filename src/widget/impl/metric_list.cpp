@@ -189,14 +189,6 @@ void DrawMetricListRow(WidgetHost& renderer,
 
 }  // namespace
 
-WidgetClass MetricListWidget::Class() const {
-    return WidgetClass::MetricList;
-}
-
-std::unique_ptr<Widget> MetricListWidget::Clone() const {
-    return std::make_unique<MetricListWidget>(*this);
-}
-
 void MetricListWidget::Initialize(const LayoutNodeConfig& node) {
     metricRefs_.clear();
     metricRefs_ = SplitTrimmed(node.parameter, ',');

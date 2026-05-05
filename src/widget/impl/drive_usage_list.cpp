@@ -198,14 +198,6 @@ int EffectiveDriveRowHeight(const WidgetHost& renderer) {
 
 }  // namespace
 
-WidgetClass DriveUsageListWidget::Class() const {
-    return WidgetClass::DriveUsageList;
-}
-
-std::unique_ptr<Widget> DriveUsageListWidget::Clone() const {
-    return std::make_unique<DriveUsageListWidget>(*this);
-}
-
 void DriveUsageListWidget::Initialize(const LayoutNodeConfig&) {}
 
 int DriveUsageListWidget::PreferredHeight(const WidgetHost& renderer) const {

@@ -5,14 +5,6 @@
 #include "telemetry/metrics.h"
 #include "widget/widget_host.h"
 
-WidgetClass TextWidget::Class() const {
-    return WidgetClass::Text;
-}
-
-std::unique_ptr<Widget> TextWidget::Clone() const {
-    return std::make_unique<TextWidget>(*this);
-}
-
 void TextWidget::Initialize(const LayoutNodeConfig& node) {
     metric_ = node.parameter;
 }

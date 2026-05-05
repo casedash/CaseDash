@@ -185,14 +185,6 @@ int EffectiveGaugePreferredRadius(const WidgetHost& renderer, const std::string&
 
 }  // namespace
 
-WidgetClass GaugeWidget::Class() const {
-    return WidgetClass::Gauge;
-}
-
-std::unique_ptr<Widget> GaugeWidget::Clone() const {
-    return std::make_unique<GaugeWidget>(*this);
-}
-
 void GaugeWidget::Initialize(const LayoutNodeConfig& node) {
     metric_ = node.parameter;
     sharedLayout_.reset();
@@ -465,14 +457,14 @@ void GaugeWidget::BuildEditGuides(WidgetHost& renderer, const WidgetLayout& widg
         WidgetHost::LayoutEditParameter::GaugeLabelBottom, 101, renderer.Config().layout.gauge.labelBottom);
 }
 
-void GaugeWidget::FinalizeLayoutGroup(WidgetHost& renderer, const std::vector<WidgetLayout*>& widgets) {
+void FinalizeGaugeLayoutGroup(WidgetHost& renderer, const std::vector<WidgetLayout*>& widgets) {
     auto sharedLayout = std::make_shared<GaugeSharedLayout>();
     int gaugeCount = 0;
     for (WidgetLayout* widget : widgets) {
         if (widget == nullptr) {
             continue;
         }
-        if (!widget->widget || widget->widget->Class() != WidgetClass::Gauge) {
+        if (!widget->widget || widget->widgetClass != WidgetClass::Gauge) {
             continue;
         }
         const int gaugeRadius = GaugeOuterRadiusForRect(renderer, widget->rect);
@@ -484,7 +476,7 @@ void GaugeWidget::FinalizeLayoutGroup(WidgetHost& renderer, const std::vector<Wi
         if (widget == nullptr) {
             continue;
         }
-        if (!widget->widget || widget->widget->Class() != WidgetClass::Gauge) {
+        if (!widget->widget || widget->widgetClass != WidgetClass::Gauge) {
             continue;
         }
         auto* gauge = static_cast<GaugeWidget*>(widget->widget.get());

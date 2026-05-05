@@ -651,21 +651,22 @@ const DashboardLayoutResolver::ParsedWidgetInfo* DashboardLayoutResolver::FindPa
         }
     }
 
-    if (node.name.empty() || !EnumFromString<WidgetClass>(node.name).has_value()) {
+    const auto widgetClass = node.name.empty() ? std::nullopt : EnumFromString<WidgetClass>(node.name);
+    if (!widgetClass.has_value()) {
         return nullptr;
     }
 
-    auto widget = CreateWidget(node.name);
+    auto widget = CreateWidget(*widgetClass);
     if (widget == nullptr) {
         return nullptr;
     }
 
     widget->Initialize(node);
     ParsedWidgetInfo info;
+    info.widgetClass = *widgetClass;
     info.preferredHeight = widget->PreferredHeight(renderer);
     info.fixedPreferredHeightInRows = widget->UsesFixedPreferredHeightInRows();
-    info.verticalSpring = widget->IsVerticalSpring();
-    info.widgetPrototype = std::move(widget);
+    info.verticalSpring = *widgetClass == WidgetClass::VerticalSpring;
     parsedWidgetInfoCache_.emplace_back(&node, std::move(info));
     return &parsedWidgetInfoCache_.back().second;
 }
@@ -677,8 +678,14 @@ WidgetLayout DashboardLayoutResolver::ResolveWidgetLayout(const DashboardRendere
     WidgetLayout widget;
     widget.rect = rect;
     const ParsedWidgetInfo* info = FindParsedWidgetInfo(renderer, node);
+    if (info != nullptr) {
+        widget.widgetClass = info->widgetClass;
+    }
     if (instantiateWidget && info != nullptr) {
-        widget.widget = info->widgetPrototype->Clone();
+        widget.widget = CreateWidget(info->widgetClass);
+        if (widget.widget != nullptr) {
+            widget.widget->Initialize(node);
+        }
     }
     return widget;
 }
@@ -734,8 +741,9 @@ void DashboardLayoutResolver::ResolveNodeWidgetsInternal(DashboardRenderer& rend
         widget.editCardId = editCardId;
         widget.nodePath = nodePath;
         if (writeTrace) {
-            const std::string widgetTypeName =
-                widget.widget != nullptr ? std::string(EnumToString(widget.widget->Class())) : std::string();
+            const std::string widgetTypeName = widget.widgetClass != WidgetClass::Unknown
+                                                   ? std::string(EnumToString(widget.widgetClass))
+                                                   : std::string();
             renderer.WriteTrace("renderer:layout_widget_resolved kind=\"" + node.name + "\" " +
                                 FormatRect(widget.rect) +
                                 (widgetTypeName.empty() ? "" : " type=\"" + widgetTypeName + "\""));
@@ -1015,22 +1023,20 @@ bool DashboardLayoutResolver::ResolveLayout(DashboardRenderer& renderer, bool in
     }
 
     if (includeWidgetState) {
-        std::vector<std::vector<WidgetLayout*>> widgetGroups(EnumStringTraits<WidgetClass>::names.size());
+        // Size: gauges are the only widgets with group finalization, so avoid a virtual hook on every widget class.
+        std::vector<WidgetLayout*> gaugeWidgets;
         for (auto& card : resolvedLayout_.cards) {
             for (auto& widget : card.widgets) {
                 if (widget.widget == nullptr) {
                     continue;
                 }
-                const size_t classIndex = static_cast<size_t>(widget.widget->Class());
-                if (classIndex < widgetGroups.size()) {
-                    widgetGroups[classIndex].push_back(&widget);
+                if (widget.widgetClass == WidgetClass::Gauge) {
+                    gaugeWidgets.push_back(&widget);
                 }
             }
         }
-        for (auto& group : widgetGroups) {
-            if (!group.empty() && group.front()->widget != nullptr) {
-                group.front()->widget->FinalizeLayoutGroup(renderer, group);
-            }
+        if (!gaugeWidgets.empty()) {
+            FinalizeWidgetLayoutGroup(renderer, WidgetClass::Gauge, gaugeWidgets);
         }
         for (auto& card : resolvedLayout_.cards) {
             if (card.chrome.widget != nullptr) {

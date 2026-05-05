@@ -3,14 +3,6 @@
 #include "telemetry/metrics.h"
 #include "widget/widget_host.h"
 
-WidgetClass NetworkFooterWidget::Class() const {
-    return WidgetClass::NetworkFooter;
-}
-
-std::unique_ptr<Widget> NetworkFooterWidget::Clone() const {
-    return std::make_unique<NetworkFooterWidget>(*this);
-}
-
 void NetworkFooterWidget::Initialize(const LayoutNodeConfig&) {}
 
 int NetworkFooterWidget::PreferredHeight(const WidgetHost& renderer) const {

@@ -47,18 +47,19 @@ public:
         std::vector<RenderRect> ringSegmentBounds;
     };
 
-    WidgetClass Class() const override;
-    std::unique_ptr<Widget> Clone() const override;
     void Initialize(const LayoutNodeConfig& node) override;
     int PreferredHeight(const WidgetHost& renderer) const override;
     void ResolveLayoutState(const WidgetHost& renderer, const RenderRect& rect) override;
     void Draw(WidgetHost& renderer, const WidgetLayout& widget, const MetricSource& metrics) const override;
-    void FinalizeLayoutGroup(WidgetHost& renderer, const std::vector<WidgetLayout*>& widgets) override;
     void BuildStaticAnchors(WidgetHost& renderer, const WidgetLayout& widget) const override;
     void BuildEditGuides(WidgetHost& renderer, const WidgetLayout& widget) const override;
 
 private:
+    friend void FinalizeGaugeLayoutGroup(WidgetHost& renderer, const std::vector<WidgetLayout*>& widgets);
+
     std::string metric_;
     std::shared_ptr<GaugeSharedLayout> sharedLayout_;
     LayoutState layoutState_{};
 };
+
+void FinalizeGaugeLayoutGroup(WidgetHost& renderer, const std::vector<WidgetLayout*>& widgets);

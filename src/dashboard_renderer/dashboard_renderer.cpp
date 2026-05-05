@@ -375,7 +375,7 @@ std::vector<LayoutGuideSheetCardSummary> DashboardRenderer::CollectLayoutGuideSh
         summary.chromeLayout = card.chromeLayout;
         for (const auto& widget : card.widgets) {
             if (widget.widget != nullptr) {
-                summary.widgetClasses.push_back(widget.widget->Class());
+                summary.widgetClasses.push_back(widget.widgetClass);
             }
         }
         summaries.push_back(std::move(summary));
@@ -543,13 +543,13 @@ LayoutEditActiveRegions DashboardRenderer::CollectLayoutEditActiveRegions(
                 appendRegion(card.chromeLayout.titleRect, LayoutEditActiveRegionKind::CardHeader, cardRegion);
             }
             for (const auto& widget : card.widgets) {
-                if (widget.widget == nullptr || !widget.widget->IsHoverable()) {
+                if (widget.widget == nullptr || !IsWidgetHoverable(widget.widgetClass)) {
                     continue;
                 }
                 appendRegion(widget.rect,
                     LayoutEditActiveRegionKind::WidgetHover,
                     LayoutEditWidgetRegion{LayoutEditWidgetIdentity{widget.cardId, widget.editCardId, widget.nodePath},
-                        widget.widget->Class(),
+                        widget.widgetClass,
                         widget.rect,
                         SupportsLayoutSimilarityIndicator(widget)});
             }
@@ -781,7 +781,8 @@ LayoutEditHoverResolution DashboardRenderer::ResolveLayoutEditHover(
     std::optional<LayoutEditWidgetIdentity> hoveredWidget;
     for (const auto& card : layoutResolver_->resolvedLayout_.cards) {
         for (const auto& widget : card.widgets) {
-            if (widget.widget == nullptr || !widget.widget->IsHoverable() || !widget.rect.Contains(clientPoint)) {
+            if (widget.widget == nullptr || !IsWidgetHoverable(widget.widgetClass) ||
+                !widget.rect.Contains(clientPoint)) {
                 continue;
             }
             hoveredWidget = LayoutEditWidgetIdentity{widget.cardId, widget.editCardId, widget.nodePath};
@@ -882,7 +883,8 @@ std::optional<LayoutEditWidgetIdentity> DashboardRenderer::FindFirstLayoutEditPr
 
     for (const auto& card : layoutResolver_->resolvedLayout_.cards) {
         for (const auto& widget : card.widgets) {
-            if (widget.widget == nullptr || !widget.widget->IsHoverable() || widget.widget->Class() != *widgetClass) {
+            if (widget.widget == nullptr || !IsWidgetHoverable(widget.widgetClass) ||
+                widget.widgetClass != *widgetClass) {
                 continue;
             }
             return LayoutEditWidgetIdentity{widget.cardId, widget.editCardId, widget.nodePath};
@@ -973,7 +975,7 @@ bool DashboardRenderer::MatchesWidgetIdentity(
 }
 
 bool DashboardRenderer::SupportsLayoutSimilarityIndicator(const WidgetLayout& widget) const {
-    if (widget.widget == nullptr || widget.widget->IsVerticalSpring()) {
+    if (widget.widget == nullptr || widget.widgetClass == WidgetClass::VerticalSpring) {
         return false;
     }
     if (UsesFixedPreferredHeightInRows(widget)) {
@@ -996,12 +998,12 @@ std::vector<const WidgetLayout*> DashboardRenderer::CollectSimilarityIndicatorWi
                 continue;
             }
 
-            const WidgetClass widgetClass = widget.widget->Class();
+            const WidgetClass widgetClass = widget.widgetClass;
             const int edgeStart = axis == LayoutGuideAxis::Vertical ? widget.rect.left : widget.rect.top;
             const int edgeEnd = axis == LayoutGuideAxis::Vertical ? widget.rect.right : widget.rect.bottom;
             const auto duplicate = [&](const WidgetLayout* candidate) {
                 if (candidate == nullptr || candidate->widget == nullptr || candidate->cardId != widget.cardId ||
-                    candidate->widget->Class() != widgetClass || WidgetExtentForAxis(*candidate, axis) != extent) {
+                    candidate->widgetClass != widgetClass || WidgetExtentForAxis(*candidate, axis) != extent) {
                     return false;
                 }
                 if (axis == LayoutGuideAxis::Vertical) {

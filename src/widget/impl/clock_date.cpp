@@ -3,14 +3,6 @@
 #include "telemetry/metrics.h"
 #include "widget/widget_host.h"
 
-WidgetClass ClockDateWidget::Class() const {
-    return WidgetClass::ClockDate;
-}
-
-std::unique_ptr<Widget> ClockDateWidget::Clone() const {
-    return std::make_unique<ClockDateWidget>(*this);
-}
-
 void ClockDateWidget::Initialize(const LayoutNodeConfig& node) {
     format_ = node.parameter;
 }

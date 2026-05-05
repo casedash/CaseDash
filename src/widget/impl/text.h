@@ -4,8 +4,6 @@
 
 class TextWidget final : public Widget {
 public:
-    WidgetClass Class() const override;
-    std::unique_ptr<Widget> Clone() const override;
     void Initialize(const LayoutNodeConfig& node) override;
     int PreferredHeight(const WidgetHost& renderer) const override;
     bool UsesFixedPreferredHeightInRows() const override;
