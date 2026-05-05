@@ -8,8 +8,8 @@
 #include <wincodec.h>
 #include <wrl/client.h>
 
-#include "util/strings.h"
 #include "util/utf8.h"
+#include "util/win32_format.h"
 
 namespace {
 

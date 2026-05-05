@@ -13,10 +13,10 @@
 #include "telemetry/metrics.h"
 #include "util/command_line.h"
 #include "util/paths.h"
-#include "util/strings.h"
 #include "util/temp_file.h"
 #include "util/trace.h"
 #include "util/utf8.h"
+#include "util/win32_format.h"
 
 namespace {
 

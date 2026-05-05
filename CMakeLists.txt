@@ -113,12 +113,15 @@ add_executable(CaseDash WIN32
     src/display/display_config.cpp
     src/display/monitor.cpp
     src/util/file_path.cpp
+    src/util/numeric_format.cpp
     src/util/paths.cpp
     src/util/scale.cpp
     src/util/strings.cpp
     src/util/temp_file.cpp
+    src/util/win32_format.cpp
     src/dashboard/dashboard_controller.cpp
     src/dashboard/dashboard_app.cpp
+    src/dashboard/dashboard_menu_format.cpp
     src/dashboard/dashboard_shell_ui.cpp
     src/layout_edit_dialog/layout_edit_dialog.cpp
     src/layout_edit_dialog/theme_preview.cpp
@@ -149,6 +152,7 @@ add_executable(CaseDash WIN32
     src/layout_edit/layout_edit_tooltip_payload.cpp
     src/layout_edit/layout_edit_tooltip_text.cpp
     src/config/config.cpp
+    src/config/color_format.cpp
     src/config/color_expression.cpp
     src/config/color_math.cpp
     src/config/color_resolver.cpp
@@ -499,6 +503,7 @@ add_executable(CaseDashTests
     tests/telemetry_retained_history_tests.cpp
     tests/telemetry_runtime_tests.cpp
     src/config/config.cpp
+    src/config/color_format.cpp
     src/config/color_expression.cpp
     src/config/color_math.cpp
     src/config/color_resolver.cpp
@@ -526,11 +531,13 @@ add_executable(CaseDashTests
     src/layout_edit/layout_edit_hit_test.cpp
     src/layout_edit_dialog/impl/editor_handler_registry.cpp
     src/util/strings.cpp
+    src/util/numeric_format.cpp
     src/util/localization_catalog.cpp
     src/util/resource_loader.cpp
     src/layout_edit/impl/layout_snap_solver.cpp
     src/util/file_path.cpp
     src/util/numeric_safety.cpp
+    src/util/win32_format.cpp
     src/telemetry/impl/system_info_support.cpp
     src/telemetry/telemetry.cpp
     src/telemetry/impl/collector.cpp
@@ -629,8 +636,11 @@ add_executable(CaseDashBenchmarks
     ${CASEDASH_BENCHMARKS_VERSION_RC}
     tests/benchmarks.cpp
     src/util/strings.cpp
+    src/util/numeric_format.cpp
+    src/util/win32_format.cpp
     src/util/scale.cpp
     src/config/config.cpp
+    src/config/color_format.cpp
     src/config/color_expression.cpp
     src/config/color_math.cpp
     src/config/color_resolver.cpp

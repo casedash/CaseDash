@@ -1,6 +1,6 @@
 #include "layout_edit/layout_edit_trace_session.h"
 
-#include "util/strings.h"
+#include "util/numeric_format.h"
 
 namespace {
 

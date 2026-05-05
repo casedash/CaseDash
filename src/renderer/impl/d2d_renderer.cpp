@@ -8,8 +8,8 @@
 #include "renderer/impl/d2d_render_conversions.h"
 #include "renderer/png_export.h"
 #include "resource.h"
-#include "util/strings.h"
 #include "util/utf8.h"
+#include "util/win32_format.h"
 
 namespace {
 

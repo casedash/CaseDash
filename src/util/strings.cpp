@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cctype>
-#include <cstdio>
 #include <utility>
 
 std::string ToLower(std::string value) {
@@ -121,74 +120,4 @@ void SortUniqueStrings(std::vector<std::string>& values) {
         ++out;
     }
     values.resize(out);
-}
-
-std::string FormatHresult(HRESULT value) {
-    char buffer[32];
-    sprintf_s(buffer, "0x%08lX", static_cast<unsigned long>(value));
-    return buffer;
-}
-
-std::string FormatHexColorText(unsigned int value) {
-    char buffer[16];
-    sprintf_s(buffer, "#%08X", value);
-    return buffer;
-}
-
-std::string FormatDoubleGeneral(double value, int precision) {
-    char format[16];
-    sprintf_s(format, "%%.%dg", precision);
-    char buffer[64];
-    sprintf_s(buffer, format, value);
-    return buffer;
-}
-
-std::string FormatDoubleFixed(double value, int precision) {
-    char format[16];
-    sprintf_s(format, "%%.%df", precision);
-    char buffer[64];
-    sprintf_s(buffer, format, value);
-    return buffer;
-}
-
-std::string FormatDoubleFixedTrimmed(double value, int precision) {
-    std::string text = FormatDoubleFixed(value, precision);
-    if (const size_t dot = text.find('.'); dot != std::string::npos) {
-        while (!text.empty() && text.back() == '0') {
-            text.pop_back();
-        }
-        if (!text.empty() && text.back() == '.') {
-            text.pop_back();
-        }
-    }
-    return text;
-}
-
-std::string FormatNetworkFooterText(const std::string& adapterName, const std::string& ipAddress) {
-    if (adapterName.empty()) {
-        return ipAddress;
-    }
-    if (ipAddress.empty()) {
-        return adapterName;
-    }
-    return adapterName + " | " + ipAddress;
-}
-
-std::string FormatStorageDriveMenuText(const std::string& driveLetter, const std::string& volumeLabel, double totalGb) {
-    std::string text = driveLetter + ":";
-    if (!volumeLabel.empty()) {
-        text += " | " + volumeLabel;
-    }
-    text += " | " + FormatStorageDriveSize(totalGb);
-    return text;
-}
-
-std::string FormatStorageDriveSize(double totalGb) {
-    char buffer[64];
-    if (totalGb >= 1024.0) {
-        sprintf_s(buffer, "%.1f TB", totalGb / 1024.0);
-    } else {
-        sprintf_s(buffer, "%.0f GB", totalGb);
-    }
-    return buffer;
 }

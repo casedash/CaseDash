@@ -1,9 +1,9 @@
 #include "layout_edit_dialog/impl/trace.h"
 
+#include "config/color_format.h"
 #include "layout_edit/layout_edit_target_descriptor.h"
 #include "layout_edit_dialog/impl/util.h"
 #include "layout_model/layout_edit_parameter_metadata.h"
-#include "util/strings.h"
 #include "util/trace.h"
 
 namespace {
@@ -45,7 +45,7 @@ std::string QuoteTraceText(std::string_view text) {
 }
 
 std::string FormatTraceColorHex(unsigned int color) {
-    return FormatHexColorText(color);
+    return FormatRgbaColorText(color);
 }
 
 std::string JoinNodePath(const std::vector<size_t>& path) {

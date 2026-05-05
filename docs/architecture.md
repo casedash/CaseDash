@@ -5,8 +5,8 @@ See also: [docs/specifications.md](specifications.md) for product behavior, [doc
 
 ## Top-Level Packages
 
-- [config](architecture/config.md) - persisted configuration model, INI parsing and writing, schema metadata, theme and color resolution, and config-facing contracts.
-- [dashboard](architecture/dashboard.md) - shell UI, controller orchestration, tray integration, menus, auto-start, service registration, and user-facing command flow.
+- [config](architecture/config.md) - persisted configuration model, INI parsing and writing, schema metadata, theme and color resolution, config color text formatting, and config-facing contracts.
+- [dashboard](architecture/dashboard.md) - shell UI, controller orchestration, tray integration, menus and menu labels, auto-start, service registration, and user-facing command flow.
 - [dashboard_renderer](architecture/dashboard_renderer.md) - dashboard scene traversal, layout resolution, widget host services, drawing-mode state, and active-region collection.
 - [diagnostics](architecture/diagnostics.md) - diagnostics CLI parsing, headless runs, trace-owned exports, snapshot dumps, app-icon export, and native crash reports.
 - [display](architecture/display.md) - monitor enumeration, display targeting, placement, scale, and wallpaper/configure-display helpers.
@@ -17,7 +17,7 @@ See also: [docs/specifications.md](specifications.md) for product behavior, [doc
 - [main](architecture/main.md) - process entry point, command-line startup mode selection, elevation handoff, service host entry, and runtime config loading.
 - [renderer](architecture/renderer.md) - D2D-free renderer interface, render-space DTOs, style resources, Direct2D/DirectWrite/WIC backend, text measurement, and bitmap export support.
 - [telemetry](architecture/telemetry.md) - telemetry runtime, snapshot contracts, metric catalog, provider bridges, FPS service protocol, fake runtime, and retained histories.
-- [util](architecture/util.md) - domain-neutral file path, command-line, string, enum, UTF-8, resource, localization, numeric, trace, and callback helpers.
+- [util](architecture/util.md) - domain-neutral file path, command-line, string, enum, UTF-8, resource, localization, numeric formatting, Win32 error formatting, trace, and callback helpers.
 - [vendor](architecture/vendor.md) - narrow vendored source kept outside project layering rules where package-managed dependencies are not practical.
 - [widget](architecture/widget.md) - widget contracts, widget factories, widget-local drawing/layout behavior, edit-artifact registration, and app-icon/card-chrome geometry.
 

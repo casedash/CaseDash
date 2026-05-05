@@ -9,6 +9,7 @@
 #include <limits>
 #include <vector>
 
+#include "config/color_format.h"
 #include "config/color_resolver.h"
 #include "config/config_io.h"
 #include "config/config_parser.h"
@@ -68,7 +69,7 @@ void WriteResolvedColorTraceLine(
     DiagnosticsSession& diagnostics, std::string_view section, std::string_view name, const ColorConfig& color) {
     std::string text = "diagnostics:resolved_color section=" + Trace::QuoteText(section) +
                        " name=" + Trace::QuoteText(name) +
-                       " value=" + Trace::QuoteText(FormatHexColorText(color.ToRgba()));
+                       " value=" + Trace::QuoteText(FormatRgbaColorText(color.ToRgba()));
     if (!color.expression.empty()) {
         text += " expression=" + Trace::QuoteText(color.expression);
     }

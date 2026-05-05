@@ -9,7 +9,9 @@
 #include <cstdlib>
 #include <type_traits>
 
+#include "config/color_format.h"
 #include "config/config_parser.h"
+#include "util/numeric_format.h"
 #include "util/strings.h"
 
 namespace {
@@ -61,7 +63,7 @@ ColorConfig ParseHexColorOrDefault(const std::string& value, ColorConfig fallbac
         return fallback;
     }
     ColorConfig color = ColorConfig::FromRgba(static_cast<unsigned int>(parsed));
-    color.expression = FormatHexColorText(color.ToRgba());
+    color.expression = FormatRgbaColorText(color.ToRgba());
     return color;
 }
 
@@ -86,7 +88,7 @@ void ParseFontSpec(UiFontConfig& font, const std::string& value) {
 }
 
 std::string FormatHexColor(ColorConfig color) {
-    return FormatHexColorText(color.ToRgba());
+    return FormatRgbaColorText(color.ToRgba());
 }
 
 std::string FormatColorConfigValue(const ColorConfig& color) {

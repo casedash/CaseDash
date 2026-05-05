@@ -4,6 +4,7 @@
 #include <string_view>
 
 #include "config/color_expression.h"
+#include "config/color_format.h"
 #include "config/color_math.h"
 #include "config/config_runtime_fields.h"
 #include "util/function_ref.h"
@@ -12,7 +13,7 @@
 namespace {
 
 std::string FormatHexColor(ColorConfig color) {
-    return FormatHexColorText(color.ToRgba());
+    return FormatRgbaColorText(color.ToRgba());
 }
 
 std::optional<unsigned int> HexNibble(char ch) {

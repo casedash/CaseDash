@@ -5,7 +5,7 @@
 #include <ctime>
 #include <mutex>
 
-#include "util/strings.h"
+#include "util/numeric_format.h"
 
 namespace {
 

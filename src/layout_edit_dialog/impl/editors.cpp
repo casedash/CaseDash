@@ -11,6 +11,7 @@
 #include "layout_edit_dialog/impl/pane.h"
 #include "layout_edit_dialog/impl/trace.h"
 #include "layout_edit_dialog/impl/util.h"
+#include "util/numeric_format.h"
 #include "util/strings.h"
 #include "util/utf8.h"
 

@@ -1,6 +1,7 @@
 #include "config/config.h"
 
-#include "util/strings.h"
+#include "config/color_format.h"
+#include "util/numeric_format.h"
 
 namespace {
 
@@ -18,7 +19,7 @@ const MetricDefinitionConfig kRuntimePlaceholderMetricDefinition{
 }  // namespace
 
 ColorConfig ColorConfig::FromRgba(unsigned int value) {
-    return ColorConfig{static_cast<std::uint32_t>(value), FormatHexColorText(value)};
+    return ColorConfig{static_cast<std::uint32_t>(value), FormatRgbaColorText(value)};
 }
 
 unsigned int ColorConfig::ToRgb() const {

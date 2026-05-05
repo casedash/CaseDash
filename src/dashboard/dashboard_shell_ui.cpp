@@ -9,6 +9,7 @@
 #include "config/color_resolver.h"
 #include "dashboard/constants.h"
 #include "dashboard/dashboard_app.h"
+#include "dashboard/dashboard_menu_format.h"
 #include "diagnostics/diagnostics.h"
 #include "display/constants.h"
 #include "layout_edit/board_metric_binding.h"
@@ -21,7 +22,7 @@
 #include "layout_model/layout_edit_parameter_metadata.h"
 #include "resource.h"
 #include "telemetry/metrics.h"
-#include "util/strings.h"
+#include "util/numeric_format.h"
 #include "util/trace.h"
 #include "util/utf8.h"
 
@@ -1124,7 +1125,7 @@ void DashboardShellUi::ShowContextMenu(
         AppendMenuW(networkMenu, MF_STRING | MF_GRAYED, kCommandNetworkAdapterBase, L"No adapters found");
     } else {
         for (const auto& option : state.networkMenuOptions) {
-            const std::wstring label = WideFromUtf8(FormatNetworkFooterText(option.adapterName, option.ipAddress));
+            const std::wstring label = WideFromUtf8(FormatNetworkMenuText(option.adapterName, option.ipAddress));
             const UINT flags = MF_STRING | (option.selected ? MF_CHECKED : MF_UNCHECKED);
             AppendMenuW(networkMenu, flags, option.commandId, label.c_str());
             SetMenuItemRadioStyle(networkMenu, option.commandId);
