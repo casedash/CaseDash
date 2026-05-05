@@ -14,9 +14,9 @@ This document owns executable-size assumptions, constraints, map workflow notes,
 
 ## Current State
 
-- Current measured `build\CaseDash.exe`: `1,232,384` bytes.
+- Current measured `build\CaseDash.exe`: `1,214,976` bytes.
 - Current app map summary: `build\CaseDash.map.summary.txt`.
-- Current largest sections: `.text$mn` about `1006.6 KiB`, `.rdata` about `88.5 KiB`, `.rsrc$02` about `34.5 KiB`, `.pdata` about `22.4 KiB`, `.xdata` about `20.1 KiB`.
+- Current largest sections: `.text$mn` about `994.5 KiB`, `.rdata` about `88.3 KiB`, `.rsrc$02` about `34.5 KiB`, `.pdata` about `21.5 KiB`, `.xdata` about `20.1 KiB`.
 - Current largest project objects: `diagnostics.cpp.obj`, `editors.cpp.obj`, `dashboard_app.cpp.obj`, `layout_resolver.cpp.obj`, `dashboard_shell_ui.cpp.obj`, `layout_guide_sheet_renderer.cpp.obj`, `dashboard_controller.cpp.obj`, and `layout_edit_controller.cpp.obj`.
 - Last validation: `format.cmd changed`, `build.cmd`, `build_maps.cmd`, `test.cmd`, and `build\CaseDash.exe /default-config /fake /exit /trace:build\validation_size_trace.txt /dump:build\validation_size_dump.txt`.
 
@@ -70,7 +70,8 @@ This document owns executable-size assumptions, constraints, map workflow notes,
 | Process path capture | Reuse `util/paths` fixed-buffer executable and working-directory helpers for elevated relaunch instead of keeping a second vector-based path reader in `main.cpp`. | `1,241,088` to `1,239,040` bytes. |
 | Command-line switch scans | Keep command-line switch lookup on a narrow argv scanner and a purpose-built elevated-relaunch helper instead of materializing `std::vector<std::wstring>` for every scan. | `1,239,040` to `1,237,504` bytes. |
 | Layout-edit editor visibility | Select the active layout-edit selection editor by enum in one helper instead of repeating long boolean visibility packs at each populate branch. | `1,237,504` to `1,236,480` bytes. |
-| Wide string boundary pass | Keep layout-edit dialog combo/text setters, fixed-buffer checks, color numeric formatting, font sample text, diagnostics output errors, and file-path traces on UTF-8 or stack-buffer helpers until the Win32 boundary. | `1,236,992` to `1,232,384` bytes in the current measured pass. |
+| Wide string boundary pass | Keep layout-edit dialog combo/text setters, fixed-buffer checks, color numeric formatting, font sample text, diagnostics output errors, and file-path traces on UTF-8 or stack-buffer helpers until the Win32 boundary. | `1,236,992` to `1,232,384` bytes in that measured pass. |
+| Layout-edit parameter metadata | Keep layout-edit parameter find/apply behavior on root-offset metadata and shared accessors instead of per-field template callbacks. | `1,232,384` to `1,214,976` bytes; per-field `ApplyColorFieldEdit`, `ApplyFontFieldEdit`, and `DeferredRootFieldLens::Set` symbols are removed. |
 
 ## Rejected Or Neutral Experiments
 
