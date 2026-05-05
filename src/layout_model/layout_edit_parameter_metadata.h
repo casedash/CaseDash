@@ -28,7 +28,7 @@ struct LayoutEditParameterInfo {
     LayoutEditParameter parameter = LayoutEditParameter::MetricListLabelWidth;
 };
 
-const LayoutEditParameterInfo& GetLayoutEditParameterInfo(LayoutEditParameter parameter);
+LayoutEditParameterInfo GetLayoutEditParameterInfo(LayoutEditParameter parameter);
 const LayoutEditConfigFieldMetadata& GetLayoutEditConfigFieldMetadata(LayoutEditParameter parameter);
 bool IsFontLayoutEditParameter(LayoutEditParameter parameter);
 std::string GetLayoutEditParameterDisplayName(LayoutEditParameter parameter);

@@ -444,6 +444,8 @@ target_compile_options(CaseDash PRIVATE
     /wd4530
     /permissive-
     /GR-
+    # Size: stack-cookie instrumentation is an explicit Release executable-size tradeoff; see docs/optimize_size.md.
+    $<$<CONFIG:Release>:/GS->
     /w14505
     /we4505
     /Zi

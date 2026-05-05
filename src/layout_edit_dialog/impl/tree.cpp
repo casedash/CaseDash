@@ -1,6 +1,7 @@
 #include "layout_edit_dialog/impl/tree.h"
 
 #include <commctrl.h>
+#include <utility>
 
 #include "layout_edit_dialog/impl/editors.h"
 #include "layout_edit_dialog/impl/pane.h"
@@ -278,11 +279,15 @@ void RebuildLayoutEditTree(
     HTREEITEM selectedItem = nullptr;
     {
         const DialogRedrawScope redrawSuspension(tree, RDW_FRAME | RDW_INVALIDATE | RDW_UPDATENOW);
-        state->visibleTreeModel = FilterLayoutEditTreeModel(state->treeModel, Utf8FromWide(state->currentFilter));
+        LayoutEditTreeModel visibleTreeModel =
+            FilterLayoutEditTreeModel(state->treeModel, Utf8FromWide(state->currentFilter));
         state->treeItems.clear();
         TraceTreeViewport(state, tree, "layout_edit_dialog:tree_delete_all_before");
+        const bool wasSuppressingSelection = state->suppressTreeSelectionNotification;
+        state->suppressTreeSelectionNotification = true;
         TreeView_DeleteAllItems(tree);
         TraceTreeViewport(state, tree, "layout_edit_dialog:tree_delete_all_after");
+        state->visibleTreeModel = std::move(visibleTreeModel);
         InsertLayoutEditTreeNodes(state, tree, state->visibleTreeModel.roots, TVI_ROOT);
         TraceTreeViewport(state,
             tree,
@@ -309,11 +314,10 @@ void RebuildLayoutEditTree(
                 tree,
                 "layout_edit_dialog:tree_select_item_before",
                 "target={" + BuildTreeItemTraceText(state, tree, selectedItem) + "}");
-            state->suppressTreeSelectionNotification = true;
             TreeView_SelectItem(tree, selectedItem);
-            state->suppressTreeSelectionNotification = false;
             TraceTreeViewport(state, tree, "layout_edit_dialog:tree_select_item_after");
         }
+        state->suppressTreeSelectionNotification = wasSuppressingSelection;
     }
 
     if (selectedItem != nullptr) {

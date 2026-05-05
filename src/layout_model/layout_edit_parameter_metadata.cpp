@@ -105,21 +105,13 @@ const LayoutEditConfigFieldMetadata kParameterFields[] = {
 
 #undef CASEDASH_DECLARE_LAYOUT_EDIT_PARAMETER_METADATA
 
-#define CASEDASH_DECLARE_LAYOUT_EDIT_PARAMETER_INFO(name, meta) {Parameter::name},
-
-const LayoutEditParameterInfo kParameterInfo[] = {
-    CASEDASH_LAYOUT_EDIT_PARAMETER_ITEMS(CASEDASH_DECLARE_LAYOUT_EDIT_PARAMETER_INFO)};
-
-#undef CASEDASH_DECLARE_LAYOUT_EDIT_PARAMETER_INFO
-
-constexpr size_t kParameterInfoCount = sizeof(kParameterInfo) / sizeof(kParameterInfo[0]);
-static_assert(kParameterInfoCount == sizeof(kParameterFields) / sizeof(kParameterFields[0]));
+constexpr size_t kParameterInfoCount = sizeof(kParameterFields) / sizeof(kParameterFields[0]);
 static_assert(kParameterInfoCount == static_cast<size_t>(Parameter::Count));
 
 }  // namespace
 
-const LayoutEditParameterInfo& GetLayoutEditParameterInfo(LayoutEditParameter parameter) {
-    return kParameterInfo[static_cast<size_t>(parameter)];
+LayoutEditParameterInfo GetLayoutEditParameterInfo(LayoutEditParameter parameter) {
+    return LayoutEditParameterInfo{parameter};
 }
 
 const LayoutEditConfigFieldMetadata& GetLayoutEditConfigFieldMetadata(LayoutEditParameter parameter) {

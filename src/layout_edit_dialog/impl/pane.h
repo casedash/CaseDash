@@ -53,6 +53,7 @@ std::optional<RECT> LayoutEditRightPaneRect(HWND hwnd);
 void RefreshLayoutEditRightPane(HWND hwnd);
 
 void ConfigureDialogFonts(LayoutEditDialogState* state, HWND hwnd);
+void EnsureLayoutEditDialogControls(HWND hwnd);
 void DestroyDialogFonts(LayoutEditDialogState* state);
 void SetLayoutEditStatus(LayoutEditDialogState* state, HWND hwnd, LayoutEditStatusKind kind, const std::wstring& text);
 void SetColorSamplePreview(LayoutEditDialogState* state, HWND hwnd, unsigned int color);

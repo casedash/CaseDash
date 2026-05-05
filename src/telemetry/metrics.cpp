@@ -132,7 +132,7 @@ std::string FormatScalarValue(std::optional<double> value, std::string_view unit
     if (unit.empty()) {
         sprintf_s(buffer, "%.*f", precision, *value);
     } else {
-        sprintf_s(buffer, "%.*f %s", precision, *value, std::string(unit).c_str());
+        sprintf_s(buffer, "%.*f %.*s", precision, *value, static_cast<int>(unit.size()), unit.data());
     }
     return buffer;
 }
@@ -147,7 +147,7 @@ std::string FormatPercentValue(std::optional<double> value, std::string_view uni
     } else if (unit == "%") {
         sprintf_s(buffer, "%.*f%%", precision, *value);
     } else {
-        sprintf_s(buffer, "%.*f %s", precision, *value, std::string(unit).c_str());
+        sprintf_s(buffer, "%.*f %.*s", precision, *value, static_cast<int>(unit.size()), unit.data());
     }
     return buffer;
 }
@@ -160,7 +160,7 @@ std::string FormatMemoryValue(double usedGb, double totalGb, std::string_view un
     if (unit.empty()) {
         sprintf_s(buffer, "%.1f / %.0f", usedGb, totalGb);
     } else {
-        sprintf_s(buffer, "%.1f / %.0f %s", usedGb, totalGb, std::string(unit).c_str());
+        sprintf_s(buffer, "%.1f / %.0f %.*s", usedGb, totalGb, static_cast<int>(unit.size()), unit.data());
     }
     return buffer;
 }
@@ -173,7 +173,11 @@ std::string FormatThroughputValue(double valueMbps, std::string_view unit) {
     if (unit.empty()) {
         sprintf_s(buffer, valueMbps >= 100.0 ? "%.0f" : "%.1f", valueMbps);
     } else {
-        sprintf_s(buffer, valueMbps >= 100.0 ? "%.0f %s" : "%.1f %s", valueMbps, std::string(unit).c_str());
+        sprintf_s(buffer,
+            valueMbps >= 100.0 ? "%.0f %.*s" : "%.1f %.*s",
+            valueMbps,
+            static_cast<int>(unit.size()),
+            unit.data());
     }
     return buffer;
 }
@@ -196,12 +200,12 @@ std::string FormatSizeAutoValue(double valueGb, std::string_view units) {
         if (largeUnit.empty()) {
             sprintf_s(buffer, "%.1f", valueGb / 1024.0);
         } else {
-            sprintf_s(buffer, "%.1f %s", valueGb / 1024.0, std::string(largeUnit).c_str());
+            sprintf_s(buffer, "%.1f %.*s", valueGb / 1024.0, static_cast<int>(largeUnit.size()), largeUnit.data());
         }
     } else if (smallUnit.empty()) {
         sprintf_s(buffer, "%.0f", valueGb);
     } else {
-        sprintf_s(buffer, "%.0f %s", valueGb, std::string(smallUnit).c_str());
+        sprintf_s(buffer, "%.0f %.*s", valueGb, static_cast<int>(smallUnit.size()), smallUnit.data());
     }
     return buffer;
 }
