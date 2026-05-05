@@ -12,7 +12,6 @@
 #include "config/config_resolution.h"
 #include "config/config_runtime_fields.h"
 #include "config/widget_class.h"
-#include "resource.h"
 #include "util/resource_loader.h"
 #include "util/strings.h"
 
@@ -401,7 +400,7 @@ void ApplyConfigText(const std::string& text, AppConfig& config, const ConfigPar
 }  // namespace
 
 std::string LoadEmbeddedConfigTemplate() {
-    return LoadUtf8ResourceData(IDR_CONFIG_TEMPLATE);
+    return LoadUtf8ResourceData(TextResourceId::ConfigTemplate);
 }
 
 AppConfig LoadConfig(const FilePath& path, bool includeOverlay, const ConfigParseContext& context) {

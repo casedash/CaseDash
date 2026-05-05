@@ -5,7 +5,6 @@
 #include <cstdint>
 
 #include "resource.h"
-#include "util/utf8.h"
 
 namespace {
 
@@ -58,9 +57,9 @@ std::string DecompressResourceData(const std::string& data) {
 
 }  // namespace
 
-std::string LoadUtf8ResourceData(int resourceId) {
-    const bool localization = resourceId == IDR_LOCALIZATION_CATALOG;
-    if (resourceId != IDR_CONFIG_TEMPLATE && !localization) {
+std::string LoadUtf8ResourceData(TextResourceId resourceId) {
+    const bool localization = resourceId == TextResourceId::LocalizationCatalog;
+    if (resourceId != TextResourceId::ConfigTemplate && !localization) {
         return {};
     }
 
@@ -110,12 +109,5 @@ std::string LoadUtf8ResourceData(int resourceId) {
     }
 
     std::string text(atlas.data() + offset, length);
-    if (text.size() >= 3 && static_cast<unsigned char>(text[0]) == 0xEF &&
-        static_cast<unsigned char>(text[1]) == 0xBB && static_cast<unsigned char>(text[2]) == 0xBF) {
-        text.erase(0, 3);
-    }
-    if (!IsValidUtf8(text)) {
-        return {};
-    }
     return text;
 }

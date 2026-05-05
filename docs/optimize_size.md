@@ -16,9 +16,9 @@ This document owns executable-size assumptions, constraints, map workflow notes,
 
 - Current measured `build\CaseDash.exe`: `1,170,432` bytes.
 - Current app map summary: `build\CaseDash.map.summary.txt`.
-- Current largest sections: `.text$mn` about `949.9 KiB`, `.rdata` about `88.1 KiB`, `.rsrc$02` about `32.5 KiB`, `.pdata` about `20.8 KiB`, `.xdata` about `19.8 KiB`.
+- Current largest sections: `.text$mn` about `949.6 KiB`, `.rdata` about `88.1 KiB`, `.rsrc$02` about `32.5 KiB`, `.pdata` about `20.8 KiB`, `.xdata` about `19.8 KiB`.
 - Current largest project objects: `diagnostics.cpp.obj`, `editors.cpp.obj`, `dashboard_app.cpp.obj`, `dashboard_shell_ui.cpp.obj`, `dashboard_renderer.cpp.obj`, `layout_resolver.cpp.obj`, `CaseDash.rc.res`, `layout_guide_sheet_renderer.cpp.obj`, `layout_edit_controller.cpp.obj`, and `dashboard_controller.cpp.obj`.
-- Last validation: `format.cmd fix changed`, `build.cmd`, `test.cmd`, `python tools\source_dependency_graph.py --skip-svg --check`, `build\CaseDash.exe /default-config /fake /exit /trace:build\validation_size_trace.txt /dump:build\validation_size_dump.txt`, `build_maps.cmd`, and `format.cmd changed`.
+- Last validation: `format.cmd fix changed`, `build.cmd /benchmarks`, `test.cmd`, `python tools\source_dependency_graph.py --skip-svg --check`, `build\CaseDash.exe /default-config /fake /exit /trace:build\validation_utf8_trim_trace.txt /dump:build\validation_utf8_trim_dump.txt /screenshot:build\validation_utf8_trim_screenshot.png /layout-guide-sheet:build\validation_utf8_trim_sheet.png /save-full-config:build\validation_utf8_trim_full_config.ini`, `build_maps.cmd`, and `format.cmd changed`.
 
 ## Workflow
 
@@ -85,7 +85,7 @@ This document owns executable-size assumptions, constraints, map workflow notes,
 | Worker thread handles | Keep the telemetry runtime, FPS ETW processor, and FPS service worker on direct Win32 thread and event handles instead of `std::thread` and `std::condition_variable` wrappers. | `1,177,600` to `1,177,088` bytes; `.text$mn` dropped from about `954.7 KiB` to `954.1 KiB`. |
 | PNG and ICO resource metadata | Strip nonessential PNG ancillary chunks from app icon and section icon resources while preserving image pixel data. | `1,177,088` to `1,176,576` bytes; `.rsrc$02` dropped from about `34.5 KiB` to `34.0 KiB`. |
 | Panel icon atlas | Keep panel icons in one fixed 64 x 64 vertical 8-bit grayscale PNG mask atlas and draw cropped atlas slots through a target-local alpha mask instead of caching per-icon sources and scaled Direct2D bitmaps. | `1,176,576` to `1,171,456` bytes; `.text$mn` dropped from about `954.2 KiB` to `949.6 KiB` and `.rsrc$02` dropped from about `34.0 KiB` to `33.5 KiB`. The follow-up alpha-only PNG conversion shrank `resources\panel_icons.png` from `2,285` to `1,572` bytes but did not cross another executable file-alignment boundary. |
-| Text resource atlas | Compress the embedded default config and localization catalog as one LZSS text atlas with the config length followed by both files instead of two separate compressed RCDATA resources. | `1,171,456` to `1,170,432` bytes; `.rsrc$02` dropped from about `33.5 KiB` to `32.5 KiB` while `.text$mn` grew to about `949.9 KiB` for atlas slicing. The generated compressed text payload dropped from `6,066` to `5,790` bytes. |
+| Text resource atlas | Compress the embedded default config and localization catalog as one LZSS text atlas with the config length followed by both files instead of two separate compressed RCDATA resources. Keep source validation for embedded text in the generator, not the runtime loader. | `1,171,456` to `1,170,432` bytes; `.rsrc$02` dropped from about `33.5 KiB` to `32.5 KiB`. The generated compressed text payload dropped from `6,066` to `5,790` bytes. Follow-up removal of runtime UTF-8/BOM cleanup stayed file-size neutral at `1,170,432` bytes but reduced `.text$mn` from about `949.9 KiB` to `949.6 KiB`. |
 
 ## Rejected Or Neutral Experiments
 

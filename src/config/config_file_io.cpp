@@ -4,6 +4,14 @@
 
 #include "util/utf8.h"
 
+namespace {
+
+bool HasValidUtf8Encoding(const std::string& text) {
+    return text.empty() || !WideFromUtf8(text).empty();
+}
+
+}  // namespace
+
 std::string ReadConfigFileUtf8(const FilePath& path) {
     std::FILE* input = nullptr;
     if (_wfopen_s(&input, path.c_str(), L"rb") != 0 || input == nullptr) {
@@ -30,14 +38,14 @@ std::string ReadConfigFileUtf8(const FilePath& path) {
         static_cast<unsigned char>(text[1]) == 0xBB && static_cast<unsigned char>(text[2]) == 0xBF) {
         text.erase(0, 3);
     }
-    if (!IsValidUtf8(text)) {
+    if (!HasValidUtf8Encoding(text)) {
         return {};
     }
     return text;
 }
 
 bool WriteConfigFileUtf8(const FilePath& path, const std::string& text) {
-    if (!IsValidUtf8(text)) {
+    if (!HasValidUtf8Encoding(text)) {
         return false;
     }
 

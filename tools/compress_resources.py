@@ -54,6 +54,17 @@ def write_if_changed(path: Path, data: bytes) -> None:
     path.write_bytes(data)
 
 
+def read_utf8_bytes(path: Path) -> bytes:
+    data = path.read_bytes()
+    if data.startswith(b"\xef\xbb\xbf"):
+        raise SystemExit(f"{path} must be UTF-8 without a BOM")
+    try:
+        data.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise SystemExit(f"{path} is not valid UTF-8: {exc}") from exc
+    return data
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Compress embedded text resources for CaseDash.")
     parser.add_argument("--output-dir", required=True, type=Path)
@@ -61,8 +72,8 @@ def main() -> int:
     parser.add_argument("--resource-root", required=True, type=Path)
     args = parser.parse_args()
 
-    config = (args.resource_root / "config.ini").read_bytes()
-    localization = (args.resource_root / "localization.ini").read_bytes()
+    config = read_utf8_bytes(args.resource_root / "config.ini")
+    localization = read_utf8_bytes(args.resource_root / "localization.ini")
     atlas = struct.pack("<I", len(config)) + config + localization
     compressed = MAGIC + struct.pack("<I", len(atlas)) + lzss_compress(atlas)
     compressed_path = args.output_dir / "text_atlas.cdlz"
