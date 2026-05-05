@@ -75,7 +75,7 @@ if errorlevel 1 exit /b %errorlevel%
 call "%REPO_ROOT%\lint.cmd"
 if errorlevel 1 exit /b %errorlevel%
 
-call "%REPO_ROOT%\build.cmd"
+call "%REPO_ROOT%\build.cmd" /benchmarks
 if errorlevel 1 exit /b %errorlevel%
 
 call "%REPO_ROOT%\test.cmd"

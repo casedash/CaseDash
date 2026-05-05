@@ -65,7 +65,7 @@ jobs:
 
       - name: Build
         shell: cmd
-        run: build.cmd
+        run: build.cmd /benchmarks
 
       - name: Run tests
         shell: cmd
