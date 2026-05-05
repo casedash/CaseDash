@@ -846,24 +846,22 @@ void DashboardLayoutEditOverlayRenderer::DrawDottedHighlightRect(
     const RenderRect outlineRect =
         outside ? rect.Inflate(padding, padding)
                 : RenderRect{rect.left + padding, rect.top + padding, rect.right - padding, rect.bottom - padding};
-    const float outlineWidth = static_cast<float>(
-        active ? (std::max)(2, renderer_.ScaleLogical(2)) : (std::max)(1, renderer_.ScaleLogical(1)));
     const RenderRect drawRect = outlineRect.IsEmpty() ? rect : outlineRect;
-    auto& renderer = renderer_;
-    const int strokeWidth = (std::max)(1, static_cast<int>(std::lround(outlineWidth)));
+    const int strokeWidth =
+        active ? (std::max)(2, renderer_.ScaleLogical(2)) : (std::max)(1, renderer_.ScaleLogical(1));
     const int dotLength = (std::max)(strokeWidth + 1, renderer_.ScaleLogical(active ? 6 : 5));
     const int gapLength = (std::max)(strokeWidth + 1, renderer_.ScaleLogical(active ? 5 : 4));
 
     const auto drawHorizontal = [&](int y, int left, int right) {
         for (int x = left; x < right; x += dotLength + gapLength) {
             const int segmentRight = (std::min)(x + dotLength, right);
-            renderer.Renderer().FillSolidRect(RenderRect{x, y, segmentRight, y + strokeWidth}, color);
+            renderer_.Renderer().FillSolidRect(RenderRect{x, y, segmentRight, y + strokeWidth}, color);
         }
     };
     const auto drawVertical = [&](int x, int top, int bottom) {
         for (int y = top; y < bottom; y += dotLength + gapLength) {
             const int segmentBottom = (std::min)(y + dotLength, bottom);
-            renderer.Renderer().FillSolidRect(RenderRect{x, y, x + strokeWidth, segmentBottom}, color);
+            renderer_.Renderer().FillSolidRect(RenderRect{x, y, x + strokeWidth, segmentBottom}, color);
         }
     };
 
@@ -988,10 +986,13 @@ void DashboardLayoutEditOverlayRenderer::DrawLayoutSimilarityIndicators(
             visible->exactTypeOrdinal = existingType->exactTypeOrdinal;
         } else {
             visible->exactTypeOrdinal = nextOrdinal++;
-            renderer_.WriteTrace("renderer:layout_similarity_group axis=\"" + std::string(axisLabel) +
-                                 "\" class=" + std::to_string(static_cast<int>(visible->type.widgetClass)) +
-                                 " extent=" + std::to_string(visible->type.extent) +
-                                 " ordinal=" + std::to_string(visible->exactTypeOrdinal));
+            // Perf: interactive drag traces intentionally drop renderer details, so avoid formatting them every paint.
+            if (!renderer_.interactiveDragTraceActive_) {
+                renderer_.WriteTrace("renderer:layout_similarity_group axis=\"" + std::string(axisLabel) +
+                                     "\" class=" + std::to_string(static_cast<int>(visible->type.widgetClass)) +
+                                     " extent=" + std::to_string(visible->type.extent) +
+                                     " ordinal=" + std::to_string(visible->exactTypeOrdinal));
+            }
         }
     }
 

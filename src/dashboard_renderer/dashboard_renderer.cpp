@@ -942,8 +942,12 @@ void DashboardRenderer::InvalidateMetricSourceCache() {
     cachedMetricSnapshotRevision_ = 0;
 }
 
+bool DashboardRenderer::ShouldWriteRendererTrace() const {
+    return !interactiveDragTraceActive_;
+}
+
 void DashboardRenderer::WriteTrace(const std::string& text) const {
-    if (interactiveDragTraceActive_ && text.rfind("renderer:", 0) == 0) {
+    if (!ShouldWriteRendererTrace() && text.rfind("renderer:", 0) == 0) {
         return;
     }
     trace_.Write(text);

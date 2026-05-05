@@ -604,6 +604,7 @@ void DashboardLayoutResolver::AddLayoutEditGuide(DashboardRenderer& renderer,
 
 int DashboardLayoutResolver::PreferredNodeHeight(
     const DashboardRenderer& renderer, const LayoutNodeConfig& node, int) const {
+    const bool writeTrace = renderer.ShouldWriteRendererTrace();
     if (node.name == "rows") {
         int total = 0;
         for (size_t i = 0; i < node.children.size(); ++i) {
@@ -612,8 +613,10 @@ int DashboardLayoutResolver::PreferredNodeHeight(
                 total += renderer.ScaleLogical(renderer.config_.layout.cardStyle.rowGap);
             }
         }
-        renderer.WriteTrace(
-            "renderer:layout_preferred_height node=\"" + node.name + "\" value=" + std::to_string(total));
+        if (writeTrace) {
+            renderer.WriteTrace(
+                "renderer:layout_preferred_height node=\"" + node.name + "\" value=" + std::to_string(total));
+        }
         return total;
     }
     if (node.name == "columns") {
@@ -621,14 +624,18 @@ int DashboardLayoutResolver::PreferredNodeHeight(
         for (const auto& child : node.children) {
             tallest = (std::max)(tallest, PreferredNodeHeight(renderer, child, 0));
         }
-        renderer.WriteTrace(
-            "renderer:layout_preferred_height node=\"" + node.name + "\" value=" + std::to_string(tallest));
+        if (writeTrace) {
+            renderer.WriteTrace(
+                "renderer:layout_preferred_height node=\"" + node.name + "\" value=" + std::to_string(tallest));
+        }
         return tallest;
     }
     const ParsedWidgetInfo* widget = FindParsedWidgetInfo(renderer, node);
     const int preferredHeight = widget != nullptr ? widget->preferredHeight : 0;
-    renderer.WriteTrace(
-        "renderer:layout_preferred_height node=\"" + node.name + "\" value=" + std::to_string(preferredHeight));
+    if (writeTrace) {
+        renderer.WriteTrace(
+            "renderer:layout_preferred_height node=\"" + node.name + "\" value=" + std::to_string(preferredHeight));
+    }
     return preferredHeight;
 }
 
@@ -685,20 +692,29 @@ void DashboardLayoutResolver::ResolveNodeWidgetsInternal(DashboardRenderer& rend
     const std::string& editCardId,
     const std::vector<size_t>& nodePath,
     bool instantiateWidgets) {
-    renderer.WriteTrace("renderer:layout_resolve_node name=\"" + node.name +
-                        "\" weight=" + std::to_string(node.weight) + " " + FormatRect(rect) +
-                        " children=" + std::to_string(node.children.size()));
+    const bool writeTrace = renderer.ShouldWriteRendererTrace();
+    if (writeTrace) {
+        renderer.WriteTrace("renderer:layout_resolve_node name=\"" + node.name +
+                            "\" weight=" + std::to_string(node.weight) + " " + FormatRect(rect) +
+                            " children=" + std::to_string(node.children.size()));
+    }
     if (node.cardReference) {
         if (ContainsCardReference(cardReferenceStack, node.name)) {
-            renderer.WriteTrace("renderer:layout_card_ref_cycle id=\"" + node.name + "\"");
+            if (writeTrace) {
+                renderer.WriteTrace("renderer:layout_card_ref_cycle id=\"" + node.name + "\"");
+            }
             return;
         }
         const LayoutCardConfig* referencedCard = renderer.FindCardConfigById(node.name);
         if (referencedCard == nullptr) {
-            renderer.WriteTrace("renderer:layout_card_ref_missing id=\"" + node.name + "\"");
+            if (writeTrace) {
+                renderer.WriteTrace("renderer:layout_card_ref_missing id=\"" + node.name + "\"");
+            }
             return;
         }
-        renderer.WriteTrace("renderer:layout_card_ref id=\"" + node.name + "\" " + FormatRect(rect));
+        if (writeTrace) {
+            renderer.WriteTrace("renderer:layout_card_ref id=\"" + node.name + "\" " + FormatRect(rect));
+        }
         cardReferenceStack.push_back(node.name);
         ResolveNodeWidgetsInternal(renderer,
             referencedCard->layout,
@@ -717,10 +733,13 @@ void DashboardLayoutResolver::ResolveNodeWidgetsInternal(DashboardRenderer& rend
         widget.cardId = renderCardId;
         widget.editCardId = editCardId;
         widget.nodePath = nodePath;
-        const std::string widgetTypeName =
-            widget.widget != nullptr ? std::string(EnumToString(widget.widget->Class())) : std::string();
-        renderer.WriteTrace("renderer:layout_widget_resolved kind=\"" + node.name + "\" " + FormatRect(widget.rect) +
-                            (widgetTypeName.empty() ? "" : " type=\"" + widgetTypeName + "\""));
+        if (writeTrace) {
+            const std::string widgetTypeName =
+                widget.widget != nullptr ? std::string(EnumToString(widget.widget->Class())) : std::string();
+            renderer.WriteTrace("renderer:layout_widget_resolved kind=\"" + node.name + "\" " +
+                                FormatRect(widget.rect) +
+                                (widgetTypeName.empty() ? "" : " type=\"" + widgetTypeName + "\""));
+        }
         widgets.push_back(std::move(widget));
         return;
     }
@@ -806,9 +825,11 @@ void DashboardLayoutResolver::ResolveNodeWidgetsInternal(DashboardRenderer& rend
             childRect.bottom = cursor + size;
         }
 
-        renderer.WriteTrace("renderer:layout_weighted_child parent=\"" + node.name + "\" child=\"" + child.name +
-                            "\" weight=" + std::to_string(childWeight) + " gap=" + std::to_string(gap) +
-                            " size=" + std::to_string(size) + " " + FormatRect(childRect));
+        if (writeTrace) {
+            renderer.WriteTrace("renderer:layout_weighted_child parent=\"" + node.name + "\" child=\"" + child.name +
+                                "\" weight=" + std::to_string(childWeight) + " gap=" + std::to_string(gap) +
+                                " size=" + std::to_string(size) + " " + FormatRect(childRect));
+        }
         childRects.push_back(childRect);
         childPath.push_back(i);
         ResolveNodeWidgetsInternal(renderer,
@@ -853,15 +874,18 @@ bool DashboardLayoutResolver::ResolveLayout(DashboardRenderer& renderer, bool in
         renderer.ScaleLogical(renderer.config_.layout.dashboard.outerMargin),
         renderer.WindowWidth() - renderer.ScaleLogical(renderer.config_.layout.dashboard.outerMargin),
         renderer.WindowHeight() - renderer.ScaleLogical(renderer.config_.layout.dashboard.outerMargin)};
+    const bool writeTrace = renderer.ShouldWriteRendererTrace();
 
     if (renderer.config_.layout.structure.cardsLayout.name.empty()) {
         renderer.lastError_ = "renderer:layout_missing_cards_root";
         return false;
     }
 
-    renderer.WriteTrace("renderer:layout_begin window=" + std::to_string(resolvedLayout_.windowWidth) + "x" +
-                        std::to_string(resolvedLayout_.windowHeight) + " " + FormatRect(dashboardRect) +
-                        " cards_root=\"" + renderer.config_.layout.structure.cardsLayout.name + "\"");
+    if (writeTrace) {
+        renderer.WriteTrace("renderer:layout_begin window=" + std::to_string(resolvedLayout_.windowWidth) + "x" +
+                            std::to_string(resolvedLayout_.windowHeight) + " " + FormatRect(dashboardRect) +
+                            " cards_root=\"" + renderer.config_.layout.structure.cardsLayout.name + "\"");
+    }
 
     if (includeWidgetState && !renderer.layoutGuideDragActive_) {
         LayoutEditGapAnchor anchor;
@@ -900,10 +924,12 @@ bool DashboardLayoutResolver::ResolveLayout(DashboardRenderer& renderer, bool in
             card.chrome.editCardId = card.id;
             card.chrome.widget = includeWidgetState ? CreateCardChromeWidget(*cardIt) : nullptr;
 
-            renderer.WriteTrace("renderer:layout_card id=\"" + card.id + "\" " + FormatRect(card.rect) +
-                                " title=" + FormatRect(card.chromeLayout.titleRect) +
-                                " icon=" + FormatRect(card.chromeLayout.iconRect) +
-                                " content=" + FormatRect(card.chromeLayout.contentRect));
+            if (writeTrace) {
+                renderer.WriteTrace("renderer:layout_card id=\"" + card.id + "\" " + FormatRect(card.rect) +
+                                    " title=" + FormatRect(card.chromeLayout.titleRect) +
+                                    " icon=" + FormatRect(card.chromeLayout.iconRect) +
+                                    " content=" + FormatRect(card.chromeLayout.contentRect));
+            }
             std::vector<std::string> cardReferenceStack;
             ResolveNodeWidgetsInternal(renderer,
                 cardIt->layout,
@@ -961,9 +987,12 @@ bool DashboardLayoutResolver::ResolveLayout(DashboardRenderer& renderer, bool in
                 childRect.bottom = cursor + size;
             }
 
-            renderer.WriteTrace("renderer:layout_dashboard_child parent=\"" + node.name + "\" child=\"" + child.name +
-                                "\" weight=" + std::to_string(childWeight) + " gap=" + std::to_string(gap) +
-                                " size=" + std::to_string(size) + " " + FormatRect(childRect));
+            if (writeTrace) {
+                renderer.WriteTrace("renderer:layout_dashboard_child parent=\"" + node.name + "\" child=\"" +
+                                    child.name + "\" weight=" + std::to_string(childWeight) +
+                                    " gap=" + std::to_string(gap) + " size=" + std::to_string(size) + " " +
+                                    FormatRect(childRect));
+            }
             childRects.push_back(childRect);
             childPath.push_back(i);
             resolveNode(resolveNode, child, childRect, childPath);
@@ -1024,6 +1053,8 @@ bool DashboardLayoutResolver::ResolveLayout(DashboardRenderer& renderer, bool in
         }
     }
 
-    renderer.WriteTrace("renderer:layout_done cards=" + std::to_string(resolvedLayout_.cards.size()));
+    if (writeTrace) {
+        renderer.WriteTrace("renderer:layout_done cards=" + std::to_string(resolvedLayout_.cards.size()));
+    }
     return true;
 }

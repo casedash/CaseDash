@@ -141,6 +141,7 @@ private:
     RendererStyle BuildRendererStyle() const;
     const MetricSource& ResolveMetrics(const SystemSnapshot& snapshot);
     void InvalidateMetricSourceCache();
+    bool ShouldWriteRendererTrace() const;
     void WriteTrace(const std::string& text) const;
     bool SaveLayoutGuideSheetSurfacePng(const FilePath& imagePath, int width, int height, Renderer::DrawCallback draw);
     bool RenderLayoutGuideSheetSurfaceOffscreen(int width, int height, Renderer::DrawCallback draw);

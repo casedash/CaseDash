@@ -42,10 +42,10 @@ This file records the current benchmark baselines, latest confirmed hotspots, an
   - `apply avg_ms=0.08`
   - `paint_draw avg_ms=2.09`
 - Current repeatable `edit-layout` result on the current tree:
-  - `drag_loop per_iter_ms=2.32`
-  - `snap avg_ms=0.19`
-  - `apply avg_ms=0.09`
-  - `paint_draw avg_ms=2.02`
+  - `drag_loop per_iter_ms=2.22`
+  - `snap avg_ms=0.06`
+  - `apply avg_ms=0.05`
+  - `paint_draw avg_ms=2.09`
 - Current repeatable `update-telemetry` result on the current tree:
   - `update_loop per_iter_ms=4.57`
   - `telemetry_update avg_ms=2.50`
@@ -82,6 +82,8 @@ This file records the current benchmark baselines, latest confirmed hotspots, an
 Current useful hotspot signals from the latest daemon-backed WPR capture on the full-D2D tree:
 
 - The latest daemon-backed `update-telemetry` capture under `build\profile_benchmark_daemon\requests\26329_243_6102\` reports `update_loop per_iter_ms=4.64`, `telemetry_update avg_ms=2.56`, and `paint_draw avg_ms=2.08`; the benchmark-process inclusive module weight is centered on `d2d1.dll`, `DWrite.dll`, `Kernelbase.dll`, `PDH.DLL`, `advapi32.dll`, `clr.dll`, and `mscorlib.dll`. The app-inclusive call tree keeps `AmdAdlxGpuTelemetryProvider::Sample`, `FpsHybridProvider::Sample`, and `PresentedFpsEtwProvider::Sample` visible, so the capture still includes the real presented-FPS ETW sample overhead while using raw GPU Engine PDH values.
+- The latest direct full-benchmark rerun is captured in `build\benchmark_after_trace_guard.txt`. The `edit-layout` run landed at `drag_loop per_iter_ms=2.22`, `snap avg_ms=0.06`, `apply avg_ms=0.05`, and `paint_draw avg_ms=2.09`; the other paint-heavy benchmarks were noisier on the same machine run and remain dominated by Direct2D or collector cost rather than the guide-size snap/apply path.
+- The latest daemon-backed `edit-layout` capture under `build\profile_benchmark_daemon\requests\29824_11608_6003\` reports `drag_loop per_iter_ms=2.36`, `snap avg_ms=0.07`, `apply avg_ms=0.06`, and `paint_draw avg_ms=2.22`; the string-construction leaves from renderer trace formatting are gone, and the remaining inclusive app weight is in `D2DRenderer::DrawTextBlock`, `D2DRenderer::FillSolidRect`, and `DashboardLayoutEditOverlayRenderer::DrawDottedHighlightRect`.
 - The latest direct `layout-guide-sheet` run splits generation into `sheet_measure`, `sheet_place`, and `sheet_draw`; it reports `sheet_loop per_iter_ms=328.70`, with `sheet_place avg_ms=299.16` dominating and actual offscreen drawing isolated at `sheet_draw avg_ms=16.97`.
 - The latest usable daemon-backed `edit-layout` capture under `build\profile_benchmark_daemon\requests\21425_18089_27400\` keeps the benchmark-process inclusive module weight centered on `d2d1.dll`, `DWrite.dll`, `TextShaping.dll`, `amdxx64.dll`, and `D3D11.dll`; the exported call tree still under-symbolizes most app-owned leaf functions and does not surface a new dominant geometry-builder hotspot inside the benchmark process.
 - The latest daemon-backed `edit-layout` timing capture under `build\profile_benchmark_daemon\requests\18269_30044_21338\` reports `drag_loop per_iter_ms=2.54`, `snap avg_ms=0.18`, `apply avg_ms=0.08`, and `paint_draw avg_ms=2.27`; its WPR ETL is present, but the exported text summary and call-tree HTML are empty, so it does not replace the latest usable hotspot attribution above.
@@ -111,6 +113,7 @@ These changes produced real wins and remain in the codebase:
 - Avoid full config copies during snap evaluation by applying preview weights directly in the renderer and resolving layout from there.
 - Group snap candidates by widget so one snap search can serve multiple target extents with shared extent evaluation.
 - Refactor layout similarity indicator collection to avoid repeated representative scans and reduce per-frame container churn.
+- Avoid formatting renderer trace strings while interactive drag tracing suppresses renderer details, so guide-size snap and apply preview passes do not pay for dropped diagnostics text.
 - Build only the one live gauge usage-fill path that the current metric needs instead of prebuilding every cumulative gauge fill path during each relayout.
 - Resolve snap-preview guide probes through an extent-only layout pass that skips widget instantiation, widget layout-state caching, and edit-artifact rebuilds.
 - Reuse draw-time text layout results for dynamic text anchors and keep all text-anchor measurement on the renderer's shared DirectWrite layout path.
@@ -730,6 +733,21 @@ These changes produced real wins and remain in the codebase:
   - After narrowing `SetConfig` to layout-relevant work only, repeatable reruns landed at `drag_loop per_iter_ms=2.60` to `2.68`, `snap avg_ms=0.19` to `0.20`, `apply avg_ms=0.13`, and `paint_draw avg_ms=2.28` to `2.35`.
 - Conclusion:
   - The regression was not just in draw; the drag path was also paying avoidable per-frame renderer reconfiguration churn. Preserve caches and resource rebuilds across layout-only config updates.
+
+### Hypothesis: Guard dropped renderer trace formatting during guide drag
+
+- Change:
+  - Add a cheap renderer-trace guard and wrap layout-resolver trace call sites so interactive guide dragging does not build `renderer:*` strings that `WriteTrace` will discard.
+  - Keep the size-oriented flat similarity scan; restoring the older keyed/bucketed similarity code did not beat clean HEAD and cost executable bytes.
+  - Retest Direct2D dotted rectangle strokes for the active container outline; this remained worse than the manual filled-dot outline and was reverted.
+- Result:
+  - Helped the guide-size drag path materially.
+- Observed effect:
+  - Before the guard, the fresh direct rerun landed at `drag_loop per_iter_ms=2.47`, `snap avg_ms=0.20`, `apply avg_ms=0.09`, and `paint_draw avg_ms=2.17`.
+  - After the guard, the final full direct rerun landed at `drag_loop per_iter_ms=2.22`, `snap avg_ms=0.06`, `apply avg_ms=0.05`, and `paint_draw avg_ms=2.09`; a daemon-backed profile landed at `drag_loop per_iter_ms=2.36`, `snap avg_ms=0.07`, `apply avg_ms=0.06`, and `paint_draw avg_ms=2.22`.
+  - The dotted-stroke retest regressed the same benchmark to about `drag_loop per_iter_ms=3.10` to `3.27` and `paint_draw avg_ms=2.96` to `3.11`.
+- Conclusion:
+  - The guide-size regression was not caused by the live similarity indicators needing to compute or draw less; it was avoidable diagnostics-string construction in the preview/apply layout passes while renderer trace output was suppressed. Keep the trace guard and keep the manual filled-dot outline.
 
 ### Hypothesis: Theme preview construction belongs outside the dialog pane
 
