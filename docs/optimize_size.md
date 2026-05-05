@@ -14,10 +14,10 @@ This document owns executable-size assumptions, constraints, map workflow notes,
 
 ## Current State
 
-- Current measured `build\CaseDash.exe`: `1,177,088` bytes.
+- Current measured `build\CaseDash.exe`: `1,176,576` bytes.
 - Current app map summary: `build\CaseDash.map.summary.txt`.
-- Current largest sections: `.text$mn` about `954.1 KiB`, `.rdata` about `88.2 KiB`, `.rsrc$02` about `34.5 KiB`, `.pdata` about `20.9 KiB`, `.xdata` about `19.9 KiB`.
-- Current largest project objects: `diagnostics.cpp.obj`, `editors.cpp.obj`, `dashboard_app.cpp.obj`, `dashboard_shell_ui.cpp.obj`, `dashboard_renderer.cpp.obj`, `layout_resolver.cpp.obj`, `layout_guide_sheet_renderer.cpp.obj`, `layout_edit_controller.cpp.obj`, and `dashboard_controller.cpp.obj`.
+- Current largest sections: `.text$mn` about `954.2 KiB`, `.rdata` about `88.2 KiB`, `.rsrc$02` about `34.0 KiB`, `.pdata` about `20.9 KiB`, `.xdata` about `19.9 KiB`.
+- Current largest project objects: `diagnostics.cpp.obj`, `editors.cpp.obj`, `dashboard_app.cpp.obj`, `dashboard_shell_ui.cpp.obj`, `dashboard_renderer.cpp.obj`, `layout_resolver.cpp.obj`, `CaseDash.rc.res`, `layout_guide_sheet_renderer.cpp.obj`, `layout_edit_controller.cpp.obj`, and `dashboard_controller.cpp.obj`.
 - Last validation: `format.cmd fix changed`, `build.cmd`, `test.cmd`, `python tools\source_dependency_graph.py --skip-svg --check`, `build\CaseDash.exe /default-config /fake /exit /trace:build\validation_size_trace.txt /dump:build\validation_size_dump.txt`, `build_maps.cmd`, and `format.cmd changed`.
 
 ## Workflow
@@ -83,6 +83,7 @@ This document owns executable-size assumptions, constraints, map workflow notes,
 | Retained history indexes | Keep retained-history series in the dump-facing vector, cache fixed CPU/GPU/network/storage histories by `RetainedHistoryKey` encoded vector indices, and leave dynamic board temp/fan histories on a vector scan. | `1,186,816` to `1,182,208` bytes; a plain vector scan reached the same size, so keep the indexed shape for predictable fixed-key lookups. |
 | Widget layout metadata | Cache parsed widget facts as `WidgetClass` plus layout flags instead of storing cloneable widget prototypes, keep widget class, hover, and fixed-height facts enum-based in `WidgetLayout`, and expose gauge-only group finalization through the public widget package boundary. | `1,182,208` to `1,177,600` bytes; removing the `Class()` and fixed-height virtuals were neutral in isolation but kept as source simplification once `WidgetLayout` owned class identity. |
 | Worker thread handles | Keep the telemetry runtime, FPS ETW processor, and FPS service worker on direct Win32 thread and event handles instead of `std::thread` and `std::condition_variable` wrappers. | `1,177,600` to `1,177,088` bytes; `.text$mn` dropped from about `954.7 KiB` to `954.1 KiB`. |
+| PNG and ICO resource metadata | Strip nonessential PNG ancillary chunks from app icon and section icon resources while preserving image pixel data. | `1,177,088` to `1,176,576` bytes; `.rsrc$02` dropped from about `34.5 KiB` to `34.0 KiB`. |
 
 ## Rejected Or Neutral Experiments
 
@@ -121,6 +122,9 @@ This document owns executable-size assumptions, constraints, map workflow notes,
 - Do not replace the layout-edit metric-list order row mutation lambdas with a discriminator-driven shared helper. That trial grew `build\CaseDash.exe` from `1,177,600` to `1,178,112` bytes.
 - Do not replace the layout-guide-sheet renderer's local `std::find_if` scans with concrete scan helpers. That trial grew `build\CaseDash.exe` from `1,177,600` to `1,178,112` bytes.
 - A narrow removal of the layout-guide-sheet sources from the maintained `/O2` override list was executable-neutral at `1,177,600` bytes; keep the current optimization split unless benchmark data says those files no longer need it.
+- Replacing `TooltipPayload` `std::visit` dispatch with explicit `std::get_if` chains removed the local visit symbols but was executable-neutral at `1,177,088` bytes in isolation.
+- Replacing the dashboard-shell tooltip-target `std::get` sites with `std::get_if` also stayed executable-neutral once measured with the tooltip-payload change; `std::bad_variant_access` support moved to the next variant caller instead of disappearing from the app.
+- Do not replace the diagnostics screenshot hover path with local hit-test helpers to avoid constructing `LayoutEditController`. That trial inflated `diagnostics.cpp.obj` and was not a shipped-size win.
 - Do not reintroduce `std::filesystem`, native app exceptions, production `std::function`, or MSVC STL vectorized algorithm dispatch without a measured app-size and performance reason. `lint.cmd` blocks maintained source and test files from using `std::filesystem` or including `<filesystem>`.
 
 ## Notes
@@ -128,6 +132,7 @@ This document owns executable-size assumptions, constraints, map workflow notes,
 - Size numbers are comparable only within their local feature baseline. Feature additions between passes can raise the absolute executable size while a local size experiment still helps.
 - Prefer deleting template instantiations, exception/RTTI machinery, duplicated descriptor paths, and cold-path heap containers over adding compression or decoding work to hot paths.
 - Prefer vectors and compact scans for tiny fixed domains. For string-to-value maps that are genuinely performance-sensitive and not tiny, consider a narrow non-template project-owned hash helper under `src/util` instead of repeating broad STL hash-table instantiations.
+- Treat icon PNG metadata as nonessential unless a future visual validation shows a platform-specific color-management regression; keep the pixel payload and image sizes intact.
 - Leave concise `Size:` comments next to measured non-obvious source choices, especially where a normal cleanup would reintroduce larger STL containers, templates, or full-config copies.
 - UTF-8 boundary discipline is plausible mostly in UI, diagnostics, command-line, and vendor-boundary code. The current systematic audit concentrated on the highest-density wide-string files: layout-edit dialog `pane`, `util`, and `editors`, diagnostics output handling, and dashboard/menu boundaries. Do not push extra UTF-8 to UTF-16 conversions into renderer or telemetry hot loops without benchmark evidence.
 - `std::optional` is not a standalone size target. Preserve it for small values and pointer-like lookups; the earlier tree-builder win came from avoiding large cold payload copies, not from removing optional itself.

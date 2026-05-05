@@ -9,6 +9,7 @@ from pathlib import Path
 
 
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+STRIPPED_ANCILLARY_CHUNKS = {b"gAMA", b"pHYs", b"sRGB"}
 
 
 def png_chunk(chunk_type: bytes, chunk_data: bytes) -> bytes:
@@ -35,7 +36,9 @@ def optimize_png(data: bytes) -> bytes:
             return data
         chunk_data = data[chunk_start:chunk_end]
         offset = chunk_end + 4
-        if chunk_type == b"IDAT":
+        if chunk_type in STRIPPED_ANCILLARY_CHUNKS:
+            pass
+        elif chunk_type == b"IDAT":
             idat.extend(chunk_data)
         else:
             chunks.append((chunk_type, chunk_data))
@@ -99,7 +102,7 @@ def optimize_file(path: Path) -> tuple[int, int]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Losslessly recompress PNG and PNG-backed ICO resources.")
+    parser = argparse.ArgumentParser(description="Recompress PNG/ICO resources and strip nonessential PNG metadata.")
     parser.add_argument("paths", nargs="+", type=Path)
     args = parser.parse_args()
 
