@@ -16,6 +16,7 @@
 #include "resource.h"
 #include "util/localization_catalog.h"
 #include "util/paths.h"
+#include "util/srw_lock.h"
 #include "util/trace.h"
 #include "util/utf8.h"
 #include "widget/app_icon_geometry.h"
@@ -639,7 +640,7 @@ void DashboardApp::RedrawShellNow() {
 
 void DashboardApp::EnqueueTelemetryUpdate(const TelemetryUpdate& update) {
     {
-        const std::lock_guard lock(pendingTelemetryMutex_);
+        const SrwExclusiveLock lock(pendingTelemetryLock_);
         pendingTelemetryUpdate_ = update;
         hasPendingTelemetryUpdate_ = true;
     }
@@ -649,7 +650,7 @@ void DashboardApp::EnqueueTelemetryUpdate(const TelemetryUpdate& update) {
 }
 
 bool DashboardApp::DrainPendingTelemetryUpdate(TelemetryUpdate& update) {
-    const std::lock_guard lock(pendingTelemetryMutex_);
+    const SrwExclusiveLock lock(pendingTelemetryLock_);
     if (!hasPendingTelemetryUpdate_) {
         return false;
     }

@@ -192,10 +192,10 @@ void DashboardLayoutEditOverlayRenderer::DrawHoveredEditableAnchorHighlight(
     if (overlayState.selectedTreeHighlight.has_value()) {
         const auto collectSelected = [&](const std::vector<LayoutEditAnchorRegion>& regions) {
             for (const auto& region : regions) {
+                const auto* special =
+                    std::get_if<LayoutEditSelectionHighlightSpecial>(&*overlayState.selectedTreeHighlight);
                 if (MatchesLayoutEditSelectionHighlight(*overlayState.selectedTreeHighlight, region.key) ||
-                    (std::holds_alternative<LayoutEditSelectionHighlightSpecial>(*overlayState.selectedTreeHighlight) &&
-                        std::get<LayoutEditSelectionHighlightSpecial>(*overlayState.selectedTreeHighlight) ==
-                            LayoutEditSelectionHighlightSpecial::AllTexts &&
+                    (special != nullptr && *special == LayoutEditSelectionHighlightSpecial::AllTexts &&
                         LayoutEditAnchorParameter(region.key).has_value() &&
                         IsFontEditParameter(*LayoutEditAnchorParameter(region.key)))) {
                     appendHighlight(region, true);
@@ -434,10 +434,9 @@ void DashboardLayoutEditOverlayRenderer::DrawSelectedTreeNodeHighlight(
     }
     for (const auto& guide : layoutResolver_.layoutEditGuides_) {
         const bool matchesFocus = MatchesLayoutEditSelectionHighlight(*overlayState.selectedTreeHighlight, guide);
+        const auto* containerKey = std::get_if<LayoutContainerEditKey>(&*overlayState.selectedTreeHighlight);
         const bool matchesContainer =
-            std::holds_alternative<LayoutContainerEditKey>(*overlayState.selectedTreeHighlight) &&
-            MatchesLayoutContainerEditKey(std::get<LayoutContainerEditKey>(*overlayState.selectedTreeHighlight),
-                {guide.editCardId, guide.nodePath});
+            containerKey != nullptr && MatchesLayoutContainerEditKey(*containerKey, {guide.editCardId, guide.nodePath});
         if (matchesFocus || matchesContainer) {
             appendRect(guide.containerRect);
         }
@@ -449,10 +448,10 @@ void DashboardLayoutEditOverlayRenderer::DrawSelectedTreeNodeHighlight(
     }
     const auto collectAnchorTargets = [&](const std::vector<LayoutEditAnchorRegion>& regions) {
         for (const auto& region : regions) {
+            const auto* special =
+                std::get_if<LayoutEditSelectionHighlightSpecial>(&*overlayState.selectedTreeHighlight);
             if (MatchesLayoutEditSelectionHighlight(*overlayState.selectedTreeHighlight, region.key) ||
-                (std::holds_alternative<LayoutEditSelectionHighlightSpecial>(*overlayState.selectedTreeHighlight) &&
-                    std::get<LayoutEditSelectionHighlightSpecial>(*overlayState.selectedTreeHighlight) ==
-                        LayoutEditSelectionHighlightSpecial::AllTexts &&
+                (special != nullptr && *special == LayoutEditSelectionHighlightSpecial::AllTexts &&
                     LayoutEditAnchorParameter(region.key).has_value() &&
                     IsFontEditParameter(*LayoutEditAnchorParameter(region.key)))) {
                 if (const auto parameter = LayoutEditAnchorParameter(region.key); parameter.has_value()) {

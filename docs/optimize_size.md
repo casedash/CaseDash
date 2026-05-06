@@ -14,10 +14,10 @@ This document owns executable-size assumptions, constraints, map workflow notes,
 
 ## Current State
 
-- Current measured `build\CaseDash.exe`: `950,272` bytes.
+- Current measured `build\CaseDash.exe`: `939,520` bytes.
 - Current app map summary: `build\CaseDash.map.summary.txt`.
-- Current largest sections: `.text$mn` about `750.4 KiB`, `.rdata` about `94.3 KiB`, `.pdata` about `35.7 KiB`, `.xdata` about `15.2 KiB`, and `.rsrc$02` about `12.2 KiB`.
-- Current largest project objects: `diagnostics.cpp.obj`, `editors.cpp.obj`, `layout_resolver.cpp.obj`, `dashboard_controller.cpp.obj`, `layout_edit_controller.cpp.obj`, `dashboard_shell_ui.cpp.obj`, `layout_edit_tree.cpp.obj`, `metrics.cpp.obj`, `layout_guide_sheet_renderer.cpp.obj`, `pane.cpp.obj`, `dashboard_app.cpp.obj`, `dashboard_renderer.cpp.obj`, and `d2d_renderer.cpp.obj`.
+- Current largest sections: `.text$mn` about `740.8 KiB`, `.rdata` about `94.0 KiB`, `.pdata` about `35.4 KiB`, `.xdata` about `15.1 KiB`, and `.rsrc$02` about `12.2 KiB`.
+- Current largest project objects: `diagnostics.cpp.obj`, `editors.cpp.obj`, `layout_resolver.cpp.obj`, `dashboard_controller.cpp.obj`, `layout_edit_controller.cpp.obj`, `metrics.cpp.obj`, `layout_guide_sheet_renderer.cpp.obj`, `dashboard_shell_ui.cpp.obj`, `layout_edit_tree.cpp.obj`, `pane.cpp.obj`, `dashboard_app.cpp.obj`, `d2d_renderer.cpp.obj`, `layout_guide_sheet_placement.cpp.obj`, and `dashboard_renderer.cpp.obj`.
 - Last validation: `format.cmd`, `build.cmd`, `test.cmd`, `build_maps.cmd`, and `build\CaseDash.exe /default-config /fake /exit /trace:build\size_optimization_validation_trace.txt /dump:build\size_optimization_validation_dump.txt /screenshot:build\size_optimization_validation_screenshot.png /layout-guide-sheet:build\size_optimization_validation_sheet.png /app-icon:build\size_optimization_validation_app_icon.png /app-icon-size:64 /save-full-config:build\size_optimization_validation_full_config.ini`.
 
 ## Workflow
@@ -113,6 +113,11 @@ This document owns executable-size assumptions, constraints, map workflow notes,
 | Version metadata resource | Keep full user-visible version/build/commit text in generated C++ constants for the About dialog and keep the manifest numeric assembly version, but omit the duplicate Win32 `VERSIONINFO` string resource from the shipped executable. | Saved `1,024` bytes; `.rsrc$02` dropped from about `13.1 KiB` to `12.1 KiB` in this pass. |
 | Fake telemetry inlining | Keep `collector_fake.cpp` on the cold `/Ob0` source list; synthetic/fake dump generation is startup and diagnostics scaffolding, not a renderer or telemetry hot path. | Saved `512` bytes in the final pass; `collector_fake.cpp.obj` dropped to about `16.8 KiB`. |
 | Release noinline retune | Keep `/Ob0` only on the cold/orchestration sources that still measure smaller with it; allow config parser/writer, dashboard shell UI, FPS service, snapshot dump, monitor enumeration, modeless layout-edit dialog helpers, and theme preview to use the normal Release `/Ob1` path. | `981,504` to `950,272` bytes; `.text$mn` dropped from about `771.8 KiB` to `750.4 KiB`, and `.pdata` from about `44.8 KiB` to `35.7 KiB`. |
+| Layout-edit payload boundaries | Keep layout-edit guide fixed-extent flags byte-backed instead of `std::vector<bool>`, return borrowed pointers from large hit-test scans, use `std::get_if` chains instead of throwing variant access, and fill tooltip targets by field. Keep direct command-index lookup for dense context-menu option ranges. | The retained non-tree pass reached `945,664` bytes from the `950,272` byte session baseline; `std::bad_optional_access` and production `std::get` throwing paths stayed out of the map. |
+| Layout-edit tree variant construction | Build tree leaf, highlight, and dialog focus optionals with reset/emplace; collapse single-child tree containers with a narrow move helper instead of whole-node assignment. | `945,664` to `939,520` bytes; `layout_edit_tree.cpp.obj` dropped to about `22.9 KiB`, and `.text$mn` dropped to about `740.8 KiB`. |
+| FPS process-name boundary | Keep FPS ETW process names UTF-8 in the cache and convert from the Win32 wide buffer at the query boundary. | Saved `1,024` bytes in the measured pass; `PresentedFpsEtwProvider::Sample` dropped to about `5.2 KiB`. |
+| Win32 lock wrappers | Use a small SRWLOCK RAII wrapper for the app telemetry handoff, telemetry runtime, trace, and FPS ETW provider locks instead of `std::mutex`. | File-alignment neutral in isolation, but removed `_Mtx`/`std::mutex` symbols and kept section bytes lower in the retained pass. |
+| Network selection staging | Stream visible network candidates directly into retained telemetry state, track the selected candidate in place, and leave `collector_network.cpp` on the normal `/Os` path. | Executable-alignment neutral in isolation, but reduced `collector_network.cpp.obj` while preserving preferred-adapter trace behavior. |
 
 ## Rejected Or Neutral Experiments
 
@@ -174,6 +179,10 @@ This document owns executable-size assumptions, constraints, map workflow notes,
 - Extracting the dashboard metric lookup cache into `dashboard_renderer/impl/metric_lookup_cache.*` was executable-neutral at `982,016` bytes; keep it as a package-boundary cleanup, not as a standalone size lever.
 - Do not remove `/Ob0` from `diagnostics.cpp`, `app_icon_export.cpp`, `crash_report.cpp`, `display_config.cpp`, `dashboard_app.cpp`, `dashboard_controller.cpp`, or `collector_fake.cpp`; each regressed the executable in the current noinline retune. Removing `/Ob0` from `layout_edit_tree.cpp` and `main.cpp` was neutral, so leave the existing shape.
 - Do not reintroduce `std::filesystem`, native app exceptions, production `std::function`, or MSVC STL vectorized algorithm dispatch without a measured app-size and performance reason. `lint.cmd` blocks maintained source and test files from using `std::filesystem` or including `<filesystem>`.
+- Hoisting `LayoutEditGuide::childExtents` construction outside the dashboard guide loop regressed by `512` bytes. Keep the current per-guide construction even though the source has a repeated loop.
+- Replacing the localization catalog's `std::unordered_map` with a vector-backed wrapper regressed by `1,024` bytes because hash-table machinery remains required by board sensor mappings.
+- Direct context-menu command indexing removed repeated scans and shrank `dashboard_shell_ui.cpp.obj`, but it was executable-neutral until combined with the retained variant-construction pass. Do not treat dense command indexing alone as a size lever.
+- Do not retry the current-session layout-edit shape experiments that regressed or stayed flat: `TooltipPayload` aliasing to the active-region payload, leaf-derived selection highlights, `/Gy` plus `/OPT:ICF`, compact guide-sheet callout target structs, guide-sheet index-sort rebuild, tooltip focus-key bool/out-parameter extraction, direct variant `emplace` in tooltip targets, initializer-list cleanup in `CurrentTooltipTarget`, `/Ob0` on `layout_edit_controller.cpp`, or removing `dashboard_shell_ui.cpp` and `dashboard_controller.cpp` from the speed-source list.
 
 ## Notes
 

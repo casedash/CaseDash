@@ -332,8 +332,8 @@ bool LayoutEditController::HandleLButtonDown(HWND hwnd, RenderPoint clientPoint)
     hoveredLayoutGuide_ = resolution.hoveredLayoutGuide;
     hoveredEditableAnchor_ = resolution.hoveredEditableAnchor;
     if (resolution.actionableAnchorHandle.has_value()) {
-        const auto region = FindEditableAnchorRegion(regions, *resolution.actionableAnchorHandle);
-        if (region.has_value()) {
+        const LayoutEditAnchorRegion* region = FindEditableAnchorRegion(regions, *resolution.actionableAnchorHandle);
+        if (region != nullptr) {
             if (const auto containerOrderKey = LayoutEditAnchorContainerChildOrderKey(region->key);
                 containerOrderKey.has_value()) {
                 const LayoutNodeConfig* node = FindGuideNode(host_.LayoutEditConfig(),
@@ -429,8 +429,8 @@ bool LayoutEditController::HandleLButtonDown(HWND hwnd, RenderPoint clientPoint)
         }
     }
 
-    if (const auto anchorHandle = HitTestEditableAnchorHandle(regions, clientPoint);
-        anchorHandle.has_value() && !anchorHandle->draggable) {
+    if (const LayoutEditAnchorRegion* anchorHandle = HitTestEditableAnchorHandle(regions, clientPoint);
+        anchorHandle != nullptr && !anchorHandle->draggable) {
         hoveredEditableAnchor_ = anchorHandle->key;
         if (anchorHandle->key.widget.kind == LayoutEditWidgetIdentity::Kind::CardChrome) {
             hoveredEditableCard_ = anchorHandle->key.widget;
@@ -444,14 +444,14 @@ bool LayoutEditController::HandleLButtonDown(HWND hwnd, RenderPoint clientPoint)
     }
 
     if (resolution.actionableGapEditAnchor.has_value()) {
-        const auto anchor = FindGapEditAnchor(regions, *resolution.actionableGapEditAnchor);
-        if (anchor.has_value()) {
+        const LayoutEditGapAnchor* anchor = FindGapEditAnchor(regions, *resolution.actionableGapEditAnchor);
+        if (anchor != nullptr) {
             activeGapEditDrag_ = GapEditDragState{
                 *anchor,
                 anchor->value,
                 anchor->dragAxis == AnchorDragAxis::Horizontal ? clientPoint.x : clientPoint.y,
             };
-            hoveredGapEditAnchorRegion_ = anchor;
+            hoveredGapEditAnchorRegion_ = *anchor;
             host_.SetLayoutEditInteractiveDragTraceActive(true);
             host_.BeginLayoutEditTraceSession("gap_anchor", DescribeGapEditAnchor(*anchor));
             SyncRendererInteractionState();
@@ -714,7 +714,8 @@ bool LayoutEditController::CurrentTooltipTarget(TooltipTarget& target) {
     const RenderPoint clientPoint = lastClientPoint_;
 
     if (activeLayoutDrag_.has_value()) {
-        target = TooltipTarget{clientPoint, activeLayoutDrag_->guide};
+        target.clientPoint = clientPoint;
+        target.payload = activeLayoutDrag_->guide;
         return true;
     }
 
@@ -726,9 +727,10 @@ bool LayoutEditController::CurrentTooltipTarget(TooltipTarget& target) {
                 WidgetClass::MetricList,
                 LayoutNodeField::Parameter},
             activeMetricListReorderDrag_->currentIndex};
-        const auto region = FindEditableAnchorRegion(regions, key);
-        if (region.has_value()) {
-            target = TooltipTarget{clientPoint, *region};
+        const LayoutEditAnchorRegion* region = FindEditableAnchorRegion(regions, key);
+        if (region != nullptr) {
+            target.clientPoint = clientPoint;
+            target.payload = *region;
             return true;
         }
     }
@@ -736,69 +738,80 @@ bool LayoutEditController::CurrentTooltipTarget(TooltipTarget& target) {
         for (int anchorId : {activeContainerChildReorderDrag_->currentIndex, 0}) {
             const LayoutEditAnchorKey key{
                 activeContainerChildReorderDrag_->widget, activeContainerChildReorderDrag_->key, anchorId};
-            const auto region = FindEditableAnchorRegion(regions, key);
-            if (region.has_value()) {
-                target = TooltipTarget{clientPoint, *region};
+            const LayoutEditAnchorRegion* region = FindEditableAnchorRegion(regions, key);
+            if (region != nullptr) {
+                target.clientPoint = clientPoint;
+                target.payload = *region;
                 return true;
             }
         }
     }
     if (activeGapEditDrag_.has_value()) {
-        const auto anchor = FindGapEditAnchor(regions, activeGapEditDrag_->anchor.key);
-        if (anchor.has_value()) {
-            target = TooltipTarget{clientPoint, *anchor};
+        const LayoutEditGapAnchor* anchor = FindGapEditAnchor(regions, activeGapEditDrag_->anchor.key);
+        if (anchor != nullptr) {
+            target.clientPoint = clientPoint;
+            target.payload = *anchor;
             return true;
         }
     }
 
     if (activeWidgetEditDrag_.has_value()) {
-        target = TooltipTarget{clientPoint, activeWidgetEditDrag_->guide};
+        target.clientPoint = clientPoint;
+        target.payload = activeWidgetEditDrag_->guide;
         return true;
     }
 
     if (activeAnchorEditDrag_.has_value()) {
-        const auto region = FindEditableAnchorRegion(regions, activeAnchorEditDrag_->key);
-        if (region.has_value()) {
-            target = TooltipTarget{clientPoint, *region};
+        const LayoutEditAnchorRegion* region = FindEditableAnchorRegion(regions, activeAnchorEditDrag_->key);
+        if (region != nullptr) {
+            target.clientPoint = clientPoint;
+            target.payload = *region;
             return true;
         }
     }
 
     const LayoutEditHoverResolution resolution = ResolveLayoutEditHover(regions, clientPoint);
     if (resolution.actionableGapEditAnchor.has_value()) {
-        const auto anchor = FindGapEditAnchor(regions, *resolution.actionableGapEditAnchor);
-        if (anchor.has_value()) {
-            target = TooltipTarget{clientPoint, *anchor};
+        const LayoutEditGapAnchor* anchor = FindGapEditAnchor(regions, *resolution.actionableGapEditAnchor);
+        if (anchor != nullptr) {
+            target.clientPoint = clientPoint;
+            target.payload = *anchor;
             return true;
         }
     }
 
     if (resolution.actionableAnchorHandle.has_value()) {
-        const auto region = FindEditableAnchorRegion(regions, *resolution.actionableAnchorHandle);
-        if (region.has_value()) {
-            target = TooltipTarget{clientPoint, *region};
+        const LayoutEditAnchorRegion* region = FindEditableAnchorRegion(regions, *resolution.actionableAnchorHandle);
+        if (region != nullptr) {
+            target.clientPoint = clientPoint;
+            target.payload = *region;
             return true;
         }
     }
 
-    if (const auto anchorHandle = HitTestEditableAnchorHandle(regions, clientPoint);
-        anchorHandle.has_value() && !anchorHandle->draggable) {
-        target = TooltipTarget{clientPoint, *anchorHandle};
+    if (const LayoutEditAnchorRegion* anchorHandle = HitTestEditableAnchorHandle(regions, clientPoint);
+        anchorHandle != nullptr && !anchorHandle->draggable) {
+        target.clientPoint = clientPoint;
+        target.payload = *anchorHandle;
         return true;
     }
 
     if (resolution.hoveredWidgetEditGuide.has_value()) {
-        target = TooltipTarget{clientPoint, *resolution.hoveredWidgetEditGuide};
+        target.clientPoint = clientPoint;
+        target.payload = *resolution.hoveredWidgetEditGuide;
         return true;
     }
 
     if (resolution.hoveredLayoutGuide.has_value()) {
-        target = TooltipTarget{clientPoint, *resolution.hoveredLayoutGuide};
+        target.clientPoint = clientPoint;
+        target.payload = *resolution.hoveredLayoutGuide;
         return true;
     }
 
-    if (const auto colorRegion = HitTestEditableColorRegion(regions, clientPoint); colorRegion.has_value()) {
-        target = TooltipTarget{clientPoint, *colorRegion};
+    if (const LayoutEditColorRegion* colorRegion = HitTestEditableColorRegion(regions, clientPoint);
+        colorRegion != nullptr) {
+        target.clientPoint = clientPoint;
+        target.payload = *colorRegion;
         return true;
     }
 
@@ -895,16 +908,16 @@ void LayoutEditController::SetCursorForPoint(RenderPoint clientPoint) {
     const LayoutEditActiveRegions regions = ActiveRegions();
     const LayoutEditHoverResolution resolution = ResolveLayoutEditHover(regions, clientPoint);
     if (resolution.actionableGapEditAnchor.has_value()) {
-        const auto anchor = FindGapEditAnchor(regions, *resolution.actionableGapEditAnchor);
-        const auto dragAxis = anchor.has_value() ? anchor->dragAxis : AnchorDragAxis::Vertical;
+        const LayoutEditGapAnchor* anchor = FindGapEditAnchor(regions, *resolution.actionableGapEditAnchor);
+        const auto dragAxis = anchor != nullptr ? anchor->dragAxis : AnchorDragAxis::Vertical;
         SetCursor(LoadCursorW(nullptr, dragAxis == AnchorDragAxis::Horizontal ? IDC_SIZEWE : IDC_SIZENS));
         return;
     }
 
     if (resolution.actionableAnchorHandle.has_value()) {
-        const auto region = FindEditableAnchorRegion(regions, *resolution.actionableAnchorHandle);
-        const auto dragAxis = region.has_value() ? region->dragAxis : AnchorDragAxis::Vertical;
-        const auto dragMode = region.has_value() ? region->dragMode : AnchorDragMode::AxisDelta;
+        const LayoutEditAnchorRegion* region = FindEditableAnchorRegion(regions, *resolution.actionableAnchorHandle);
+        const auto dragAxis = region != nullptr ? region->dragAxis : AnchorDragAxis::Vertical;
+        const auto dragMode = region != nullptr ? region->dragMode : AnchorDragMode::AxisDelta;
         SetCursor(LoadCursorW(nullptr,
             dragMode == AnchorDragMode::RadialDistance ? IDC_SIZEALL
             : dragAxis == AnchorDragAxis::Both         ? IDC_SIZEALL
@@ -928,7 +941,7 @@ void LayoutEditController::SetCursorForPoint(RenderPoint clientPoint) {
         return;
     }
 
-    if (HitTestEditableColorRegion(regions, clientPoint).has_value()) {
+    if (HitTestEditableColorRegion(regions, clientPoint) != nullptr) {
         SetCursor(LoadCursorW(nullptr, IDC_CROSS));
         return;
     }
@@ -1038,7 +1051,8 @@ bool LayoutEditController::UpdateLayoutDrag(RenderPoint clientPoint) {
         return false;
     }
 
-    if (const auto guide = FindLayoutEditGuide(ActiveRegions(), drag.guide); guide.has_value()) {
+    const LayoutEditActiveRegions regions = ActiveRegions();
+    if (const LayoutEditGuide* guide = FindLayoutEditGuide(regions, drag.guide); guide != nullptr) {
         drag.guide = *guide;
     }
 
@@ -1080,7 +1094,8 @@ bool LayoutEditController::UpdateWidgetEditDrag(RenderPoint clientPoint) {
         return false;
     }
 
-    if (const auto guide = FindWidgetEditGuide(ActiveRegions(), drag.guide); guide.has_value()) {
+    const LayoutEditActiveRegions regions = ActiveRegions();
+    if (const LayoutEditWidgetGuide* guide = FindWidgetEditGuide(regions, drag.guide); guide != nullptr) {
         drag.guide = *guide;
     }
 
@@ -1099,8 +1114,9 @@ bool LayoutEditController::UpdateGapEditDrag(RenderPoint clientPoint) {
         return false;
     }
 
-    const auto anchor = FindGapEditAnchor(ActiveRegions(), drag.anchor.key);
-    if (anchor.has_value()) {
+    const LayoutEditActiveRegions regions = ActiveRegions();
+    const LayoutEditGapAnchor* anchor = FindGapEditAnchor(regions, drag.anchor.key);
+    if (anchor != nullptr) {
         drag.anchor = *anchor;
     }
 
@@ -1173,9 +1189,10 @@ bool LayoutEditController::UpdateMetricListReorderDrag(RenderPoint clientPoint) 
 void LayoutEditController::RefreshContainerChildReorderRects(ContainerChildReorderDragState& drag) {
     drag.childRects.clear();
     drag.childRects.resize(static_cast<size_t>((std::max)(0, drag.childCount)));
+    const LayoutEditActiveRegions regions = ActiveRegions();
     for (int index = 0; index < drag.childCount; ++index) {
         const LayoutEditAnchorKey key{drag.widget, drag.key, index};
-        if (const auto region = FindEditableAnchorRegion(ActiveRegions(), key); region.has_value()) {
+        if (const LayoutEditAnchorRegion* region = FindEditableAnchorRegion(regions, key); region != nullptr) {
             drag.childRects[static_cast<size_t>(index)] = region->targetRect;
         }
     }

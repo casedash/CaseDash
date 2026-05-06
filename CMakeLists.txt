@@ -120,6 +120,7 @@ add_executable(CaseDash WIN32
     src/util/numeric_format.cpp
     src/util/paths.cpp
     src/util/scale.cpp
+    src/util/srw_lock.cpp
     src/util/strings.cpp
     src/util/temp_file.cpp
     src/util/win32_format.cpp
@@ -138,9 +139,9 @@ add_executable(CaseDash WIN32
     src/layout_edit_dialog/impl/tree.cpp
     src/layout_edit_dialog/impl/util.cpp
     src/layout_edit/board_metric_binding.cpp
-    src/layout_edit/layout_edit_controller.cpp
     src/layout_edit/layout_edit_hit_test.cpp
     src/layout_edit/layout_edit_active_region_trace.cpp
+    src/layout_edit/layout_edit_controller.cpp
     src/layout_edit/layout_edit_trace_session.cpp
     src/layout_model/layout_edit_active_region.cpp
     src/layout_model/layout_edit_helpers.cpp
@@ -168,6 +169,7 @@ add_executable(CaseDash WIN32
     src/config/config_resolution.cpp
     src/util/localization_catalog.cpp
     src/util/resource_loader.cpp
+    src/util/srw_lock.cpp
     src/layout_edit/impl/layout_snap_solver.cpp
     src/util/numeric_safety.cpp
     src/telemetry/impl/system_info_support.cpp
@@ -303,7 +305,6 @@ set(casedash_release_speed_sources
     src/telemetry/impl/collector_cpu.cpp
     src/telemetry/impl/collector_fake.cpp
     src/telemetry/impl/collector_gpu.cpp
-    src/telemetry/impl/collector_network.cpp
     src/telemetry/impl/collector_real.cpp
     src/telemetry/impl/collector_state.cpp
     src/telemetry/impl/collector_storage.cpp
@@ -567,6 +568,7 @@ add_executable(CaseDashTests
     src/util/numeric_format.cpp
     src/util/localization_catalog.cpp
     src/util/resource_loader.cpp
+    src/util/srw_lock.cpp
     src/layout_edit/impl/layout_snap_solver.cpp
     src/util/file_path.cpp
     src/util/numeric_safety.cpp
@@ -767,6 +769,7 @@ add_executable(CaseDashBenchmarks
     src/dashboard_renderer/dashboard_renderer.cpp
     src/util/localization_catalog.cpp
     src/util/resource_loader.cpp
+    src/util/srw_lock.cpp
     src/util/utf8.cpp
     src/util/trace.cpp
     src/vendor/adlx/SDK/ADLXHelper/Windows/Cpp/ADLXHelper.cpp

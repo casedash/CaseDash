@@ -3,9 +3,9 @@
 #include <chrono>
 #include <cstdio>
 #include <ctime>
-#include <mutex>
 
 #include "util/numeric_format.h"
+#include "util/srw_lock.h"
 
 namespace {
 
@@ -33,9 +33,9 @@ std::string FormatTraceTimestamp() {
     return buffer;
 }
 
-std::mutex& TraceWriteMutex() {
-    static std::mutex mutex;
-    return mutex;
+SrwLock& TraceWriteLock() {
+    static SrwLock lock;
+    return lock;
 }
 
 }  // namespace
@@ -50,7 +50,7 @@ void Trace::Write(const char* text) const {
     if (output_ == nullptr) {
         return;
     }
-    const std::lock_guard lock(TraceWriteMutex());
+    const SrwExclusiveLock lock(TraceWriteLock());
     const std::string line = "[trace " + FormatTraceTimestamp() + "] " + text + "\n";
     fwrite(line.data(), 1, line.size(), output_);
     fflush(output_);

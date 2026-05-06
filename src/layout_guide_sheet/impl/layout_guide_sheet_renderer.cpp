@@ -266,7 +266,7 @@ void AddPackedDashboardGuides(PackedOverview& overview,
         guide.containerRect = rect;
         guide.gap = gap;
         guide.childRects = childRects;
-        guide.childFixedExtents.assign(childRects.size(), false);
+        guide.childFixedExtents.assign(childRects.size(), 0u);
         guide.childExtents.reserve(childRects.size());
         for (const RenderRect& childRect : childRects) {
             guide.childExtents.push_back(horizontal ? childRect.Width() : childRect.Height());

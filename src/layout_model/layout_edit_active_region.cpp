@@ -1,5 +1,7 @@
 #include "layout_model/layout_edit_active_region.h"
 
+#include <utility>
+
 LayoutEditActiveRegions::LayoutEditActiveRegions(std::vector<LayoutEditActiveRegion> regions)
     : regions_(std::move(regions)) {}
 

@@ -741,7 +741,10 @@ bool DashboardShellUi::ApplyWeightPreview(const LayoutWeightEditKey& key, int fi
 
 void DashboardShellUi::UpdateLayoutEditSelectionHighlight(
     const std::optional<LayoutEditSelectionHighlight>& highlight) {
-    app_.rendererDashboardOverlayState_.selectedTreeHighlight = highlight;
+    app_.rendererDashboardOverlayState_.selectedTreeHighlight.reset();
+    if (highlight.has_value()) {
+        app_.rendererDashboardOverlayState_.selectedTreeHighlight.emplace(*highlight);
+    }
     InvalidateRect(app_.hwnd_, nullptr, FALSE);
 }
 
@@ -882,12 +885,11 @@ void DashboardShellUi::ExecuteCommand(
             break;
         default:
             if (selected >= kCommandLayoutBase && selected <= kCommandLayoutMax) {
-                const auto it = std::find_if(state.layoutMenuOptions.begin(),
-                    state.layoutMenuOptions.end(),
-                    [selected](const LayoutMenuOption& option) { return option.commandId == selected; });
-                if (it != state.layoutMenuOptions.end()) {
+                const size_t index = selected - kCommandLayoutBase;
+                if (index < state.layoutMenuOptions.size() && state.layoutMenuOptions[index].commandId == selected) {
+                    const LayoutMenuOption& option = state.layoutMenuOptions[index];
                     app_.TraceLayoutEditUiEvent(
-                        "layout_switch:menu_command", "selected_layout=" + Trace::QuoteText(it->name));
+                        "layout_switch:menu_command", "selected_layout=" + Trace::QuoteText(option.name));
                     const bool suppressTooltipRefresh = app_.controller_.State().isEditingLayout;
                     if (suppressTooltipRefresh) {
                         app_.SetLayoutEditTooltipRefreshSuppressed(true);
@@ -896,12 +898,12 @@ void DashboardShellUi::ExecuteCommand(
                         app_.TraceLayoutEditUiEvent(
                             "layout_switch:menu_prepare", "tooltip_suppressed=" + Trace::QuoteText("true"));
                     }
-                    if (!app_.controller_.SwitchLayout(app_, it->name, app_.diagnosticsOptions_.editLayout)) {
+                    if (!app_.controller_.SwitchLayout(app_, option.name, app_.diagnosticsOptions_.editLayout)) {
                         if (suppressTooltipRefresh) {
                             app_.SetLayoutEditTooltipRefreshSuppressed(false);
                         }
                         app_.TraceLayoutEditUiEvent(
-                            "layout_switch:menu_failed", "selected_layout=" + Trace::QuoteText(it->name));
+                            "layout_switch:menu_failed", "selected_layout=" + Trace::QuoteText(option.name));
                         MessageBoxW(app_.hwnd_, L"Failed to switch layout.", L"CaseDash", MB_ICONERROR);
                     } else {
                         RefreshLayoutEditDialog();
@@ -909,26 +911,23 @@ void DashboardShellUi::ExecuteCommand(
                             app_.SetLayoutEditTooltipRefreshSuppressed(false);
                         }
                         app_.TraceLayoutEditUiEvent(
-                            "layout_switch:menu_done", "selected_layout=" + Trace::QuoteText(it->name));
+                            "layout_switch:menu_done", "selected_layout=" + Trace::QuoteText(option.name));
                     }
                 }
                 break;
             }
             if (selected >= kCommandNetworkAdapterBase && selected <= kCommandNetworkAdapterMax) {
-                const auto it = std::find_if(state.networkMenuOptions.begin(),
-                    state.networkMenuOptions.end(),
-                    [selected](const NetworkMenuOption& option) { return option.commandId == selected; });
-                if (it != state.networkMenuOptions.end()) {
-                    app_.controller_.SelectNetworkAdapter(app_, *it);
+                const size_t index = selected - kCommandNetworkAdapterBase;
+                if (index < state.networkMenuOptions.size() && state.networkMenuOptions[index].commandId == selected) {
+                    app_.controller_.SelectNetworkAdapter(app_, state.networkMenuOptions[index]);
                 }
                 break;
             }
             if (selected >= kCommandThemeBase && selected <= kCommandThemeMax) {
-                const auto it = std::find_if(state.themeMenuOptions.begin(),
-                    state.themeMenuOptions.end(),
-                    [selected](const ThemeMenuOption& option) { return option.commandId == selected; });
-                if (it != state.themeMenuOptions.end()) {
-                    if (!app_.controller_.SwitchTheme(app_, it->name, app_.diagnosticsOptions_.editLayout)) {
+                const size_t index = selected - kCommandThemeBase;
+                if (index < state.themeMenuOptions.size() && state.themeMenuOptions[index].commandId == selected) {
+                    if (!app_.controller_.SwitchTheme(
+                            app_, state.themeMenuOptions[index].name, app_.diagnosticsOptions_.editLayout)) {
                         MessageBoxW(app_.hwnd_, L"Failed to switch theme.", L"CaseDash", MB_ICONERROR);
                     } else {
                         RefreshLayoutEditDialog();
@@ -937,29 +936,26 @@ void DashboardShellUi::ExecuteCommand(
                 break;
             }
             if (selected >= kCommandStorageDriveBase && selected <= kCommandStorageDriveMax) {
-                const auto it = std::find_if(state.storageDriveMenuOptions.begin(),
-                    state.storageDriveMenuOptions.end(),
-                    [selected](const StorageDriveMenuOption& option) { return option.commandId == selected; });
-                if (it != state.storageDriveMenuOptions.end()) {
-                    app_.controller_.ToggleStorageDrive(app_, *it);
+                const size_t index = selected - kCommandStorageDriveBase;
+                if (index < state.storageDriveMenuOptions.size() &&
+                    state.storageDriveMenuOptions[index].commandId == selected) {
+                    app_.controller_.ToggleStorageDrive(app_, state.storageDriveMenuOptions[index]);
                 }
                 break;
             }
             if (selected >= kCommandConfigureDisplayBase && selected <= kCommandConfigureDisplayMax) {
-                const auto it = std::find_if(state.configDisplayOptions.begin(),
-                    state.configDisplayOptions.end(),
-                    [selected](const DisplayMenuOption& option) { return option.commandId == selected; });
-                if (it != state.configDisplayOptions.end()) {
-                    HandleConfigureDisplay(*it);
+                const size_t index = selected - kCommandConfigureDisplayBase;
+                if (index < state.configDisplayOptions.size() &&
+                    state.configDisplayOptions[index].commandId == selected) {
+                    HandleConfigureDisplay(state.configDisplayOptions[index]);
                 }
                 break;
             }
             if (selected >= kCommandScaleBase && selected <= kCommandScaleMax) {
-                const auto it = std::find_if(state.scaleMenuOptions.begin(),
-                    state.scaleMenuOptions.end(),
-                    [selected](const ScaleMenuOption& option) { return option.commandId == selected; });
-                if (it != state.scaleMenuOptions.end()) {
-                    app_.controller_.SetDisplayScale(app_, it->isDefault ? 0.0 : it->scale);
+                const size_t index = selected - kCommandScaleBase;
+                if (index < state.scaleMenuOptions.size() && state.scaleMenuOptions[index].commandId == selected) {
+                    app_.controller_.SetDisplayScale(
+                        app_, state.scaleMenuOptions[index].isDefault ? 0.0 : state.scaleMenuOptions[index].scale);
                 }
             }
             break;
@@ -1153,15 +1149,16 @@ void DashboardShellUi::ShowContextMenu(
                 label = L"Add metric list row...";
             }
             const auto focusKey = TooltipPayloadFocusKey(layoutEditTarget->payload);
-            if (label.empty() && focusKey.has_value() && std::holds_alternative<LayoutMetricEditKey>(*focusKey)) {
-                label = BuildLayoutEditMenuLabel(
-                    WideFromUtf8(std::get<LayoutMetricEditKey>(*focusKey).metricId + " metric"));
-            } else if (label.empty() && focusKey.has_value() &&
-                       std::holds_alternative<LayoutCardTitleEditKey>(*focusKey)) {
+            if (label.empty() && focusKey.has_value()) {
+                if (const auto* metricKey = std::get_if<LayoutMetricEditKey>(&*focusKey); metricKey != nullptr) {
+                    label = BuildLayoutEditMenuLabel(WideFromUtf8(metricKey->metricId + " metric"));
+                }
+            }
+            if (label.empty() && focusKey.has_value() && std::holds_alternative<LayoutCardTitleEditKey>(*focusKey)) {
                 label = BuildLayoutEditMenuLabel(L"card title");
             } else if (label.empty() && focusKey.has_value() &&
-                       std::holds_alternative<LayoutNodeFieldEditKey>(*focusKey)) {
-                const auto& nodeFieldKey = std::get<LayoutNodeFieldEditKey>(*focusKey);
+                       std::get_if<LayoutNodeFieldEditKey>(&*focusKey) != nullptr) {
+                const auto& nodeFieldKey = *std::get_if<LayoutNodeFieldEditKey>(&*focusKey);
                 const std::wstring subject = LayoutNodeFieldEditMenuSubject(nodeFieldKey);
                 if (!subject.empty()) {
                     label = BuildLayoutEditMenuLabel(subject);

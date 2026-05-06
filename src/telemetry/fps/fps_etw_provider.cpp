@@ -7,7 +7,6 @@
 #include <cstdlib>
 #include <evntcons.h>
 #include <evntrace.h>
-#include <mutex>
 #include <optional>
 #include <pdhmsg.h>
 #include <string>
@@ -16,6 +15,7 @@
 
 #include "telemetry/fps/impl/gpu_raw_counter_map.h"
 #include "telemetry/impl/collector_support.h"
+#include "util/srw_lock.h"
 #include "util/trace.h"
 #include "util/utf8.h"
 
@@ -83,33 +83,32 @@ std::wstring BuildSessionName() {
     return L"CaseDashPresentedFps-" + std::to_wstring(GetCurrentProcessId());
 }
 
-std::wstring LowerAscii(std::wstring value) {
-    for (wchar_t& ch : value) {
-        if (ch >= L'A' && ch <= L'Z') {
-            ch = static_cast<wchar_t>(ch - L'A' + L'a');
+void LowerAsciiInPlace(wchar_t* value, size_t length) {
+    for (size_t i = 0; i < length; ++i) {
+        if (value[i] >= L'A' && value[i] <= L'Z') {
+            value[i] = static_cast<wchar_t>(value[i] - L'A' + L'a');
         }
     }
-    return value;
 }
 
-std::wstring BaseName(std::wstring path) {
-    const size_t slash = path.find_last_of(L"\\/");
-    if (slash != std::wstring::npos) {
-        path.erase(0, slash + 1);
+std::string CleanProcessDisplayNameUtf8(wchar_t* path, size_t pathLength) {
+    size_t nameStart = 0;
+    for (size_t i = 0; i < pathLength; ++i) {
+        if (path[i] == L'\\' || path[i] == L'/') {
+            nameStart = i + 1;
+        }
     }
-    return path;
-}
-
-std::wstring CleanProcessDisplayName(std::wstring processName) {
-    processName = BaseName(processName);
-    const size_t dot = processName.find_last_of(L'.');
-    if (dot != std::wstring::npos) {
-        processName.erase(dot);
+    size_t nameEnd = pathLength;
+    for (size_t i = nameStart; i < pathLength; ++i) {
+        if (path[i] == L'.') {
+            nameEnd = i;
+        }
     }
-    return LowerAscii(processName);
+    LowerAsciiInPlace(path + nameStart, nameEnd - nameStart);
+    return Utf8FromWide(std::wstring_view(path + nameStart, nameEnd - nameStart));
 }
 
-std::wstring QueryProcessBaseName(DWORD processId, bool& permissionRequired) {
+std::string QueryProcessBaseName(DWORD processId, bool& permissionRequired) {
     permissionRequired = false;
     HANDLE process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, processId);
     if (process == nullptr) {
@@ -123,12 +122,11 @@ std::wstring QueryProcessBaseName(DWORD processId, bool& permissionRequired) {
     const DWORD error = ok ? ERROR_SUCCESS : GetLastError();
     CloseHandle(process);
     permissionRequired = error == ERROR_ACCESS_DENIED;
-    return ok ? CleanProcessDisplayName(std::wstring(path, pathLength)) : std::wstring{};
+    return ok ? CleanProcessDisplayNameUtf8(path, pathLength) : std::string{};
 }
 
-bool IsExcludedProcessName(const std::wstring& processName) {
-    const std::wstring lowerName = LowerAscii(processName);
-    return lowerName.empty() || lowerName == L"casedash" || lowerName == L"dwm";
+bool IsExcludedProcessName(const std::string& processName) {
+    return processName.empty() || processName == "casedash" || processName == "dwm";
 }
 
 DWORD ExtractProcessIdFromGpuEngineInstance(const wchar_t* instance) {
@@ -158,7 +156,7 @@ public:
     }
 
     bool Initialize() override {
-        std::lock_guard lock(mutex_);
+        SrwExclusiveLock lock(mutex_);
         if (initialized_) {
             return true;
         }
@@ -245,7 +243,7 @@ public:
         LARGE_INTEGER now{};
         QueryPerformanceCounter(&now);
 
-        std::lock_guard lock(mutex_);
+        SrwExclusiveLock lock(mutex_);
         FpsTelemetrySample sample;
         sample.diagnostics = diagnostics_;
         sample.available = initialized_;
@@ -280,7 +278,7 @@ public:
         const double rawFps = static_cast<double>(bestSelection.count) / kFpsWindowSeconds;
         const double fps = SmoothFpsLocked(rawFps, bestSelection);
         sample.processId = bestSelection.processId;
-        sample.processName = Utf8FromWide(ResolveProcessNameLocked(bestSelection.processId));
+        sample.processName = ResolveProcessNameLocked(bestSelection.processId);
         sample.permissionRequired = IsProcessNamePermissionRequiredLocked(bestSelection.processId);
         sample.available = true;
         sample.fps = fps;
@@ -307,7 +305,7 @@ private:
 
     struct ProcessNameCacheEntry {
         DWORD processId = 0;
-        std::wstring name;
+        std::string name;
         bool permissionRequired = false;
     };
 
@@ -384,7 +382,7 @@ private:
                 continue;
             }
 
-            const std::wstring processName = ResolveProcessNameLocked(it->processId);
+            const std::string& processName = ResolveProcessNameLocked(it->processId);
             if (!IsExcludedProcessName(processName) && IsBetterSelectionLocked(it->processId, eventCount, selection)) {
                 selection.processId = it->processId;
                 selection.count = eventCount;
@@ -446,12 +444,12 @@ private:
         }
 
         sample.processId = topGpu3dProcessId_;
-        sample.processName = Utf8FromWide(ResolveProcessNameLocked(topGpu3dProcessId_));
+        sample.processName = ResolveProcessNameLocked(topGpu3dProcessId_);
         sample.available = false;
         sample.permissionRequired = IsProcessNamePermissionRequiredLocked(topGpu3dProcessId_);
         sample.diagnostics = BuildDiagnosticsLocked(
             " top GPU 3D application has no matching present events. process=" + sample.processName +
-            " selected_process=" + Utf8FromWide(ResolveProcessNameLocked(selected.processId)) + " selected_source=" +
+            " selected_process=" + ResolveProcessNameLocked(selected.processId) + " selected_source=" +
             PresentEventSourceName(selected.source) + " selected_window_count=" + std::to_string(selected.count) +
             GpuUsageDiagnosticsForProcess(selected.processId));
         return true;
@@ -675,7 +673,7 @@ private:
 
         gpuUsageDiagnostics_ = " gpu3d_collect=" + PdhStatusCodeString(collectStatus) +
                                " gpu3d_fetch=" + PdhStatusCodeString(status) +
-                               " top_gpu3d_process=" + Utf8FromWide(ResolveProcessNameLocked(topGpu3dProcessId_)) +
+                               " top_gpu3d_process=" + ResolveProcessNameLocked(topGpu3dProcessId_) +
                                " top_gpu3d_pid=" + std::to_string(static_cast<unsigned long>(topGpu3dProcessId_)) +
                                " " + Trace::FormatValueDouble("top_gpu3d", topGpu3dUsage_, 1);
     }
@@ -700,7 +698,7 @@ private:
     void Stop() {
         HANDLE threadToJoin = nullptr;
         {
-            std::lock_guard lock(mutex_);
+            SrwExclusiveLock lock(mutex_);
             StopLocked();
             threadToJoin = processingThread_;
             processingThread_ = nullptr;
@@ -734,16 +732,17 @@ private:
         initialized_ = false;
     }
 
-    std::wstring ResolveProcessNameLocked(DWORD processId) {
+    const std::string& ResolveProcessNameLocked(DWORD processId) {
         const ProcessNameCacheEntry* cached = FindProcessNameCache(processId);
         if (cached != nullptr) {
             return cached->name;
         }
 
         bool permissionRequired = false;
-        std::wstring processName = QueryProcessBaseName(processId, permissionRequired);
+        std::string processName = QueryProcessBaseName(processId, permissionRequired);
         if (processName.empty()) {
-            processName = permissionRequired ? L"!admin" : L"pid:" + std::to_wstring(processId);
+            processName =
+                permissionRequired ? "!admin" : "pid:" + std::to_string(static_cast<unsigned long>(processId));
         }
         ProcessNameCacheEntry entry;
         entry.processId = processId;
@@ -784,7 +783,7 @@ private:
         LARGE_INTEGER receivedAt{};
         QueryPerformanceCounter(&receivedAt);
 
-        std::lock_guard lock(mutex_);
+        SrwExclusiveLock lock(mutex_);
         const PresentEventSource source = isDxgKrnlPresent ? PresentEventSource::Kernel : PresentEventSource::Runtime;
         ProcessPresentEventBuckets& buckets =
             source == PresentEventSource::Runtime ? runtimeEventsByProcess_ : kernelEventsByProcess_;
@@ -817,7 +816,7 @@ private:
     void ProcessTraceLoop() {
         TRACEHANDLE handle = INVALID_PROCESSTRACE_HANDLE;
         {
-            std::lock_guard threadLock(mutex_);
+            SrwExclusiveLock threadLock(mutex_);
             handle = traceHandle_;
         }
         const ULONG processStatus = ProcessTrace(&handle, 1, nullptr, nullptr);
@@ -825,7 +824,7 @@ private:
     }
 
     Trace& trace_;
-    mutable std::mutex mutex_;
+    mutable SrwLock mutex_;
     TRACEHANDLE sessionHandle_ = 0;
     TRACEHANDLE traceHandle_ = INVALID_PROCESSTRACE_HANDLE;
     HANDLE processingThread_ = nullptr;

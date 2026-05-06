@@ -246,6 +246,24 @@ std::vector<std::string> CollectTopLevelCards(const AppConfig& config) {
     return orderedCards;
 }
 
+void MoveLayoutEditTreeNode(LayoutEditTreeNode& target, LayoutEditTreeNode&& source) {
+    // Size: avoid whole-node move assignment, which instantiates optional/variant assignment helpers.
+    target.kind = source.kind;
+    target.label = std::move(source.label);
+    target.locationText = std::move(source.locationText);
+    target.descriptionKey = std::move(source.descriptionKey);
+    target.initiallyExpanded = source.initiallyExpanded;
+    target.selectionHighlight.reset();
+    if (source.selectionHighlight.has_value()) {
+        target.selectionHighlight.emplace(std::move(*source.selectionHighlight));
+    }
+    target.leaf.reset();
+    if (source.leaf.has_value()) {
+        target.leaf.emplace(std::move(*source.leaf));
+    }
+    target.children = std::move(source.children);
+}
+
 bool BuildNodeFieldLeaf(const std::string& sectionName,
     const std::string& memberName,
     const std::string& editCardId,
@@ -265,8 +283,14 @@ bool BuildNodeFieldLeaf(const std::string& sectionName,
     leafNode.label = std::string(descriptor->label);
     leafNode.locationText = MemberLocationText(sectionName, memberName);
     leafNode.descriptionKey = std::string(descriptor->descriptionKey);
-    leafNode.leaf = LayoutEditTreeLeaf{*key, sectionName, memberName, leafNode.descriptionKey, descriptor->valueFormat};
-    leafNode.selectionHighlight = leafNode.leaf->focusKey;
+    leafNode.leaf.emplace(LayoutEditTreeLeaf{
+        *key,
+        sectionName,
+        memberName,
+        leafNode.descriptionKey,
+        descriptor->valueFormat,
+    });
+    leafNode.selectionHighlight.emplace(leafNode.leaf->focusKey);
     return true;
 }
 
@@ -286,7 +310,7 @@ bool BuildContainerNode(const std::string& sectionName,
     treeNode.locationText = ContainerLocationText(sectionName, memberName, node.name);
     treeNode.descriptionKey = ContainerDescriptionKey(node.name);
     treeNode.initiallyExpanded = false;
-    treeNode.selectionHighlight = LayoutContainerEditKey{editCardId, nodePath};
+    treeNode.selectionHighlight.emplace(LayoutContainerEditKey{editCardId, nodePath});
 
     std::vector<size_t> childPath = nodePath;
     for (size_t i = 0; i < node.children.size(); ++i) {
@@ -317,7 +341,7 @@ bool BuildContainerNode(const std::string& sectionName,
             leafNode.label = ChildDisplayName(node.children[i]) + ", " + ChildDisplayName(node.children[i + 1]);
             leafNode.locationText = MemberLocationText(sectionName, memberName);
             leafNode.descriptionKey = "layout_edit.layout_guide";
-            leafNode.leaf = LayoutEditTreeLeaf{
+            leafNode.leaf.emplace(LayoutEditTreeLeaf{
                 LayoutWeightEditKey{editCardId, nodePath, i},
                 sectionName,
                 memberName,
@@ -326,8 +350,8 @@ bool BuildContainerNode(const std::string& sectionName,
                 node.name == "columns" ? LayoutGuideAxis::Vertical : LayoutGuideAxis::Horizontal,
                 ChildDisplayName(node.children[i]),
                 ChildDisplayName(node.children[i + 1]),
-            };
-            leafNode.selectionHighlight = leafNode.leaf->focusKey;
+            });
+            leafNode.selectionHighlight.emplace(leafNode.leaf->focusKey);
             treeNode.children.push_back(std::move(leafNode));
         }
     }
@@ -337,7 +361,7 @@ bool BuildContainerNode(const std::string& sectionName,
     }
     if (treeNode.children.size() == 1) {
         LayoutEditTreeNode childNode = std::move(treeNode.children.front());
-        treeNode = std::move(childNode);
+        MoveLayoutEditTreeNode(treeNode, std::move(childNode));
     }
     return true;
 }
@@ -353,7 +377,9 @@ bool BuildStructureGroup(const std::string& sectionName,
     groupNode.locationText = MemberLocationText(sectionName, memberName);
     groupNode.descriptionKey = GroupDescriptionKey(memberName);
     groupNode.initiallyExpanded = false;
-    groupNode.selectionHighlight = selectionHighlight;
+    if (selectionHighlight.has_value()) {
+        groupNode.selectionHighlight.emplace(*selectionHighlight);
+    }
     LayoutEditTreeNode containerNode;
     if (BuildContainerNode(sectionName, memberName, editCardId, node, {}, containerNode)) {
         if (containerNode.kind == LayoutEditTreeNodeKind::Container) {
@@ -395,14 +421,14 @@ bool BuildStaticSectionNode(const AppConfig& config, const TemplateSectionSlot& 
             leafNode.label = metricId;
             leafNode.locationText = MemberLocationText(slot.sectionName, metricId);
             leafNode.descriptionKey = "layout_edit.metric_definition";
-            leafNode.leaf = LayoutEditTreeLeaf{
+            leafNode.leaf.emplace(LayoutEditTreeLeaf{
                 LayoutMetricEditKey{metricId},
                 slot.sectionName,
                 metricId,
                 "layout_edit.metric_definition",
                 configschema::ValueFormat::FloatingPoint,
-            };
-            leafNode.selectionHighlight = leafNode.leaf->focusKey;
+            });
+            leafNode.selectionHighlight.emplace(leafNode.leaf->focusKey);
             sectionNode.children.push_back(std::move(leafNode));
         }
 
@@ -415,7 +441,7 @@ bool BuildStaticSectionNode(const AppConfig& config, const TemplateSectionSlot& 
     sectionNode.descriptionKey = SectionDescriptionKey(slot.sectionName);
     sectionNode.initiallyExpanded = true;
     if (const auto selectionHighlight = SectionSelectionHighlight(slot.sectionName); selectionHighlight.has_value()) {
-        sectionNode.selectionHighlight = *selectionHighlight;
+        sectionNode.selectionHighlight.emplace(*selectionHighlight);
     }
     for (const auto& key : slot.keys) {
         const auto parameter = FindLayoutEditParameterByConfigField(slot.sectionName, key);
@@ -431,14 +457,14 @@ bool BuildStaticSectionNode(const AppConfig& config, const TemplateSectionSlot& 
         leafNode.label = key;
         leafNode.locationText = MemberLocationText(descriptor->sectionName, descriptor->memberName);
         leafNode.descriptionKey = descriptor->configKey;
-        leafNode.leaf = LayoutEditTreeLeaf{
+        leafNode.leaf.emplace(LayoutEditTreeLeaf{
             *parameter,
             descriptor->sectionName,
             descriptor->memberName,
             descriptor->configKey,
             descriptor->valueFormat,
-        };
-        leafNode.selectionHighlight = leafNode.leaf->focusKey;
+        });
+        leafNode.selectionHighlight.emplace(leafNode.leaf->focusKey);
         sectionNode.children.push_back(std::move(leafNode));
     }
     if (sectionNode.children.empty()) {
@@ -456,7 +482,7 @@ bool BuildActiveLayoutSectionNode(const AppConfig& config, LayoutEditTreeNode& s
     sectionNode.locationText = SectionLocationText(sectionNode.label);
     sectionNode.descriptionKey = SectionDescriptionKey(sectionNode.label);
     sectionNode.initiallyExpanded = true;
-    sectionNode.selectionHighlight = LayoutEditSelectionHighlight{LayoutEditSelectionHighlightSpecial::DashboardBounds};
+    sectionNode.selectionHighlight.emplace(LayoutEditSelectionHighlightSpecial::DashboardBounds);
     LayoutEditTreeNode groupNode;
     if (BuildStructureGroup(sectionNode.label,
             "cards",
@@ -496,13 +522,13 @@ bool BuildActiveThemeSectionNode(const AppConfig& config, LayoutEditTreeNode& se
         leafNode.label = token;
         leafNode.locationText = MemberLocationText(sectionNode.label, token);
         leafNode.descriptionKey = "config.theme." + token;
-        leafNode.leaf = LayoutEditTreeLeaf{
+        leafNode.leaf.emplace(LayoutEditTreeLeaf{
             ThemeColorEditKey{theme->name, token},
             sectionNode.label,
             token,
             leafNode.descriptionKey,
             configschema::ValueFormat::ColorHex,
-        };
+        });
         sectionNode.children.push_back(std::move(leafNode));
     }
 
@@ -515,22 +541,22 @@ bool BuildCardSectionNode(const LayoutCardConfig& card, bool includeTitleLeaf, L
     sectionNode.locationText = SectionLocationText(sectionNode.label);
     sectionNode.descriptionKey = SectionDescriptionKey(sectionNode.label);
     sectionNode.initiallyExpanded = true;
-    sectionNode.selectionHighlight = LayoutEditSelectionHighlight{
-        LayoutEditWidgetIdentity{card.id, card.id, {}, LayoutEditWidgetIdentity::Kind::CardChrome}};
+    sectionNode.selectionHighlight.emplace(
+        LayoutEditWidgetIdentity{card.id, card.id, {}, LayoutEditWidgetIdentity::Kind::CardChrome});
     if (includeTitleLeaf) {
         LayoutEditTreeNode titleLeaf;
         titleLeaf.kind = LayoutEditTreeNodeKind::Leaf;
         titleLeaf.label = "title";
         titleLeaf.locationText = MemberLocationText(sectionNode.label, "title");
         titleLeaf.descriptionKey = CardMemberDescriptionKey("title");
-        titleLeaf.leaf = LayoutEditTreeLeaf{
+        titleLeaf.leaf.emplace(LayoutEditTreeLeaf{
             LayoutCardTitleEditKey{card.id},
             sectionNode.label,
             "title",
             titleLeaf.descriptionKey,
             configschema::ValueFormat::String,
-        };
-        titleLeaf.selectionHighlight = titleLeaf.leaf->focusKey;
+        });
+        titleLeaf.selectionHighlight.emplace(titleLeaf.leaf->focusKey);
         sectionNode.children.push_back(std::move(titleLeaf));
     }
     LayoutEditTreeNode groupNode;

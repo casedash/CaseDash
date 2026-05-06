@@ -1,9 +1,9 @@
 #include "telemetry/telemetry.h"
 
 #include <chrono>
-#include <mutex>
 
 #include "telemetry/impl/collector.h"
+#include "util/srw_lock.h"
 
 namespace {
 
@@ -75,7 +75,7 @@ public:
 
     void Shutdown() override {
         {
-            const std::lock_guard lock(commandMutex_);
+            const SrwExclusiveLock lock(commandLock_);
             if (stopped_) {
                 return;
             }
@@ -117,13 +117,13 @@ public:
     }
 
     TelemetryUpdate Latest() const override {
-        const std::lock_guard lock(latestMutex_);
+        const SrwExclusiveLock lock(latestLock_);
         return latest_;
     }
 
 private:
     template <typename Action> void RunSynchronized(Action&& action) {
-        std::lock_guard lock(commandMutex_);
+        SrwExclusiveLock lock(commandLock_);
         action();
         PublishLocked();
     }
@@ -138,13 +138,13 @@ private:
             const auto waitMs = std::chrono::duration_cast<std::chrono::milliseconds>(nextCollection - now).count();
             const DWORD timeoutMs = waitMs > 0 ? static_cast<DWORD>(waitMs) : 0;
             if (WaitForSingleObject(wakeEvent_, timeoutMs) == WAIT_OBJECT_0) {
-                const std::lock_guard lock(commandMutex_);
+                const SrwExclusiveLock lock(commandLock_);
                 if (stopped_) {
                     return;
                 }
                 continue;
             }
-            const std::lock_guard lock(commandMutex_);
+            const SrwExclusiveLock lock(commandLock_);
             if (stopped_) {
                 return;
             }
@@ -162,7 +162,7 @@ private:
     void PublishLocked() {
         TelemetryUpdate update = CaptureTelemetryUpdate(*collector_);
         {
-            const std::lock_guard latestLock(latestMutex_);
+            const SrwExclusiveLock latestLock(latestLock_);
             latest_ = update;
         }
         if (callback_ != nullptr) {
@@ -172,9 +172,9 @@ private:
 
     std::unique_ptr<TelemetryCollector> collector_;
     TelemetryUpdateSink* callback_ = nullptr;
-    mutable std::mutex latestMutex_;
+    mutable SrwLock latestLock_;
     TelemetryUpdate latest_;
-    std::mutex commandMutex_;
+    SrwLock commandLock_;
     HANDLE wakeEvent_ = nullptr;
     HANDLE workerThread_ = nullptr;
     bool stopped_ = false;

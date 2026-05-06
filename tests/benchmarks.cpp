@@ -244,10 +244,12 @@ std::optional<LayoutEditGuide> FindTopLevelGuide(const DashboardRenderer& render
         if (region.kind != LayoutEditActiveRegionKind::LayoutWeightGuide) {
             return false;
         }
-        const auto& guide = std::get<LayoutEditGuide>(region.payload);
-        return guide.editCardId.empty() && guide.nodePath.size() <= 1 && guide.childExtents.size() >= 2;
+        const auto* guide = LayoutEditActiveRegionPayloadAs<LayoutEditGuide>(region);
+        return guide != nullptr && guide->editCardId.empty() && guide->nodePath.size() <= 1 &&
+               guide->childExtents.size() >= 2;
     });
-    return it != regions.end() ? std::optional<LayoutEditGuide>(std::get<LayoutEditGuide>(it->payload)) : std::nullopt;
+    const auto* guide = it != regions.end() ? LayoutEditActiveRegionPayloadAs<LayoutEditGuide>(*it) : nullptr;
+    return guide != nullptr ? std::optional<LayoutEditGuide>(*guide) : std::nullopt;
 }
 
 std::vector<std::vector<int>> BuildWeightSequence(const std::vector<int>& seedWeights, size_t iterations) {

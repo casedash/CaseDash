@@ -147,12 +147,19 @@ void LayoutEditDialog::PositionWindow(HWND hwnd) const {
 }
 
 void LayoutEditDialog::UpdateSelectionHighlight(const std::optional<LayoutEditSelectionHighlight>& highlight) {
-    selectionHighlight_ = highlight;
+    selectionHighlight_.reset();
+    if (highlight.has_value()) {
+        selectionHighlight_.emplace(*highlight);
+    }
     ApplySelectionHighlightVisibility();
 }
 
 void LayoutEditDialog::ApplySelectionHighlightVisibility() {
-    host_.UpdateLayoutEditSelectionHighlight(selectionHighlightVisible_ ? selectionHighlight_ : std::nullopt);
+    if (selectionHighlightVisible_) {
+        host_.UpdateLayoutEditSelectionHighlight(selectionHighlight_);
+    } else {
+        host_.UpdateLayoutEditSelectionHighlight(std::nullopt);
+    }
 }
 
 void LayoutEditDialog::ClearSelectionHighlight() {
@@ -215,7 +222,10 @@ bool LayoutEditDialog::Ensure(const std::optional<LayoutEditFocusKey>& focusKey,
     state_->dialog = this;
     state_->originalConfig = host_.BuildLayoutEditOriginalConfig();
     state_->treeModel = BuildLayoutEditTreeModel(host_.CurrentConfig());
-    state_->initialFocus = focusKey;
+    state_->initialFocus.reset();
+    if (focusKey.has_value()) {
+        state_->initialFocus.emplace(*focusKey);
+    }
 
     std::string initialFocusTrace = "session";
     if (focusKey.has_value()) {

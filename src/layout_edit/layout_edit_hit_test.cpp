@@ -136,76 +136,80 @@ std::vector<LayoutEditWidgetRegion> CollectSimilarityIndicatorWidgets(
         if (region.kind != LayoutEditActiveRegionKind::WidgetHover) {
             continue;
         }
-        const auto& widget = std::get<LayoutEditWidgetRegion>(region.payload);
-        if (!widget.supportsSimilarityIndicator) {
+        const auto* widget = LayoutEditActiveRegionPayloadAs<LayoutEditWidgetRegion>(region);
+        if (widget == nullptr || !widget->supportsSimilarityIndicator) {
             continue;
         }
-        const int extent = WidgetExtentForAxis(widget, axis);
+        const int extent = WidgetExtentForAxis(*widget, axis);
         if (extent <= 0) {
             continue;
         }
-        const int edgeStart = axis == LayoutGuideAxis::Vertical ? widget.rect.left : widget.rect.top;
-        const int edgeEnd = axis == LayoutGuideAxis::Vertical ? widget.rect.right : widget.rect.bottom;
+        const int edgeStart = axis == LayoutGuideAxis::Vertical ? widget->rect.left : widget->rect.top;
+        const int edgeEnd = axis == LayoutGuideAxis::Vertical ? widget->rect.right : widget->rect.bottom;
         const auto duplicate = [&](const LayoutEditWidgetRegion& candidate) {
             return MatchesSimilarityRepresentative(
-                candidate, axis, widget.widget.renderCardId, widget.widgetClass, extent, edgeStart, edgeEnd);
+                candidate, axis, widget->widget.renderCardId, widget->widgetClass, extent, edgeStart, edgeEnd);
         };
         if (std::find_if(widgets.begin(), widgets.end(), duplicate) != widgets.end()) {
             continue;
         }
-        widgets.push_back(widget);
+        widgets.push_back(*widget);
     }
     return widgets;
 }
 
 }  // namespace
 
-std::optional<LayoutEditGuide> HitTestLayoutGuide(const LayoutEditActiveRegions& regions, RenderPoint clientPoint) {
+const LayoutEditGuide* HitTestLayoutGuide(const LayoutEditActiveRegions& regions, RenderPoint clientPoint) {
     for (const LayoutEditActiveRegion& region : regions) {
         if (region.kind == LayoutEditActiveRegionKind::LayoutWeightGuide && region.box.Contains(clientPoint)) {
-            return std::get<LayoutEditGuide>(region.payload);
+            return LayoutEditActiveRegionPayloadAs<LayoutEditGuide>(region);
         }
     }
-    return std::nullopt;
+    return nullptr;
 }
 
-std::optional<LayoutEditWidgetGuide> HitTestWidgetEditGuide(
-    const LayoutEditActiveRegions& regions, RenderPoint clientPoint) {
+const LayoutEditWidgetGuide* HitTestWidgetEditGuide(const LayoutEditActiveRegions& regions, RenderPoint clientPoint) {
     const LayoutEditWidgetGuide* bestGuide = nullptr;
     int bestPriority = (std::numeric_limits<int>::max)();
     for (const LayoutEditActiveRegion& region : regions) {
         if (region.kind != LayoutEditActiveRegionKind::WidgetGuide || !region.box.Contains(clientPoint)) {
             continue;
         }
-        const auto& guide = std::get<LayoutEditWidgetGuide>(region.payload);
-        const int priority = GetLayoutEditParameterHitPriority(guide.parameter);
+        const auto* guide = LayoutEditActiveRegionPayloadAs<LayoutEditWidgetGuide>(region);
+        if (guide == nullptr) {
+            continue;
+        }
+        const int priority = GetLayoutEditParameterHitPriority(guide->parameter);
         if (bestGuide == nullptr || priority < bestPriority) {
-            bestGuide = &guide;
+            bestGuide = guide;
             bestPriority = priority;
         }
     }
-    return bestGuide != nullptr ? std::optional<LayoutEditWidgetGuide>(*bestGuide) : std::nullopt;
+    return bestGuide;
 }
 
-std::optional<LayoutEditGapAnchor> HitTestGapEditAnchor(
-    const LayoutEditActiveRegions& regions, RenderPoint clientPoint) {
+const LayoutEditGapAnchor* HitTestGapEditAnchor(const LayoutEditActiveRegions& regions, RenderPoint clientPoint) {
     const LayoutEditGapAnchor* bestAnchor = nullptr;
     int bestPriority = (std::numeric_limits<int>::max)();
     for (auto it = regions.rbegin(); it != regions.rend(); ++it) {
         if (it->kind != LayoutEditActiveRegionKind::GapHandle || !it->box.Contains(clientPoint)) {
             continue;
         }
-        const auto& anchor = std::get<LayoutEditGapAnchor>(it->payload);
-        const int priority = GetLayoutEditParameterHitPriority(anchor.key.parameter);
+        const auto* anchor = LayoutEditActiveRegionPayloadAs<LayoutEditGapAnchor>(*it);
+        if (anchor == nullptr) {
+            continue;
+        }
+        const int priority = GetLayoutEditParameterHitPriority(anchor->key.parameter);
         if (bestAnchor == nullptr || priority < bestPriority) {
-            bestAnchor = &anchor;
+            bestAnchor = anchor;
             bestPriority = priority;
         }
     }
-    return bestAnchor != nullptr ? std::optional<LayoutEditGapAnchor>(*bestAnchor) : std::nullopt;
+    return bestAnchor;
 }
 
-std::optional<LayoutEditAnchorRegion> HitTestEditableAnchorTarget(
+const LayoutEditAnchorRegion* HitTestEditableAnchorTarget(
     const LayoutEditActiveRegions& regions, RenderPoint clientPoint) {
     const LayoutEditAnchorRegion* bestRegion = nullptr;
     long long bestArea = (std::numeric_limits<long long>::max)();
@@ -213,20 +217,20 @@ std::optional<LayoutEditAnchorRegion> HitTestEditableAnchorTarget(
         if (!IsAnchorTargetKind(it->kind)) {
             continue;
         }
-        const auto& anchor = std::get<LayoutEditAnchorRegion>(it->payload);
-        if (!anchor.targetRect.Contains(clientPoint)) {
+        const auto* anchor = LayoutEditActiveRegionPayloadAs<LayoutEditAnchorRegion>(*it);
+        if (anchor == nullptr || !anchor->targetRect.Contains(clientPoint)) {
             continue;
         }
-        const long long area = RectArea(anchor.targetRect);
+        const long long area = RectArea(anchor->targetRect);
         if (bestRegion == nullptr || area < bestArea) {
-            bestRegion = &anchor;
+            bestRegion = anchor;
             bestArea = area;
         }
     }
-    return bestRegion != nullptr ? std::optional<LayoutEditAnchorRegion>(*bestRegion) : std::nullopt;
+    return bestRegion;
 }
 
-std::optional<LayoutEditAnchorRegion> HitTestEditableAnchorHandle(
+const LayoutEditAnchorRegion* HitTestEditableAnchorHandle(
     const LayoutEditActiveRegions& regions, RenderPoint clientPoint) {
     const LayoutEditAnchorRegion* bestRegion = nullptr;
     int bestPriority = 0;
@@ -234,20 +238,20 @@ std::optional<LayoutEditAnchorRegion> HitTestEditableAnchorHandle(
         if (!IsAnchorHandleKind(it->kind)) {
             continue;
         }
-        const auto& anchor = std::get<LayoutEditAnchorRegion>(it->payload);
-        if (!AnchorHandleContains(anchor, clientPoint)) {
+        const auto* anchor = LayoutEditActiveRegionPayloadAs<LayoutEditAnchorRegion>(*it);
+        if (anchor == nullptr || !AnchorHandleContains(*anchor, clientPoint)) {
             continue;
         }
-        const int priority = AnchorHoverPriority(anchor);
+        const int priority = AnchorHoverPriority(*anchor);
         if (bestRegion == nullptr || priority < bestPriority) {
-            bestRegion = &anchor;
+            bestRegion = anchor;
             bestPriority = priority;
         }
     }
-    return bestRegion != nullptr ? std::optional<LayoutEditAnchorRegion>(*bestRegion) : std::nullopt;
+    return bestRegion;
 }
 
-std::optional<LayoutEditColorRegion> HitTestEditableColorRegion(
+const LayoutEditColorRegion* HitTestEditableColorRegion(
     const LayoutEditActiveRegions& regions, RenderPoint clientPoint) {
     const LayoutEditColorRegion* bestRegion = nullptr;
     int bestPriority = (std::numeric_limits<int>::max)();
@@ -256,91 +260,93 @@ std::optional<LayoutEditColorRegion> HitTestEditableColorRegion(
         if (!IsColorTargetKind(it->kind)) {
             continue;
         }
-        const auto& color = std::get<LayoutEditColorRegion>(it->payload);
-        if (!color.targetRect.Contains(clientPoint)) {
+        const auto* color = LayoutEditActiveRegionPayloadAs<LayoutEditColorRegion>(*it);
+        if (color == nullptr || !color->targetRect.Contains(clientPoint)) {
             continue;
         }
-        const int priority = GetLayoutEditParameterHitPriority(color.parameter);
-        const long long area = RectArea(color.targetRect);
+        const int priority = GetLayoutEditParameterHitPriority(color->parameter);
+        const long long area = RectArea(color->targetRect);
         if (bestRegion == nullptr || priority < bestPriority || (priority == bestPriority && area < bestArea)) {
-            bestRegion = &color;
+            bestRegion = color;
             bestPriority = priority;
             bestArea = area;
         }
     }
-    return bestRegion != nullptr ? std::optional<LayoutEditColorRegion>(*bestRegion) : std::nullopt;
+    return bestRegion;
 }
 
-std::optional<LayoutEditAnchorRegion> FindEditableAnchorRegion(
+const LayoutEditAnchorRegion* FindEditableAnchorRegion(
     const LayoutEditActiveRegions& regions, const LayoutEditAnchorKey& key) {
     for (const LayoutEditActiveRegion& region : regions) {
         if (!IsAnchorHandleKind(region.kind) && !IsAnchorTargetKind(region.kind)) {
             continue;
         }
-        const auto& anchor = std::get<LayoutEditAnchorRegion>(region.payload);
-        if (MatchesEditableAnchorKey(anchor.key, key)) {
+        const auto* anchor = LayoutEditActiveRegionPayloadAs<LayoutEditAnchorRegion>(region);
+        if (anchor != nullptr && MatchesEditableAnchorKey(anchor->key, key)) {
             return anchor;
         }
     }
-    return std::nullopt;
+    return nullptr;
 }
 
-std::optional<LayoutEditGapAnchor> FindGapEditAnchor(
+const LayoutEditGapAnchor* FindGapEditAnchor(
     const LayoutEditActiveRegions& regions, const LayoutEditGapAnchorKey& key) {
     for (const LayoutEditActiveRegion& region : regions) {
         if (region.kind != LayoutEditActiveRegionKind::GapHandle) {
             continue;
         }
-        const auto& anchor = std::get<LayoutEditGapAnchor>(region.payload);
-        if (MatchesGapEditAnchorKey(anchor.key, key)) {
+        const auto* anchor = LayoutEditActiveRegionPayloadAs<LayoutEditGapAnchor>(region);
+        if (anchor != nullptr && MatchesGapEditAnchorKey(anchor->key, key)) {
             return anchor;
         }
     }
-    return std::nullopt;
+    return nullptr;
 }
 
-std::optional<LayoutEditGuide> FindLayoutEditGuide(
-    const LayoutEditActiveRegions& regions, const LayoutEditGuide& guide) {
+const LayoutEditGuide* FindLayoutEditGuide(const LayoutEditActiveRegions& regions, const LayoutEditGuide& guide) {
     for (const LayoutEditActiveRegion& region : regions) {
         if (region.kind != LayoutEditActiveRegionKind::LayoutWeightGuide) {
             continue;
         }
-        const auto& candidate = std::get<LayoutEditGuide>(region.payload);
-        if (candidate.renderCardId == guide.renderCardId && candidate.editCardId == guide.editCardId &&
-            candidate.nodePath == guide.nodePath && candidate.separatorIndex == guide.separatorIndex) {
+        const auto* candidate = LayoutEditActiveRegionPayloadAs<LayoutEditGuide>(region);
+        if (candidate != nullptr && candidate->renderCardId == guide.renderCardId &&
+            candidate->editCardId == guide.editCardId && candidate->nodePath == guide.nodePath &&
+            candidate->separatorIndex == guide.separatorIndex) {
             return candidate;
         }
     }
-    return std::nullopt;
+    return nullptr;
 }
 
-std::optional<LayoutEditWidgetGuide> FindWidgetEditGuide(
+const LayoutEditWidgetGuide* FindWidgetEditGuide(
     const LayoutEditActiveRegions& regions, const LayoutEditWidgetGuide& guide) {
     for (const LayoutEditActiveRegion& region : regions) {
         if (region.kind != LayoutEditActiveRegionKind::WidgetGuide) {
             continue;
         }
-        const auto& candidate = std::get<LayoutEditWidgetGuide>(region.payload);
-        if (candidate.parameter == guide.parameter && candidate.guideId == guide.guideId &&
-            MatchesWidgetIdentity(candidate.widget, guide.widget)) {
+        const auto* candidate = LayoutEditActiveRegionPayloadAs<LayoutEditWidgetGuide>(region);
+        if (candidate != nullptr && candidate->parameter == guide.parameter && candidate->guideId == guide.guideId &&
+            MatchesWidgetIdentity(candidate->widget, guide.widget)) {
             return candidate;
         }
     }
-    return std::nullopt;
+    return nullptr;
 }
 
 LayoutEditHoverResolution ResolveLayoutEditHover(const LayoutEditActiveRegions& regions, RenderPoint clientPoint) {
     LayoutEditHoverResolution resolution;
     for (const LayoutEditActiveRegion& region : regions) {
         if (region.kind == LayoutEditActiveRegionKind::Card && region.box.Contains(clientPoint)) {
-            const auto& card = std::get<LayoutEditCardRegion>(region.payload);
-            resolution.hoveredLayoutCard =
-                LayoutEditWidgetIdentity{card.id, card.id, {}, LayoutEditWidgetIdentity::Kind::CardChrome};
+            if (const auto* card = LayoutEditActiveRegionPayloadAs<LayoutEditCardRegion>(region)) {
+                resolution.hoveredLayoutCard =
+                    LayoutEditWidgetIdentity{card->id, card->id, {}, LayoutEditWidgetIdentity::Kind::CardChrome};
+            }
         }
         if (region.kind == LayoutEditActiveRegionKind::CardHeader && region.box.Contains(clientPoint)) {
-            const auto& card = std::get<LayoutEditCardRegion>(region.payload);
-            resolution.hoveredEditableCard =
-                LayoutEditWidgetIdentity{card.id, card.id, {}, LayoutEditWidgetIdentity::Kind::CardChrome};
+            if (const auto* card = LayoutEditActiveRegionPayloadAs<LayoutEditCardRegion>(region)) {
+                resolution.hoveredEditableCard =
+                    LayoutEditWidgetIdentity{card->id, card->id, {}, LayoutEditWidgetIdentity::Kind::CardChrome};
+            }
         }
     }
 
@@ -359,7 +365,7 @@ LayoutEditHoverResolution ResolveLayoutEditHover(const LayoutEditActiveRegions& 
     };
     const auto gapAnchor = HitTestGapEditAnchor(regions, clientPoint);
     const auto widgetGuide = HitTestWidgetEditGuide(regions, clientPoint);
-    if (anchorHandle.has_value() && gapAnchor.has_value()) {
+    if (anchorHandle != nullptr && gapAnchor != nullptr) {
         const int anchorPriority = LayoutEditAnchorHitPriority(anchorHandle->key);
         const int gapPriority = GetLayoutEditParameterHitPriority(gapAnchor->key.parameter);
         if (anchorPriority <= gapPriority) {
@@ -367,11 +373,11 @@ LayoutEditHoverResolution ResolveLayoutEditHover(const LayoutEditActiveRegions& 
             return resolution;
         }
         resolution.hoveredGapEditAnchor = gapAnchor->key;
-        resolution.hoveredGapEditAnchorRegion = gapAnchor;
+        resolution.hoveredGapEditAnchorRegion = *gapAnchor;
         resolution.actionableGapEditAnchor = gapAnchor->key;
         return resolution;
     }
-    if (anchorHandle.has_value() && widgetGuide.has_value()) {
+    if (anchorHandle != nullptr && widgetGuide != nullptr) {
         const int anchorPriority = LayoutEditAnchorHitPriority(anchorHandle->key);
         const int guidePriority = GetLayoutEditParameterHitPriority(widgetGuide->parameter);
         if (anchorPriority <= guidePriority) {
@@ -381,43 +387,43 @@ LayoutEditHoverResolution ResolveLayoutEditHover(const LayoutEditActiveRegions& 
         if (widgetGuide->widget.kind == LayoutEditWidgetIdentity::Kind::Widget) {
             resolution.hoveredEditableWidget = widgetGuide->widget;
         }
-        resolution.hoveredWidgetEditGuide = widgetGuide;
+        resolution.hoveredWidgetEditGuide = *widgetGuide;
         return resolution;
     }
-    if (gapAnchor.has_value() && widgetGuide.has_value()) {
+    if (gapAnchor != nullptr && widgetGuide != nullptr) {
         const int gapPriority = GetLayoutEditParameterHitPriority(gapAnchor->key.parameter);
         const int guidePriority = GetLayoutEditParameterHitPriority(widgetGuide->parameter);
         if (gapPriority <= guidePriority) {
             resolution.hoveredGapEditAnchor = gapAnchor->key;
-            resolution.hoveredGapEditAnchorRegion = gapAnchor;
+            resolution.hoveredGapEditAnchorRegion = *gapAnchor;
             resolution.actionableGapEditAnchor = gapAnchor->key;
             return resolution;
         }
         if (widgetGuide->widget.kind == LayoutEditWidgetIdentity::Kind::Widget) {
             resolution.hoveredEditableWidget = widgetGuide->widget;
         }
-        resolution.hoveredWidgetEditGuide = widgetGuide;
+        resolution.hoveredWidgetEditGuide = *widgetGuide;
         return resolution;
     }
-    if (anchorHandle.has_value()) {
+    if (anchorHandle != nullptr) {
         setActionableAnchor();
         return resolution;
     }
-    if (gapAnchor.has_value()) {
+    if (gapAnchor != nullptr) {
         resolution.hoveredGapEditAnchor = gapAnchor->key;
-        resolution.hoveredGapEditAnchorRegion = gapAnchor;
+        resolution.hoveredGapEditAnchorRegion = *gapAnchor;
         resolution.actionableGapEditAnchor = gapAnchor->key;
         return resolution;
     }
-    if (widgetGuide.has_value()) {
+    if (widgetGuide != nullptr) {
         if (widgetGuide->widget.kind == LayoutEditWidgetIdentity::Kind::Widget) {
             resolution.hoveredEditableWidget = widgetGuide->widget;
         }
-        resolution.hoveredWidgetEditGuide = widgetGuide;
+        resolution.hoveredWidgetEditGuide = *widgetGuide;
         return resolution;
     }
-    if (const auto layoutGuide = HitTestLayoutGuide(regions, clientPoint); layoutGuide.has_value()) {
-        resolution.hoveredLayoutGuide = layoutGuide;
+    if (const LayoutEditGuide* layoutGuide = HitTestLayoutGuide(regions, clientPoint); layoutGuide != nullptr) {
+        resolution.hoveredLayoutGuide = *layoutGuide;
         return resolution;
     }
 
@@ -427,18 +433,20 @@ LayoutEditHoverResolution ResolveLayoutEditHover(const LayoutEditActiveRegions& 
         if (region.kind != LayoutEditActiveRegionKind::WidgetHover || !region.box.Contains(clientPoint)) {
             continue;
         }
-        hoveredWidget = std::get<LayoutEditWidgetRegion>(region.payload).widget;
+        if (const auto* widget = LayoutEditActiveRegionPayloadAs<LayoutEditWidgetRegion>(region)) {
+            hoveredWidget = widget->widget;
+        }
         break;
     }
     if (hoveredWidget.has_value()) {
         resolution.hoveredEditableWidget = hoveredWidget;
-        if (anchorTarget.has_value() && MatchesWidgetIdentity(anchorTarget->key.widget, *hoveredWidget)) {
+        if (anchorTarget != nullptr && MatchesWidgetIdentity(anchorTarget->key.widget, *hoveredWidget)) {
             resolution.hoveredEditableAnchor = anchorTarget->key;
             return resolution;
         }
         return resolution;
     }
-    if (anchorTarget.has_value()) {
+    if (anchorTarget != nullptr) {
         resolution.hoveredEditableAnchor = anchorTarget->key;
         return resolution;
     }

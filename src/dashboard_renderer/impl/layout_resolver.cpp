@@ -1,6 +1,7 @@
 #include "dashboard_renderer/impl/layout_resolver.h"
 
 #include <algorithm>
+#include <cstdint>
 
 #include "dashboard_renderer/dashboard_renderer.h"
 #include "layout_model/layout_edit_parameter_metadata.h"
@@ -562,12 +563,14 @@ void DashboardLayoutResolver::AddLayoutEditGuide(DashboardRenderer& renderer,
     }
 
     const int hitInset = (std::max)(3, renderer.ScaleLogical(4));
-    std::vector<bool> childFixedExtents;
+    std::vector<std::uint8_t> childFixedExtents;
     childFixedExtents.reserve(node.children.size());
     for (const auto& child : node.children) {
         const DashboardLayoutResolver::ParsedWidgetInfo* childWidget = FindParsedWidgetInfo(renderer, child);
         childFixedExtents.push_back(!horizontal && childWidget != nullptr &&
-                                    (childWidget->fixedPreferredHeightInRows || childWidget->verticalSpring));
+                                            (childWidget->fixedPreferredHeightInRows || childWidget->verticalSpring)
+                                        ? 1u
+                                        : 0u);
     }
     for (size_t i = 0; i + 1 < childRects.size(); ++i) {
         if (!horizontal && (childFixedExtents[i] || childFixedExtents[i + 1])) {
@@ -582,12 +585,12 @@ void DashboardLayoutResolver::AddLayoutEditGuide(DashboardRenderer& renderer,
         guide.containerRect = rect;
         guide.gap = gap;
         guide.childExtents.reserve(childRects.size());
-        guide.childFixedExtents = childFixedExtents;
-        guide.childRects = childRects;
         for (const RenderRect& childRect : childRects) {
             guide.childExtents.push_back(
                 horizontal ? (childRect.right - childRect.left) : (childRect.bottom - childRect.top));
         }
+        guide.childFixedExtents = childFixedExtents;
+        guide.childRects = childRects;
 
         if (horizontal) {
             const int x = childRects[i].right + (std::max)(0, gap / 2);

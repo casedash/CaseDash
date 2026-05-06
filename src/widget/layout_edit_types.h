@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <variant>
@@ -151,7 +152,7 @@ struct LayoutEditGuide {
     RenderRect hitRect{};
     int gap = 0;
     std::vector<int> childExtents;
-    std::vector<bool> childFixedExtents;
+    std::vector<std::uint8_t> childFixedExtents;
     std::vector<RenderRect> childRects;
 };
 
@@ -265,6 +266,7 @@ using LayoutEditValue = std::variant<std::string, std::vector<std::string>>;
 
 using TooltipPayload = std::
     variant<LayoutEditGuide, LayoutEditWidgetGuide, LayoutEditGapAnchor, LayoutEditAnchorRegion, LayoutEditColorRegion>;
+
 using LayoutEditFocusKey = std::variant<LayoutEditParameter,
     LayoutWeightEditKey,
     LayoutMetricEditKey,

@@ -4,7 +4,6 @@
 
 #include <chrono>
 #include <memory>
-#include <mutex>
 #include <optional>
 #include <shellapi.h>
 #include <string>
@@ -16,6 +15,7 @@
 #include "layout_edit/layout_edit_controller.h"
 #include "layout_edit/layout_edit_trace_session.h"
 #include "util/file_path.h"
+#include "util/srw_lock.h"
 
 class DashboardShellUi;
 
@@ -151,7 +151,7 @@ private:
     POINT moveCursorAnchorClientPoint_{};
     bool hasMoveCursorAnchorClientPoint_ = false;
     bool suppressMoveStopOnNextLeftButtonUp_ = false;
-    std::mutex pendingTelemetryMutex_;
+    SrwLock pendingTelemetryLock_;
     TelemetryUpdate pendingTelemetryUpdate_{};
     bool hasPendingTelemetryUpdate_ = false;
     LayoutEditTraceSession layoutEditTraceSession_{};

@@ -1,6 +1,7 @@
 #include "layout_edit/layout_edit_service.h"
 
 #include <algorithm>
+#include <cstdint>
 
 #include "layout_edit/layout_edit_target_descriptor.h"
 #include "util/strings.h"
@@ -152,9 +153,9 @@ std::vector<int> SeedGuideWeights(const LayoutEditGuide& guide, const LayoutNode
         weights.push_back(std::max(1, guide.childExtents[i]));
     }
 
-    std::vector<bool> fixed = guide.childFixedExtents;
+    std::vector<std::uint8_t> fixed = guide.childFixedExtents;
     if (fixed.size() != weights.size()) {
-        fixed.assign(weights.size(), false);
+        fixed.assign(weights.size(), 0u);
     }
 
     for (size_t i = 0; i < weights.size(); ++i) {

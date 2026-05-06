@@ -580,10 +580,10 @@ LayoutEditActiveRegions DashboardRenderer::CollectLayoutEditActiveRegions(
             appendRegion(guide.hitRect, LayoutEditActiveRegionKind::WidgetGuide, guide);
         }
 
-        const auto appendAnchorRegions = [&](const std::vector<LayoutEditAnchorRegion>& regions,
+        const auto appendAnchorRegions = [&](const std::vector<LayoutEditAnchorRegion>& anchorRegions,
                                              LayoutEditActiveRegionKind handleKind,
                                              LayoutEditActiveRegionKind targetKind) {
-            for (const auto& region : regions) {
+            for (const auto& region : anchorRegions) {
                 appendRegion(region.anchorHitRect, handleKind, region);
                 appendRegion(region.targetRect, targetKind, region);
             }
@@ -595,9 +595,9 @@ LayoutEditActiveRegions DashboardRenderer::CollectLayoutEditActiveRegions(
             LayoutEditActiveRegionKind::DynamicEditAnchorHandle,
             LayoutEditActiveRegionKind::DynamicEditAnchorTarget);
 
-        const auto appendColorRegions = [&](const std::vector<LayoutEditColorRegion>& regions,
+        const auto appendColorRegions = [&](const std::vector<LayoutEditColorRegion>& colorRegions,
                                             LayoutEditActiveRegionKind kind) {
-            for (const auto& region : regions) {
+            for (const auto& region : colorRegions) {
                 appendRegion(region.targetRect, kind, region);
             }
         };

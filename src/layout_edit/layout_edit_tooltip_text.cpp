@@ -187,15 +187,16 @@ bool BuildLayoutEditTooltipTextForPayload(
         return true;
     }
 
-    if (const auto focusKey = TooltipPayloadFocusKey(payload);
-        focusKey.has_value() && std::holds_alternative<LayoutMetricEditKey>(*focusKey)) {
-        metricKey = std::get<LayoutMetricEditKey>(*focusKey);
-    } else if (focusKey.has_value() && std::holds_alternative<LayoutCardTitleEditKey>(*focusKey)) {
-        cardTitleKey = std::get<LayoutCardTitleEditKey>(*focusKey);
-    } else if (focusKey.has_value() && std::holds_alternative<LayoutNodeFieldEditKey>(*focusKey)) {
-        nodeFieldKey = std::get<LayoutNodeFieldEditKey>(*focusKey);
-    } else if (focusKey.has_value() && std::holds_alternative<LayoutContainerEditKey>(*focusKey)) {
-        containerKey = std::get<LayoutContainerEditKey>(*focusKey);
+    if (const auto focusKey = TooltipPayloadFocusKey(payload); focusKey.has_value()) {
+        if (const auto* metricCandidate = std::get_if<LayoutMetricEditKey>(&*focusKey)) {
+            metricKey = *metricCandidate;
+        } else if (const auto* cardTitleCandidate = std::get_if<LayoutCardTitleEditKey>(&*focusKey)) {
+            cardTitleKey = *cardTitleCandidate;
+        } else if (const auto* nodeFieldCandidate = std::get_if<LayoutNodeFieldEditKey>(&*focusKey)) {
+            nodeFieldKey = *nodeFieldCandidate;
+        } else if (const auto* containerCandidate = std::get_if<LayoutContainerEditKey>(&*focusKey)) {
+            containerKey = *containerCandidate;
+        }
     }
     if (const auto* anchor = std::get_if<LayoutEditAnchorRegion>(&payload)) {
         if (const auto anchorNodeFieldKey = LayoutEditAnchorNodeFieldKey(anchor->key); anchorNodeFieldKey.has_value()) {

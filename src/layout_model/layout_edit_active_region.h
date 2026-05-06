@@ -65,6 +65,14 @@ struct LayoutEditActiveRegion {
     LayoutEditActiveRegionPayload payload = LayoutEditCardRegion{};
 };
 
+template <typename T> const T* LayoutEditActiveRegionPayloadAs(const LayoutEditActiveRegionPayload& payload) {
+    return std::get_if<T>(&payload);
+}
+
+template <typename T> const T* LayoutEditActiveRegionPayloadAs(const LayoutEditActiveRegion& region) {
+    return LayoutEditActiveRegionPayloadAs<T>(region.payload);
+}
+
 struct LayoutEditHoverResolution {
     std::optional<LayoutEditWidgetIdentity> hoveredLayoutCard;
     std::optional<LayoutEditWidgetIdentity> hoveredEditableCard;

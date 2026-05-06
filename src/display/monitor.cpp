@@ -188,7 +188,7 @@ std::vector<DisplayMenuOption> EnumerateDisplayMenuOptions(const AppConfig& conf
             option.layoutFits = fittedScale > 0.0;
             option.matchesCurrentConfig = context->hasConfiguredWallpaper && context->isConfiguredAtOrigin &&
                                           context->configuredMonitor->has_value() &&
-                                          RectsEqual(context->configuredMonitor->value().rect, option.rect);
+                                          RectsEqual((*context->configuredMonitor)->rect, option.rect);
             option.fittedScale = fittedScale;
             context->results.push_back(std::move(option));
             return context->results.size() < (kCommandConfigureDisplayMax - kCommandConfigureDisplayBase + 1);

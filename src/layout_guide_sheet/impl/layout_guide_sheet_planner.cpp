@@ -13,19 +13,19 @@
 namespace {
 
 std::optional<TooltipPayload> TooltipPayloadFromActiveRegion(const LayoutEditActiveRegion& region) {
-    if (const auto* guide = std::get_if<LayoutEditGuide>(&region.payload)) {
+    if (const auto* guide = LayoutEditActiveRegionPayloadAs<LayoutEditGuide>(region)) {
         return *guide;
     }
-    if (const auto* guide = std::get_if<LayoutEditWidgetGuide>(&region.payload)) {
+    if (const auto* guide = LayoutEditActiveRegionPayloadAs<LayoutEditWidgetGuide>(region)) {
         return *guide;
     }
-    if (const auto* anchor = std::get_if<LayoutEditGapAnchor>(&region.payload)) {
+    if (const auto* anchor = LayoutEditActiveRegionPayloadAs<LayoutEditGapAnchor>(region)) {
         return *anchor;
     }
-    if (const auto* anchor = std::get_if<LayoutEditAnchorRegion>(&region.payload)) {
+    if (const auto* anchor = LayoutEditActiveRegionPayloadAs<LayoutEditAnchorRegion>(region)) {
         return *anchor;
     }
-    if (const auto* color = std::get_if<LayoutEditColorRegion>(&region.payload)) {
+    if (const auto* color = LayoutEditActiveRegionPayloadAs<LayoutEditColorRegion>(region)) {
         return *color;
     }
     return std::nullopt;
@@ -73,16 +73,16 @@ bool WidgetIdentityBelongsToSelectedCard(
 
 bool PayloadBelongsToSelectedCard(
     const LayoutEditActiveRegionPayload& payload, const std::vector<std::string>& selectedCardIds) {
-    if (const auto* guide = std::get_if<LayoutEditGuide>(&payload)) {
+    if (const auto* guide = LayoutEditActiveRegionPayloadAs<LayoutEditGuide>(payload)) {
         return ContainsCardId(selectedCardIds, guide->renderCardId);
     }
-    if (const auto* guide = std::get_if<LayoutEditWidgetGuide>(&payload)) {
+    if (const auto* guide = LayoutEditActiveRegionPayloadAs<LayoutEditWidgetGuide>(payload)) {
         return WidgetIdentityBelongsToSelectedCard(guide->widget, selectedCardIds);
     }
-    if (const auto* anchor = std::get_if<LayoutEditGapAnchor>(&payload)) {
+    if (const auto* anchor = LayoutEditActiveRegionPayloadAs<LayoutEditGapAnchor>(payload)) {
         return WidgetIdentityBelongsToSelectedCard(anchor->key.widget, selectedCardIds);
     }
-    if (const auto* anchor = std::get_if<LayoutEditAnchorRegion>(&payload)) {
+    if (const auto* anchor = LayoutEditActiveRegionPayloadAs<LayoutEditAnchorRegion>(payload)) {
         return WidgetIdentityBelongsToSelectedCard(anchor->key.widget, selectedCardIds);
     }
     return true;
@@ -128,7 +128,7 @@ bool IsRepresentativeWidgetClass(WidgetClass widgetClass) {
 }
 
 bool IsContainerChildOrderAnchor(const LayoutEditActiveRegionPayload& payload) {
-    const auto* anchor = std::get_if<LayoutEditAnchorRegion>(&payload);
+    const auto* anchor = LayoutEditActiveRegionPayloadAs<LayoutEditAnchorRegion>(payload);
     return anchor != nullptr && std::holds_alternative<LayoutContainerChildOrderEditKey>(anchor->key.subject);
 }
 
@@ -193,27 +193,27 @@ void AddOrUpdateCallout(std::vector<LayoutGuideSheetCalloutRequest>& callouts,
     int priority,
     size_t& order) {
     std::optional<LayoutEditAnchorKey> hoverAnchorKey;
-    if (const auto* anchor = std::get_if<LayoutEditAnchorRegion>(&region.payload)) {
+    if (const auto* anchor = LayoutEditActiveRegionPayloadAs<LayoutEditAnchorRegion>(region)) {
         hoverAnchorKey = anchor->key;
     }
     std::optional<LayoutEditWidgetGuide> hoverWidgetGuide;
-    if (const auto* guide = std::get_if<LayoutEditWidgetGuide>(&region.payload)) {
+    if (const auto* guide = LayoutEditActiveRegionPayloadAs<LayoutEditWidgetGuide>(region)) {
         hoverWidgetGuide = *guide;
     }
     std::optional<LayoutEditGuide> hoverLayoutGuide;
-    if (const auto* guide = std::get_if<LayoutEditGuide>(&region.payload)) {
+    if (const auto* guide = LayoutEditActiveRegionPayloadAs<LayoutEditGuide>(region)) {
         hoverLayoutGuide = *guide;
     }
     std::optional<LayoutEditGapAnchorKey> hoverGapAnchorKey;
-    if (const auto* anchor = std::get_if<LayoutEditGapAnchor>(&region.payload)) {
+    if (const auto* anchor = LayoutEditActiveRegionPayloadAs<LayoutEditGapAnchor>(region)) {
         hoverGapAnchorKey = anchor->key;
     }
     std::optional<AnchorShape> hoverAnchorShape;
-    if (const auto* anchor = std::get_if<LayoutEditAnchorRegion>(&region.payload)) {
+    if (const auto* anchor = LayoutEditActiveRegionPayloadAs<LayoutEditAnchorRegion>(region)) {
         hoverAnchorShape = anchor->shape;
     }
     std::optional<LayoutEditParameter> hoverColorParameter;
-    if (const auto* color = std::get_if<LayoutEditColorRegion>(&region.payload)) {
+    if (const auto* color = LayoutEditActiveRegionPayloadAs<LayoutEditColorRegion>(region)) {
         hoverColorParameter = color->parameter;
     }
 
