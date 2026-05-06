@@ -20,16 +20,20 @@ Use this skill to investigate a failed workflow from the failing run outward, th
    - Use the user-requested incident tool first, such as `dh`, when it is available.
    - If the requested tool is unavailable, say so briefly and use the available GitHub tooling, usually `gh run list`, `gh run view`, and `gh run download`.
    - Record the workflow name, branch, run id, head commit, failed job, and failed step before editing.
+   - Compare the failed run head SHA with local `HEAD` and branch status; note when the checkout is ahead of or different from the failed commit.
    - Prefer failed-step logs and uploaded artifacts over guessing from the final workflow conclusion.
 
 3. Diagnose narrowly.
    - Find the first actionable error in the failed step.
    - Download uploaded reports when the workflow provides them, such as `clang-tidy-report`.
+   - For clang-tidy reports, search the artifact for reportable `warning:` and `error:` lines; ignore progress lines and `clang-tidy exit code ignored after filtering` unless reportable output remains nearby.
    - Cross-check the reported file against the current worktree before patching because the branch may already be ahead of the failed commit.
+   - For `misc-include-cleaner` reports on Win32 umbrella headers, verify that a direct replacement header is self-contained under clang-tidy before changing source. If a direct Windows SDK header fails under clang-tidy or the project policy expects the umbrella include, add a narrow `file|header` entry to the maintained allowlist in `tools/run_clang_tidy.ps1` instead of adding local `NOLINT`.
    - Ignore unrelated dirty work and do not revert changes made by others.
 
 4. Patch the owning source.
    - Keep edits scoped to the failed diagnostic and the owning module.
+   - When the owning module is lint tooling, keep allowlist changes exact and explain why the source include remains correct.
    - Use `apply_patch` for manual edits.
    - Update docs only when the failure or fix changes documented behavior, commands, or a recurring project pitfall.
 
@@ -39,6 +43,7 @@ Use this skill to investigate a failed workflow from the failing run outward, th
 - Run `.\format.cmd`; if formatting is required, run `.\format.cmd fix changed`, then rerun `.\format.cmd`.
 - Build through `.\build.cmd` before validation that needs a fresh compile database or executable. Match the workflow option, such as `.\build.cmd /benchmarks`, only when it materially matters to the failure.
 - For clang-tidy CI failures, run only `.\lint.cmd tidy changed` locally.
+- If a clang-tidy fix only changes lint tooling or an allowlist, `.\lint.cmd tidy changed` may report no eligible changed project source or header files. Treat that as validation of the lint entrypoint and script parsing, not proof that the full tidy sweep ran, and say so in the output.
 - Do not run full `.\lint.cmd tidy` unless the user explicitly asks for the full tidy sweep.
 - If a long validation command is interrupted, check for leftover child processes from that command and stop only that command tree before continuing.
 - Prefer the smallest additional workflow step that proves the fix. Run `.\test.cmd`, `.\package.cmd`, or diagnostics commands only when the failure or edited code path calls for them.
@@ -49,4 +54,5 @@ Summarize:
 
 - Failed workflow run id, commit, job, and step reviewed.
 - Root cause and files changed.
+- Whether local `HEAD` matched the failed CI commit or was ahead of it.
 - Validation commands run, including any command intentionally skipped because the changed-file validation policy applies.
