@@ -14,11 +14,11 @@ This document owns executable-size assumptions, constraints, map workflow notes,
 
 ## Current State
 
-- Current measured `build\CaseDash.exe`: `917,504` bytes.
+- Current measured `build\CaseDash.exe`: `916,480` bytes.
 - Current app map summary: `build\CaseDash.map.summary.txt`.
-- Current largest sections: `.text$mn` about `720.6 KiB`, `.rdata` about `93.0 KiB`, `.pdata` about `34.9 KiB`, `.xdata` about `15.0 KiB`, and `.rsrc$02` about `12.2 KiB`.
-- Current largest project objects: `diagnostics.cpp.obj`, `editors.cpp.obj`, `layout_resolver.cpp.obj`, `dashboard_controller.cpp.obj`, `layout_edit_controller.cpp.obj`, `pane.cpp.obj`, `layout_edit_tree.cpp.obj`, `layout_guide_sheet_renderer.cpp.obj`, `dashboard_app.cpp.obj`, `d2d_renderer.cpp.obj`, `dashboard_renderer.cpp.obj`, `layout_guide_sheet_placement.cpp.obj`, `dashboard_shell_ui.cpp.obj`, `layout_guide_sheet_planner.cpp.obj`, `layout_edit_overlay_renderer.cpp.obj`, `collector_fake.cpp.obj`, `config_parser.cpp.obj`, `fps_etw_provider.cpp.obj`, `metrics.cpp.obj`, and `config_writer.cpp.obj`.
-- Last validation: `format.cmd changed`, `build.cmd`, `test.cmd`, `build_maps.cmd`, and `build\CaseDash.exe /default-config /fake /exit /trace:build\size_optimization_validation_trace.txt /dump:build\size_optimization_validation_dump.txt /screenshot:build\size_optimization_validation_screenshot.png /layout-guide-sheet:build\size_optimization_validation_sheet.png /app-icon:build\size_optimization_validation_app_icon.png /app-icon-size:64 /save-full-config:build\size_optimization_validation_full_config.ini`.
+- Current largest sections: `.text$mn` about `720.1 KiB`, `.rdata` about `92.9 KiB`, `.pdata` about `34.8 KiB`, `.xdata` about `14.9 KiB`, and `.rsrc$02` about `12.2 KiB`.
+- Current largest project objects: `diagnostics.cpp.obj`, `editors.cpp.obj`, `layout_resolver.cpp.obj`, `dashboard_controller.cpp.obj`, `layout_edit_controller.cpp.obj`, `pane.cpp.obj`, `layout_edit_tree.cpp.obj`, `layout_guide_sheet_renderer.cpp.obj`, `dashboard_app.cpp.obj`, `d2d_renderer.cpp.obj`, `dashboard_renderer.cpp.obj`, `dashboard_shell_ui.cpp.obj`, `layout_guide_sheet_placement.cpp.obj`, `layout_guide_sheet_planner.cpp.obj`, `layout_edit_overlay_renderer.cpp.obj`, `collector_fake.cpp.obj`, `config_parser.cpp.obj`, `fps_etw_provider.cpp.obj`, `metrics.cpp.obj`, `util.cpp.obj`, `snapshot_dump.cpp.obj`, and `config_writer.cpp.obj`.
+- Last validation: `format.cmd changed`, `build.cmd`, `test.cmd`, `build.cmd Release /benchmarks`, `build\CaseDashBenchmarks.exe layout-guide-sheet 20 2`, `build_maps.cmd`, and `build\CaseDash.exe /default-config /fake /exit /trace:build\size_optimization_validation_trace.txt /dump:build\size_optimization_validation_dump.txt /screenshot:build\size_optimization_validation_screenshot.png /layout-guide-sheet:build\size_optimization_validation_sheet.png /app-icon:build\size_optimization_validation_app_icon.png /app-icon-size:64 /save-full-config:build\size_optimization_validation_full_config.ini`.
 
 ## Workflow
 
@@ -123,6 +123,7 @@ This document owns executable-size assumptions, constraints, map workflow notes,
 | Elevated relaunch helper | Keep `RunElevatedSelfAndWait` as the single ShellExecuteEx `runas` wait helper for config save, display configuration, autostart setup, and `/elevate` relaunch. | `922,624` to `922,112` bytes while preserving the same elevation behavior. |
 | Layout-guide-sheet placement trace | Emit guide-sheet placement diagnostics directly into the trace detail sink instead of returning trace-only block and intersection vectors from placement to renderer. | `922,112` to `920,576` bytes; the placement result now carries only sheet dimensions. |
 | Layout-edit dirty tracking | Treat layout-edit mutations as possibly dirty during the edit loop, and run the exact saved-layout comparison through existing config-difference metadata only at prompt boundaries. Compare the selected-layout structure directly so layout switches remain detected. | `920,576` to `917,504` bytes; the old full `LayoutConfig::operator==` symbol is removed from the map. |
+| Layout-guide-sheet trace sidecars | Keep leader repair pass counts in the per-card column record, compute leader scores only where trace details are emitted, and skip intersection trace walks when no trace sink is supplied. | `917,504` to `916,480` bytes; `layout_guide_sheet_placement.cpp.obj` dropped to about `19.1 KiB` and `PlaceLayoutGuideSheetCallouts` to about `5.3 KiB`. |
 
 ## Rejected Or Neutral Experiments
 
@@ -192,6 +193,7 @@ This document owns executable-size assumptions, constraints, map workflow notes,
 - Do not add `dashboard_shell_ui.cpp` to the `/Ob0` noinline list or remove it from the maintained speed-source list. That trial regressed the executable from `922,112` to `930,816` bytes.
 - Do not retry the drive-usage row-layout vector consolidation shapes from this pass. Materializing one row vector regressed to `923,136` bytes, and deriving row geometry from the fixed slots was executable-neutral at `922,112` bytes.
 - Do not retry the current-session layout-edit shape experiments that regressed or stayed flat: `TooltipPayload` aliasing to the active-region payload, leaf-derived selection highlights, `/Gy` plus `/OPT:ICF`, compact guide-sheet callout target structs, guide-sheet index-sort rebuild, tooltip focus-key bool/out-parameter extraction, direct variant `emplace` in tooltip targets, initializer-list cleanup in `CurrentTooltipTarget`, `/Ob0` on `layout_edit_controller.cpp`, or removing `dashboard_shell_ui.cpp` and `dashboard_controller.cpp` from the speed-source list.
+- Do not retry this pass's isolated shape experiments that regressed or stayed flat: diagnostics reload direct effective-config construction regressed to `920,064` bytes, adding `pane.cpp` to `/Ob0` regressed to `919,040` bytes, layout-resolver direct offset scanning and hoisted guide-sheet side arrays each regressed the retained build to `916,992` bytes, recomputing guide-sheet block layouts was executable-neutral and repeats cold work, and the layout-edit selection trace `std::string_view` boundary grew `editors.cpp.obj` without reducing the executable.
 
 ## Notes
 

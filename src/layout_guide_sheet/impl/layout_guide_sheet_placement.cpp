@@ -150,6 +150,7 @@ struct CardCalloutColumns {
     std::vector<size_t> left;
     std::vector<size_t> right;
     std::vector<size_t> bottom;
+    int leaderRepairPasses = 0;
 };
 
 struct BlockLayout {
@@ -726,15 +727,12 @@ LayoutGuideSheetPlacementResult PlaceLayoutGuideSheetCallouts(
         return passes;
     };
 
-    std::vector<int> plannedIntersectionScores(cardPlacements.size(), 0);
-    std::vector<int> sideRepairPasses(cardPlacements.size(), 0);
     for (size_t cardIndex = 0; cardIndex < cardPlacements.size(); ++cardIndex) {
         const CardCalloutColumns preferredSplit = plannedByCard[cardIndex];
         CardCalloutColumns columns = preferredSplit;
         promoteInitialTopBottom(columns);
-        sideRepairPasses[cardIndex] =
+        columns.leaderRepairPasses =
             static_cast<int>(optimizeByConflictSwaps(columns, preferredSplit, cardPlacements[cardIndex]));
-        plannedIntersectionScores[cardIndex] = countLeaderIntersections(columns, cardPlacements[cardIndex]);
         plannedByCard[cardIndex] = std::move(columns);
     }
 
@@ -805,11 +803,6 @@ LayoutGuideSheetPlacementResult PlaceLayoutGuideSheetCallouts(
             break;
         }
     }
-    for (size_t cardIndex = 0; cardIndex < cardPlacements.size(); ++cardIndex) {
-        plannedIntersectionScores[cardIndex] =
-            countLeaderIntersections(plannedByCard[cardIndex], cardPlacements[cardIndex]);
-    }
-
     std::vector<BlockLayout> blocks(cardPlacements.size());
     int contentWidth = 0;
     for (size_t cardIndex = 0; cardIndex < cardPlacements.size(); ++cardIndex) {
@@ -912,70 +905,69 @@ LayoutGuideSheetPlacementResult PlaceLayoutGuideSheetCallouts(
     }
     result.sheetHeight = cardPlacements.empty() ? style.sheetMargin * 2 : contentBottom + style.sheetMargin;
 
-    std::vector<size_t> leaders;
-    leaders.reserve(callouts.size());
-    for (size_t calloutIndex = 0; calloutIndex < callouts.size(); ++calloutIndex) {
-        const LayoutGuideSheetPlacementCallout& callout = callouts[calloutIndex];
-        const size_t sourceCardIndex = cardOrder(callout.sourceCardId);
-        const auto calloutKey = [&](size_t index) -> std::string_view {
-            return index < callouts.size() ? callouts[index].key : std::string_view{};
-        };
-        const auto sourceCardId = [&]() -> std::string_view {
-            if (sourceCardIndex < cardPlacements.size()) {
-                return cardPlacements[sourceCardIndex].id;
-            }
-            return callout.sourceCardId;
-        };
-        const auto recordIntersection = [&](const char* kind,
-                                            size_t firstIndex,
-                                            size_t secondIndex,
-                                            LayoutGuideSheetExitSide firstSide,
-                                            LayoutGuideSheetExitSide secondSide) {
-            if (traceDetails == nullptr) {
-                return;
-            }
-            traceDetails->push_back("intersection_card=" + Trace::QuoteText(sourceCardId()) +
-                                    " intersection_kind=" + Trace::QuoteText(kind) +
-                                    " first_side=" + Trace::QuoteText(ExitSideName(firstSide)) +
-                                    " first_callout=" + Trace::QuoteText(calloutKey(firstIndex)) +
-                                    " second_side=" + Trace::QuoteText(ExitSideName(secondSide)) +
-                                    " second_callout=" + Trace::QuoteText(calloutKey(secondIndex)));
-        };
-        for (size_t leaderIndex : leaders) {
-            const LayoutGuideSheetPlacementCallout& leader = callouts[leaderIndex];
-            if (callout.sourceCardId != leader.sourceCardId) {
-                continue;
-            }
-            if (LeaderSegmentsIntersect(callout.targetAttachment,
-                    callout.bubbleAttachment,
-                    leader.targetAttachment,
-                    leader.bubbleAttachment)) {
-                recordIntersection("leader_cross", calloutIndex, leaderIndex, callout.exitSide, leader.exitSide);
-            }
-            if (SegmentIntersectsRect(callout.targetAttachment,
-                    callout.bubbleAttachment,
-                    TargetSafeRect(leader.targetAttachment, style.targetSafeRadius))) {
-                recordIntersection("target_safe_zone", calloutIndex, leaderIndex, callout.exitSide, leader.exitSide);
-            }
-            if (SegmentIntersectsRect(leader.targetAttachment,
-                    leader.bubbleAttachment,
-                    TargetSafeRect(callout.targetAttachment, style.targetSafeRadius))) {
-                recordIntersection("target_safe_zone", leaderIndex, calloutIndex, leader.exitSide, callout.exitSide);
-            }
-        }
-        leaders.push_back(calloutIndex);
-    }
-
     if (traceDetails != nullptr) {
+        std::vector<size_t> leaders;
+        leaders.reserve(callouts.size());
+        for (size_t calloutIndex = 0; calloutIndex < callouts.size(); ++calloutIndex) {
+            const LayoutGuideSheetPlacementCallout& callout = callouts[calloutIndex];
+            const size_t sourceCardIndex = cardOrder(callout.sourceCardId);
+            const auto calloutKey = [&](size_t index) -> std::string_view {
+                return index < callouts.size() ? callouts[index].key : std::string_view{};
+            };
+            const auto sourceCardId = [&]() -> std::string_view {
+                if (sourceCardIndex < cardPlacements.size()) {
+                    return cardPlacements[sourceCardIndex].id;
+                }
+                return callout.sourceCardId;
+            };
+            const auto recordIntersection = [&](const char* kind,
+                                                size_t firstIndex,
+                                                size_t secondIndex,
+                                                LayoutGuideSheetExitSide firstSide,
+                                                LayoutGuideSheetExitSide secondSide) {
+                traceDetails->push_back("intersection_card=" + Trace::QuoteText(sourceCardId()) +
+                                        " intersection_kind=" + Trace::QuoteText(kind) +
+                                        " first_side=" + Trace::QuoteText(ExitSideName(firstSide)) +
+                                        " first_callout=" + Trace::QuoteText(calloutKey(firstIndex)) +
+                                        " second_side=" + Trace::QuoteText(ExitSideName(secondSide)) +
+                                        " second_callout=" + Trace::QuoteText(calloutKey(secondIndex)));
+            };
+            for (size_t leaderIndex : leaders) {
+                const LayoutGuideSheetPlacementCallout& leader = callouts[leaderIndex];
+                if (callout.sourceCardId != leader.sourceCardId) {
+                    continue;
+                }
+                if (LeaderSegmentsIntersect(callout.targetAttachment,
+                        callout.bubbleAttachment,
+                        leader.targetAttachment,
+                        leader.bubbleAttachment)) {
+                    recordIntersection("leader_cross", calloutIndex, leaderIndex, callout.exitSide, leader.exitSide);
+                }
+                if (SegmentIntersectsRect(callout.targetAttachment,
+                        callout.bubbleAttachment,
+                        TargetSafeRect(leader.targetAttachment, style.targetSafeRadius))) {
+                    recordIntersection(
+                        "target_safe_zone", calloutIndex, leaderIndex, callout.exitSide, leader.exitSide);
+                }
+                if (SegmentIntersectsRect(leader.targetAttachment,
+                        leader.bubbleAttachment,
+                        TargetSafeRect(callout.targetAttachment, style.targetSafeRadius))) {
+                    recordIntersection(
+                        "target_safe_zone", leaderIndex, calloutIndex, leader.exitSide, callout.exitSide);
+                }
+            }
+            leaders.push_back(calloutIndex);
+        }
+
         for (size_t cardIndex = 0; cardIndex < cardPlacements.size(); ++cardIndex) {
             const CardCalloutColumns& columns = plannedByCard[cardIndex];
+            const int leaderScore = countLeaderIntersections(columns, cardPlacements[cardIndex]);
             const std::string& cardId = cardPlacements[cardIndex].id;
-            traceDetails->push_back("leader_score_" + cardId + "=" +
-                                    std::to_string(plannedIntersectionScores[cardIndex]) + " leader_repair_passes_" +
-                                    cardId + "=" + std::to_string(sideRepairPasses[cardIndex]) + " leader_columns_" +
-                                    cardId + "=\"" + std::to_string(columns.left.size()) + "," +
-                                    std::to_string(columns.top.size()) + "," + std::to_string(columns.right.size()) +
-                                    "," + std::to_string(columns.bottom.size()) + "\"");
+            traceDetails->push_back(
+                "leader_score_" + cardId + "=" + std::to_string(leaderScore) + " leader_repair_passes_" + cardId + "=" +
+                std::to_string(columns.leaderRepairPasses) + " leader_columns_" + cardId + "=\"" +
+                std::to_string(columns.left.size()) + "," + std::to_string(columns.top.size()) + "," +
+                std::to_string(columns.right.size()) + "," + std::to_string(columns.bottom.size()) + "\"");
         }
     }
     return result;
