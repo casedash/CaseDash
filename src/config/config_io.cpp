@@ -1,5 +1,7 @@
 #include "config/config_io.h"
 
+#include <cstdio>
+
 #include "config/config_parser.h"
 #include "util/paths.h"
 
@@ -14,9 +16,8 @@ AppConfig LoadRuntimeConfig(const DiagnosticsOptions& options, const ConfigParse
 }
 
 bool CanWriteRuntimeConfig(const FilePath& path) {
-    const std::wstring widePath = path.wstring();
     if (FileExists(path)) {
-        HANDLE file = CreateFileW(widePath.c_str(),
+        HANDLE file = CreateFileW(path.c_str(),
             GENERIC_WRITE,
             FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
             nullptr,
@@ -31,10 +32,13 @@ bool CanWriteRuntimeConfig(const FilePath& path) {
     }
 
     const FilePath parent = path.has_parent_path() ? path.parent_path() : CurrentDirectoryPath();
-    const std::wstring probeName = L".config-write-test-" + std::to_wstring(GetCurrentProcessId()) + L"-" +
-                                   std::to_wstring(GetTickCount64()) + L".tmp";
+    wchar_t probeName[80] = {};
+    swprintf_s(probeName,
+        L".config-write-test-%lu-%llu.tmp",
+        static_cast<unsigned long>(GetCurrentProcessId()),
+        static_cast<unsigned long long>(GetTickCount64()));
     const FilePath probePath = parent / probeName;
-    HANDLE probe = CreateFileW(probePath.wstring().c_str(),
+    HANDLE probe = CreateFileW(probePath.c_str(),
         GENERIC_WRITE,
         FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
         nullptr,

@@ -31,6 +31,7 @@ inline constexpr std::array<ColorDialogControls, 4> kColorDialogControls = {{
 std::string FindConfiguredBoardMetricBinding(const AppConfig& config, const LayoutMetricEditKey& key);
 bool AreScalesEqual(double left, double right);
 std::optional<double> TryParseDialogDouble(const wchar_t* text);
+std::optional<double> TryParseDialogControlDouble(HWND hwnd, int controlId);
 std::optional<int> TryParseDialogInteger(const wchar_t* text);
 std::string LayoutGuideChildName(const LayoutNodeConfig& node);
 std::string ReadDialogControlTextUtf8(HWND hwnd, int controlId);

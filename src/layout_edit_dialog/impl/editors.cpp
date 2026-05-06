@@ -276,7 +276,7 @@ std::string FormatDialogDouble(double value) {
 
 std::wstring FormatDialogAlphaByte(unsigned int alpha) {
     constexpr wchar_t kHex[] = L"0123456789ABCDEF";
-    std::wstring text = L"0x00";
+    wchar_t text[] = L"0x00";
     text[2] = kHex[(alpha >> 4) & 0x0Fu];
     text[3] = kHex[alpha & 0x0Fu];
     return text;
@@ -311,8 +311,7 @@ std::optional<ColorExpression> ReadDerivedColorExpressionFromDialog(HWND hwnd) {
         return std::nullopt;
     }
     if (IsDlgButtonChecked(hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_CHECK) == BST_CHECKED) {
-        const std::wstring text = ReadDialogControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_EDIT);
-        const auto value = TryParseDialogDouble(text.c_str());
+        const auto value = TryParseDialogControlDouble(hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_EDIT);
         if (!value.has_value()) {
             return std::nullopt;
         }
@@ -320,8 +319,7 @@ std::optional<ColorExpression> ReadDerivedColorExpressionFromDialog(HWND hwnd) {
     }
     if (IsDlgButtonChecked(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_CHECK) == BST_CHECKED) {
         const std::string target = ReadComboTextUtf8(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_TARGET_COMBO);
-        const std::wstring amountText = ReadDialogControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_EDIT);
-        const auto amount = TryParseDialogDouble(amountText.c_str());
+        const auto amount = TryParseDialogControlDouble(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_EDIT);
         if (target.empty() || !amount.has_value() || *amount < 0.0 || *amount > 1.0) {
             return std::nullopt;
         }
@@ -1201,14 +1199,14 @@ void SyncDerivedColorSliderFromEdit(HWND hwnd, int editId) {
         return;
     }
     if (editId == IDC_LAYOUT_EDIT_COLOR_ROTATE_EDIT) {
-        const auto value = TryParseDialogDouble(ReadDialogControlTextWide(hwnd, editId).c_str());
+        const auto value = TryParseDialogControlDouble(hwnd, editId);
         if (value.has_value()) {
             SetDerivedRotateSliderPosition(hwnd, *value);
         }
         return;
     }
     if (editId == IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_EDIT) {
-        const auto value = TryParseDialogDouble(ReadDialogControlTextWide(hwnd, editId).c_str());
+        const auto value = TryParseDialogControlDouble(hwnd, editId);
         if (value.has_value()) {
             SetDerivedMixSliderPosition(hwnd, *value);
         }

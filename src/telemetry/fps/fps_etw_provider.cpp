@@ -4,6 +4,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <evntcons.h>
 #include <evntrace.h>
@@ -80,7 +81,9 @@ bool IsPermissionDenied(ULONG status) {
 }
 
 std::wstring BuildSessionName() {
-    return L"CaseDashPresentedFps-" + std::to_wstring(GetCurrentProcessId());
+    wchar_t buffer[64] = {};
+    swprintf_s(buffer, L"CaseDashPresentedFps-%lu", static_cast<unsigned long>(GetCurrentProcessId()));
+    return buffer;
 }
 
 void LowerAsciiInPlace(wchar_t* value, size_t length) {

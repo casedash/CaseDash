@@ -76,12 +76,6 @@ const LayoutCardConfig* FindCardById(const AppConfig& config, std::string_view c
     return it != config.layout.cards.end() ? &(*it) : nullptr;
 }
 
-std::wstring ReadControlTextWide(HWND hwnd, int controlId) {
-    wchar_t buffer[256] = {};
-    GetDlgItemTextW(hwnd, controlId, buffer, ARRAYSIZE(buffer));
-    return buffer;
-}
-
 double RoundToStep(double value, double step) {
     return std::round(value / step) * step;
 }
@@ -163,10 +157,9 @@ void SetHsvSliderPositions(HWND hwnd, HsvColor hsv) {
 }
 
 std::optional<OklchColor> ReadColorDialogLch(HWND hwnd) {
-    const auto lightness =
-        TryParseDialogDouble(ReadControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_EDIT).c_str());
-    const auto chroma = TryParseDialogDouble(ReadControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_EDIT).c_str());
-    const auto hue = TryParseDialogDouble(ReadControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_HUE_EDIT).c_str());
+    const auto lightness = TryParseDialogControlDouble(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_EDIT);
+    const auto chroma = TryParseDialogControlDouble(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_EDIT);
+    const auto hue = TryParseDialogControlDouble(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_HUE_EDIT);
     if (!lightness.has_value() || !chroma.has_value() || !hue.has_value() || *lightness < 0.0 || *lightness > 1.0 ||
         *chroma < 0.0 || *hue < 0.0 || *hue > 360.0) {
         return std::nullopt;
@@ -175,10 +168,9 @@ std::optional<OklchColor> ReadColorDialogLch(HWND hwnd) {
 }
 
 std::optional<HsvColor> ReadColorDialogHsv(HWND hwnd) {
-    const auto hue = TryParseDialogDouble(ReadControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_HUE_EDIT).c_str());
-    const auto saturation =
-        TryParseDialogDouble(ReadControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_EDIT).c_str());
-    const auto value = TryParseDialogDouble(ReadControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_EDIT).c_str());
+    const auto hue = TryParseDialogControlDouble(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_HUE_EDIT);
+    const auto saturation = TryParseDialogControlDouble(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_EDIT);
+    const auto value = TryParseDialogControlDouble(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_EDIT);
     if (!hue.has_value() || !saturation.has_value() || !value.has_value() || *hue < 0.0 || *hue > 360.0 ||
         *saturation < 0.0 || *saturation > 1.0 || *value < 0.0 || *value > 1.0) {
         return std::nullopt;
@@ -218,14 +210,27 @@ std::optional<double> TryParseDialogDouble(const wchar_t* text) {
     if (text == nullptr || *text == L'\0') {
         return std::nullopt;
     }
-    std::wstring normalized(text);
-    std::replace(normalized.begin(), normalized.end(), L',', L'.');
+    wchar_t normalized[128] = {};
+    size_t length = 0;
+    while (text[length] != L'\0' && length + 1 < ARRAYSIZE(normalized)) {
+        normalized[length] = text[length] == L',' ? L'.' : text[length];
+        ++length;
+    }
+    if (text[length] != L'\0') {
+        return std::nullopt;
+    }
     wchar_t* end = nullptr;
-    const double value = std::wcstod(normalized.c_str(), &end);
-    if (end == normalized.c_str() || end == nullptr || *end != L'\0' || !std::isfinite(value)) {
+    const double value = std::wcstod(normalized, &end);
+    if (end == normalized || end == nullptr || *end != L'\0' || !std::isfinite(value)) {
         return std::nullopt;
     }
     return value;
+}
+
+std::optional<double> TryParseDialogControlDouble(HWND hwnd, int controlId) {
+    wchar_t buffer[128] = {};
+    GetDlgItemTextW(hwnd, controlId, buffer, ARRAYSIZE(buffer));
+    return TryParseDialogDouble(buffer);
 }
 
 std::optional<int> TryParseDialogInteger(const wchar_t* text) {
@@ -289,19 +294,16 @@ std::optional<unsigned int> TryParseDialogHexColor(const wchar_t* text) {
     if (text == nullptr) {
         return std::nullopt;
     }
-    std::wstring value(text);
-    if (value.empty()) {
-        return std::nullopt;
+    if (*text == L'#') {
+        ++text;
     }
-    if (!value.empty() && value.front() == L'#') {
-        value.erase(value.begin());
-    }
-    if (value.size() != 8) {
+    if (wcslen(text) != 8) {
         return std::nullopt;
     }
 
     unsigned int color = 0;
-    for (const wchar_t ch : value) {
+    for (size_t i = 0; i < 8; ++i) {
+        const wchar_t ch = text[i];
         color <<= 4;
         if (ch >= L'0' && ch <= L'9') {
             color |= static_cast<unsigned int>(ch - L'0');
@@ -454,7 +456,7 @@ bool IsColorHsvSliderId(int controlId) {
 }
 
 void SyncColorLchSliderFromEdit(HWND hwnd, int editId) {
-    const auto value = TryParseDialogDouble(ReadControlTextWide(hwnd, editId).c_str());
+    const auto value = TryParseDialogControlDouble(hwnd, editId);
     if (!value.has_value()) {
         return;
     }
@@ -486,7 +488,7 @@ void SyncColorLchSliderFromEdit(HWND hwnd, int editId) {
 }
 
 void SyncColorHsvSliderFromEdit(HWND hwnd, int editId) {
-    const auto value = TryParseDialogDouble(ReadControlTextWide(hwnd, editId).c_str());
+    const auto value = TryParseDialogControlDouble(hwnd, editId);
     if (!value.has_value()) {
         return;
     }
@@ -712,10 +714,12 @@ bool IsMetricListSupportedDisplayStyle(MetricDisplayStyle style) {
 }
 
 std::wstring BuildWeightEditorLabel(const LayoutEditTreeLeaf& leaf, bool first) {
-    const std::wstring side =
+    std::wstring label =
         leaf.weightAxis == LayoutGuideAxis::Vertical ? (first ? L"Left" : L"Right") : (first ? L"Top" : L"Bottom");
-    const std::wstring name = WideFromUtf8(first ? leaf.firstWeightName : leaf.secondWeightName);
-    return side + L" " + name + L" weight:";
+    label += L" ";
+    label += WideFromUtf8(first ? leaf.firstWeightName : leaf.secondWeightName);
+    label += L" weight:";
+    return label;
 }
 
 std::wstring BuildLayoutEditNodeTitle(const LayoutEditTreeNode* node) {
@@ -730,7 +734,9 @@ std::wstring BuildLayoutEditNodeTitle(const LayoutEditTreeNode* node) {
     if (const auto* metricLeaf =
             node->leaf.has_value() ? std::get_if<LayoutMetricEditKey>(&node->leaf->focusKey) : nullptr;
         metricLeaf != nullptr) {
-        return L"Metric: " + WideFromUtf8(metricLeaf->metricId);
+        std::wstring title = L"Metric: ";
+        title += WideFromUtf8(metricLeaf->metricId);
+        return title;
     }
     if (const auto* titleLeaf =
             node->leaf.has_value() ? std::get_if<LayoutCardTitleEditKey>(&node->leaf->focusKey) : nullptr;

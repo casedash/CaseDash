@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <dbghelp.h>
 #include <string>
+#include <utility>
 
 #include "build_version.h"
 #include "diagnostics/constants.h"
@@ -20,19 +21,20 @@ namespace {
 DiagnosticsOptions g_diagnosticsOptions;
 LONG g_handlingCrash = 0;
 
-std::wstring TimestampForFileName() {
+std::wstring CrashReportFileName() {
     SYSTEMTIME time{};
     GetLocalTime(&time);
-    wchar_t buffer[32];
+    wchar_t buffer[80];
     swprintf_s(buffer,
-        L"%04u%02u%02u_%02u%02u%02u_%03u",
+        L"casedash_crash_%04u%02u%02u_%02u%02u%02u_%03u_%lu",
         time.wYear,
         time.wMonth,
         time.wDay,
         time.wHour,
         time.wMinute,
         time.wSecond,
-        time.wMilliseconds);
+        time.wMilliseconds,
+        static_cast<unsigned long>(GetCurrentProcessId()));
     return buffer;
 }
 
@@ -52,18 +54,23 @@ std::string TimestampText() {
     return buffer;
 }
 
+FilePath PathWithSuffix(const FilePath& path, const wchar_t* suffix) {
+    std::wstring text = path.wstring();
+    text += suffix;
+    return FilePath(std::move(text));
+}
+
 FilePath ResolveCrashOutputBase() {
-    const std::wstring fileName =
-        L"casedash_crash_" + TimestampForFileName() + L"_" + std::to_wstring(GetCurrentProcessId());
-    FilePath base = GetWorkingDirectory() / fileName;
+    const std::wstring fileName = CrashReportFileName();
+    FilePath base = GetWorkingDirectory() / FilePath(fileName);
     FILE* probe = nullptr;
-    const FilePath probePath(base.wstring() + L".tmp");
+    const FilePath probePath = PathWithSuffix(base, L".tmp");
     if (_wfopen_s(&probe, probePath.c_str(), L"wb") == 0 && probe != nullptr) {
         fclose(probe);
         RemoveFileIfExists(probePath);
         return base;
     }
-    return TempDirectoryPath() / fileName;
+    return TempDirectoryPath() / FilePath(fileName);
 }
 
 std::string ExceptionCodeText(DWORD code) {
@@ -190,14 +197,17 @@ LONG WINAPI HandleUnhandledException(EXCEPTION_POINTERS* exceptionPointers) {
     }
 
     const FilePath outputBase = ResolveCrashOutputBase();
-    const FilePath dumpPath(outputBase.wstring() + L".dmp");
-    const FilePath reportPath(outputBase.wstring() + L".txt");
+    const FilePath dumpPath = PathWithSuffix(outputBase, L".dmp");
+    const FilePath reportPath = PathWithSuffix(outputBase, L".txt");
     const bool dumpWritten = WriteMinidump(dumpPath, exceptionPointers);
     std::string reportText = BuildCrashReportText(dumpPath, exceptionPointers);
     AppendLine(reportText, "minidump_written", dumpWritten ? "yes" : "no");
     WriteFileBinary(reportPath, reportText);
     AppendCrashTrace(reportPath, dumpPath, exceptionPointers);
-    OutputDebugStringW((L"CaseDash crash report written to " + reportPath.wstring() + L"\n").c_str());
+    std::wstring debugText = L"CaseDash crash report written to ";
+    debugText += reportPath.wstring();
+    debugText += L"\n";
+    OutputDebugStringW(debugText.c_str());
     return EXCEPTION_CONTINUE_SEARCH;
 }
 

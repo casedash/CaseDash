@@ -222,9 +222,15 @@ void ResolveStorageSelection(RealTelemetryCollectorState& state) {
             const std::wstring logicalDisk = WideFromUtf8(label);
             DriveCounterState counters;
             counters.label = label;
-            counters.rootPath = WideFromUtf8(label + "\\");
-            const std::wstring readPath = L"\\LogicalDisk(" + logicalDisk + L")\\Disk Read Bytes/sec";
-            const std::wstring writePath = L"\\LogicalDisk(" + logicalDisk + L")\\Disk Write Bytes/sec";
+            std::string rootLabel = label;
+            rootLabel += "\\";
+            counters.rootPath = WideFromUtf8(rootLabel);
+            std::wstring readPath = L"\\LogicalDisk(";
+            readPath += logicalDisk;
+            readPath += L")\\Disk Read Bytes/sec";
+            std::wstring writePath = L"\\LogicalDisk(";
+            writePath += logicalDisk;
+            writePath += L")\\Disk Write Bytes/sec";
             const PDH_STATUS readStatus =
                 AddCounterCompat(state.storage_.query, readPath.c_str(), &counters.readCounter);
             const PDH_STATUS writeStatus =

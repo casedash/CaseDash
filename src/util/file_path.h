@@ -39,7 +39,6 @@ FilePath JoinPath(const FilePath& base, const char* child);
 FilePath operator/(const FilePath& base, const FilePath& child);
 FilePath operator/(const FilePath& base, const wchar_t* child);
 FilePath operator/(const FilePath& base, const char* child);
-FilePath operator/(const FilePath& base, const std::wstring& child);
 FilePath CurrentDirectoryPath();
 FilePath TempDirectoryPath();
 bool FileExists(const FilePath& path);

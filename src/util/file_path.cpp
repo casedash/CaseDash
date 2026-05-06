@@ -159,10 +159,6 @@ FilePath operator/(const FilePath& base, const char* child) {
     return JoinPath(base, child);
 }
 
-FilePath operator/(const FilePath& base, const std::wstring& child) {
-    return JoinPath(base, FilePath(child));
-}
-
 FilePath CurrentDirectoryPath() {
     DWORD length = GetCurrentDirectoryW(0, nullptr);
     if (length == 0) {

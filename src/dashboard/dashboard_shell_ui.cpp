@@ -246,7 +246,10 @@ void SetMenuItemRadioStyle(HMENU menu, UINT commandId) {
 }
 
 std::wstring BuildLayoutEditMenuLabel(const std::wstring& subject) {
-    return L"Edit " + subject + L" ...";
+    std::wstring label = L"Edit ";
+    label += subject;
+    label += L" ...";
+    return label;
 }
 
 std::wstring BuildAboutText() {

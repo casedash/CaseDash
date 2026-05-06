@@ -44,8 +44,8 @@ std::optional<std::wstring> FindInstalledSivDirectory() {
            ERROR_SUCCESS) {
         HKEY childKey = nullptr;
         if (RegOpenKeyExW(uninstallKey, childName, 0, KEY_READ, &childKey) == ERROR_SUCCESS) {
-            const auto displayName = ReadRegistryWideString(childKey, nullptr, L"DisplayName");
-            const std::string displayNameText = displayName.has_value() ? Utf8FromWide(*displayName) : std::string();
+            const auto displayName = ReadRegistryString(childKey, nullptr, L"DisplayName");
+            const std::string displayNameText = displayName.value_or("");
             const bool isSiv =
                 !displayNameText.empty() && (EqualsInsensitive(displayNameText, "SIV") ||
                                                 EqualsInsensitive(displayNameText, "System Information Viewer"));

@@ -42,9 +42,8 @@ std::optional<std::wstring> FindInstalledMsiCenterDirectory() {
            ERROR_SUCCESS) {
         HKEY childKey = nullptr;
         if (RegOpenKeyExW(uninstallKey, childName, 0, KEY_READ, &childKey) == ERROR_SUCCESS) {
-            const auto displayName = ReadRegistryWideString(childKey, nullptr, L"DisplayName");
-            const bool isMsiCenterSdk =
-                displayName.has_value() && ContainsInsensitive(Utf8FromWide(*displayName), "MSI Center SDK");
+            const auto displayName = ReadRegistryString(childKey, nullptr, L"DisplayName");
+            const bool isMsiCenterSdk = displayName.has_value() && ContainsInsensitive(*displayName, "MSI Center SDK");
             if (isMsiCenterSdk) {
                 const auto installLocation = ReadRegistryWideString(childKey, nullptr, L"InstallLocation");
                 if (installLocation.has_value() && !installLocation->empty()) {

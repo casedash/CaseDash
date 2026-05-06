@@ -988,11 +988,9 @@ COLORREF ColorRefFromBytes(ColorBytes color) {
 }
 
 std::optional<OklchColor> ReadDialogLchForGradient(HWND hwnd) {
-    const auto lightness =
-        TryParseDialogDouble(ReadDialogControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_EDIT).c_str());
-    const auto chroma =
-        TryParseDialogDouble(ReadDialogControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_EDIT).c_str());
-    const auto hue = TryParseDialogDouble(ReadDialogControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_HUE_EDIT).c_str());
+    const auto lightness = TryParseDialogControlDouble(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_EDIT);
+    const auto chroma = TryParseDialogControlDouble(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_EDIT);
+    const auto hue = TryParseDialogControlDouble(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_HUE_EDIT);
     if (!lightness.has_value() || !chroma.has_value() || !hue.has_value()) {
         return std::nullopt;
     }
@@ -1014,11 +1012,9 @@ OklchColor CurrentLchForGradient(HWND hwnd) {
 }
 
 std::optional<HsvColor> ReadDialogHsvForGradient(HWND hwnd) {
-    const auto hue = TryParseDialogDouble(ReadDialogControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_HUE_EDIT).c_str());
-    const auto saturation =
-        TryParseDialogDouble(ReadDialogControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_EDIT).c_str());
-    const auto value =
-        TryParseDialogDouble(ReadDialogControlTextWide(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_EDIT).c_str());
+    const auto hue = TryParseDialogControlDouble(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_HUE_EDIT);
+    const auto saturation = TryParseDialogControlDouble(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_EDIT);
+    const auto value = TryParseDialogControlDouble(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_EDIT);
     if (!hue.has_value() || !saturation.has_value() || !value.has_value()) {
         return std::nullopt;
     }
@@ -1454,7 +1450,8 @@ void SetColorSamplePreview(LayoutEditDialogState* state, HWND hwnd, unsigned int
     }
     state->previewColor = RGB((color >> 24) & 0xFFu, (color >> 16) & 0xFFu, (color >> 8) & 0xFFu);
     SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_SAMPLE, L"Sample text in the selected color");
-    const std::wstring derivedHexText = L"Hex: " + FormatDialogColorHex(color);
+    std::wstring derivedHexText = L"Hex: ";
+    derivedHexText += FormatDialogColorHex(color);
     SetDlgItemTextW(hwnd, IDC_LAYOUT_EDIT_COLOR_DERIVED_HEX_LABEL, derivedHexText.c_str());
     InvalidateDialogControls(hwnd, kColorPreviewInvalidationControls, ARRAYSIZE(kColorPreviewInvalidationControls));
 }

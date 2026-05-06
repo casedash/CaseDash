@@ -14,11 +14,11 @@ This document owns executable-size assumptions, constraints, map workflow notes,
 
 ## Current State
 
-- Current measured `build\CaseDash.exe`: `913,408` bytes.
+- Current measured `build\CaseDash.exe`: `910,336` bytes.
 - Current app map summary: `build\CaseDash.map.summary.txt`.
-- Current largest sections: `.text$mn` about `717.8 KiB`, `.rdata` about `93.5 KiB`, `.pdata` about `34.7 KiB`, `.xdata` about `14.8 KiB`, and `.rsrc$02` about `11.1 KiB`.
-- Current largest project objects: `diagnostics.cpp.obj`, `editors.cpp.obj`, `layout_resolver.cpp.obj`, `dashboard_controller.cpp.obj`, `layout_edit_controller.cpp.obj`, `pane.cpp.obj`, `layout_edit_tree.cpp.obj`, `layout_guide_sheet_renderer.cpp.obj`, `dashboard_app.cpp.obj`, `d2d_renderer.cpp.obj`, `dashboard_renderer.cpp.obj`, `dashboard_shell_ui.cpp.obj`, `layout_guide_sheet_placement.cpp.obj`, `layout_guide_sheet_planner.cpp.obj`, `layout_edit_overlay_renderer.cpp.obj`, `collector_fake.cpp.obj`, `config_parser.cpp.obj`, `fps_etw_provider.cpp.obj`, `metrics.cpp.obj`, `util.cpp.obj`, `snapshot_dump.cpp.obj`, `config_writer.cpp.obj`, `drive_usage_list.cpp.obj`, `CaseDash.rc.res`, and `gauge.cpp.obj`.
-- Last validation: `format.cmd changed`, `build.cmd`, `test.cmd`, `build_maps.cmd`, and `build\CaseDash.exe /default-config /fake /exit /trace:build\size_optimization_validation_trace.txt /dump:build\size_optimization_validation_dump.txt /screenshot:build\size_optimization_validation_screenshot.png /layout-guide-sheet:build\size_optimization_validation_sheet.png /app-icon:build\size_optimization_validation_app_icon.png /app-icon-size:64 /save-full-config:build\size_optimization_validation_full_config.ini`.
+- Current largest sections: `.text$mn` about `714.9 KiB`, `.rdata` about `93.2 KiB`, `.pdata` about `34.6 KiB`, `.xdata` about `14.8 KiB`, and `.rsrc$02` about `11.1 KiB`.
+- Current largest project objects: `diagnostics.cpp.obj`, `editors.cpp.obj`, `layout_resolver.cpp.obj`, `dashboard_controller.cpp.obj`, `layout_edit_controller.cpp.obj`, `layout_edit_tree.cpp.obj`, `pane.cpp.obj`, `layout_guide_sheet_renderer.cpp.obj`, `dashboard_app.cpp.obj`, `d2d_renderer.cpp.obj`, `dashboard_renderer.cpp.obj`, `dashboard_shell_ui.cpp.obj`, `layout_guide_sheet_placement.cpp.obj`, `layout_guide_sheet_planner.cpp.obj`, `layout_edit_overlay_renderer.cpp.obj`, `collector_fake.cpp.obj`, `config_parser.cpp.obj`, `fps_etw_provider.cpp.obj`, `metrics.cpp.obj`, `util.cpp.obj`, `snapshot_dump.cpp.obj`, `config_writer.cpp.obj`, `drive_usage_list.cpp.obj`, `CaseDash.rc.res`, and `gauge.cpp.obj`.
+- Last validation: `format.cmd changed`, `build.cmd`, `build_maps.cmd`, `test.cmd`, and `build\CaseDash.exe /default-config /fake /exit /trace:build\size_optimization_validation_trace.txt /dump:build\size_optimization_validation_dump.txt /screenshot:build\size_optimization_validation_screenshot.png /layout-guide-sheet:build\size_optimization_validation_sheet.png /app-icon:build\size_optimization_validation_app_icon.png /app-icon-size:64 /save-full-config:build\size_optimization_validation_full_config.ini`.
 
 ## Workflow
 
@@ -128,6 +128,7 @@ This document owns executable-size assumptions, constraints, map workflow notes,
 | Fake telemetry synthetic specs | Keep fake telemetry history parameters in static spec records, keep direct fake network candidate scans, and leave the remaining helper folds as part of that measured source shape. | `915,456` to `913,920` bytes; `collector_fake.cpp.obj` is about `15.5 KiB` in the current map. |
 | Embedded text atlas load | Pass the compressed embedded text atlas to the decompressor as `std::string_view` instead of copying it into a temporary string first. | Executable-neutral in this pass; kept because it removes a cold startup copy without changing the resource format. |
 | Metric-list editor row controls | Resize the metric-list row-control vector and fill each row record in place instead of reserving a local row record and pushing a copy. | `913,920` to `913,408` bytes; `pane.cpp.obj` dropped to about `23.0 KiB`, and `.text$mn` dropped to about `717.8 KiB`. |
+| Remaining wide-string helpers | Keep cold crash/config/FPS identifier formatting, layout-edit numeric and color parsing, layout-edit menu/hex labels, and storage PDH path construction on stack-buffer or append-based helpers instead of `std::to_wstring`, temporary parse `std::wstring` values, or wide `operator+` chains. Keep board registry display-name checks at the UTF-8 registry boundary while install paths stay wide for Win32. | `913,408` to `910,336` bytes; `.text$mn` dropped from about `717.8 KiB` to `714.9 KiB`. |
 
 ## Rejected Or Neutral Experiments
 
@@ -204,6 +205,7 @@ This document owns executable-size assumptions, constraints, map workflow notes,
 - Do not retry the current snapshot dump `std::string_view` key/value table or direct string escaping rewrites. Each regressed the executable from `916,480` to `916,992` bytes.
 - Do not extract the right-pane single-labeled-control layout rows into a shared helper by itself; that trial grew the retained build by `512` bytes.
 - Do not replace the fake storage selected-drive `std::find` calls with a concrete string-list helper by itself. The trial stayed executable-neutral but increased section slack, so keep the existing call sites unless a broader storage pass deletes more code.
+- Do not rewrite diagnostics error-message builders from `operator+` chains to incremental `std::string` appends by itself. That trial regressed the retained wide-helper build from `910,848` to `911,360` bytes.
 
 ## Notes
 
