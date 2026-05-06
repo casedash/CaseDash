@@ -19,6 +19,32 @@ struct ResolvedNetworkCandidate {
     std::string ipAddress = "N/A";
 };
 
+struct SyntheticHistorySpec {
+    double base = 0.0;
+    double amplitudeA = 0.0;
+    double periodA = 0.0;
+    double amplitudeB = 0.0;
+    double periodB = 0.0;
+};
+
+struct SyntheticThroughputSpec {
+    double base = 0.0;
+    double driftA = 0.0;
+    double periodA = 0.0;
+    double driftB = 0.0;
+    double periodB = 0.0;
+    double jitterAmplitude = 0.0;
+    double burstAmplitude = 0.0;
+    double burstPeriod = 0.0;
+    double burstOffset = 0.0;
+    double burstWidth = 0.0;
+    double dipAmplitude = 0.0;
+    double dipPeriod = 0.0;
+    double dipOffset = 0.0;
+    double dipWidth = 0.0;
+    uint32_t seed = 0;
+};
+
 constexpr size_t kSyntheticHistorySamples = 60;
 constexpr double kSyntheticCpuMemoryTotalGb = 63.943493;
 constexpr double kSyntheticCpuMemoryPeakRatio = 0.75;
@@ -26,6 +52,26 @@ constexpr const char* kSyntheticRequestedFanNames[] = {"cpu", "system"};
 constexpr const char* kSyntheticRequestedTemperatureNames[] = {"cpu"};
 constexpr const char* kSyntheticAvailableFanNames[] = {"CPU", "System 1", "Pump"};
 constexpr const char* kSyntheticAvailableTemperatureNames[] = {"CPU", "VRM MOS", "Chipset"};
+constexpr SyntheticHistorySpec kCpuLoadHistory{43.0, 18.0, 5.0, 7.0, 8.5};
+constexpr SyntheticHistorySpec kCpuClockHistory{4.42, 0.18, 7.0, 0.08, 13.0};
+constexpr SyntheticHistorySpec kCpuRamHistory{27.6, 0.35, 9.0, 0.18, 17.0};
+constexpr SyntheticHistorySpec kGpuLoadHistory{72.0, 14.0, 5.6, 8.0, 10.5};
+constexpr SyntheticHistorySpec kGpuTemperatureHistory{62.0, 4.5, 9.0, 1.8, 14.0};
+constexpr SyntheticHistorySpec kGpuClockHistory{2085.0, 155.0, 6.3, 65.0, 11.0};
+constexpr SyntheticHistorySpec kGpuFanHistory{1325.0, 170.0, 7.4, 60.0, 13.0};
+constexpr SyntheticHistorySpec kGpuFpsHistory{118.0, 21.0, 6.6, 9.0, 12.5};
+constexpr SyntheticHistorySpec kGpuVramHistory{5.9, 1.1, 8.0, 0.5, 15.0};
+constexpr SyntheticHistorySpec kBoardTempCpuHistory{65.0, 5.0, 7.0, 2.0, 12.0};
+constexpr SyntheticHistorySpec kBoardFanCpuHistory{1380.0, 180.0, 6.8, 70.0, 11.0};
+constexpr SyntheticHistorySpec kBoardFanSystemHistory{905.0, 85.0, 8.0, 30.0, 13.0};
+constexpr SyntheticThroughputSpec kNetworkUploadHistory{
+    22.0, 7.5, 7.0, 4.0, 16.0, 3.2, 12.0, 18.0, 5.5, 2.4, 6.5, 29.0, 12.0, 3.0, 0x13579BDFu};
+constexpr SyntheticThroughputSpec kNetworkDownloadHistory{
+    198.0, 56.0, 6.1, 34.0, 12.5, 19.0, 92.0, 17.0, 2.8, 2.6, 48.0, 27.0, 8.0, 3.1, 0x2468ACE1u};
+constexpr SyntheticThroughputSpec kStorageReadHistory{
+    146.0, 48.0, 5.7, 28.0, 11.0, 16.0, 118.0, 15.0, 3.7, 2.2, 64.0, 24.0, 6.5, 2.6, 0xA5C31E27u};
+constexpr SyntheticThroughputSpec kStorageWriteHistory{
+    44.0, 18.0, 6.0, 11.0, 13.5, 8.5, 52.0, 21.0, 9.0, 2.8, 19.0, 26.0, 4.0, 3.2, 0x5EED1234u};
 
 void AssignStringList(std::vector<std::string>& target, const char* const* values, size_t count) {
     target.clear();
@@ -53,28 +99,19 @@ std::string ReadBinaryFile(const FilePath& path) {
     return read == text.size() ? text : std::string{};
 }
 
-double SyntheticWave(size_t sampleIndex,
-    uint64_t tick,
-    double base,
-    double amplitudeA,
-    double periodA,
-    double amplitudeB,
-    double periodB) {
-    const double position = static_cast<double>(sampleIndex) + static_cast<double>(tick) * 3.0;
-    return base + std::sin(position / periodA) * amplitudeA + std::cos((position + 7.0) / periodB) * amplitudeB;
-}
-
-std::vector<double> BuildSyntheticHistory(
-    uint64_t tick, double base, double amplitudeA, double periodA, double amplitudeB, double periodB) {
+std::vector<double> BuildSyntheticHistory(uint64_t tick, const SyntheticHistorySpec& spec) {
     std::vector<double> samples;
     samples.reserve(kSyntheticHistorySamples);
     for (size_t i = 0; i < kSyntheticHistorySamples; ++i) {
-        samples.push_back((std::max)(0.0, SyntheticWave(i, tick, base, amplitudeA, periodA, amplitudeB, periodB)));
+        const double position = static_cast<double>(i) + static_cast<double>(tick) * 3.0;
+        const double value = spec.base + std::sin(position / spec.periodA) * spec.amplitudeA +
+                             std::cos((position + 7.0) / spec.periodB) * spec.amplitudeB;
+        samples.push_back((std::max)(0.0, value));
     }
     return samples;
 }
 
-uint32_t SyntheticNoiseHash(uint64_t tick, size_t sampleIndex, uint32_t seed) {
+double SyntheticNoiseSigned(uint64_t tick, size_t sampleIndex, uint32_t seed) {
     uint64_t value = (static_cast<uint64_t>(sampleIndex) + 1ull) * 0x9E3779B97F4A7C15ull;
     value ^= (tick + 0xD1B54A32D192ED03ull) * 0x94D049BB133111EBull;
     value ^= static_cast<uint64_t>(seed) * 0xBF58476D1CE4E5B9ull;
@@ -83,15 +120,7 @@ uint32_t SyntheticNoiseHash(uint64_t tick, size_t sampleIndex, uint32_t seed) {
     value ^= value >> 27;
     value *= 0x94D049BB133111EBull;
     value ^= value >> 31;
-    return static_cast<uint32_t>(value >> 32);
-}
-
-double SyntheticNoiseUnit(uint64_t tick, size_t sampleIndex, uint32_t seed) {
-    return static_cast<double>(SyntheticNoiseHash(tick, sampleIndex, seed)) / 4294967295.0;
-}
-
-double SyntheticNoiseSigned(uint64_t tick, size_t sampleIndex, uint32_t seed) {
-    return SyntheticNoiseUnit(tick, sampleIndex, seed) * 2.0 - 1.0;
+    return (static_cast<double>(static_cast<uint32_t>(value >> 32)) / 4294967295.0) * 2.0 - 1.0;
 }
 
 double SyntheticPulse(double position, double period, double offset, double width) {
@@ -106,37 +135,25 @@ double SyntheticPulse(double position, double period, double offset, double widt
     return shaped * shaped * (3.0 - 2.0 * shaped);
 }
 
-std::vector<double> BuildSyntheticThroughputHistory(uint64_t tick,
-    double base,
-    double driftA,
-    double periodA,
-    double driftB,
-    double periodB,
-    double jitterAmplitude,
-    double burstAmplitude,
-    double burstPeriod,
-    double burstOffset,
-    double burstWidth,
-    double dipAmplitude,
-    double dipPeriod,
-    double dipOffset,
-    double dipWidth,
-    uint32_t seed) {
+std::vector<double> BuildSyntheticThroughputHistory(uint64_t tick, const SyntheticThroughputSpec& spec) {
     std::vector<double> samples;
     samples.reserve(kSyntheticHistorySamples);
     for (size_t i = 0; i < kSyntheticHistorySamples; ++i) {
         const double position = static_cast<double>(i) + static_cast<double>(tick) * 2.5;
-        const double drift = std::sin(position / periodA) * driftA + std::cos((position + 9.0) / periodB) * driftB;
-        const double fastJitter = SyntheticNoiseSigned(tick, i, seed) * jitterAmplitude;
+        const double drift =
+            std::sin(position / spec.periodA) * spec.driftA + std::cos((position + 9.0) / spec.periodB) * spec.driftB;
+        const double fastJitter = SyntheticNoiseSigned(tick, i, spec.seed) * spec.jitterAmplitude;
         const double slowJitter =
-            SyntheticNoiseSigned(tick / 2, (i + static_cast<size_t>(tick)) / 4, seed ^ 0xA511E9B3u) *
-            (jitterAmplitude * 0.65);
-        const double burst = SyntheticPulse(position, burstPeriod, burstOffset, burstWidth) * burstAmplitude;
+            SyntheticNoiseSigned(tick / 2, (i + static_cast<size_t>(tick)) / 4, spec.seed ^ 0xA511E9B3u) *
+            (spec.jitterAmplitude * 0.65);
+        const double burst =
+            SyntheticPulse(position, spec.burstPeriod, spec.burstOffset, spec.burstWidth) * spec.burstAmplitude;
         const double microBurst =
-            SyntheticPulse(position, burstPeriod * 0.53 + 3.0, burstOffset * 0.61 + 1.5, burstWidth * 0.55 + 0.35) *
-            (burstAmplitude * 0.35);
-        const double dip = SyntheticPulse(position, dipPeriod, dipOffset, dipWidth) * dipAmplitude;
-        const double value = base + drift + fastJitter + slowJitter + burst + microBurst - dip;
+            SyntheticPulse(
+                position, spec.burstPeriod * 0.53 + 3.0, spec.burstOffset * 0.61 + 1.5, spec.burstWidth * 0.55 + 0.35) *
+            (spec.burstAmplitude * 0.35);
+        const double dip = SyntheticPulse(position, spec.dipPeriod, spec.dipOffset, spec.dipWidth) * spec.dipAmplitude;
+        const double value = spec.base + drift + fastJitter + slowJitter + burst + microBurst - dip;
         samples.push_back((std::max)(0.0, value));
     }
     return samples;
@@ -193,11 +210,6 @@ double LastHistorySample(const std::vector<double>& samples) {
     return samples.empty() ? 0.0 : samples.back();
 }
 
-double ComputeDriveTotalGb(double freeGb, double usedPercent) {
-    const double freeRatio = 1.0 - (usedPercent / 100.0);
-    return freeRatio > 0.0 ? freeGb / freeRatio : 0.0;
-}
-
 DriveInfo BuildSyntheticDrive(
     const char* label, const char* volumeLabel, double usedPercent, double freeGb, double readMbps, double writeMbps) {
     DriveInfo drive;
@@ -205,7 +217,8 @@ DriveInfo BuildSyntheticDrive(
     drive.volumeLabel = volumeLabel;
     drive.usedPercent = usedPercent;
     drive.freeGb = freeGb;
-    drive.totalGb = ComputeDriveTotalGb(freeGb, usedPercent);
+    const double freeRatio = 1.0 - (usedPercent / 100.0);
+    drive.totalGb = freeRatio > 0.0 ? freeGb / freeRatio : 0.0;
     drive.readMbps = readMbps;
     drive.writeMbps = writeMbps;
     drive.driveType = DRIVE_FIXED;
@@ -216,30 +229,26 @@ TelemetryDump BuildSyntheticTelemetryDump(uint64_t tick) {
     TelemetryDump dump;
     SystemSnapshot& snapshot = dump.snapshot;
 
-    std::vector<double> cpuLoad = BuildSyntheticHistory(tick, 43.0, 18.0, 5.0, 7.0, 8.5);
-    std::vector<double> cpuClock = BuildSyntheticHistory(tick, 4.42, 0.18, 7.0, 0.08, 13.0);
-    std::vector<double> cpuRam = BuildSyntheticHistory(tick, 27.6, 0.35, 9.0, 0.18, 17.0);
+    std::vector<double> cpuLoad = BuildSyntheticHistory(tick, kCpuLoadHistory);
+    std::vector<double> cpuClock = BuildSyntheticHistory(tick, kCpuClockHistory);
+    std::vector<double> cpuRam = BuildSyntheticHistory(tick, kCpuRamHistory);
     if (!cpuRam.empty()) {
         // Keep the fake RAM peak marker clearly visible in generated guide-sheet screenshots.
         cpuRam[cpuRam.size() / 2] = kSyntheticCpuMemoryTotalGb * kSyntheticCpuMemoryPeakRatio;
     }
-    std::vector<double> gpuLoad = BuildSyntheticHistory(tick, 72.0, 14.0, 5.6, 8.0, 10.5);
-    std::vector<double> gpuTemp = BuildSyntheticHistory(tick, 62.0, 4.5, 9.0, 1.8, 14.0);
-    std::vector<double> gpuClock = BuildSyntheticHistory(tick, 2085.0, 155.0, 6.3, 65.0, 11.0);
-    std::vector<double> gpuFan = BuildSyntheticHistory(tick, 1325.0, 170.0, 7.4, 60.0, 13.0);
-    std::vector<double> gpuFps = BuildSyntheticHistory(tick, 118.0, 21.0, 6.6, 9.0, 12.5);
-    std::vector<double> gpuVram = BuildSyntheticHistory(tick, 5.9, 1.1, 8.0, 0.5, 15.0);
-    std::vector<double> boardTempCpu = BuildSyntheticHistory(tick, 65.0, 5.0, 7.0, 2.0, 12.0);
-    std::vector<double> boardFanCpu = BuildSyntheticHistory(tick, 1380.0, 180.0, 6.8, 70.0, 11.0);
-    std::vector<double> boardFanSystem = BuildSyntheticHistory(tick, 905.0, 85.0, 8.0, 30.0, 13.0);
-    std::vector<double> networkUpload = BuildSyntheticThroughputHistory(
-        tick, 22.0, 7.5, 7.0, 4.0, 16.0, 3.2, 12.0, 18.0, 5.5, 2.4, 6.5, 29.0, 12.0, 3.0, 0x13579BDFu);
-    std::vector<double> networkDownload = BuildSyntheticThroughputHistory(
-        tick, 198.0, 56.0, 6.1, 34.0, 12.5, 19.0, 92.0, 17.0, 2.8, 2.6, 48.0, 27.0, 8.0, 3.1, 0x2468ACE1u);
-    std::vector<double> storageRead = BuildSyntheticThroughputHistory(
-        tick, 146.0, 48.0, 5.7, 28.0, 11.0, 16.0, 118.0, 15.0, 3.7, 2.2, 64.0, 24.0, 6.5, 2.6, 0xA5C31E27u);
-    std::vector<double> storageWrite = BuildSyntheticThroughputHistory(
-        tick, 44.0, 18.0, 6.0, 11.0, 13.5, 8.5, 52.0, 21.0, 9.0, 2.8, 19.0, 26.0, 4.0, 3.2, 0x5EED1234u);
+    std::vector<double> gpuLoad = BuildSyntheticHistory(tick, kGpuLoadHistory);
+    std::vector<double> gpuTemp = BuildSyntheticHistory(tick, kGpuTemperatureHistory);
+    std::vector<double> gpuClock = BuildSyntheticHistory(tick, kGpuClockHistory);
+    std::vector<double> gpuFan = BuildSyntheticHistory(tick, kGpuFanHistory);
+    std::vector<double> gpuFps = BuildSyntheticHistory(tick, kGpuFpsHistory);
+    std::vector<double> gpuVram = BuildSyntheticHistory(tick, kGpuVramHistory);
+    std::vector<double> boardTempCpu = BuildSyntheticHistory(tick, kBoardTempCpuHistory);
+    std::vector<double> boardFanCpu = BuildSyntheticHistory(tick, kBoardFanCpuHistory);
+    std::vector<double> boardFanSystem = BuildSyntheticHistory(tick, kBoardFanSystemHistory);
+    std::vector<double> networkUpload = BuildSyntheticThroughputHistory(tick, kNetworkUploadHistory);
+    std::vector<double> networkDownload = BuildSyntheticThroughputHistory(tick, kNetworkDownloadHistory);
+    std::vector<double> storageRead = BuildSyntheticThroughputHistory(tick, kStorageReadHistory);
+    std::vector<double> storageWrite = BuildSyntheticThroughputHistory(tick, kStorageWriteHistory);
 
     snapshot.cpu.name = "DeLorean 88X ChronoCore";
     snapshot.cpu.loadPercent = LastHistorySample(cpuLoad);
@@ -337,24 +346,24 @@ ResolvedNetworkCandidate ResolveConfiguredNetworkCandidate(
         return resolved;
     }
 
-    const auto exactIt =
-        std::find_if(availableCandidates.begin(), availableCandidates.end(), [&](const auto& candidate) {
-            return !configuredAdapterName.empty() && EqualsInsensitive(candidate.adapterName, configuredAdapterName);
-        });
-    if (exactIt != availableCandidates.end()) {
-        resolved.adapterName = exactIt->adapterName;
-        resolved.ipAddress = exactIt->ipAddress;
-        return resolved;
+    if (!configuredAdapterName.empty()) {
+        for (const auto& candidate : availableCandidates) {
+            if (EqualsInsensitive(candidate.adapterName, configuredAdapterName)) {
+                resolved.adapterName = candidate.adapterName;
+                resolved.ipAddress = candidate.ipAddress;
+                return resolved;
+            }
+        }
     }
 
-    const auto partialIt =
-        std::find_if(availableCandidates.begin(), availableCandidates.end(), [&](const auto& candidate) {
-            return !configuredAdapterName.empty() && ContainsInsensitive(candidate.adapterName, configuredAdapterName);
-        });
-    if (partialIt != availableCandidates.end()) {
-        resolved.adapterName = partialIt->adapterName;
-        resolved.ipAddress = partialIt->ipAddress;
-        return resolved;
+    if (!configuredAdapterName.empty()) {
+        for (const auto& candidate : availableCandidates) {
+            if (ContainsInsensitive(candidate.adapterName, configuredAdapterName)) {
+                resolved.adapterName = candidate.adapterName;
+                resolved.ipAddress = candidate.ipAddress;
+                return resolved;
+            }
+        }
     }
 
     resolved.adapterName = availableCandidates.front().adapterName;
@@ -426,8 +435,11 @@ public:
             errorText->clear();
         }
         selectionSettings_ = settings.selection;
-        trace_.Write(useSyntheticSource_ ? std::string("fake:initialize_begin source=synthetic")
-                                         : "fake:initialize_begin path=\"" + Utf8FromWide(fakePath_.wstring()) + "\"");
+        if (useSyntheticSource_) {
+            trace_.Write("fake:initialize_begin source=synthetic");
+        } else {
+            trace_.Write("fake:initialize_begin path=\"" + Utf8FromWide(fakePath_.wstring()) + "\"");
+        }
         if (!ReloadFakeDump(true, errorText)) {
             trace_.Write("fake:initialize_failed");
             return false;

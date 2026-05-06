@@ -3,6 +3,7 @@
 #include <windows.h>
 
 #include <cstdint>
+#include <string_view>
 
 #include "resource.h"
 
@@ -20,7 +21,7 @@ uint32_t ReadLittleEndianUint32(const char* data) {
            (static_cast<uint32_t>(static_cast<unsigned char>(data[3])) << 24);
 }
 
-std::string DecompressResourceData(const std::string& data) {
+std::string DecompressResourceData(std::string_view data) {
     const uint32_t decompressedSize = ReadLittleEndianUint32(data.data() + sizeof(uint32_t));
     std::string output;
     output.reserve(decompressedSize);
@@ -88,12 +89,12 @@ std::string LoadUtf8ResourceData(TextResourceId resourceId) {
         return {};
     }
 
-    std::string atlas(static_cast<const char*>(resourceData), static_cast<size_t>(resourceSize));
-    if (atlas.size() < kCompressedResourceHeaderSize ||
-        ReadLittleEndianUint32(atlas.data()) != kCompressedResourceMagic) {
+    std::string_view atlasData(static_cast<const char*>(resourceData), static_cast<size_t>(resourceSize));
+    if (atlasData.size() < kCompressedResourceHeaderSize ||
+        ReadLittleEndianUint32(atlasData.data()) != kCompressedResourceMagic) {
         return {};
     }
-    atlas = DecompressResourceData(atlas);
+    std::string atlas = DecompressResourceData(atlasData);
     if (atlas.size() < kTextAtlasHeaderSize) {
         return {};
     }
