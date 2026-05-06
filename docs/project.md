@@ -16,6 +16,8 @@ See also: [docs/build.md](build.md) for setup and commands, [docs/layout.md](lay
 - `docs/web.md` owns public website behavior, content, generated-asset contracts, and website build flow.
 - `docs/profile_benchmark.md` owns benchmark workflow, baselines, hotspots, and performance experiment history.
 - `docs/optimize_size.md` owns executable-size constraints, assumptions, map workflow notes, and size experiment history.
+- `docs/release.md` owns release versioning, changelog format, local release preparation, and release publication.
+- `docs/changelog.md` owns machine-readable release-note chunks consumed by the local release script and GitHub Release workflow.
 - `resources/config.ini` is the maintained example and spelling authority for shipped config entries.
 - `CMakeLists.txt` is the single maintained source of truth for native source lists, link libraries, and output-directory rules.
 - `installer\` is the single maintained source of truth for the WiX MSI package.
@@ -48,7 +50,7 @@ See also: [docs/build.md](build.md) for setup and commands, [docs/layout.md](lay
 
 - Keep `resources/config.ini` as the embedded default configuration resource.
 - Keep committed resource payloads as the source of truth; CMake generates the compressed embedded config/localization text atlas under `build\cmake\generated\`, while `resources/CaseDash.rc` keeps the directly embedded app icon and panel-icon mask atlas explicit.
-- Keep `VERSION` as the single maintained base product version; generated headers and manifests derive their build metadata from it plus Git state.
+- Keep `VERSION` as the single maintained base product version; generated headers, manifests, and version resources derive their build metadata from it plus Git state.
 - Do not add C++-side synthesized fallback layout, card, widget, font, color, or styling defaults that duplicate the embedded template.
 - Keep runtime text internally as UTF-8 `std::string` and convert to UTF-16 only at Windows API boundaries.
 - Keep config-file I/O on standard C++ streams and preserve strict UTF-8 handling without ANSI code-page fallback.
@@ -66,6 +68,7 @@ See also: [docs/build.md](build.md) for setup and commands, [docs/layout.md](lay
 - Use [docs/layout.md](layout.md) and [resources/config.ini](../resources/config.ini) instead of repeating config key lists elsewhere.
 - Use [docs/profile_benchmark.md](profile_benchmark.md) instead of repeating benchmark workflow or experiment history elsewhere.
 - Use [docs/optimize_size.md](optimize_size.md) instead of repeating executable-size assumptions, constraints, or experiment history elsewhere.
+- Use [docs/release.md](release.md) and [docs/changelog.md](changelog.md) instead of repeating release procedure or changelog format details elsewhere.
 
 ## Project Pitfall Notes
 
