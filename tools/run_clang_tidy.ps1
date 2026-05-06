@@ -296,6 +296,39 @@ function Get-TrackedTidyFiles {
     return $files | Sort-Object FullName
 }
 
+function Invoke-GitOutput {
+    param(
+        [string]$RepoRoot,
+        [string[]]$Arguments
+    )
+
+    $previousErrorActionPreference = $ErrorActionPreference
+    $hasNativeCommandPreference = Test-Path -Path variable:PSNativeCommandUseErrorActionPreference
+    if ($hasNativeCommandPreference) {
+        $previousNativeCommandPreference = $PSNativeCommandUseErrorActionPreference
+    }
+
+    try {
+        $ErrorActionPreference = 'Continue'
+        if ($hasNativeCommandPreference) {
+            $PSNativeCommandUseErrorActionPreference = $false
+        }
+        $output = & git -C $RepoRoot @Arguments 2>$null
+        $exitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+        if ($hasNativeCommandPreference) {
+            $PSNativeCommandUseErrorActionPreference = $previousNativeCommandPreference
+        }
+    }
+
+    if ($exitCode -ne 0) {
+        throw "git $($Arguments -join ' ') failed with exit code $exitCode."
+    }
+
+    return $output
+}
+
 function Get-ChangedTidyFiles {
     param(
         [string]$RepoRoot
@@ -312,14 +345,28 @@ function Get-ChangedTidyFiles {
     }
 
     if ($headExists) {
-        $gitDiffOutput = & git -C $RepoRoot diff --name-only --diff-filter=ACMR HEAD -- $pathSpecs 2>$null
+        $gitDiffOutput = Invoke-GitOutput -RepoRoot $RepoRoot -Arguments @(
+            'diff'
+            '--name-only'
+            '--diff-filter=ACMR'
+            'HEAD'
+            '--'
+            $pathSpecs
+        )
         foreach ($entry in $gitDiffOutput) {
             if (-not [string]::IsNullOrWhiteSpace($entry)) {
                 $changedFiles.Add($entry.Trim())
             }
         }
     } else {
-        $gitDiffOutput = & git -C $RepoRoot diff --name-only --diff-filter=ACMR --cached -- $pathSpecs 2>$null
+        $gitDiffOutput = Invoke-GitOutput -RepoRoot $RepoRoot -Arguments @(
+            'diff'
+            '--name-only'
+            '--diff-filter=ACMR'
+            '--cached'
+            '--'
+            $pathSpecs
+        )
         foreach ($entry in $gitDiffOutput) {
             if (-not [string]::IsNullOrWhiteSpace($entry)) {
                 $changedFiles.Add($entry.Trim())
@@ -327,7 +374,13 @@ function Get-ChangedTidyFiles {
         }
     }
 
-    $untrackedOutput = & git -C $RepoRoot ls-files --others --exclude-standard -- $pathSpecs 2>$null
+    $untrackedOutput = Invoke-GitOutput -RepoRoot $RepoRoot -Arguments @(
+        'ls-files'
+        '--others'
+        '--exclude-standard'
+        '--'
+        $pathSpecs
+    )
     foreach ($entry in $untrackedOutput) {
         if (-not [string]::IsNullOrWhiteSpace($entry)) {
             $changedFiles.Add($entry.Trim())
