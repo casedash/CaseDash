@@ -3,7 +3,7 @@
 #include <chrono>
 
 #include "telemetry/impl/collector.h"
-#include "util/srw_lock.h"
+#include "util/lightweight_mutex.h"
 
 namespace {
 
@@ -75,7 +75,7 @@ public:
 
     void Shutdown() override {
         {
-            const SrwExclusiveLock lock(commandLock_);
+            const LightweightMutexLock lock(commandLock_);
             if (stopped_) {
                 return;
             }
@@ -117,13 +117,13 @@ public:
     }
 
     TelemetryUpdate Latest() const override {
-        const SrwExclusiveLock lock(latestLock_);
+        const LightweightMutexLock lock(latestLock_);
         return latest_;
     }
 
 private:
     template <typename Action> void RunSynchronized(Action&& action) {
-        SrwExclusiveLock lock(commandLock_);
+        LightweightMutexLock lock(commandLock_);
         action();
         PublishLocked();
     }
@@ -138,13 +138,13 @@ private:
             const auto waitMs = std::chrono::duration_cast<std::chrono::milliseconds>(nextCollection - now).count();
             const DWORD timeoutMs = waitMs > 0 ? static_cast<DWORD>(waitMs) : 0;
             if (WaitForSingleObject(wakeEvent_, timeoutMs) == WAIT_OBJECT_0) {
-                const SrwExclusiveLock lock(commandLock_);
+                const LightweightMutexLock lock(commandLock_);
                 if (stopped_) {
                     return;
                 }
                 continue;
             }
-            const SrwExclusiveLock lock(commandLock_);
+            const LightweightMutexLock lock(commandLock_);
             if (stopped_) {
                 return;
             }
@@ -162,7 +162,7 @@ private:
     void PublishLocked() {
         TelemetryUpdate update = CaptureTelemetryUpdate(*collector_);
         {
-            const SrwExclusiveLock latestLock(latestLock_);
+            const LightweightMutexLock latestLock(latestLock_);
             latest_ = update;
         }
         if (callback_ != nullptr) {
@@ -172,9 +172,9 @@ private:
 
     std::unique_ptr<TelemetryCollector> collector_;
     TelemetryUpdateSink* callback_ = nullptr;
-    mutable SrwLock latestLock_;
+    mutable LightweightMutex latestLock_;
     TelemetryUpdate latest_;
-    SrwLock commandLock_;
+    LightweightMutex commandLock_;
     HANDLE wakeEvent_ = nullptr;
     HANDLE workerThread_ = nullptr;
     bool stopped_ = false;

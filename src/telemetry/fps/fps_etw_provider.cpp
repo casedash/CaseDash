@@ -15,7 +15,7 @@
 
 #include "telemetry/fps/impl/gpu_raw_counter_map.h"
 #include "telemetry/impl/collector_support.h"
-#include "util/srw_lock.h"
+#include "util/lightweight_mutex.h"
 #include "util/trace.h"
 #include "util/utf8.h"
 
@@ -156,7 +156,7 @@ public:
     }
 
     bool Initialize() override {
-        SrwExclusiveLock lock(mutex_);
+        LightweightMutexLock lock(mutex_);
         if (initialized_) {
             return true;
         }
@@ -243,7 +243,7 @@ public:
         LARGE_INTEGER now{};
         QueryPerformanceCounter(&now);
 
-        SrwExclusiveLock lock(mutex_);
+        LightweightMutexLock lock(mutex_);
         FpsTelemetrySample sample;
         sample.diagnostics = diagnostics_;
         sample.available = initialized_;
@@ -698,7 +698,7 @@ private:
     void Stop() {
         HANDLE threadToJoin = nullptr;
         {
-            SrwExclusiveLock lock(mutex_);
+            LightweightMutexLock lock(mutex_);
             StopLocked();
             threadToJoin = processingThread_;
             processingThread_ = nullptr;
@@ -783,7 +783,7 @@ private:
         LARGE_INTEGER receivedAt{};
         QueryPerformanceCounter(&receivedAt);
 
-        SrwExclusiveLock lock(mutex_);
+        LightweightMutexLock lock(mutex_);
         const PresentEventSource source = isDxgKrnlPresent ? PresentEventSource::Kernel : PresentEventSource::Runtime;
         ProcessPresentEventBuckets& buckets =
             source == PresentEventSource::Runtime ? runtimeEventsByProcess_ : kernelEventsByProcess_;
@@ -816,7 +816,7 @@ private:
     void ProcessTraceLoop() {
         TRACEHANDLE handle = INVALID_PROCESSTRACE_HANDLE;
         {
-            SrwExclusiveLock threadLock(mutex_);
+            LightweightMutexLock threadLock(mutex_);
             handle = traceHandle_;
         }
         const ULONG processStatus = ProcessTrace(&handle, 1, nullptr, nullptr);
@@ -824,7 +824,7 @@ private:
     }
 
     Trace& trace_;
-    mutable SrwLock mutex_;
+    mutable LightweightMutex mutex_;
     TRACEHANDLE sessionHandle_ = 0;
     TRACEHANDLE traceHandle_ = INVALID_PROCESSTRACE_HANDLE;
     HANDLE processingThread_ = nullptr;

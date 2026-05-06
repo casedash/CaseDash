@@ -4,8 +4,8 @@
 #include <cstdio>
 #include <ctime>
 
+#include "util/lightweight_mutex.h"
 #include "util/numeric_format.h"
-#include "util/srw_lock.h"
 
 namespace {
 
@@ -33,8 +33,8 @@ std::string FormatTraceTimestamp() {
     return buffer;
 }
 
-SrwLock& TraceWriteLock() {
-    static SrwLock lock;
+LightweightMutex& TraceWriteLock() {
+    static LightweightMutex lock;
     return lock;
 }
 
@@ -50,7 +50,7 @@ void Trace::Write(const char* text) const {
     if (output_ == nullptr) {
         return;
     }
-    const SrwExclusiveLock lock(TraceWriteLock());
+    const LightweightMutexLock lock(TraceWriteLock());
     const std::string line = "[trace " + FormatTraceTimestamp() + "] " + text + "\n";
     fwrite(line.data(), 1, line.size(), output_);
     fflush(output_);

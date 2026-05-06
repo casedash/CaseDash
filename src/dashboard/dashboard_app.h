@@ -15,7 +15,7 @@
 #include "layout_edit/layout_edit_controller.h"
 #include "layout_edit/layout_edit_trace_session.h"
 #include "util/file_path.h"
-#include "util/srw_lock.h"
+#include "util/lightweight_mutex.h"
 
 class DashboardShellUi;
 
@@ -151,7 +151,7 @@ private:
     POINT moveCursorAnchorClientPoint_{};
     bool hasMoveCursorAnchorClientPoint_ = false;
     bool suppressMoveStopOnNextLeftButtonUp_ = false;
-    SrwLock pendingTelemetryLock_;
+    LightweightMutex pendingTelemetryLock_;
     TelemetryUpdate pendingTelemetryUpdate_{};
     bool hasPendingTelemetryUpdate_ = false;
     LayoutEditTraceSession layoutEditTraceSession_{};

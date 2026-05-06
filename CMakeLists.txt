@@ -120,7 +120,7 @@ add_executable(CaseDash WIN32
     src/util/numeric_format.cpp
     src/util/paths.cpp
     src/util/scale.cpp
-    src/util/srw_lock.cpp
+    src/util/lightweight_mutex.cpp
     src/util/strings.cpp
     src/util/temp_file.cpp
     src/util/win32_format.cpp
@@ -169,7 +169,7 @@ add_executable(CaseDash WIN32
     src/config/config_resolution.cpp
     src/util/localization_catalog.cpp
     src/util/resource_loader.cpp
-    src/util/srw_lock.cpp
+    src/util/lightweight_mutex.cpp
     src/layout_edit/impl/layout_snap_solver.cpp
     src/util/numeric_safety.cpp
     src/telemetry/impl/system_info_support.cpp
@@ -568,7 +568,7 @@ add_executable(CaseDashTests
     src/util/numeric_format.cpp
     src/util/localization_catalog.cpp
     src/util/resource_loader.cpp
-    src/util/srw_lock.cpp
+    src/util/lightweight_mutex.cpp
     src/layout_edit/impl/layout_snap_solver.cpp
     src/util/file_path.cpp
     src/util/numeric_safety.cpp
@@ -769,7 +769,7 @@ add_executable(CaseDashBenchmarks
     src/dashboard_renderer/dashboard_renderer.cpp
     src/util/localization_catalog.cpp
     src/util/resource_loader.cpp
-    src/util/srw_lock.cpp
+    src/util/lightweight_mutex.cpp
     src/util/utf8.cpp
     src/util/trace.cpp
     src/vendor/adlx/SDK/ADLXHelper/Windows/Cpp/ADLXHelper.cpp

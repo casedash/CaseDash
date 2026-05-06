@@ -13,9 +13,9 @@
 #include "display/display_config.h"
 #include "layout_edit/layout_edit_tooltip_text.h"
 #include "resource.h"
+#include "util/lightweight_mutex.h"
 #include "util/localization_catalog.h"
 #include "util/paths.h"
-#include "util/srw_lock.h"
 #include "util/trace.h"
 #include "util/utf8.h"
 #include "widget/app_icon_geometry.h"
@@ -639,7 +639,7 @@ void DashboardApp::RedrawShellNow() {
 
 void DashboardApp::EnqueueTelemetryUpdate(const TelemetryUpdate& update) {
     {
-        const SrwExclusiveLock lock(pendingTelemetryLock_);
+        const LightweightMutexLock lock(pendingTelemetryLock_);
         pendingTelemetryUpdate_ = update;
         hasPendingTelemetryUpdate_ = true;
     }
@@ -649,7 +649,7 @@ void DashboardApp::EnqueueTelemetryUpdate(const TelemetryUpdate& update) {
 }
 
 bool DashboardApp::DrainPendingTelemetryUpdate(TelemetryUpdate& update) {
-    const SrwExclusiveLock lock(pendingTelemetryLock_);
+    const LightweightMutexLock lock(pendingTelemetryLock_);
     if (!hasPendingTelemetryUpdate_) {
         return false;
     }
