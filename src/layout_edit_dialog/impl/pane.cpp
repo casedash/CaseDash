@@ -1621,9 +1621,9 @@ void EnsureMetricListOrderEditorControls(LayoutEditDialogState* state, HWND hwnd
 
     DestroyMetricListOrderEditorControls(state);
 
-    state->metricListRowControls.reserve(rowCount);
+    state->metricListRowControls.resize(rowCount);
     for (size_t i = 0; i < rowCount; ++i) {
-        LayoutEditMetricListRowControls row;
+        LayoutEditMetricListRowControls& row = state->metricListRowControls[i];
         row.comboId = IDC_LAYOUT_EDIT_METRIC_LIST_ROW_COMBO_BASE + static_cast<int>(i);
         row.upButtonId = IDC_LAYOUT_EDIT_METRIC_LIST_ROW_UP_BASE + static_cast<int>(i);
         row.downButtonId = IDC_LAYOUT_EDIT_METRIC_LIST_ROW_DOWN_BASE + static_cast<int>(i);
@@ -1636,7 +1636,6 @@ void EnsureMetricListOrderEditorControls(LayoutEditDialogState* state, HWND hwnd
             hwnd, LayoutEditControlKind::OwnerDrawButton, LayoutEditControlText::Empty, row.downButtonId);
         row.deleteButton = CreateMetricListEditorControl(
             hwnd, LayoutEditControlKind::OwnerDrawButton, LayoutEditControlText::Empty, row.deleteButtonId);
-        state->metricListRowControls.push_back(row);
     }
 
     state->metricListAddRowButton = CreateMetricListEditorControl(
