@@ -36,7 +36,7 @@ See also: [docs/build.md](build.md) for setup and commands, [docs/layout.md](lay
 - Use `tools\generate_social_preview.ps1` to generate the GitHub social preview PNG under `build\social_preview\` from dark_cyan fake telemetry and a rendered app icon.
 - Keep generated build outputs inside `build\`, with `web\dist\` as the generated website output and the repo-root `vcpkg\` directory as the deliberate persistent exception for manifest-installed dependencies.
 - Keep shared vcpkg download and registry caches outside the worktree in the user-local cache root that `build.cmd` exports through `VCPKG_DOWNLOADS` and `X_VCPKG_REGISTRIES_CACHE`.
-- Keep GitHub-restored dependency caches under `.github-cache\`, which is ignored and owned by the validation workflow.
+- Keep GitHub-restored dependency caches under `.github-cache\`, which is ignored and owned by the GitHub workflows.
 - Keep pull request merge protection tied to the GitHub `Validation` job so pushed changes pass build, test, formatting, and tidy checks on the Windows runner before merge.
 - Keep tracked text files checked out with CRLF line endings through the repo-level `.gitattributes` policy; binary assets are excluded from text normalization there.
 - Keep project-authored quoted includes rooted at the configured `src` and `resources` include directories.
