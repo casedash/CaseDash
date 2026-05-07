@@ -6,6 +6,9 @@
 
 namespace {
 
+constexpr wchar_t kReadBinaryMode[] = L"rb";   // _wfopen_s mode string follows the widened file path.
+constexpr wchar_t kWriteBinaryMode[] = L"wb";  // _wfopen_s mode string follows the widened file path.
+
 bool HasValidUtf8Encoding(const std::string& text) {
     return text.empty() || !WideFromUtf8(text).empty();
 }
@@ -15,8 +18,7 @@ bool HasValidUtf8Encoding(const std::string& text) {
 std::string ReadConfigFileUtf8(const FilePath& path) {
     std::FILE* input = nullptr;
     const std::wstring widePath = path.Wide();
-    const std::wstring mode = WideFromUtf8("rb");
-    if (_wfopen_s(&input, widePath.c_str(), mode.c_str()) != 0 || input == nullptr) {
+    if (_wfopen_s(&input, widePath.c_str(), kReadBinaryMode) != 0 || input == nullptr) {
         return {};
     }
 
@@ -53,8 +55,7 @@ bool WriteConfigFileUtf8(const FilePath& path, const std::string& text) {
 
     std::FILE* output = nullptr;
     const std::wstring widePath = path.Wide();
-    const std::wstring mode = WideFromUtf8("wb");
-    if (_wfopen_s(&output, widePath.c_str(), mode.c_str()) != 0 || output == nullptr) {
+    if (_wfopen_s(&output, widePath.c_str(), kWriteBinaryMode) != 0 || output == nullptr) {
         return false;
     }
 

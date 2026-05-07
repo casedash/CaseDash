@@ -138,6 +138,8 @@ struct CheckSliderRowLayout {
 
 constexpr LayoutEditRightPaneMetrics kLayoutEditRightPaneMetrics{};
 constexpr char kDialogRedrawSuspendCountProperty[] = "CaseDash.LayoutEdit.RedrawSuspendCount";
+constexpr wchar_t kDialogBlankText[] = L" ";           // Win32 text measurement uses UTF-16 control text.
+constexpr wchar_t kDialogMeasureSampleText[] = L"Ag";  // Win32 text measurement uses UTF-16 control text.
 constexpr double kLchGradientChromaMax = 0.4;
 constexpr int kColorModeControls[] = {IDC_LAYOUT_EDIT_COLOR_MODE_LABEL, IDC_LAYOUT_EDIT_COLOR_MODE_COMBO};
 constexpr int kDerivedColorControls[] = {IDC_LAYOUT_EDIT_COLOR_BASE_LABEL,
@@ -642,8 +644,7 @@ int Max4Int(int first, int second, int third, int fourth) {
 }
 
 int WindowRedrawSuspendCount(HWND hwnd) {
-    const std::wstring propertyName = WideFromUtf8(kDialogRedrawSuspendCountProperty);
-    return static_cast<int>(reinterpret_cast<intptr_t>(GetPropW(hwnd, propertyName.c_str())));
+    return static_cast<int>(reinterpret_cast<intptr_t>(GetPropA(hwnd, kDialogRedrawSuspendCountProperty)));
 }
 
 void BeginWindowRedrawSuspension(HWND hwnd) {
@@ -655,8 +656,7 @@ void BeginWindowRedrawSuspension(HWND hwnd) {
     if (count == 0) {
         SendMessageW(hwnd, WM_SETREDRAW, FALSE, 0);
     }
-    const std::wstring propertyName = WideFromUtf8(kDialogRedrawSuspendCountProperty);
-    SetPropW(hwnd, propertyName.c_str(), reinterpret_cast<HANDLE>(static_cast<intptr_t>(count + 1)));
+    SetPropA(hwnd, kDialogRedrawSuspendCountProperty, reinterpret_cast<HANDLE>(static_cast<intptr_t>(count + 1)));
 }
 
 void EndWindowRedrawSuspension(HWND hwnd, const RECT* redrawRect, UINT redrawFlags) {
@@ -666,16 +666,14 @@ void EndWindowRedrawSuspension(HWND hwnd, const RECT* redrawRect, UINT redrawFla
 
     const int count = WindowRedrawSuspendCount(hwnd);
     if (count <= 1) {
-        const std::wstring propertyName = WideFromUtf8(kDialogRedrawSuspendCountProperty);
-        RemovePropW(hwnd, propertyName.c_str());
+        RemovePropA(hwnd, kDialogRedrawSuspendCountProperty);
         SendMessageW(hwnd, WM_SETREDRAW, TRUE, 0);
         if (redrawFlags != 0) {
             RedrawWindow(hwnd, redrawRect, nullptr, redrawFlags);
         }
         return;
     }
-    const std::wstring propertyName = WideFromUtf8(kDialogRedrawSuspendCountProperty);
-    SetPropW(hwnd, propertyName.c_str(), reinterpret_cast<HANDLE>(static_cast<intptr_t>(count - 1)));
+    SetPropA(hwnd, kDialogRedrawSuspendCountProperty, reinterpret_cast<HANDLE>(static_cast<intptr_t>(count - 1)));
 }
 
 bool DialogControlHasClass(HWND hwnd, int controlId, const wchar_t* expectedClassName) {
@@ -1342,8 +1340,7 @@ int MeasureTextWidthForControl(HWND hwnd, int controlId, std::wstring_view text)
     HFONT font = reinterpret_cast<HFONT>(SendMessageW(control, WM_GETFONT, 0, 0));
     HFONT previous = font != nullptr ? reinterpret_cast<HFONT>(SelectObject(dc, font)) : nullptr;
     SIZE size{};
-    const std::wstring fallbackText = WideFromUtf8(" ");
-    const std::wstring_view measuredText = text.empty() ? std::wstring_view(fallbackText) : text;
+    const std::wstring_view measuredText = text.empty() ? std::wstring_view(kDialogBlankText, 1) : text;
     GetTextExtentPoint32W(dc, measuredText.data(), static_cast<int>(measuredText.size()), &size);
     if (previous != nullptr) {
         SelectObject(dc, previous);
@@ -1364,8 +1361,7 @@ int MeasureTextHeightForControl(HWND hwnd, int controlId, std::wstring_view text
     HFONT font = reinterpret_cast<HFONT>(SendMessageW(control, WM_GETFONT, 0, 0));
     HFONT previous = font != nullptr ? reinterpret_cast<HFONT>(SelectObject(dc, font)) : nullptr;
     RECT rect{0, 0, std::max(1, width), 0};
-    const std::wstring fallbackText = WideFromUtf8(" ");
-    const std::wstring_view measuredText = text.empty() ? std::wstring_view(fallbackText) : text;
+    const std::wstring_view measuredText = text.empty() ? std::wstring_view(kDialogBlankText, 1) : text;
     UINT flags = DT_NOPREFIX | DT_CALCRECT | (singleLine ? DT_SINGLELINE : DT_WORDBREAK);
     DrawTextW(dc, measuredText.data(), static_cast<int>(measuredText.size()), &rect, flags);
     if (previous != nullptr) {
@@ -1691,8 +1687,8 @@ void LayoutLayoutEditRightPane(LayoutEditDialogState* state, HWND hwnd) {
             24);
     const int revertHeight = DialogControlHeight(hwnd, IDC_LAYOUT_EDIT_REVERT);
     const int statusWidth = std::max(1, paneWidth - revertWidth - metrics.inlineGap);
-    const int statusHeight =
-        MeasureTextHeightForControl(hwnd, IDC_LAYOUT_EDIT_STATUS_TEXT, WideFromUtf8(state->statusText), statusWidth);
+    const std::wstring statusText = ReadDialogControlTextWide(hwnd, IDC_LAYOUT_EDIT_STATUS_TEXT);
+    const int statusHeight = MeasureTextHeightForControl(hwnd, IDC_LAYOUT_EDIT_STATUS_TEXT, statusText, statusWidth);
     const int statusRowHeight = std::max(statusHeight, revertHeight);
     const int statusTop = footerTop - metrics.statusToFooterGap - statusRowHeight;
     SetDialogControlBounds(hwnd,
@@ -1715,18 +1711,17 @@ void LayoutLayoutEditRightPane(LayoutEditDialogState* state, HWND hwnd) {
     y += titleHeight + metrics.headerGap;
 
     const std::wstring locationText = ReadDialogControlTextWide(hwnd, IDC_LAYOUT_EDIT_LOCATION);
-    const std::wstring blankText = WideFromUtf8(" ");
     const int locationHeight = MeasureTextHeightForControl(hwnd,
         IDC_LAYOUT_EDIT_LOCATION,
-        locationText.empty() ? std::wstring_view(blankText) : std::wstring_view(locationText),
+        locationText.empty() ? std::wstring_view(kDialogBlankText, 1) : std::wstring_view(locationText),
         paneWidth,
         true);
     SetDialogControlBounds(hwnd, IDC_LAYOUT_EDIT_LOCATION, paneLeft, y, paneWidth, locationHeight);
     y += locationHeight + metrics.headerGap;
 
     const std::wstring descriptionText = ReadDialogControlTextWide(hwnd, IDC_LAYOUT_EDIT_DESCRIPTION);
-    const int descriptionSingleLineHeight =
-        MeasureTextHeightForControl(hwnd, IDC_LAYOUT_EDIT_DESCRIPTION, WideFromUtf8("Ag"), paneWidth, true);
+    const int descriptionSingleLineHeight = MeasureTextHeightForControl(
+        hwnd, IDC_LAYOUT_EDIT_DESCRIPTION, std::wstring_view(kDialogMeasureSampleText, 2), paneWidth, true);
     const int descriptionHeight =
         std::max(MeasureTextHeightForControl(hwnd, IDC_LAYOUT_EDIT_DESCRIPTION, descriptionText, paneWidth),
             descriptionSingleLineHeight * 2);

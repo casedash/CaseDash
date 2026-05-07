@@ -38,6 +38,8 @@ constexpr double kProcessSwitchHysteresisRatio = 1.35;
 constexpr double kGpu3dActiveThresholdPercent = 5.0;
 constexpr double kGpu3dDominanceRatio = 3.0;
 constexpr size_t kMaximumEventsPerProcess = 4096;
+constexpr wchar_t kGpuEngine3dMarker[] = L"engtype_3D";  // ETW GPU engine instance names are UTF-16.
+constexpr wchar_t kGpuEnginePidMarker[] = L"pid_";       // ETW GPU engine instance names are UTF-16.
 
 struct EtwSessionProperties {
     EVENT_TRACE_PROPERTIES properties{};
@@ -136,8 +138,7 @@ DWORD ExtractProcessIdFromGpuEngineInstance(const wchar_t* instance) {
     if (instance == nullptr) {
         return 0;
     }
-    const std::wstring markerText = WideFromUtf8("pid_");
-    const wchar_t* marker = wcsstr(instance, markerText.c_str());
+    const wchar_t* marker = wcsstr(instance, kGpuEnginePidMarker);
     if (marker == nullptr) {
         return 0;
     }
@@ -148,8 +149,7 @@ DWORD ExtractProcessIdFromGpuEngineInstance(const wchar_t* instance) {
 }
 
 bool IsGpu3dEngineInstance(const wchar_t* instance) {
-    const std::wstring marker = WideFromUtf8("engtype_3D");
-    return instance != nullptr && wcsstr(instance, marker.c_str()) != nullptr;
+    return instance != nullptr && wcsstr(instance, kGpuEngine3dMarker) != nullptr;
 }
 
 class PresentedFpsEtwProvider final : public FpsTelemetryProvider {

@@ -11,6 +11,8 @@
 
 namespace {
 
+constexpr wchar_t kPdhLibraryName[] = L"pdh.dll";  // GetModuleHandleW requires a UTF-16 module name.
+
 std::string DetectCpuNameFromCpuid() {
     int maxExtendedLeaf[4]{};
     __cpuid(maxExtendedLeaf, 0x80000000);
@@ -60,10 +62,9 @@ std::string PdhStatusCodeString(PDH_STATUS status) {
 typedef PDH_STATUS(WINAPI* PdhAddEnglishCounterWFn)(PDH_HQUERY, LPCWSTR, DWORD_PTR, PDH_HCOUNTER*);
 
 PDH_STATUS AddCounterCompat(PDH_HQUERY query, std::string_view path, PDH_HCOUNTER* counter) {
-    const std::wstring pdhLibraryName = WideFromUtf8("pdh.dll");
     const std::wstring widePath = WideFromUtf8(path);
     static PdhAddEnglishCounterWFn addEnglish = reinterpret_cast<PdhAddEnglishCounterWFn>(
-        GetProcAddress(GetModuleHandleW(pdhLibraryName.c_str()), "PdhAddEnglishCounterW"));
+        GetProcAddress(GetModuleHandleW(kPdhLibraryName), "PdhAddEnglishCounterW"));
     if (addEnglish != nullptr) {
         return addEnglish(query, widePath.c_str(), 0, counter);
     }

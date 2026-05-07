@@ -16,6 +16,9 @@ EXCLUDED_PREFIXES = ("src/vendor/",)
 STD_FUNCTION_RE = re.compile(r"\bstd\s*::\s*function\b")
 STD_FILESYSTEM_RE = re.compile(r"\bstd\s*::\s*filesystem\b")
 FILESYSTEM_INCLUDE_RE = re.compile(r"^\s*#\s*include\s*<\s*filesystem\s*>")
+CONST_WIDE_STRING_DECL_RE = re.compile(
+    r"^\s*(?:(?:static|inline)\s+)*(?:constexpr|const)\b(?=[^=;\n]*\bwchar_t\b)[^=;\n]*=\s*$"
+)
 
 
 @dataclass(frozen=True)
@@ -163,7 +166,27 @@ def skip_raw_string_literal(text: str, index: int) -> int:
     return len(text) if end < 0 else end + len(terminator)
 
 
-def find_wide_literal_lines(text: str) -> list[int]:
+def line_bounds(text: str, index: int) -> tuple[int, int]:
+    start = text.rfind("\n", 0, index) + 1
+    end = text.find("\n", index)
+    return start, len(text) if end < 0 else end
+
+
+def is_allowed_const_wide_string_literal(text: str, prefix_index: int, literal_index: int, end_index: int) -> bool:
+    if literal_index >= len(text) or text[literal_index] != '"':
+        return False
+    line_start, line_end = line_bounds(text, prefix_index)
+    line = text[line_start:line_end]
+    literal_end_in_line = end_index - line_start
+    comment_index = line.find("//", literal_end_in_line)
+    if comment_index < 0 or not line[comment_index + 2 :].strip():
+        return False
+    if line[literal_end_in_line:comment_index].strip() != ";":
+        return False
+    return CONST_WIDE_STRING_DECL_RE.match(line[: prefix_index - line_start]) is not None
+
+
+def find_undocumented_wide_literal_lines(text: str) -> list[int]:
     lines: list[int] = []
     line = 1
     index = 0
@@ -201,12 +224,13 @@ def find_wide_literal_lines(text: str) -> list[int]:
             while literal_index < len(text) and text[literal_index] in " \t\r\n":
                 literal_index += 1
             if literal_index < len(text) and text[literal_index] in "\"'":
-                lines.append(line)
                 end = (
                     skip_raw_string_literal(text, literal_index - 1)
                     if text[literal_index - 1 : literal_index + 1] == 'R"'
                     else skip_quoted_literal(text, literal_index, text[literal_index])
                 )
+                if not is_allowed_const_wide_string_literal(text, index, literal_index, end):
+                    lines.append(line)
                 line += text[index:end].count("\n")
                 index = end
                 continue
@@ -253,15 +277,15 @@ def collect_violations(files: list[Path]) -> list[Violation]:
                         ),
                     )
                 )
-        for line_number in find_wide_literal_lines(text):
+        for line_number in find_undocumented_wide_literal_lines(text):
             violations.append(
                 Violation(
                     relpath=file_rel,
                     line=line_number,
                     message=(
-                        "wide literals are not allowed in maintained source; keep constants UTF-8 and "
-                        "materialize UTF-16 only at Win32 or managed interop boundaries with WideFromUtf8 "
-                        "or Utf8FromWide."
+                        'wide literals must stay narrow UTF-8 by default; only const wchar_t string constants '
+                        'initialized with L"..." and an end-of-line reason comment are allowed for fixed Win32 '
+                        "or managed interop boundary text."
                     ),
                 )
             )

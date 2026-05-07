@@ -9,6 +9,9 @@
 
 namespace {
 
+constexpr wchar_t kReadBinaryMode[] = L"rb";   // _wfopen_s mode string follows the widened file path.
+constexpr wchar_t kWriteBinaryMode[] = L"wb";  // _wfopen_s mode string follows the widened file path.
+
 bool IsSeparator(char ch) {
     return ch == '\\' || ch == '/';
 }
@@ -184,8 +187,7 @@ bool RemoveFileIfExists(const FilePath& path) {
 std::optional<std::string> ReadFileBinary(const FilePath& path) {
     FILE* file = nullptr;
     const std::wstring widePath = path.Wide();
-    const std::wstring mode = WideFromUtf8("rb");
-    if (_wfopen_s(&file, widePath.c_str(), mode.c_str()) != 0 || file == nullptr) {
+    if (_wfopen_s(&file, widePath.c_str(), kReadBinaryMode) != 0 || file == nullptr) {
         return std::nullopt;
     }
     if (fseek(file, 0, SEEK_END) != 0) {
@@ -210,8 +212,7 @@ std::optional<std::string> ReadFileBinary(const FilePath& path) {
 bool WriteFileBinary(const FilePath& path, std::string_view text) {
     FILE* file = nullptr;
     const std::wstring widePath = path.Wide();
-    const std::wstring mode = WideFromUtf8("wb");
-    if (_wfopen_s(&file, widePath.c_str(), mode.c_str()) != 0 || file == nullptr) {
+    if (_wfopen_s(&file, widePath.c_str(), kWriteBinaryMode) != 0 || file == nullptr) {
         return false;
     }
     const bool ok = text.empty() || fwrite(text.data(), 1, text.size(), file) == text.size();

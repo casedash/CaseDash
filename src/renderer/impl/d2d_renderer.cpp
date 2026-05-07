@@ -43,6 +43,8 @@ DWRITE_PARAGRAPH_ALIGNMENT DWriteParagraphAlignment(const TextLayoutOptions& opt
 
 constexpr int kPanelIconAtlasCellSize = 64;
 constexpr char kLocaleName[] = "en-us";
+constexpr wchar_t kPngResourceType[] = L"PNG";   // FindResourceW requires a UTF-16 resource type.
+constexpr wchar_t kTextMeasureSample[] = L"Ag";  // DWrite text layout measures UTF-16 sample text.
 
 int GetPanelIconAtlasSlot(std::string_view iconName) {
     if (iconName == "cpu")
@@ -93,8 +95,7 @@ Microsoft::WRL::ComPtr<IWICBitmapSource> LoadPngResourceMask(IWICImagingFactory*
         return bitmapSource;
     }
 
-    const std::wstring pngResourceType = WideFromUtf8("PNG");
-    HRSRC resource = FindResourceW(module, MAKEINTRESOURCEW(resourceId), pngResourceType.c_str());
+    HRSRC resource = FindResourceW(module, MAKEINTRESOURCEW(resourceId), kPngResourceType);
     if (resource == nullptr) {
         return bitmapSource;
     }
@@ -1120,9 +1121,7 @@ bool D2DRenderer::RebuildTextFormatsAndMetrics() {
             return 0;
         }
         Microsoft::WRL::ComPtr<IDWriteTextLayout> layout;
-        const std::wstring sample = WideFromUtf8("Ag");
-        if (FAILED(dwriteFactory_->CreateTextLayout(
-                sample.c_str(), static_cast<UINT32>(sample.size()), format, 1024.0f, 1024.0f, &layout)) ||
+        if (FAILED(dwriteFactory_->CreateTextLayout(kTextMeasureSample, 2, format, 1024.0f, 1024.0f, &layout)) ||
             layout == nullptr) {
             return 0;
         }

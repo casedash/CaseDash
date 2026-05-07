@@ -5,6 +5,12 @@
 #include "util/paths.h"
 #include "util/utf8.h"
 
+namespace {
+
+constexpr wchar_t kRunAsVerb[] = L"runas";  // ShellExecuteExW requires a UTF-16 elevation verb.
+
+}  // namespace
+
 bool RunElevatedSelfAndWait(
     HWND owner, std::string_view parameters, const FilePath& workingDirectory, int showCommand, DWORD* exitCode) {
     if (exitCode != nullptr) {
@@ -23,8 +29,7 @@ bool RunElevatedSelfAndWait(
     executeInfo.cbSize = sizeof(executeInfo);
     executeInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
     executeInfo.hwnd = owner;
-    const std::wstring runAsVerb = WideFromUtf8("runas");
-    executeInfo.lpVerb = runAsVerb.c_str();
+    executeInfo.lpVerb = kRunAsVerb;
     executeInfo.lpFile = wideExecutablePath.c_str();
     executeInfo.lpParameters = !wideParameters.empty() ? wideParameters.c_str() : nullptr;
     executeInfo.lpDirectory = !wideWorkingDirectory.empty() ? wideWorkingDirectory.c_str() : nullptr;

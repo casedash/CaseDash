@@ -16,19 +16,18 @@
 #include "layout_edit/layout_edit_service.h"
 #include "layout_model/layout_edit_service.h"
 #include "telemetry/metrics.h"
-#include "util/app_strings.h"
 #include "util/command_line.h"
 #include "util/elevated_process.h"
 #include "util/strings.h"
 #include "util/temp_file.h"
 #include "util/trace.h"
-#include "util/utf8.h"
 
 namespace {
 
 constexpr char kTelemetryDumpFilter[] = "Telemetry dump (*.txt)\0*.txt\0All files (*.*)\0*.*\0";
 constexpr char kPngFilter[] = "PNG image (*.png)\0*.png\0All files (*.*)\0*.*\0";
 constexpr char kIniFilter[] = "INI config (*.ini)\0*.ini\0All files (*.*)\0*.*\0";
+constexpr wchar_t kWriteBinaryMode[] = L"wb";  // _wfopen_s mode string follows the widened export path.
 
 template <size_t Size> constexpr std::string_view StringViewWithTerminator(const char (&text)[Size]) {
     return std::string_view(text, Size);
@@ -345,8 +344,7 @@ void DashboardController::SaveDumpAs(DashboardShellHost& shell) {
     }
     std::FILE* output = nullptr;
     const std::wstring widePath = path->Wide();
-    const std::wstring mode = WideFromUtf8("wb");
-    if (_wfopen_s(&output, widePath.c_str(), mode.c_str()) != 0 || output == nullptr) {
+    if (_wfopen_s(&output, widePath.c_str(), kWriteBinaryMode) != 0 || output == nullptr) {
         const std::string pathText = path->string();
         shell.ShowError("Failed to open dump file:\n" + pathText);
         return;

@@ -14,7 +14,12 @@
 #include "layout_model/layout_edit_parameter_metadata.h"
 #include "resource.h"
 #include "util/scale.h"
-#include "util/utf8.h"
+
+namespace {
+
+constexpr wchar_t kFilterCueText[] = L"Filter settings";  // EM_SETCUEBANNER sends UTF-16 cue text.
+
+}  // namespace
 
 LayoutEditDialog::LayoutEditDialog(LayoutEditDialogHost& host) : host_(host) {}
 
@@ -373,9 +378,8 @@ INT_PTR CALLBACK LayoutEditDialog::DialogProc(HWND hwnd, UINT message, WPARAM wP
         if (HWND tree = GetDlgItem(hwnd, IDC_LAYOUT_EDIT_TREE); tree != nullptr) {
             TreeView_SetExtendedStyle(tree, TVS_EX_DOUBLEBUFFER, TVS_EX_DOUBLEBUFFER);
         }
-        const std::wstring cueText = WideFromUtf8("Filter settings");
         SendDlgItemMessageW(
-            hwnd, IDC_LAYOUT_EDIT_FILTER_EDIT, EM_SETCUEBANNER, FALSE, reinterpret_cast<LPARAM>(cueText.c_str()));
+            hwnd, IDC_LAYOUT_EDIT_FILTER_EDIT, EM_SETCUEBANNER, FALSE, reinterpret_cast<LPARAM>(kFilterCueText));
         RebuildLayoutEditTree(state, hwnd, state->initialFocus);
         state->dialog->PositionWindow(hwnd);
         ShowWindow(hwnd, SW_SHOWNORMAL);

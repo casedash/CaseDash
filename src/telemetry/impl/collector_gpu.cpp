@@ -10,6 +10,8 @@
 
 namespace {
 
+constexpr wchar_t kGpuEngine3dMarker[] = L"engtype_3D";  // PDH GPU engine instance names are UTF-16.
+
 void WriteTelemetryTrace(const RealTelemetryCollectorState& state, const char* text) {
     state.trace_.Write(TracePrefix::Telemetry, text);
 }
@@ -46,14 +48,13 @@ CounterArrayTotals ReadCounterArrayTotals(RealTelemetryCollectorState& state, PD
         return totals;
     }
 
-    const std::wstring gpu3dMarker = WideFromUtf8("engtype_3D");
     for (DWORD i = 0; i < itemCount; ++i) {
         const wchar_t* instance = items[i].szName;
         if (items[i].FmtValue.CStatus != ERROR_SUCCESS || !IsFiniteDouble(items[i].FmtValue.doubleValue)) {
             continue;
         }
         totals.total += items[i].FmtValue.doubleValue;
-        if (instance != nullptr && wcsstr(instance, gpu3dMarker.c_str()) != nullptr) {
+        if (instance != nullptr && wcsstr(instance, kGpuEngine3dMarker) != nullptr) {
             totals.total3d += items[i].FmtValue.doubleValue;
         }
     }

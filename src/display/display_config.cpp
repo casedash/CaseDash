@@ -15,10 +15,11 @@
 #include "util/paths.h"
 #include "util/temp_file.h"
 #include "util/trace.h"
-#include "util/utf8.h"
 #include "util/win32_format.h"
 
 namespace {
+
+constexpr wchar_t kWriteBinaryMode[] = L"wb";  // _wfopen_s mode string follows the widened dump path.
 
 std::string ReadBinaryFile(const FilePath& path) {
     return ReadFileBinary(path).value_or(std::string{});
@@ -143,8 +144,7 @@ bool ConfigureDisplay(
     if (prepared) {
         std::FILE* output = nullptr;
         const std::wstring wideTempDumpPath = tempDumpPath.Wide();
-        const std::wstring mode = WideFromUtf8("wb");
-        prepared = _wfopen_s(&output, wideTempDumpPath.c_str(), mode.c_str()) == 0 && output != nullptr;
+        prepared = _wfopen_s(&output, wideTempDumpPath.c_str(), kWriteBinaryMode) == 0 && output != nullptr;
         if (prepared) {
             prepared = WriteTelemetryDump(output, dump);
             fclose(output);

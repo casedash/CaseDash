@@ -14,6 +14,7 @@ struct MonitorIdentity {
 };
 
 constexpr double kMonitorFitEpsilon = 0.0001;
+constexpr wchar_t kShcoreDllName[] = L"Shcore.dll";  // LoadLibraryW requires a fixed UTF-16 DLL name.
 
 }  // namespace
 
@@ -29,8 +30,7 @@ UINT GetMonitorDpi(HMONITOR monitor) {
     }
 
     static GetDpiForMonitorFn getDpiForMonitor = []() -> GetDpiForMonitorFn {
-        const std::wstring shcoreDll = WideFromUtf8("Shcore.dll");
-        HMODULE module = LoadLibraryW(shcoreDll.c_str());
+        HMODULE module = LoadLibraryW(kShcoreDllName);
         if (module == nullptr) {
             return nullptr;
         }

@@ -21,6 +21,8 @@ namespace {
 
 DiagnosticsOptions g_diagnosticsOptions;
 LONG g_handlingCrash = 0;
+constexpr wchar_t kAppendBinaryMode[] = L"ab";  // _wfopen_s mode string follows the widened trace path.
+constexpr wchar_t kWriteBinaryMode[] = L"wb";   // _wfopen_s mode string follows the widened report path.
 
 std::string CrashReportFileName() {
     SYSTEMTIME time{};
@@ -51,8 +53,7 @@ FilePath ResolveCrashOutputBase() {
     FILE* probe = nullptr;
     const FilePath probePath = PathWithSuffix(base, ".tmp");
     const std::wstring wideProbePath = probePath.Wide();
-    const std::wstring mode = WideFromUtf8("wb");
-    if (_wfopen_s(&probe, wideProbePath.c_str(), mode.c_str()) == 0 && probe != nullptr) {
+    if (_wfopen_s(&probe, wideProbePath.c_str(), kWriteBinaryMode) == 0 && probe != nullptr) {
         fclose(probe);
         RemoveFileIfExists(probePath);
         return base;
@@ -162,8 +163,7 @@ void AppendCrashTrace(const FilePath& reportPath, const FilePath& dumpPath, EXCE
         ResolveDiagnosticsOutputPath(GetWorkingDirectory(), g_diagnosticsOptions.tracePath, kDefaultTraceFileName);
     FILE* traceFile = nullptr;
     const std::wstring wideTracePath = tracePath.Wide();
-    const std::wstring mode = WideFromUtf8("ab");
-    if (_wfopen_s(&traceFile, wideTracePath.c_str(), mode.c_str()) != 0 || traceFile == nullptr) {
+    if (_wfopen_s(&traceFile, wideTracePath.c_str(), kAppendBinaryMode) != 0 || traceFile == nullptr) {
         return;
     }
 

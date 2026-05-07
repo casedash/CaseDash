@@ -53,7 +53,7 @@ See also: [docs/build.md](build.md) for setup and commands, [docs/layout.md](lay
 - Keep `VERSION` as the single maintained base product version; generated headers, manifests, and version resources derive their build metadata from it plus Git state.
 - Do not add C++-side synthesized fallback layout, card, widget, font, color, or styling defaults that duplicate the embedded template.
 - Keep runtime text internally as UTF-8 `std::string` and convert to UTF-16 only at Windows API boundaries.
-- Keep source string constants as narrow UTF-8 literals. `lint.cmd` blocks wide literals in maintained source and test files so UTF-16 materialization stays explicit at Win32 or managed interop boundaries.
+- Keep source string constants as narrow UTF-8 literals by default. `lint.cmd` blocks undocumented wide literals in maintained source and test files; only `const` or `constexpr wchar_t` string constants with an end-of-line reason comment are allowed for fixed Win32 or managed interop boundary text.
 - Keep config-file I/O on standard C++ streams and preserve strict UTF-8 handling without ANSI code-page fallback.
 - Keep project filesystem operations on `src/util/file_path.*` helpers instead of `std::filesystem`; paths are stored as UTF-8 and widened only at filesystem API calls. `lint.cmd` enforces this source-policy rule for maintained source and test files.
 - Keep native app and benchmark targets built without native C++ exception handling; the C++/CLI bridge owns the managed exception boundary separately.

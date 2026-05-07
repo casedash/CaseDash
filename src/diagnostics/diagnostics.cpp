@@ -33,6 +33,9 @@
 
 namespace {
 
+constexpr wchar_t kAppendBinaryMode[] = L"ab";  // _wfopen_s mode string follows the widened trace path.
+constexpr wchar_t kWriteBinaryMode[] = L"wb";   // _wfopen_s mode string follows the widened output path.
+
 bool TryParseInteger(std::string_view text, int& parsedValue) {
     while (!text.empty() && std::isspace(static_cast<unsigned char>(text.front())) != 0) {
         text.remove_prefix(1);
@@ -230,11 +233,20 @@ std::optional<double> TryParseScaleValue(const std::string& text) {
         return std::nullopt;
     }
 
-    std::string normalized(text);
-    std::replace(normalized.begin(), normalized.end(), ',', '.');
+    std::string normalized;
+    const char* parseText = text.c_str();
+    if (text.find(',') != std::string::npos) {
+        normalized = text;
+        for (char& ch : normalized) {
+            if (ch == ',') {
+                ch = '.';
+            }
+        }
+        parseText = normalized.c_str();
+    }
     char* end = nullptr;
-    const double value = std::strtod(normalized.c_str(), &end);
-    if (end == normalized.c_str() || end == nullptr || *end != '\0' || !std::isfinite(value) || value <= 0.0) {
+    const double value = std::strtod(parseText, &end);
+    if (end == parseText || end == nullptr || *end != '\0' || !std::isfinite(value) || value <= 0.0) {
         return std::nullopt;
     }
     return value;
@@ -274,8 +286,7 @@ void WriteValidationFailureTrace(
         ResolveDiagnosticsOutputPath(GetWorkingDirectory(), options.tracePath, kDefaultTraceFileName);
     std::FILE* traceFile = nullptr;
     const std::wstring wideTracePath = tracePath.Wide();
-    const std::wstring mode = WideFromUtf8("ab");
-    if (_wfopen_s(&traceFile, wideTracePath.c_str(), mode.c_str()) != 0 || traceFile == nullptr) {
+    if (_wfopen_s(&traceFile, wideTracePath.c_str(), kAppendBinaryMode) != 0 || traceFile == nullptr) {
         return;
     }
 
@@ -528,8 +539,7 @@ bool DiagnosticsSession::Initialize() {
     }
     if (options_.trace) {
         const std::wstring wideTracePath = tracePath_.Wide();
-        const std::wstring mode = WideFromUtf8("ab");
-        if (_wfopen_s(&traceFile_, wideTracePath.c_str(), mode.c_str()) != 0 || traceFile_ == nullptr) {
+        if (_wfopen_s(&traceFile_, wideTracePath.c_str(), kAppendBinaryMode) != 0 || traceFile_ == nullptr) {
             ShowFileOpenError("trace file", tracePath_);
             return false;
         }
@@ -600,8 +610,7 @@ bool DiagnosticsSession::WriteOutputs(const TelemetryDump& dump, const AppConfig
     if (options_.dump) {
         std::FILE* dumpFile = nullptr;
         const std::wstring wideDumpPath = dumpPath_.Wide();
-        const std::wstring mode = WideFromUtf8("wb");
-        if (_wfopen_s(&dumpFile, wideDumpPath.c_str(), mode.c_str()) != 0 || dumpFile == nullptr) {
+        if (_wfopen_s(&dumpFile, wideDumpPath.c_str(), kWriteBinaryMode) != 0 || dumpFile == nullptr) {
             ShowFileOpenError("dump file", dumpPath_);
             return false;
         }

@@ -20,6 +20,8 @@ using NvmlReturn = int;
 constexpr NvmlReturn kNvmlSuccess = 0;
 constexpr unsigned int kNvmlTemperatureGpu = 0;
 constexpr unsigned int kNvmlClockGraphics = 0;
+constexpr wchar_t kNvidiaMlLibraryName[] = L"nvidia-ml.dll";  // LoadLibraryW requires a UTF-16 DLL name.
+constexpr wchar_t kNvmlLibraryName[] = L"nvml.dll";           // LoadLibraryW requires a UTF-16 DLL name.
 
 struct NvmlUtilization {
     unsigned int gpu = 0;
@@ -73,11 +75,9 @@ public:
     }
 
     bool Load(std::string& diagnostics) {
-        const std::wstring nvmlLibrary = WideFromUtf8("nvml.dll");
-        module_ = LoadLibraryW(nvmlLibrary.c_str());
+        module_ = LoadLibraryW(kNvmlLibraryName);
         if (module_ == nullptr) {
-            const std::wstring nvidiaMlLibrary = WideFromUtf8("nvidia-ml.dll");
-            module_ = LoadLibraryW(nvidiaMlLibrary.c_str());
+            module_ = LoadLibraryW(kNvidiaMlLibraryName);
         }
         if (module_ == nullptr) {
             diagnostics = "NVML library not found.";
