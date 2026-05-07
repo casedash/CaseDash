@@ -88,6 +88,7 @@ The dashboard uses only Windows-native telemetry plus supported hardware-provide
 - If a hardware provider is unavailable or unsupported, the dashboard stays running and shows those provider-owned values as unavailable instead of failing the app.
 - Network content shows current upload and download throughput plus a footer line with the selected adapter name and IPv4 address when available.
 - Storage throughput uses system-wide disk I/O counters, while per-drive rows use the currently selected drive set.
+- Throughput graph smoothing keeps only complete adjacent-sample averages, so graph maximum selection uses smoothed values without a raw endpoint and does not depend on retained-history scroll phase.
 - Layout metric references are the only source of truth for which logical board metrics are requested from the board provider.
 - The board mapping section connects those logical names to provider-specific sensor names. Empty CPU and system bindings use first-use auto-detection from the active provider's sensor names; otherwise, bound board metrics resolve when the mapped sensor exists. Supported provider details are defined in [docs/hardware.md](hardware.md).
 
