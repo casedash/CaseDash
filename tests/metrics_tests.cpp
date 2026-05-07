@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <optional>
+#include <vector>
 
 #include "telemetry/metrics.h"
 
@@ -49,6 +50,23 @@ void AddHistorySeries(SystemSnapshot& snapshot, const std::string& metricRef, st
     series.seriesRef = metricRef;
     series.samples.assign(samples.begin(), samples.end());
     snapshot.retainedHistories.push_back(std::move(series));
+}
+
+void AddHistorySeries(SystemSnapshot& snapshot, const std::string& metricRef, const std::vector<double>& samples) {
+    RetainedHistorySeries series;
+    series.seriesRef = metricRef;
+    series.samples = samples;
+    snapshot.retainedHistories.push_back(std::move(series));
+}
+
+std::vector<double> AlternatingThroughputSpikeHistory(size_t sampleCount, bool oldestSampleIsSpike, double spikeMbps) {
+    std::vector<double> samples;
+    samples.reserve(sampleCount);
+    for (size_t i = 0; i < sampleCount; ++i) {
+        const bool spike = (i % 2 == 0) == oldestSampleIsSpike;
+        samples.push_back(spike ? spikeMbps : 0.0);
+    }
+    return samples;
 }
 
 }  // namespace
@@ -311,6 +329,39 @@ TEST(Metrics, ScalesThroughputGraphsFromSmoothedHistoryInsteadOfCurrentSamples) 
 
     EXPECT_DOUBLE_EQ(spikingSource.ResolveThroughput("network.upload").history.back(), 500.0);
     EXPECT_DOUBLE_EQ(spikingSource.ResolveThroughput("network.upload").maxGraph, 500.0);
+}
+
+TEST(Metrics, KeepsSingleThroughputHistorySampleSoGraphsStartImmediately) {
+    const MetricsSectionConfig metrics = BuildMetricsConfig();
+    SystemSnapshot snapshot;
+    AddHistorySeries(snapshot, "network.upload", {20.0});
+    AddHistorySeries(snapshot, "network.download", {0.0});
+
+    MetricSource source(snapshot, metrics);
+    const ThroughputMetric& upload = source.ResolveThroughput("network.upload");
+
+    ASSERT_EQ(upload.history.size(), 1u);
+    EXPECT_DOUBLE_EQ(upload.history.front(), 20.0);
+    EXPECT_DOUBLE_EQ(upload.maxGraph, 20.0);
+}
+
+TEST(Metrics, KeepsThroughputGraphScaleStableAsAlternatingSpikeHistoryScrolls) {
+    const MetricsSectionConfig metrics = BuildMetricsConfig();
+    constexpr double kSpikeMbps = 20.0;
+    constexpr double kSmoothedSpikeMbps = kSpikeMbps / 2.0;
+
+    for (int scrollStep = 0; scrollStep < 4; ++scrollStep) {
+        SystemSnapshot snapshot;
+        AddHistorySeries(
+            snapshot, "network.upload", AlternatingThroughputSpikeHistory(60, scrollStep % 2 == 1, kSpikeMbps));
+        AddHistorySeries(snapshot, "network.download", std::vector<double>(60, 0.0));
+
+        MetricSource source(snapshot, metrics);
+        const ThroughputMetric& upload = source.ResolveThroughput("network.upload");
+
+        EXPECT_DOUBLE_EQ(upload.history.front(), kSmoothedSpikeMbps) << "scroll step " << scrollStep;
+        EXPECT_DOUBLE_EQ(upload.maxGraph, kSmoothedSpikeMbps) << "scroll step " << scrollStep;
+    }
 }
 
 TEST(Metrics, UsesCoarseThroughputGuideStepsForLargeNetworkAndStorageGraphs) {

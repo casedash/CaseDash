@@ -194,7 +194,12 @@ std::vector<double> SmoothThroughputHistory(const std::vector<double>& history) 
 
     std::vector<double> smoothed;
     smoothed.reserve(history.size());
-    smoothed.push_back(FiniteNonNegativeOr(history.front()));
+    if (history.size() == 1) {
+        smoothed.push_back(FiniteNonNegativeOr(history.front()));
+        return smoothed;
+    }
+
+    // Keep only complete adjacent-pair averages so no raw endpoint can drive graph scaling.
     for (size_t i = 1; i < history.size(); ++i) {
         smoothed.push_back((FiniteNonNegativeOr(history[i - 1]) + FiniteNonNegativeOr(history[i])) / 2.0);
     }
