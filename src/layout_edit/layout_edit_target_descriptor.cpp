@@ -1,6 +1,5 @@
 #include "layout_edit/layout_edit_target_descriptor.h"
 
-#include <algorithm>
 #include <array>
 #include <utility>
 
@@ -39,12 +38,12 @@ constexpr std::array<LayoutNodeFieldEditDescriptor, 3> kNodeFieldDescriptors{{
 }  // namespace
 
 const LayoutNodeFieldEditDescriptor* FindLayoutNodeFieldEditDescriptor(const LayoutNodeFieldEditKey& key) {
-    const auto it = std::find_if(kNodeFieldDescriptors.begin(),
-        kNodeFieldDescriptors.end(),
-        [&](const LayoutNodeFieldEditDescriptor& descriptor) {
-            return descriptor.widgetClass == key.widgetClass && descriptor.field == key.field;
-        });
-    return it != kNodeFieldDescriptors.end() ? &(*it) : nullptr;
+    for (const LayoutNodeFieldEditDescriptor& descriptor : kNodeFieldDescriptors) {
+        if (descriptor.widgetClass == key.widgetClass && descriptor.field == key.field) {
+            return &descriptor;
+        }
+    }
+    return nullptr;
 }
 
 std::optional<LayoutNodeFieldEditKey> LayoutNodeFieldEditKeyForWidgetParameter(

@@ -5,16 +5,21 @@
 namespace {
 
 LayoutCardConfig* FindCardLayoutById(LayoutConfig& layout, const std::string& cardId) {
-    const auto it = std::find_if(
-        layout.cards.begin(), layout.cards.end(), [&](LayoutCardConfig& card) { return card.id == cardId; });
-    return it != layout.cards.end() ? &(*it) : nullptr;
+    for (LayoutCardConfig& card : layout.cards) {
+        if (card.id == cardId) {
+            return &card;
+        }
+    }
+    return nullptr;
 }
 
 LayoutSectionConfig* FindNamedLayoutByName(AppConfig& config, const std::string& name) {
-    const auto it = std::find_if(config.layout.layouts.begin(),
-        config.layout.layouts.end(),
-        [&](LayoutSectionConfig& layout) { return layout.name == name; });
-    return it != config.layout.layouts.end() ? &(*it) : nullptr;
+    for (LayoutSectionConfig& layout : config.layout.layouts) {
+        if (layout.name == name) {
+            return &layout;
+        }
+    }
+    return nullptr;
 }
 
 LayoutNodeConfig* FindLayoutNodeByPath(LayoutNodeConfig& root, const std::vector<size_t>& path) {

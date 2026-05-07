@@ -72,9 +72,12 @@ const LayoutNodeConfig* FindWeightEditNode(const AppConfig& config, const Layout
 }
 
 const LayoutCardConfig* FindCardById(const AppConfig& config, std::string_view cardId) {
-    const auto it = std::find_if(
-        config.layout.cards.begin(), config.layout.cards.end(), [&](const auto& card) { return card.id == cardId; });
-    return it != config.layout.cards.end() ? &(*it) : nullptr;
+    for (const LayoutCardConfig& card : config.layout.cards) {
+        if (card.id == cardId) {
+            return &card;
+        }
+    }
+    return nullptr;
 }
 
 double RoundToStep(double value, double step) {

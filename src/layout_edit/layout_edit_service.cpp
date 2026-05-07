@@ -11,16 +11,21 @@ namespace {
 constexpr std::string_view kMetricListPlaceholderId = "nothing";
 
 LayoutCardConfig* FindCardLayoutById(LayoutConfig& layout, const std::string& cardId) {
-    const auto it = std::find_if(
-        layout.cards.begin(), layout.cards.end(), [&](LayoutCardConfig& card) { return card.id == cardId; });
-    return it != layout.cards.end() ? &(*it) : nullptr;
+    for (LayoutCardConfig& card : layout.cards) {
+        if (card.id == cardId) {
+            return &card;
+        }
+    }
+    return nullptr;
 }
 
 LayoutSectionConfig* FindNamedLayoutByName(AppConfig& config, const std::string& name) {
-    const auto it = std::find_if(config.layout.layouts.begin(),
-        config.layout.layouts.end(),
-        [&](LayoutSectionConfig& layout) { return layout.name == name; });
-    return it != config.layout.layouts.end() ? &(*it) : nullptr;
+    for (LayoutSectionConfig& layout : config.layout.layouts) {
+        if (layout.name == name) {
+            return &layout;
+        }
+    }
+    return nullptr;
 }
 
 LayoutNodeConfig* FindLayoutNodeByPath(LayoutNodeConfig& root, const std::vector<size_t>& path) {
@@ -81,13 +86,12 @@ const LayoutNodeConfig* FindGuideNode(const AppConfig& config, const LayoutEditL
     if (target.editCardId.empty()) {
         return FindLayoutNodeByPath(config.layout.structure.cardsLayout, target.nodePath);
     }
-    const auto cardIt = std::find_if(config.layout.cards.begin(), config.layout.cards.end(), [&](const auto& card) {
-        return card.id == target.editCardId;
-    });
-    if (cardIt == config.layout.cards.end()) {
-        return nullptr;
+    for (const LayoutCardConfig& card : config.layout.cards) {
+        if (card.id == target.editCardId) {
+            return FindLayoutNodeByPath(card.layout, target.nodePath);
+        }
     }
-    return FindLayoutNodeByPath(cardIt->layout, target.nodePath);
+    return nullptr;
 }
 
 const LayoutNodeConfig* FindEditableWidgetNode(const AppConfig& config, const LayoutEditWidgetIdentity& widget) {

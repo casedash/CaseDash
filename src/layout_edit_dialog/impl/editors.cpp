@@ -107,20 +107,24 @@ bool IsLayoutSectionNode(const LayoutEditDialogState* state) {
 }
 
 const ColorConfig* FindThemeColorValue(const AppConfig& config, const ThemeColorEditKey& key) {
-    const auto it = std::find_if(config.layout.themes.begin(),
-        config.layout.themes.end(),
-        [&](const ThemeConfig& theme) { return theme.name == key.themeName; });
-    if (it == config.layout.themes.end()) {
+    const ThemeConfig* selectedTheme = nullptr;
+    for (const ThemeConfig& theme : config.layout.themes) {
+        if (theme.name == key.themeName) {
+            selectedTheme = &theme;
+            break;
+        }
+    }
+    if (selectedTheme == nullptr) {
         return nullptr;
     }
     if (key.tokenName == "background")
-        return &it->background;
+        return &selectedTheme->background;
     if (key.tokenName == "foreground")
-        return &it->foreground;
+        return &selectedTheme->foreground;
     if (key.tokenName == "accent")
-        return &it->accent;
+        return &selectedTheme->accent;
     if (key.tokenName == "guide")
-        return &it->guide;
+        return &selectedTheme->guide;
     return nullptr;
 }
 
@@ -459,6 +463,15 @@ bool ApplyMetricListOrderRows(LayoutEditDialogState* state, const std::vector<st
            state->dialog->Host().ApplyLayoutEditPreview(LayoutEditFocusKey{*key}, LayoutEditValue{metricRefs});
 }
 
+bool ContainsString(const std::vector<std::string>& values, const std::string& text) {
+    for (const std::string& value : values) {
+        if (value == text) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void PopulateMetricListRowCombo(HWND,
     const LayoutEditMetricListRowControls& row,
     const std::vector<std::string>& options,
@@ -512,17 +525,16 @@ bool PopulateMetricListOrderSelection(LayoutEditDialogState* state, HWND hwnd) {
         return false;
     }
 
+    const AppConfig& config = state->dialog->Host().CurrentConfig();
     std::vector<std::string> metricRefs;
-    if (const LayoutNodeConfig* node = FindLayoutNodeFieldNode(state->dialog->Host().CurrentConfig(), *key);
-        node != nullptr) {
+    if (const LayoutNodeConfig* node = FindLayoutNodeFieldNode(config, *key); node != nullptr) {
         metricRefs = ParseMetricListMetricRefs(node->parameter);
     }
-    std::vector<std::string> options = AvailableMetricDefinitionIds(state->dialog->Host().CurrentConfig());
+    std::vector<std::string> options = AvailableMetricDefinitionIds(config);
     for (const auto& metricRef : metricRefs) {
-        const MetricDefinitionConfig* definition =
-            FindMetricDefinition(state->dialog->Host().CurrentConfig().layout.metrics, metricRef);
+        const MetricDefinitionConfig* definition = FindMetricDefinition(config.layout.metrics, metricRef);
         if (definition != nullptr && IsMetricListSupportedDisplayStyle(definition->style) &&
-            std::find(options.begin(), options.end(), metricRef) == options.end()) {
+            !ContainsString(options, metricRef)) {
             options.push_back(metricRef);
         }
     }
@@ -551,8 +563,8 @@ bool PopulateDateTimeFormatSelection(LayoutEditDialogState* state, HWND hwnd) {
     }
 
     std::string format;
-    if (const LayoutNodeConfig* node = FindLayoutNodeFieldNode(state->dialog->Host().CurrentConfig(), *key);
-        node != nullptr) {
+    const AppConfig& config = state->dialog->Host().CurrentConfig();
+    if (const LayoutNodeConfig* node = FindLayoutNodeFieldNode(config, *key); node != nullptr) {
         format = ReadLayoutNodeFieldValue(*node, key->field);
     }
     PopulateDateTimeFormatCombo(hwnd, *key, format);
@@ -646,10 +658,12 @@ constexpr std::array<DescriptorLayoutEditEditorHandler, 2> kDescriptorEditorHand
 }};
 
 const DescriptorLayoutEditEditorHandler* FindDescriptorLayoutEditEditorHandler(LayoutEditEditorKind kind) {
-    const auto it = std::find_if(kDescriptorEditorHandlers.begin(),
-        kDescriptorEditorHandlers.end(),
-        [&](const DescriptorLayoutEditEditorHandler& handler) { return handler.kind == kind; });
-    return it != kDescriptorEditorHandlers.end() ? &(*it) : nullptr;
+    for (const DescriptorLayoutEditEditorHandler& handler : kDescriptorEditorHandlers) {
+        if (handler.kind == kind) {
+            return &handler;
+        }
+    }
+    return nullptr;
 }
 
 const DescriptorLayoutEditEditorHandler* SelectedDescriptorLayoutEditEditorHandler(const LayoutEditDialogState* state) {
@@ -720,16 +734,16 @@ void PopulateLayoutEditSelection(LayoutEditDialogState* state, HWND hwnd) {
 
     state->updatingControls = true;
     SetLayoutEditDescription(state, hwnd, state->selectedNode);
+    const AppConfig& config = state->dialog->Host().CurrentConfig();
     if (IsFontsSectionNode(state)) {
         SetDialogControlTextUtf8(hwnd, IDC_LAYOUT_EDIT_FONT_FACE_LABEL, "Family:");
-        PopulateFontFaceComboBox(hwnd, CommonFontFamilyText(state->dialog->Host().CurrentConfig().layout.fonts));
+        PopulateFontFaceComboBox(hwnd, CommonFontFamilyText(config.layout.fonts));
         ShowLayoutEditSelectionEditor(state, hwnd, LayoutEditEditorKind::GlobalFontFamily);
         FinishPopulateLayoutEditSelectionUi(state, hwnd, "Previewing changes in the dashboard.");
         TracePopulateLayoutEditSelection(state, " editor=\"font_family\"");
         return;
     }
     if (IsThemeSectionNode(state)) {
-        const AppConfig& config = state->dialog->Host().CurrentConfig();
         SetDialogControlTextUtf8(hwnd, IDC_LAYOUT_EDIT_THEME_LABEL, "Theme:");
         PopulateThemeNameCombo(hwnd, config);
         ShowLayoutEditSelectionEditor(state, hwnd, LayoutEditEditorKind::ThemeSelector);
@@ -740,7 +754,6 @@ void PopulateLayoutEditSelection(LayoutEditDialogState* state, HWND hwnd) {
         return;
     }
     if (IsLayoutSectionNode(state)) {
-        const AppConfig& config = state->dialog->Host().CurrentConfig();
         SetDialogControlTextUtf8(hwnd, IDC_LAYOUT_EDIT_THEME_LABEL, "Layout:");
         PopulateLayoutNameCombo(hwnd, config);
         ShowLayoutEditSelectionEditor(state, hwnd, LayoutEditEditorKind::LayoutSelector);
@@ -760,7 +773,7 @@ void PopulateLayoutEditSelection(LayoutEditDialogState* state, HWND hwnd) {
     if (const auto* parameter = std::get_if<LayoutEditParameter>(&state->selectedLeaf->focusKey)) {
         if (state->selectedLeaf->valueFormat == configschema::ValueFormat::FontSpec) {
             SetDialogControlTextUtf8(hwnd, IDC_LAYOUT_EDIT_FONT_FACE_LABEL, "Font name:");
-            const auto font = FindLayoutEditTooltipFontValue(state->dialog->Host().CurrentConfig(), *parameter);
+            const auto font = FindLayoutEditTooltipFontValue(config, *parameter);
             PopulateFontFaceComboBox(
                 hwnd, font.has_value() && *font != nullptr ? std::string_view((**font).face) : std::string_view());
             const bool hasFont = font.has_value() && *font != nullptr;
@@ -778,7 +791,7 @@ void PopulateLayoutEditSelection(LayoutEditDialogState* state, HWND hwnd) {
                 " size=" + QuoteTraceText(ReadDialogControlTextUtf8(hwnd, IDC_LAYOUT_EDIT_FONT_SIZE_EDIT)) +
                 " weight=" + QuoteTraceText(ReadDialogControlTextUtf8(hwnd, IDC_LAYOUT_EDIT_FONT_WEIGHT_EDIT));
         } else if (state->selectedLeaf->valueFormat == configschema::ValueFormat::ColorHex) {
-            const ColorConfig* value = FindColorRoleValue(state->dialog->Host().CurrentConfig(), *parameter);
+            const ColorConfig* value = FindColorRoleValue(config, *parameter);
             const unsigned int color = value != nullptr ? value->ToRgba() : 0x000000FFu;
             PopulateColorExpressionControls(hwnd, *parameter, value != nullptr ? *value : ColorConfig::FromRgba(color));
             PopulateColorEditorControls(state, hwnd, color);
@@ -787,7 +800,7 @@ void PopulateLayoutEditSelection(LayoutEditDialogState* state, HWND hwnd) {
                           " mode=" + QuoteTraceText(IsDerivedColorMode(hwnd) ? "derived" : "literal") + " expression=" +
                           QuoteTraceText(value != nullptr && !value->expression.empty() ? value->expression : "");
         } else {
-            const auto value = FindLayoutEditParameterNumericValue(state->dialog->Host().CurrentConfig(), *parameter);
+            const auto value = FindLayoutEditParameterNumericValue(config, *parameter);
             if (value.has_value()) {
                 SetDialogControlTextUtf8(hwnd,
                     IDC_LAYOUT_EDIT_VALUE_EDIT,
@@ -800,13 +813,13 @@ void PopulateLayoutEditSelection(LayoutEditDialogState* state, HWND hwnd) {
                           " text=" + QuoteTraceText(ReadDialogControlTextUtf8(hwnd, IDC_LAYOUT_EDIT_VALUE_EDIT));
         }
     } else if (const auto* themeColorKey = std::get_if<ThemeColorEditKey>(&state->selectedLeaf->focusKey)) {
-        const ColorConfig* value = FindThemeColorValue(state->dialog->Host().CurrentConfig(), *themeColorKey);
+        const ColorConfig* value = FindThemeColorValue(config, *themeColorKey);
         const unsigned int color = value != nullptr ? value->ToRgba() : 0x000000FFu;
         PopulateColorEditorControls(state, hwnd, color);
         traceDetail = " editor=\"theme_color\"" + BuildColorDialogTraceValues(hwnd) + " config_value=" +
                       QuoteTraceText(value != nullptr ? FormatTraceColorHex(value->ToRgba()) : "none");
     } else if (const auto* weightKey = std::get_if<LayoutWeightEditKey>(&state->selectedLeaf->focusKey)) {
-        const auto values = FindWeightEditValues(state->dialog->Host().CurrentConfig(), *weightKey);
+        const auto values = FindWeightEditValues(config, *weightKey);
         SetDialogControlTextUtf8(
             hwnd, IDC_LAYOUT_EDIT_WEIGHT_FIRST_LABEL, BuildWeightEditorLabel(*state->selectedLeaf, true));
         SetDialogControlTextUtf8(
@@ -820,16 +833,14 @@ void PopulateLayoutEditSelection(LayoutEditDialogState* state, HWND hwnd) {
                       " first=" + QuoteTraceText(ReadDialogControlTextUtf8(hwnd, IDC_LAYOUT_EDIT_WEIGHT_FIRST_EDIT)) +
                       " second=" + QuoteTraceText(ReadDialogControlTextUtf8(hwnd, IDC_LAYOUT_EDIT_WEIGHT_SECOND_EDIT));
     } else if (const auto* cardTitleKey = std::get_if<LayoutCardTitleEditKey>(&state->selectedLeaf->focusKey)) {
-        SetDialogControlTextUtf8(hwnd,
-            IDC_LAYOUT_EDIT_VALUE_EDIT,
-            FindCardTitleValue(state->dialog->Host().CurrentConfig(), *cardTitleKey).value_or(""));
+        SetDialogControlTextUtf8(
+            hwnd, IDC_LAYOUT_EDIT_VALUE_EDIT, FindCardTitleValue(config, *cardTitleKey).value_or(""));
         ShowLayoutEditSelectionEditor(state, hwnd, LayoutEditEditorKind::Numeric);
         traceDetail = std::string(" editor=\"text\"") +
                       " text=" + QuoteTraceText(ReadDialogControlTextUtf8(hwnd, IDC_LAYOUT_EDIT_VALUE_EDIT));
     } else if (PopulateDescriptorLayoutEditSelection(state, hwnd)) {
     } else if (const auto* metricKey = std::get_if<LayoutMetricEditKey>(&state->selectedLeaf->focusKey)) {
-        const MetricDefinitionConfig* definition =
-            FindMetricDefinition(state->dialog->Host().CurrentConfig().layout.metrics, metricKey->metricId);
+        const MetricDefinitionConfig* definition = FindMetricDefinition(config.layout.metrics, metricKey->metricId);
         SetDialogControlTextUtf8(
             hwnd, IDC_LAYOUT_EDIT_METRIC_STYLE_VALUE, definition != nullptr ? EnumToString(definition->style) : "");
         const bool scaleEditable =
@@ -852,13 +863,11 @@ void PopulateLayoutEditSelection(LayoutEditDialogState* state, HWND hwnd) {
         const auto bindingTarget = ParseBoardMetricBindingTarget(metricKey->metricId);
         const bool showBinding = bindingTarget.has_value();
         const std::string selectedBinding =
-            showBinding ? FindConfiguredBoardMetricBinding(state->dialog->Host().CurrentConfig(), *metricKey)
-                        : std::string();
+            showBinding ? FindConfiguredBoardMetricBinding(config, *metricKey) : std::string();
         std::vector<std::string> bindingOptions =
             showBinding ? state->dialog->Host().AvailableBoardMetricSensorBindings(*metricKey)
                         : std::vector<std::string>{};
-        if (!selectedBinding.empty() &&
-            std::find(bindingOptions.begin(), bindingOptions.end(), selectedBinding) == bindingOptions.end()) {
+        if (!selectedBinding.empty() && !ContainsString(bindingOptions, selectedBinding)) {
             bindingOptions.push_back(selectedBinding);
         }
         SortUniqueStrings(bindingOptions);
@@ -968,8 +977,8 @@ LayoutEditValidationResult ValidateCurrentSelectionInput(LayoutEditDialogState* 
 
     if (const auto* metricKey = std::get_if<LayoutMetricEditKey>(&state->selectedLeaf->focusKey);
         metricKey != nullptr) {
-        const MetricDefinitionConfig* definition =
-            FindMetricDefinition(state->dialog->Host().CurrentConfig().layout.metrics, metricKey->metricId);
+        const AppConfig& config = state->dialog->Host().CurrentConfig();
+        const MetricDefinitionConfig* definition = FindMetricDefinition(config.layout.metrics, metricKey->metricId);
         if (definition == nullptr) {
             return {false, "Unable to find the current metric definition."};
         }
@@ -1169,11 +1178,11 @@ bool PreviewSelectedColor(LayoutEditDialogState* state, HWND hwnd) {
                   (parameter != nullptr ? state->dialog->Host().ApplyColorPreview(*parameter, *color)
                                         : state->dialog->Host().ApplyThemeColorPreview(*themeColorKey, *color));
     }
+    const AppConfig& config = state->dialog->Host().CurrentConfig();
     std::optional<unsigned int> resolvedColor;
     if (parameter != nullptr) {
-        resolvedColor = FindLayoutEditParameterColorValue(state->dialog->Host().CurrentConfig(), *parameter);
-    } else if (const ColorConfig* themeColor =
-                   FindThemeColorValue(state->dialog->Host().CurrentConfig(), *themeColorKey)) {
+        resolvedColor = FindLayoutEditParameterColorValue(config, *parameter);
+    } else if (const ColorConfig* themeColor = FindThemeColorValue(config, *themeColorKey)) {
         resolvedColor = themeColor->ToRgba();
     } else {
         resolvedColor = color.value_or(0x000000FFu);
@@ -1289,15 +1298,15 @@ bool SetSelectedDialogColor(LayoutEditDialogState* state, HWND hwnd, unsigned in
     PopulateLayoutEditSelection(state, hwnd);
     SetFocus(GetDlgItem(hwnd, IDC_LAYOUT_EDIT_COLOR_HEX_EDIT));
     SendDlgItemMessageW(hwnd, IDC_LAYOUT_EDIT_COLOR_HEX_EDIT, EM_SETSEL, 0, -1);
+    const AppConfig& config = state->dialog->Host().CurrentConfig();
     const ColorConfig* resolvedThemeColor =
-        parameter == nullptr ? FindThemeColorValue(state->dialog->Host().CurrentConfig(), *themeColorKey) : nullptr;
+        parameter == nullptr ? FindThemeColorValue(config, *themeColorKey) : nullptr;
     state->dialog->Host().TraceLayoutEditDialogEvent("picker_apply_end",
         BuildTraceNodeText(state->selectedNode) + " applied=\"true\"" + BuildColorDialogTraceValues(hwnd) +
             " config_value=" +
             QuoteTraceText(FormatTraceColorHex(
-                parameter != nullptr
-                    ? FindLayoutEditParameterColorValue(state->dialog->Host().CurrentConfig(), *parameter).value_or(0)
-                    : (resolvedThemeColor != nullptr ? resolvedThemeColor->ToRgba() : 0))));
+                parameter != nullptr ? FindLayoutEditParameterColorValue(config, *parameter).value_or(0)
+                                     : (resolvedThemeColor != nullptr ? resolvedThemeColor->ToRgba() : 0))));
     return true;
 }
 
@@ -1336,8 +1345,8 @@ bool PreviewSelectedMetric(LayoutEditDialogState* state, HWND hwnd) {
         return false;
     }
 
-    const MetricDefinitionConfig* definition =
-        FindMetricDefinition(state->dialog->Host().CurrentConfig().layout.metrics, key->metricId);
+    const AppConfig& config = state->dialog->Host().CurrentConfig();
+    const MetricDefinitionConfig* definition = FindMetricDefinition(config.layout.metrics, key->metricId);
     if (definition == nullptr) {
         return false;
     }
@@ -1393,8 +1402,9 @@ bool HandleMetricListOrderEditorCommand(LayoutEditDialogState* state, HWND hwnd,
     }
 
     if (controlId == IDC_LAYOUT_EDIT_METRIC_LIST_ADD_ROW && notificationCode == BN_CLICKED) {
+        const AppConfig& config = state->dialog->Host().CurrentConfig();
         return MutateMetricListOrderRows(state, hwnd, [&](std::vector<std::string>& metricRefs) {
-            const auto options = AvailableMetricDefinitionIds(state->dialog->Host().CurrentConfig());
+            const auto options = AvailableMetricDefinitionIds(config);
             if (!options.empty()) {
                 metricRefs.push_back(options.front());
             }

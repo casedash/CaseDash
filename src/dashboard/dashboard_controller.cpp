@@ -33,6 +33,24 @@ template <size_t Size> constexpr std::string_view StringViewWithTerminator(const
     return std::string_view(text, Size);
 }
 
+ThemeConfig* FindThemeConfig(LayoutConfig& layout, const std::string& name) {
+    for (ThemeConfig& theme : layout.themes) {
+        if (theme.name == name) {
+            return &theme;
+        }
+    }
+    return nullptr;
+}
+
+LayoutCardConfig* FindCardConfig(LayoutConfig& layout, const std::string& id) {
+    for (LayoutCardConfig& card : layout.cards) {
+        if (card.id == id) {
+            return &card;
+        }
+    }
+    return nullptr;
+}
+
 std::unique_ptr<DiagnosticsSession> CreateDiagnosticsSession(const DiagnosticsOptions& options, Trace& trace) {
     auto session = std::make_unique<DiagnosticsSession>(options, trace);
     if (!session->Initialize()) {
@@ -506,10 +524,7 @@ bool DashboardController::SwitchLayout(
 
 bool DashboardController::SwitchTheme(
     DashboardShellHost& shell, const std::string& themeName, bool diagnosticsEditLayout) {
-    const auto it = std::find_if(state_.config.layout.themes.begin(),
-        state_.config.layout.themes.end(),
-        [&](const ThemeConfig& theme) { return theme.name == themeName; });
-    if (it == state_.config.layout.themes.end()) {
+    if (FindThemeConfig(state_.config.layout, themeName) == nullptr) {
         return false;
     }
 
@@ -722,10 +737,7 @@ bool DashboardController::ApplyLayoutEditColorExpression(
 }
 
 bool DashboardController::ApplyLayoutEditTheme(DashboardShellHost& shell, const std::string& themeName) {
-    const auto themeIt = std::find_if(state_.config.layout.themes.begin(),
-        state_.config.layout.themes.end(),
-        [&](const ThemeConfig& theme) { return theme.name == themeName; });
-    if (themeIt == state_.config.layout.themes.end()) {
+    if (FindThemeConfig(state_.config.layout, themeName) == nullptr) {
         return false;
     }
     state_.config.display.theme = themeName;
@@ -735,13 +747,11 @@ bool DashboardController::ApplyLayoutEditTheme(DashboardShellHost& shell, const 
 
 bool DashboardController::ApplyLayoutEditThemeColor(
     DashboardShellHost& shell, const ThemeColorEditKey& key, unsigned int value) {
-    auto themeIt = std::find_if(state_.config.layout.themes.begin(),
-        state_.config.layout.themes.end(),
-        [&](const ThemeConfig& theme) { return theme.name == key.themeName; });
-    if (themeIt == state_.config.layout.themes.end()) {
+    ThemeConfig* theme = FindThemeConfig(state_.config.layout, key.themeName);
+    if (theme == nullptr) {
         return false;
     }
-    ColorConfig* target = FindThemeColorConfig(*themeIt, key.tokenName);
+    ColorConfig* target = FindThemeColorConfig(*theme, key.tokenName);
     if (target == nullptr) {
         return false;
     }
@@ -752,13 +762,11 @@ bool DashboardController::ApplyLayoutEditThemeColor(
 
 bool DashboardController::ApplyLayoutEditCardTitle(
     DashboardShellHost& shell, const LayoutCardTitleEditKey& key, const std::string& title) {
-    const auto it = std::find_if(state_.config.layout.cards.begin(),
-        state_.config.layout.cards.end(),
-        [&](const LayoutCardConfig& card) { return card.id == key.cardId; });
-    if (it == state_.config.layout.cards.end()) {
+    LayoutCardConfig* card = FindCardConfig(state_.config.layout, key.cardId);
+    if (card == nullptr) {
         return false;
     }
-    it->title = title;
+    card->title = title;
     return FinishConfigMutation(shell);
 }
 

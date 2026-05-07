@@ -1,6 +1,5 @@
 #include "diagnostics/diagnostics.h"
 
-#include <algorithm>
 #include <cctype>
 #include <chrono>
 #include <cmath>
@@ -453,17 +452,16 @@ bool ApplyDiagnosticsThemeOverride(
     if (options.themeName.empty()) {
         return true;
     }
-    const auto themeIt = std::find_if(config.layout.themes.begin(),
-        config.layout.themes.end(),
-        [&](const ThemeConfig& theme) { return theme.name == options.themeName; });
-    if (themeIt != config.layout.themes.end()) {
-        config.display.theme = options.themeName;
-        ResolveConfiguredColors(config);
-        if (diagnostics != nullptr) {
-            diagnostics->WriteTraceMarker(
-                TracePrefix::Diagnostics, "theme_override name=\"" + options.themeName + "\"");
+    for (const ThemeConfig& theme : config.layout.themes) {
+        if (theme.name == options.themeName) {
+            config.display.theme = options.themeName;
+            ResolveConfiguredColors(config);
+            if (diagnostics != nullptr) {
+                diagnostics->WriteTraceMarker(
+                    TracePrefix::Diagnostics, "theme_override name=\"" + options.themeName + "\"");
+            }
+            return true;
         }
-        return true;
     }
 
     if (diagnostics != nullptr) {
@@ -621,42 +619,46 @@ bool DiagnosticsSession::WriteOutputs(const TelemetryDump& dump, const AppConfig
         }
     }
 
-    std::string screenshotError;
-    if (options_.screenshot &&
-        !SaveDumpScreenshot(screenshotPath_,
-            dump.snapshot,
-            config,
-            ResolveSavedScreenshotScale(config),
-            GetDiagnosticsRenderMode(options_),
-            options_.editLayout,
-            GetSimilarityIndicatorMode(options_),
-            options_.editLayoutWidgetName,
-            trace_,
-            options_.hoverPoint.has_value(),
-            options_.hoverPoint.has_value() ? RenderPoint{options_.hoverPoint->x, options_.hoverPoint->y}
-                                            : RenderPoint{},
-            &screenshotError)) {
-        return ReportSaveError("screenshot_save_failed", "save screenshot", screenshotPath_, screenshotError);
+    const double savedScreenshotScale = ResolveSavedScreenshotScale(config);
+    if (options_.screenshot) {
+        std::string screenshotError;
+        if (!SaveDumpScreenshot(screenshotPath_,
+                dump.snapshot,
+                config,
+                savedScreenshotScale,
+                GetDiagnosticsRenderMode(options_),
+                options_.editLayout,
+                GetSimilarityIndicatorMode(options_),
+                options_.editLayoutWidgetName,
+                trace_,
+                options_.hoverPoint.has_value(),
+                options_.hoverPoint.has_value() ? RenderPoint{options_.hoverPoint->x, options_.hoverPoint->y}
+                                                : RenderPoint{},
+                &screenshotError)) {
+            return ReportSaveError("screenshot_save_failed", "save screenshot", screenshotPath_, screenshotError);
+        }
     }
 
-    std::string layoutGuideSheetError;
-    if (options_.layoutGuideSheet && !SaveLayoutGuideSheet(layoutGuideSheetPath_,
-                                         dump.snapshot,
-                                         config,
-                                         ResolveSavedScreenshotScale(config),
-                                         trace_,
-                                         &layoutGuideSheetError)) {
-        return ReportSaveError(
-            "layout_guide_sheet_save_failed", "save layout guide sheet", layoutGuideSheetPath_, layoutGuideSheetError);
+    if (options_.layoutGuideSheet) {
+        std::string layoutGuideSheetError;
+        if (!SaveLayoutGuideSheet(
+                layoutGuideSheetPath_, dump.snapshot, config, savedScreenshotScale, trace_, &layoutGuideSheetError)) {
+            return ReportSaveError("layout_guide_sheet_save_failed",
+                "save layout guide sheet",
+                layoutGuideSheetPath_,
+                layoutGuideSheetError);
+        }
     }
 
-    std::string appIconError;
-    if (options_.appIcon && !SaveRenderedAppIcon(appIconPath_, config, options_.appIconSize, &appIconError)) {
-        return ReportSaveError("app_icon_save_failed",
-            "save app icon",
-            appIconPath_,
-            appIconError,
-            "size=" + std::to_string(options_.appIconSize));
+    if (options_.appIcon) {
+        std::string appIconError;
+        if (!SaveRenderedAppIcon(appIconPath_, config, options_.appIconSize, &appIconError)) {
+            return ReportSaveError("app_icon_save_failed",
+                "save app icon",
+                appIconPath_,
+                appIconError,
+                "size=" + std::to_string(options_.appIconSize));
+        }
     }
     if (options_.appIcon) {
         const std::string pathText = appIconPath_.string();

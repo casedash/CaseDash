@@ -115,10 +115,12 @@ void FillThemePreviewPixels(std::vector<uint32_t>& pixels, int width, int height
 }  // namespace
 
 const ThemeConfig* FindActiveThemeConfig(const AppConfig& config) {
-    const auto it = std::find_if(config.layout.themes.begin(),
-        config.layout.themes.end(),
-        [&](const ThemeConfig& theme) { return theme.name == config.display.theme; });
-    return it != config.layout.themes.end() ? &(*it) : nullptr;
+    for (const ThemeConfig& theme : config.layout.themes) {
+        if (theme.name == config.display.theme) {
+            return &theme;
+        }
+    }
+    return nullptr;
 }
 
 void DrawThemePreviewTriangle(HDC dc, const RECT& rect, const ThemeConfig& theme) {

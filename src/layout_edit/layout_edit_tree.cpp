@@ -1,7 +1,5 @@
 #include "layout_edit/layout_edit_tree.h"
 
-#include <algorithm>
-
 #include "config/config_parser.h"
 #include "layout_edit/layout_edit_target_descriptor.h"
 #include "layout_model/layout_edit_helpers.h"
@@ -26,6 +24,7 @@ struct TemplateSectionSlot {
 std::vector<TemplateSectionSlot> ParseTemplateSections(std::string_view text) {
     std::vector<TemplateSectionSlot> sections;
     TemplateSectionSlot* currentStaticSection = nullptr;
+    bool themeSlotAdded = false;
     bool layoutSlotAdded = false;
     bool cardSlotAdded = false;
 
@@ -42,10 +41,9 @@ std::vector<TemplateSectionSlot> ParseTemplateSections(std::string_view text) {
                 const std::string sectionName = Trim(std::string_view(line).substr(1, line.size() - 2));
                 currentStaticSection = nullptr;
                 if (sectionName.rfind("theme.", 0) == 0) {
-                    if (std::none_of(sections.begin(), sections.end(), [](const TemplateSectionSlot& slot) {
-                            return slot.kind == TemplateSectionKind::ThemeSectionSlot;
-                        })) {
+                    if (!themeSlotAdded) {
                         sections.push_back({TemplateSectionKind::ThemeSectionSlot, "theme"});
+                        themeSlotAdded = true;
                     }
                 } else if (sectionName.rfind("layout.", 0) == 0) {
                     if (!layoutSlotAdded) {
@@ -160,9 +158,21 @@ bool SeparatorIsEditable(const LayoutNodeConfig& node, size_t separatorIndex) {
 }
 
 const LayoutCardConfig* FindCardConfig(const LayoutConfig& layout, std::string_view cardId) {
-    const auto it = std::find_if(
-        layout.cards.begin(), layout.cards.end(), [&](const LayoutCardConfig& card) { return card.id == cardId; });
-    return it != layout.cards.end() ? &(*it) : nullptr;
+    for (const LayoutCardConfig& card : layout.cards) {
+        if (card.id == cardId) {
+            return &card;
+        }
+    }
+    return nullptr;
+}
+
+bool ContainsString(const std::vector<std::string>& values, const std::string& value) {
+    for (const std::string& existing : values) {
+        if (existing == value) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void CollectReachableCardLayoutCards(const LayoutConfig& layout,
@@ -174,10 +184,10 @@ void CollectReachableCardById(const LayoutConfig& layout,
     const std::string& cardId,
     std::vector<std::string>& orderedCards,
     std::vector<std::string>& recursionStack) {
-    if (std::find(recursionStack.begin(), recursionStack.end(), cardId) != recursionStack.end()) {
+    if (ContainsString(recursionStack, cardId)) {
         return;
     }
-    if (std::find(orderedCards.begin(), orderedCards.end(), cardId) == orderedCards.end()) {
+    if (!ContainsString(orderedCards, cardId)) {
         orderedCards.push_back(cardId);
     }
 
@@ -235,7 +245,7 @@ void CollectTopLevelCardsFromNode(const LayoutNodeConfig& node, std::vector<std:
         }
         return;
     }
-    if (!node.name.empty() && std::find(orderedCards.begin(), orderedCards.end(), node.name) == orderedCards.end()) {
+    if (!node.name.empty() && !ContainsString(orderedCards, node.name)) {
         orderedCards.push_back(node.name);
     }
 }
@@ -410,7 +420,7 @@ bool BuildStaticSectionNode(const AppConfig& config, const TemplateSectionSlot& 
             }
         }
         for (const auto& definition : config.layout.metrics.definitions) {
-            if (std::find(orderedMetricIds.begin(), orderedMetricIds.end(), definition.id) == orderedMetricIds.end()) {
+            if (!ContainsString(orderedMetricIds, definition.id)) {
                 orderedMetricIds.push_back(definition.id);
             }
         }
@@ -645,8 +655,7 @@ LayoutEditTreeModel BuildLayoutEditTreeModel(const AppConfig& config, std::strin
                     if (card == nullptr) {
                         continue;
                     }
-                    const bool includeTitleLeaf =
-                        std::find(topLevelCards.begin(), topLevelCards.end(), cardId) != topLevelCards.end();
+                    const bool includeTitleLeaf = ContainsString(topLevelCards, cardId);
                     if (LayoutEditTreeNode cardSection; BuildCardSectionNode(*card, includeTitleLeaf, cardSection)) {
                         model.roots.push_back(std::move(cardSection));
                     }

@@ -2385,16 +2385,20 @@ std::string LayoutEditConfiguredSectionDescription(const LayoutEditDialogState* 
     }
     const AppConfig& config = state->dialog->Host().CurrentConfig();
     if (node->label.rfind("theme.", 0) == 0) {
-        const auto it = std::find_if(config.layout.themes.begin(),
-            config.layout.themes.end(),
-            [&](const ThemeConfig& theme) { return theme.name == config.display.theme; });
-        return it != config.layout.themes.end() ? it->description : "";
+        for (const ThemeConfig& theme : config.layout.themes) {
+            if (theme.name == config.display.theme) {
+                return theme.description;
+            }
+        }
+        return "";
     }
     if (node->label.rfind("layout.", 0) == 0) {
-        const auto it = std::find_if(config.layout.layouts.begin(),
-            config.layout.layouts.end(),
-            [&](const LayoutSectionConfig& layout) { return layout.name == config.display.layout; });
-        return it != config.layout.layouts.end() ? it->description : "";
+        for (const LayoutSectionConfig& layout : config.layout.layouts) {
+            if (layout.name == config.display.layout) {
+                return layout.description;
+            }
+        }
+        return "";
     }
     return {};
 }
