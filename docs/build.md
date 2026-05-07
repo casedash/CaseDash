@@ -35,7 +35,7 @@ build.cmd
 
 By default the shared cache root is `%LOCALAPPDATA%\CaseDash\cache`, falls back to `%USERPROFILE%\.casedash\cache` when `LOCALAPPDATA` is unavailable, and can be overridden with `CASEDASH_CACHE_ROOT`. `build.cmd` exports `VCPKG_DOWNLOADS` and `X_VCPKG_REGISTRIES_CACHE` from that root unless the caller already set them.
 
-Release linker maps are opt-in size-investigation artifacts and are not produced by the normal build. Run `build_maps.cmd` to configure `CASEDASH_LINK_MAPS=ON`, force the app executable to relink, write `build\CaseDash.map`, and write the maintained summary to `build\CaseDash.map.summary.txt`. Add `/benchmarks` only when benchmark maps are needed; that also writes `build\CaseDashBenchmarks.map` and `build\CaseDashBenchmarks.map.summary.txt`. For ad hoc inspection of an existing map, run `python tools\analyze_link_map.py build\CaseDash.map --top 25`. The analyzer estimates symbol sizes from adjacent MSVC map addresses, so its object, library, and symbol rankings are investigation guides rather than exact byte ownership. Size assumptions and experiment history live in [docs/optimize_size.md](optimize_size.md).
+Release linker maps are opt-in size-investigation artifacts and are not produced by the normal build. Run `build_maps.cmd` to configure `CASEDASH_LINK_MAPS=ON`, force the app executable to relink, write `build\CaseDash.map`, and write the maintained summary to `build\CaseDash.map.summary.txt`. Add `/benchmarks` only when benchmark maps are needed; that also writes `build\CaseDashBenchmarks.map` and `build\CaseDashBenchmarks.map.summary.txt`. For ad hoc inspection of an existing map, run `python tools\analyze_link_map.py build\CaseDash.map --top 25`. The analyzer estimates symbol sizes from adjacent MSVC map addresses, so its object, library, and symbol rankings are investigation guides rather than exact byte ownership. The manual GitHub `Size Map Artifacts` workflow runs the same app map build on `windows-2025-vs2026` and uploads `CaseDash.exe`, `CaseDash.map`, `CaseDash.map.summary.txt`, and artifact metadata for remote toolchain comparisons. Size assumptions and experiment history live in [docs/optimize_size.md](optimize_size.md).
 
 ## Test
 
@@ -95,6 +95,7 @@ The `Release` workflow deploys the generated site after a successful tagged rele
 - The workflow uploads `build\CaseDash.exe` as the `CaseDash-exe` artifact after validation succeeds.
 - The workflow uploads `build\CaseDash-<VERSION>.msi` and its checksum as the `CaseDash-msi` artifact after validation succeeds.
 - The workflow uploads `build\clang_tidy_report.txt` as an artifact when it is produced.
+- The manual-only `Size Map Artifacts` workflow builds through `build_maps.cmd` without tests, packaging, or tidy, then uploads `CaseDash-size-map-exe` and `CaseDash-size-map` artifacts for executable-size and linker-map comparison across runner toolchains.
 
 ## Releases
 

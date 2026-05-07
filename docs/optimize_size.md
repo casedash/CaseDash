@@ -25,6 +25,7 @@ This document owns executable-size assumptions, constraints, map workflow notes,
 - Build the app normally with `build.cmd`.
 - Generate the app map and summary with `build_maps.cmd`.
 - Inspect the maintained summary at `build\CaseDash.map.summary.txt`.
+- Use the manual GitHub `Size Map Artifacts` workflow when the Windows runner's executable or linker map is needed for comparison with a local build; it uploads the app executable, full map, summary, and metadata.
 - For ad hoc map inspection, run `python tools\analyze_link_map.py build\CaseDash.map --top 25`.
 - When a size change can affect hot code, build benchmarks with `build.cmd Release /benchmarks` and use [docs/profile_benchmark.md](profile_benchmark.md) for timing validation.
 

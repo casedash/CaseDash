@@ -24,6 +24,7 @@ See also: [docs/build.md](build.md) for setup and commands, [docs/layout.md](lay
 - `web\` is the single maintained source of truth for the static website source and website build script.
 - `.clang-format` is the single maintained source of truth for C++ formatting policy.
 - `.github/workflows/validation.yml` is the single maintained source of truth for branch push and pull request build, test, format, lint, and tidy automation.
+- `.github/workflows/size-map-artifacts.yml` is the single maintained source of truth for manually producing remote executable and linker-map artifacts for size investigation.
 - `.github/workflows/release.yml` and `.github/workflows/pages.yml` are the single maintained sources of truth for website deployment automation.
 
 ## Repository Conventions
