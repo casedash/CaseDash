@@ -10,7 +10,6 @@
 #include "diagnostics/crash_report.h"
 #include "diagnostics/diagnostics.h"
 #include "display/display_config.h"
-#include "util/app_strings.h"
 #include "util/command_line.h"
 #include "util/elevated_process.h"
 #include "util/file_path.h"

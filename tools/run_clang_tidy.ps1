@@ -60,6 +60,7 @@ $clangTidyIgnoredUnusedIncludeWarnings = @(
     'src/telemetry/telemetry.h|windows.h',
     'src/util/file_path.cpp|windows.h',
     'src/util/command_line.cpp|windows.h',
+    'src/util/message_box.cpp|windows.h',
     'src/util/scale.h|windows.h',
     'src/util/lightweight_mutex.cpp|windows.h',
     'src/util/strings.h|windows.h',

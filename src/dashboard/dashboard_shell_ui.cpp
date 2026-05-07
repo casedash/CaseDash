@@ -21,7 +21,6 @@
 #include "layout_model/layout_edit_parameter_metadata.h"
 #include "resource.h"
 #include "telemetry/metrics.h"
-#include "util/app_strings.h"
 #include "util/message_box.h"
 #include "util/numeric_format.h"
 #include "util/trace.h"

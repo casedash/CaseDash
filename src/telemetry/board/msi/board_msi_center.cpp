@@ -189,13 +189,14 @@ public:
         sample.available = HasAvailableMetricValue(sample.temperatures) || HasAvailableMetricValue(sample.fans);
         sample.diagnostics = diagnostics_ + requestedDiagnosticsSuffix_;
 
-        if (!initialized_ || !msiCenterDirectory_.has_value()) {
+        const std::optional<FilePath> msiCenterDirectory = msiCenterDirectory_;
+        if (!initialized_ || !msiCenterDirectory.has_value()) {
             return sample;
         }
 
         MsiCenterCapture capture(trace());
-        const std::wstring msiCenterDirectory = msiCenterDirectory_->Wide();
-        const bool captured = runtime_.Capture(msiCenterDirectory.c_str(), capture);
+        const std::wstring wideMsiCenterDirectory = msiCenterDirectory->Wide();
+        const bool captured = runtime_.Capture(wideMsiCenterDirectory.c_str(), capture);
         MsiCenterSnapshot snapshot = captured ? capture.FinishSuccess() : capture.FinishFailure();
         if (!captured) {
             diagnostics_ = snapshot.diagnostics;

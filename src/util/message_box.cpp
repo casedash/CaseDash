@@ -1,5 +1,7 @@
 #include "util/message_box.h"
 
+#include <windows.h>
+
 #include <string>
 
 #include "util/app_strings.h"
