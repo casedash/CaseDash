@@ -1,6 +1,5 @@
 #pragma once
 
-#include <initializer_list>
 #include <optional>
 #include <string>
 #include <variant>
@@ -93,7 +92,6 @@ public:
 
     LayoutEditActiveRegions() = default;
     explicit LayoutEditActiveRegions(std::vector<LayoutEditActiveRegion> regions);
-    LayoutEditActiveRegions(std::initializer_list<LayoutEditActiveRegion> regions);
 
     void Reserve(size_t count);
     void Add(LayoutEditActiveRegion region);

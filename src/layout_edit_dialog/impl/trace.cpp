@@ -115,7 +115,8 @@ std::string BuildTraceNodeText(const LayoutEditTreeNode* node) {
     text += " label=" + QuoteTraceText(node->label);
     text += " location=" + QuoteTraceText(node->locationText);
     if (node->leaf.has_value()) {
-        text += " " + BuildTraceFocusKeyText(&*node->leaf);
+        text += ' ';
+        text += BuildTraceFocusKeyText(&*node->leaf);
         if (std::holds_alternative<LayoutMetricEditKey>(node->leaf->focusKey)) {
             text += " value_format=\"metric\"";
         } else {

@@ -554,7 +554,10 @@ void DashboardShellUi::TraceLayoutEditDialogEvent(const char* event, const std::
     if (details.empty()) {
         state.diagnostics->WriteTraceMarker(TracePrefix::LayoutEditDialog, event);
     } else {
-        state.diagnostics->WriteTraceMarker(TracePrefix::LayoutEditDialog, std::string(event) + " " + details);
+        std::string text(event);
+        text += ' ';
+        text += details;
+        state.diagnostics->WriteTraceMarker(TracePrefix::LayoutEditDialog, text);
     }
 }
 

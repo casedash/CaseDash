@@ -473,14 +473,12 @@ target_link_libraries(CaseDash PRIVATE
     gdi32
     d2d1
     dwrite
-    windowscodecs
     pdh
     iphlpapi
     dxgi
     comctl32
     ws2_32
     ole32
-    oleaut32
     advapi32
     dbghelp
     wtsapi32
@@ -657,7 +655,6 @@ target_link_libraries(CaseDashTests PRIVATE
     gdi32
     d2d1
     dwrite
-    windowscodecs
     ole32
 )
 set_target_properties(CaseDashTests PROPERTIES
@@ -836,13 +833,11 @@ target_link_libraries(CaseDashBenchmarks PRIVATE
     gdi32
     d2d1
     dwrite
-    windowscodecs
     pdh
     iphlpapi
     dxgi
     ws2_32
     ole32
-    oleaut32
     advapi32
     ${MSCOREE_LIB}
 )

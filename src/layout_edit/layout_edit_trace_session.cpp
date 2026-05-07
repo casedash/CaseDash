@@ -65,7 +65,9 @@ void LayoutEditTraceSession::End(Trace& trace, const char* reason) {
         text += " avg_";
         text += name;
         text += "_ms=" + FormatMilliseconds(averageMs);
-        text += " " + std::string(name) + "_samples=" + std::to_string(stats.samples);
+        text += ' ';
+        text += name;
+        text += "_samples=" + std::to_string(stats.samples);
     };
 
     const auto elapsed = std::chrono::steady_clock::now() - startedAt_;

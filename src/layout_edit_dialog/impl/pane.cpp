@@ -2128,16 +2128,14 @@ void LayoutLayoutEditRightPane(LayoutEditDialogState* state, HWND hwnd) {
                 SetDialogControlBounds(hwnd, IDC_LAYOUT_EDIT_COLOR_VIEW_TAB, innerLeft, cursorY, innerWidth, tabHeight);
                 BringDialogControlToTop(hwnd, IDC_LAYOUT_EDIT_COLOR_VIEW_TAB);
                 int tabCursorY = cursorY + tabHeaderHeight;
+                const int rowLeft = innerLeft + tabInsetX;
+                const int rowEditLeft = rowLeft + labelColumnWidth + metrics.labelGap;
+                const int rowSliderLeft = rowEditLeft + valueEditWidth + metrics.inlineGap;
+                const int rowSliderWidth = std::max(40, innerRight - tabInsetX - rowSliderLeft);
                 for (int i = 0; i < 3; ++i) {
                     const ColorChannelControlIds& channel = channelRows[i];
                     const int rowHeight = channelRowHeights[i];
-                    const int rowLeft = innerLeft + tabInsetX;
-                    const int rowLabelWidth = std::max(1, labelColumnWidth);
-                    const int rowEditLeft = rowLeft + rowLabelWidth + metrics.labelGap;
-                    const int rowSliderLeft = rowEditLeft + valueEditWidth + metrics.inlineGap;
-                    const int rowSliderWidth = std::max(40, innerRight - tabInsetX - rowSliderLeft);
-                    const int labelHeight = MeasureTextHeightForControl(
-                        hwnd, channel.labelId, ReadDialogControlTextWide(hwnd, channel.labelId), rowLabelWidth, true);
+                    const int labelHeight = channelLabelHeights[i];
                     SetDialogControlBounds(
                         hwnd, channel.sliderId, rowSliderLeft, tabCursorY, rowSliderWidth, channelSliderHeights[i]);
                     const auto [gradientLeft, gradientWidth] =
@@ -2152,7 +2150,7 @@ void LayoutLayoutEditRightPane(LayoutEditDialogState* state, HWND hwnd) {
                         channel.labelId,
                         rowLeft,
                         tabCursorY + ((channelSliderHeights[i] - labelHeight) / 2),
-                        rowLabelWidth,
+                        labelColumnWidth,
                         labelHeight);
                     SetDialogControlBounds(hwnd,
                         channel.editId,

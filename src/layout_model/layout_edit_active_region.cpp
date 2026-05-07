@@ -5,9 +5,6 @@
 LayoutEditActiveRegions::LayoutEditActiveRegions(std::vector<LayoutEditActiveRegion> regions)
     : regions_(std::move(regions)) {}
 
-LayoutEditActiveRegions::LayoutEditActiveRegions(std::initializer_list<LayoutEditActiveRegion> regions)
-    : regions_(regions) {}
-
 void LayoutEditActiveRegions::Reserve(size_t count) {
     regions_.reserve(count);
 }

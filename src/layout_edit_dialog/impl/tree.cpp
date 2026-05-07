@@ -121,7 +121,10 @@ std::string BuildTreeItemTraceText(LayoutEditDialogState* state, HWND tree, HTRE
         return "location=\"none\"";
     }
     const LayoutEditTreeNode* node = TreeNodeFromItem(tree, item);
-    return "location=" + QuoteTraceText(TreeNodeViewportLocation(state, node)) + " " + BuildTraceNodeText(node);
+    std::string text = "location=" + QuoteTraceText(TreeNodeViewportLocation(state, node));
+    text += ' ';
+    text += BuildTraceNodeText(node);
+    return text;
 }
 
 std::string BuildTreeViewportTraceText(LayoutEditDialogState* state, HWND tree) {
@@ -142,7 +145,8 @@ void TraceTreeViewport(LayoutEditDialogState* state, HWND tree, const char* even
     }
     std::string text = BuildTreeViewportTraceText(state, tree);
     if (!detail.empty()) {
-        text += " " + std::string(detail);
+        text += ' ';
+        text += detail;
     }
     state->dialog->Host().TraceLayoutEditDialogEvent(event, text);
 }
@@ -232,10 +236,9 @@ bool RestoreTreeViewportFromSnapshot(
         }
     }
 
-    TraceTreeViewport(state,
-        tree,
-        "tree_viewport_restore_skip",
-        "reason=\"no_matching_anchor\" " + BuildTreeViewportSnapshotTraceText(snapshot));
+    std::string skipDetail = "reason=\"no_matching_anchor\" ";
+    skipDetail += BuildTreeViewportSnapshotTraceText(snapshot);
+    TraceTreeViewport(state, tree, "tree_viewport_restore_skip", skipDetail);
     return false;
 }
 
@@ -271,9 +274,10 @@ void RebuildLayoutEditTree(
     }
     const TreeViewportSnapshot viewportSnapshot =
         preferredFocus.has_value() ? TreeViewportSnapshot{} : CaptureTreeViewportSnapshot(state, tree);
-    state->dialog->Host().TraceLayoutEditDialogEvent("tree_rebuild_snapshot",
-        "preferred_location=" + QuoteTraceText(preferredLocation) + " " +
-            BuildTreeViewportSnapshotTraceText(viewportSnapshot));
+    std::string snapshotTrace = "preferred_location=" + QuoteTraceText(preferredLocation);
+    snapshotTrace += ' ';
+    snapshotTrace += BuildTreeViewportSnapshotTraceText(viewportSnapshot);
+    state->dialog->Host().TraceLayoutEditDialogEvent("tree_rebuild_snapshot", snapshotTrace);
 
     HTREEITEM selectedItem = nullptr;
     {
