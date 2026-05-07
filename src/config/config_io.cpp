@@ -1,7 +1,5 @@
 #include "config/config_io.h"
 
-#include <cstdio>
-
 #include "config/config_parser.h"
 #include "util/paths.h"
 
