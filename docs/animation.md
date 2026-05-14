@@ -161,6 +161,8 @@ Fields:
 - `std::vector<double> samples` - smoothed retained-history samples in display order.
 - `double maxGraph` - shared vertical graph maximum for the chart group.
 - `double timeMarkerOffsetSamples` - horizontal time-marker phase in sample units.
+- `double plotShiftSamples` - per-frame fractional plot shift in sample units; positive values draw the sample
+  sequence further left while target tail samples enter from the right.
 - `double guideStepMbps` - guide spacing selected from the target max.
 
 The sample vector uses the same smoothed adjacent-pair history that `MetricSource::ResolveThroughput()` exposes today. The render thread treats non-finite sample values as `0`.
@@ -219,9 +221,11 @@ Drive read/write activity animation uses `ScalarFillSample`. The value interpola
 Throughput chart animation interpolates the visible chart shape rather than only the newest point:
 
 - `maxGraph` interpolates linearly so vertical rescaling is smooth.
-- `timeMarkerOffsetSamples` interpolates forward in sample units so time markers drift smoothly between telemetry samples.
+- `timeMarkerOffsetSamples` interpolates forward in sample units and the draw path normalizes it by marker
+  interval, so time markers drift smoothly through interval wraps.
 - The leader y-position interpolates from the previous displayed latest value to the new displayed latest value.
-- Plot samples interpolate by visual x-position, not by vector index alone, so the new rightmost sample enters smoothly while older samples slide left.
+- Plot samples carry a fractional `plotShiftSamples` phase, so the draw path moves existing sample points left
+  while target tail samples enter from the right instead of morphing fixed columns into each other.
 
 When the previous and target sample vectors have different lengths, the render thread aligns both vectors by the newest sample. Missing older samples use `0`.
 

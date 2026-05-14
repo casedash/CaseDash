@@ -12,6 +12,13 @@ namespace {
 
 using ThroughputGraphLayout = ThroughputWidget::LayoutState;
 
+struct PlotPoint {
+    double x = 0.0;
+    double y = 0.0;
+};
+
+constexpr double kPlotEpsilon = 0.000001;
+
 void FillCircle(WidgetHost& renderer, int centerX, int centerY, int diameter, RenderColorId color) {
     const int radius = diameter / 2;
     renderer.Renderer().FillSolidEllipse(
@@ -51,6 +58,90 @@ ThroughputGraphLayout ComputeGraphLayout(const WidgetHost& renderer, const Rende
     return layout;
 }
 
+size_t PlotTailCount(double plotShiftSamples, size_t sampleCount) {
+    if (plotShiftSamples <= 0.0 || sampleCount == 0) {
+        return 0;
+    }
+    const size_t tailCount = static_cast<size_t>(std::ceil(plotShiftSamples - kPlotEpsilon));
+    return (std::min)(tailCount, sampleCount - 1);
+}
+
+size_t VisibleSampleCount(size_t sampleCount, double plotShiftSamples) {
+    const size_t tailCount = PlotTailCount(plotShiftSamples, sampleCount);
+    return (std::max<size_t>)(1, sampleCount - tailCount);
+}
+
+double NormalizeMarkerOffsetSamples(double timeMarkerOffsetSamples, double timeMarkerIntervalSamples) {
+    const double normalized = std::fmod(FiniteNonNegativeOr(timeMarkerOffsetSamples), timeMarkerIntervalSamples);
+    if (normalized + kPlotEpsilon >= timeMarkerIntervalSamples) {
+        return 0.0;
+    }
+    return normalized;
+}
+
+void AddRenderPoint(std::vector<RenderPoint>& points, double x, double y) {
+    const RenderPoint point{static_cast<int>(std::round(x)), static_cast<int>(std::round(y))};
+    if (!points.empty() && points.back().x == point.x && points.back().y == point.y) {
+        return;
+    }
+    points.push_back(point);
+}
+
+double InterpolatePlotYAtX(const PlotPoint& start, const PlotPoint& end, double x) {
+    if (std::abs(end.x - start.x) <= kPlotEpsilon) {
+        return end.y;
+    }
+    const double progress = std::clamp((x - start.x) / (end.x - start.x), 0.0, 1.0);
+    return start.y + ((end.y - start.y) * progress);
+}
+
+std::vector<RenderPoint> ClipPlotPointsToGraph(const std::vector<PlotPoint>& points, int left, int right) {
+    std::vector<RenderPoint> clipped;
+    if (points.empty() || right < left) {
+        return clipped;
+    }
+
+    if (points.front().x >= left && points.front().x <= right) {
+        AddRenderPoint(clipped, points.front().x, points.front().y);
+    }
+
+    for (size_t index = 1; index < points.size(); ++index) {
+        const PlotPoint& start = points[index - 1];
+        const PlotPoint& end = points[index];
+        if (start.x < left && end.x >= left) {
+            AddRenderPoint(clipped, static_cast<double>(left), InterpolatePlotYAtX(start, end, left));
+        }
+        if (end.x >= left && end.x <= right) {
+            AddRenderPoint(clipped, end.x, end.y);
+        }
+        if (start.x <= right && end.x > right) {
+            AddRenderPoint(clipped, static_cast<double>(right), InterpolatePlotYAtX(start, end, right));
+            break;
+        }
+    }
+    return clipped;
+}
+
+std::optional<double> PlotYAtX(const std::vector<PlotPoint>& points, int x) {
+    if (points.empty()) {
+        return std::nullopt;
+    }
+    if (points.size() == 1) {
+        return points.front().y;
+    }
+    for (size_t index = 1; index < points.size(); ++index) {
+        const PlotPoint& start = points[index - 1];
+        const PlotPoint& end = points[index];
+        if (start.x <= x && end.x >= x) {
+            return InterpolatePlotYAtX(start, end, static_cast<double>(x));
+        }
+    }
+    if (points.back().x < x) {
+        return points.back().y;
+    }
+    return std::nullopt;
+}
+
 void DrawGraph(WidgetHost& renderer,
     const RenderRect& rect,
     const ThroughputGraphLayout& layout,
@@ -58,6 +149,7 @@ void DrawGraph(WidgetHost& renderer,
     double maxValue,
     double guideStepMbps,
     double timeMarkerOffsetSamples,
+    double plotShiftSamples,
     double timeMarkerIntervalSamples,
     const std::optional<LayoutEditAnchorBinding>& maxLabelEditable) {
     renderer.Renderer().FillSolidRect(rect, RenderColorId::GraphBackground);
@@ -66,9 +158,12 @@ void DrawGraph(WidgetHost& renderer,
         maxValue = 10.0;
     }
     const double guideStep = IsFiniteDouble(guideStepMbps) && guideStepMbps > 0.0 ? guideStepMbps : 5.0;
-    const double markerOffset = FiniteNonNegativeOr(timeMarkerOffsetSamples);
     const double markerInterval =
         IsFiniteDouble(timeMarkerIntervalSamples) && timeMarkerIntervalSamples > 0.0 ? timeMarkerIntervalSamples : 20.0;
+    const double plotShift = FiniteNonNegativeOr(plotShiftSamples);
+    const size_t visibleSampleCount = VisibleSampleCount(history.size(), plotShift);
+    const size_t historyDenominator = std::max<size_t>(1, visibleSampleCount - 1);
+    const double markerOffset = NormalizeMarkerOffsetSamples(timeMarkerOffsetSamples, markerInterval);
     const RenderColorId markerColor = RenderColorId::GraphMarker;
     for (double tick = guideStep; tick < maxValue; tick += guideStep) {
         const double ratio = ClampFinite(tick / maxValue, 0.0, 1.0);
@@ -82,13 +177,11 @@ void DrawGraph(WidgetHost& renderer,
     }
 
     if (!history.empty()) {
-        for (double sampleOffset = markerOffset;
-            sampleOffset <= static_cast<double>(history.size() - 1) + markerInterval;
+        const double visibleDenominator = static_cast<double>(historyDenominator);
+        for (double sampleOffset = markerOffset; sampleOffset <= visibleDenominator + kPlotEpsilon;
             sampleOffset += markerInterval) {
-            const double clampedOffset = ClampFinite(sampleOffset, 0.0, static_cast<double>(history.size() - 1), 0.0);
             const int centerX =
-                layout.graphRight - static_cast<int>(std::round(
-                                        clampedOffset * layout.plotWidth / std::max<size_t>(1, history.size() - 1)));
+                layout.graphRight - static_cast<int>(std::round(sampleOffset * layout.plotWidth / visibleDenominator));
             const int lineLeft = centerX - (layout.guideStrokeWidth / 2);
             RenderRect lineRect{
                 lineLeft, rect.top, std::min(layout.graphRight + 1, lineLeft + layout.guideStrokeWidth), rect.bottom};
@@ -130,24 +223,29 @@ void DrawGraph(WidgetHost& renderer,
     }
 
     const RenderColorId plotColor = RenderColorId::Accent;
-    const size_t historyDenominator = std::max<size_t>(1, history.size() - 1);
-    std::vector<RenderPoint> plotPoints;
+    std::vector<PlotPoint> plotPoints;
     plotPoints.reserve(history.size());
     for (size_t i = 0; i < history.size(); ++i) {
         const double valueRatio = ClampFinite(FiniteNonNegativeOr(history[i]) / maxValue, 0.0, 1.0);
-        const int x = layout.graphLeft + static_cast<int>(i * layout.plotWidth / historyDenominator);
-        const int y = layout.graphBottom - static_cast<int>(std::round(valueRatio * layout.plotHeight));
-        plotPoints.push_back(RenderPoint{x, y});
+        const double sampleX = static_cast<double>(i) - plotShift;
+        const double x = static_cast<double>(layout.graphLeft) +
+                         (sampleX * static_cast<double>(layout.plotWidth) / static_cast<double>(historyDenominator));
+        const double y =
+            static_cast<double>(layout.graphBottom) - std::round(valueRatio * static_cast<double>(layout.plotHeight));
+        plotPoints.push_back(PlotPoint{x, y});
     }
-    if (plotPoints.size() >= 2) {
+    const std::vector<RenderPoint> clippedPlotPoints =
+        ClipPlotPointsToGraph(plotPoints, layout.graphLeft, layout.graphRight);
+    if (clippedPlotPoints.size() >= 2) {
         renderer.Renderer().DrawPolyline(
-            plotPoints, RenderStroke::Solid(plotColor, static_cast<float>(layout.plotStrokeWidth)));
+            clippedPlotPoints, RenderStroke::Solid(plotColor, static_cast<float>(layout.plotStrokeWidth)));
     }
 
     if (!history.empty() && layout.leaderDiameter > 0) {
-        const RenderPoint lastPoint =
-            plotPoints.empty() ? RenderPoint{layout.graphLeft, layout.graphBottom} : plotPoints.back();
-        FillCircle(renderer, lastPoint.x, lastPoint.y, layout.leaderDiameter, plotColor);
+        const double leaderY =
+            PlotYAtX(plotPoints, layout.graphRight).value_or(static_cast<double>(layout.graphBottom));
+        FillCircle(
+            renderer, layout.graphRight, static_cast<int>(std::round(leaderY)), layout.leaderDiameter, plotColor);
     }
 }
 
@@ -241,6 +339,7 @@ void ThroughputWidget::Draw(WidgetHost& renderer, const WidgetLayout& widget, co
         animatedSample.maxGraph,
         animatedSample.guideStepMbps,
         animatedSample.timeMarkerOffsetSamples,
+        animatedSample.plotShiftSamples,
         metric.timeMarkerIntervalSamples,
         renderer.MakeEditableTextBinding(
             widget, WidgetHost::LayoutEditParameter::FontSmall, 2, renderer.Config().layout.fonts.smallText.size));
