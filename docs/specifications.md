@@ -46,6 +46,8 @@ The dashboard uses only Windows-native telemetry plus supported hardware-provide
 - The UI style stays high-contrast and minimal: dark background, bright foreground text, restrained separators, rounded cards, compact headers, and shared visual rhythm across comparable cards.
 - CPU and GPU gauges share one fitted gauge size within the active layout even when their surrounding cards differ in height.
 - Metric rows and usage bars render as rounded horizontal fills, throughput widgets render scrolling retained-history lines with shared time markers, and drive activity renders as stacked whole-segment indicators.
+- In the live window, data-driven fills and throughput plots interpolate across the 0.5 second telemetry cadence. Snapshot text, card chrome, labels, layout geometry, and edit affordances update only at snapshot or interaction boundaries.
+- Deterministic renders, including blank mode, saved screenshots, layout-guide-sheet output, app-icon output, and offscreen validation renders, draw target snapshot values directly without live interpolation.
 - Metric-list rows can show a small right-aligned annotation above the bar when the resolved metric supplies one; `gpu.fps` uses this annotation for the cleaned presenting application name, or a warning-colored `!admin` indicator when only the presenting application name needs elevated access. When the FPS application name and FPS value share too little row width, the application name is shortened with a middle `...` while preserving the first letters and final letter so the value text remains unobscured.
 - Palette colors include alpha. Gauge peak segments and metric-list recent-peak markers use the shared peak ghost color from the palette, and short permission-required metric indicators use the shared warning color.
 - Metric rows and gauges draw only their background track when a metric value is unavailable or fully permission-gated; a fully permission-gated value displays the warning-colored short text `!admin` instead of `N/A`.
@@ -95,6 +97,7 @@ The dashboard uses only Windows-native telemetry plus supported hardware-provide
 ## Refresh, Units, And Instance Behavior
 
 - The telemetry runtime owns collection on a 0.5 second cadence, skips missed intervals after process stalls or machine sleep, and publishes each new snapshot to the dashboard when collection finishes.
+- The telemetry cadence is the shared duration used by live dashboard animation, so a visual transition completes as the next steady-state telemetry snapshot becomes due.
 - CPU, GPU, network, storage, drive activity, retained histories, and the clock all refresh from that telemetry-owned cadence.
 - The dashboard redraws after receiving a new telemetry snapshot instead of driving collection from the UI message loop.
 - Retained histories feed throughput plots plus recent-peak or recent-max overlays for supported widgets.

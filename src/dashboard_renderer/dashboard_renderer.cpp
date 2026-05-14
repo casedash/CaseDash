@@ -1,6 +1,7 @@
 #include "dashboard_renderer/dashboard_renderer.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <limits>
@@ -72,6 +73,7 @@ void DashboardRenderer::SetConfig(const AppConfig& config) {
         InvalidateMetricSourceCache();
         metricLookupCache_.Clear();
     }
+    animationTimeline_.Reset();
     config_ = config;
     if (!renderer_->SetStyle(BuildRendererStyle()) || !ResolveLayout()) {
         lastError_ = renderer_->LastError().empty() ? "renderer:reconfigure_failed" : renderer_->LastError();
@@ -85,6 +87,7 @@ void DashboardRenderer::SetRenderScale(double scale) {
         return;
     }
     renderScale_ = nextScale;
+    animationTimeline_.Reset();
     if (!renderer_->SetStyle(BuildRendererStyle()) || !ResolveLayout()) {
         lastError_ = renderer_->LastError().empty() ? "renderer:rescale_failed" : renderer_->LastError();
     }
@@ -94,7 +97,20 @@ void DashboardRenderer::SetImmediatePresent(bool enabled) {
     renderer_->SetImmediatePresent(enabled);
 }
 
+void DashboardRenderer::SetLiveAnimationEnabled(bool enabled) {
+    if (liveAnimationEnabled_ == enabled) {
+        return;
+    }
+    liveAnimationEnabled_ = enabled;
+    if (!liveAnimationEnabled_) {
+        animationTimeline_.Reset();
+    }
+}
+
 void DashboardRenderer::SetRenderMode(RenderMode mode) {
+    if (renderMode_ != mode) {
+        animationTimeline_.Reset();
+    }
     renderMode_ = mode;
 }
 
@@ -151,6 +167,28 @@ std::optional<MetricListReorderOverlayState> DashboardRenderer::ActiveMetricList
         return std::nullopt;
     }
     return drag;
+}
+
+ScalarFillSample DashboardRenderer::ResolveAnimatedScalarFill(
+    const AnimationDataKey& key, const ScalarFillSample& target, AnimationCompositionPlane) {
+    if (!liveAnimationEnabled_ || !liveAnimationFrameActive_ || renderMode_ != RenderMode::Normal) {
+        return target;
+    }
+    return animationTimeline_.ResolveScalar(key, target);
+}
+
+ThroughputChartSample DashboardRenderer::ResolveAnimatedThroughputChart(
+    const AnimationDataKey& key, const ThroughputChartSample& target, AnimationCompositionPlane) {
+    if (!liveAnimationEnabled_ || !liveAnimationFrameActive_ || renderMode_ != RenderMode::Normal) {
+        return target;
+    }
+    return animationTimeline_.ResolveThroughput(key, target);
+}
+
+void DashboardRenderer::RegisterAnimationPrimitive(const DashboardAnimationPrimitive& primitive) {
+    if (liveAnimationFrameActive_) {
+        animationScene_.primitives.push_back(primitive);
+    }
 }
 
 int DashboardRenderer::WindowWidth() const {
@@ -318,7 +356,17 @@ bool DashboardRenderer::DrawWindow(const SystemSnapshot& snapshot) {
 
 bool DashboardRenderer::DrawWindow(const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState) {
     lastError_.clear();
+    const bool animateLiveFrame = liveAnimationEnabled_ && renderMode_ == RenderMode::Normal;
+    if (animateLiveFrame) {
+        animationScene_.primitives.clear();
+        animationTimeline_.BeginFrame(std::chrono::steady_clock::now());
+        liveAnimationFrameActive_ = true;
+    }
     renderer_->DrawWindow(WindowWidth(), WindowHeight(), [&] { DrawFrame(snapshot, overlayState); });
+    if (animateLiveFrame) {
+        liveAnimationFrameActive_ = false;
+        animationTimeline_.EndFrame();
+    }
     if (!renderer_->LastError().empty()) {
         lastError_ = renderer_->LastError();
     }
@@ -509,6 +557,11 @@ bool DashboardRenderer::RenderSnapshotOffscreen(
 bool DashboardRenderer::PrimeLayoutEditDynamicRegions(
     const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState) {
     return RenderSnapshotOffscreen(snapshot, overlayState);
+}
+
+bool DashboardRenderer::HasActiveDashboardAnimation() const {
+    return liveAnimationEnabled_ && renderMode_ == RenderMode::Normal &&
+           animationTimeline_.HasActiveAnimations(std::chrono::steady_clock::now());
 }
 
 LayoutEditActiveRegions DashboardRenderer::CollectLayoutEditActiveRegions(

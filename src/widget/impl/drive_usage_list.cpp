@@ -378,25 +378,36 @@ void DriveUsageListWidget::Draw(WidgetHost& renderer, const WidgetLayout& widget
                 textBaseId,
                 renderer.Config().layout.fonts.label.size),
             WidgetHost::LayoutEditParameter::ColorForeground);
+        const bool drawAnimatedValues = renderer.CurrentRenderMode() != WidgetHost::RenderMode::Blank;
+        ScalarFillSample readTarget;
+        ScalarFillSample writeTarget;
+        ScalarFillSample usageTarget;
+        if (drawAnimatedValues) {
+            readTarget.valueRatio = drive->readActivity;
+            writeTarget.valueRatio = drive->writeActivity;
+            usageTarget.valueRatio = drive->usedPercent / 100.0;
+        }
+        const ScalarFillSample readSample = renderer.ResolveAnimatedScalarFill(
+            AnimationDataKey{AnimationDataKind::ScalarFill, drive->label, "read"}, readTarget);
+        const ScalarFillSample writeSample = renderer.ResolveAnimatedScalarFill(
+            AnimationDataKey{AnimationDataKind::ScalarFill, drive->label, "write"}, writeTarget);
+        const ScalarFillSample usageSample = renderer.ResolveAnimatedScalarFill(
+            AnimationDataKey{AnimationDataKind::ScalarFill, drive->label, "used"}, usageTarget);
         DrawSegmentIndicator(renderer,
             readIndicatorRect,
             layoutState_.activitySegments,
             layoutState_.activitySegmentGap,
-            renderer.CurrentRenderMode() == WidgetHost::RenderMode::Blank ? 0.0 : drive->readActivity,
+            readSample.valueRatio.value_or(0.0),
             RenderColorId::Track,
             RenderColorId::Accent);
         DrawSegmentIndicator(renderer,
             writeIndicatorRect,
             layoutState_.activitySegments,
             layoutState_.activitySegmentGap,
-            renderer.CurrentRenderMode() == WidgetHost::RenderMode::Blank ? 0.0 : drive->writeActivity,
+            writeSample.valueRatio.value_or(0.0),
             RenderColorId::Track,
             RenderColorId::Accent);
-        DrawWidgetPillBar(renderer,
-            barRect,
-            drive->usedPercent / 100.0,
-            std::nullopt,
-            renderer.CurrentRenderMode() != WidgetHost::RenderMode::Blank);
+        DrawWidgetPillBar(renderer, barRect, usageSample);
         const int splitX = barRect.left + ((std::max)(0, barRect.right - barRect.left) / 2);
         renderer.EditArtifacts().RegisterDynamicColorEditRegion(WidgetHost::LayoutEditParameter::ColorAccent,
             RenderRect{barRect.left, barRect.top, splitX, barRect.bottom});

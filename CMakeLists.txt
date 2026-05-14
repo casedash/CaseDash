@@ -211,10 +211,13 @@ add_executable(CaseDash WIN32
     src/renderer/impl/d2d_render_conversions.cpp
     src/layout_model/layout_edit_anchor_shape.cpp
     src/dashboard_renderer/impl/metric_lookup_cache.cpp
+    src/dashboard_renderer/impl/animation_timeline.cpp
     src/dashboard_renderer/impl/layout_edit_overlay_renderer.cpp
     src/renderer/impl/palette.cpp
     src/renderer/impl/text_width_cache.cpp
+    src/widget/animation_types.cpp
     src/widget/widget.cpp
+    src/widget/widget_host.cpp
     src/widget/layout_edit_types.cpp
     src/widget/impl/card_chrome.cpp
     src/widget/impl/pill_bar.cpp
@@ -258,6 +261,7 @@ set(casedash_release_speed_sources
     src/dashboard_renderer/dashboard_renderer.cpp
     src/layout_model/layout_edit_anchor_shape.cpp
     src/dashboard_renderer/impl/metric_lookup_cache.cpp
+    src/dashboard_renderer/impl/animation_timeline.cpp
     src/dashboard_renderer/impl/layout_edit_overlay_renderer.cpp
     src/dashboard_renderer/impl/layout_resolver.cpp
     src/layout_edit/impl/layout_snap_solver.cpp
@@ -316,9 +320,11 @@ set(casedash_release_speed_sources
     src/telemetry/impl/system_info_support.cpp
     src/telemetry/metrics.cpp
     src/telemetry/telemetry.cpp
+    src/widget/animation_types.cpp
     src/widget/card_chrome_layout.cpp
     src/widget/layout_edit_types.cpp
     src/widget/widget.cpp
+    src/widget/widget_host.cpp
     src/widget/impl/card_chrome.cpp
     src/widget/impl/pill_bar.cpp
     src/widget/impl/clock_date.cpp
@@ -538,6 +544,7 @@ add_executable(CaseDashTests
     tests/fps_service_protocol_tests.cpp
     tests/telemetry_retained_history_tests.cpp
     tests/telemetry_runtime_tests.cpp
+    tests/animation_timeline_tests.cpp
     src/config/config.cpp
     src/config/color_format.cpp
     src/config/color_expression.cpp
@@ -579,10 +586,12 @@ add_executable(CaseDashTests
     src/telemetry/telemetry.cpp
     src/telemetry/impl/collector.cpp
     src/telemetry/metrics.cpp
+    src/widget/animation_types.cpp
     src/widget/card_chrome_layout.cpp
     src/renderer/renderer.cpp
     src/renderer/png_export.cpp
     src/widget/widget.cpp
+    src/widget/widget_host.cpp
     src/widget/layout_edit_types.cpp
     src/widget/impl/card_chrome.cpp
     src/widget/impl/pill_bar.cpp
@@ -604,6 +613,7 @@ add_executable(CaseDashTests
     src/renderer/impl/text_width_cache.cpp
     src/layout_model/layout_edit_anchor_shape.cpp
     src/dashboard_renderer/impl/metric_lookup_cache.cpp
+    src/dashboard_renderer/impl/animation_timeline.cpp
     src/dashboard_renderer/impl/layout_edit_overlay_renderer.cpp
     src/dashboard_renderer/impl/layout_resolver.cpp
     src/layout_guide_sheet/impl/layout_guide_sheet_placement.cpp
@@ -745,10 +755,13 @@ add_executable(CaseDashBenchmarks
     src/renderer/impl/d2d_render_conversions.cpp
     src/layout_model/layout_edit_anchor_shape.cpp
     src/dashboard_renderer/impl/metric_lookup_cache.cpp
+    src/dashboard_renderer/impl/animation_timeline.cpp
     src/dashboard_renderer/impl/layout_edit_overlay_renderer.cpp
     src/renderer/impl/palette.cpp
     src/renderer/impl/text_width_cache.cpp
+    src/widget/animation_types.cpp
     src/widget/widget.cpp
+    src/widget/widget_host.cpp
     src/widget/layout_edit_types.cpp
     src/widget/impl/card_chrome.cpp
     src/widget/impl/pill_bar.cpp

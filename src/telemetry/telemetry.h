@@ -2,6 +2,7 @@
 
 #include <windows.h>
 
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -153,6 +154,8 @@ public:
 protected:
     ~TelemetryUpdateSink() = default;
 };
+
+inline constexpr auto kTelemetryRefreshInterval = std::chrono::milliseconds(500);
 
 class TelemetryRuntime {
 public:

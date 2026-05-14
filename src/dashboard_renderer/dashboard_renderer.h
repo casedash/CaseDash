@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "config/config.h"
+#include "dashboard_renderer/impl/animation_timeline.h"
 #include "dashboard_renderer/impl/layout_resolver.h"
 #include "dashboard_renderer/impl/metric_lookup_cache.h"
 #include "layout_model/dashboard_overlay_state.h"
@@ -55,6 +56,7 @@ public:
     void SetConfig(const AppConfig& config);
     void SetRenderScale(double scale);
     void SetImmediatePresent(bool enabled);
+    void SetLiveAnimationEnabled(bool enabled);
     void SetRenderMode(RenderMode mode);
     void SetLayoutGuideDragActive(bool active);
     void SetInteractiveDragTraceActive(bool active);
@@ -84,6 +86,7 @@ public:
     std::vector<LayoutGuideSheetCardSummary> CollectLayoutGuideSheetCardSummaries() const;
     bool RenderSnapshotOffscreen(const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState);
     bool PrimeLayoutEditDynamicRegions(const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState);
+    bool HasActiveDashboardAnimation() const;
     void DiscardWindowRenderTarget(std::string_view reason = {});
     const std::string& LastError() const;
     ::Renderer& Renderer() override;
@@ -98,6 +101,13 @@ public:
     int ScaleLogical(int value) const;
     std::optional<MetricListReorderOverlayState> ActiveMetricListReorderDrag(
         const LayoutEditWidgetIdentity& widget) const override;
+    ScalarFillSample ResolveAnimatedScalarFill(const AnimationDataKey& key,
+        const ScalarFillSample& target,
+        AnimationCompositionPlane plane = AnimationCompositionPlane::AboveSnapshot) override;
+    ThroughputChartSample ResolveAnimatedThroughputChart(const AnimationDataKey& key,
+        const ThroughputChartSample& target,
+        AnimationCompositionPlane plane = AnimationCompositionPlane::AboveSnapshot) override;
+    void RegisterAnimationPrimitive(const DashboardAnimationPrimitive& primitive) override;
 
 private:
     friend class DashboardLayoutResolver;
@@ -172,5 +182,9 @@ private:
     RenderMode renderMode_ = RenderMode::Normal;
     bool layoutGuideDragActive_ = false;
     bool interactiveDragTraceActive_ = false;
+    bool liveAnimationEnabled_ = false;
+    bool liveAnimationFrameActive_ = false;
     const DashboardOverlayState* activeOverlayState_ = nullptr;
+    DashboardAnimationTimeline animationTimeline_;
+    DashboardAnimationScene animationScene_;
 };

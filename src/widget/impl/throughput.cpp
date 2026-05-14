@@ -227,13 +227,20 @@ void ThroughputWidget::Draw(WidgetHost& renderer, const WidgetLayout& widget, co
             numberLayout, renderer.MakeMetricTextBinding(widget, metric_, 101));
     }
     const ThroughputGraphLayout& layout = layoutState_;
+    ThroughputChartSample targetSample;
+    targetSample.samples = metric.history;
+    targetSample.maxGraph = metric.maxGraph;
+    targetSample.timeMarkerOffsetSamples = metric.timeMarkerOffsetSamples;
+    targetSample.guideStepMbps = metric.guideStepMbps;
+    const ThroughputChartSample animatedSample = renderer.ResolveAnimatedThroughputChart(
+        AnimationDataKey{AnimationDataKind::ThroughputChart, metric_, {}}, targetSample);
     DrawGraph(renderer,
         layout.graphRect,
         layout,
-        metric.history,
-        metric.maxGraph,
-        metric.guideStepMbps,
-        metric.timeMarkerOffsetSamples,
+        animatedSample.samples,
+        animatedSample.maxGraph,
+        animatedSample.guideStepMbps,
+        animatedSample.timeMarkerOffsetSamples,
         metric.timeMarkerIntervalSamples,
         renderer.MakeEditableTextBinding(
             widget, WidgetHost::LayoutEditParameter::FontSmall, 2, renderer.Config().layout.fonts.smallText.size));

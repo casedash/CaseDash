@@ -25,26 +25,39 @@ void FillPill(WidgetHost& renderer, const RenderRect& rect, RenderColorId color)
 
 std::optional<RenderRect> DrawWidgetPillBar(
     WidgetHost& renderer, const RenderRect& rect, double ratio, std::optional<double> peakRatio, bool drawFill) {
+    if (!drawFill) {
+        FillPill(renderer, rect, RenderColorId::Track);
+        return std::nullopt;
+    }
+
+    ScalarFillSample sample;
+    sample.valueRatio = ratio;
+    sample.peakRatio = peakRatio;
+    return DrawWidgetPillBar(renderer, rect, sample);
+}
+
+std::optional<RenderRect> DrawWidgetPillBar(
+    WidgetHost& renderer, const RenderRect& rect, const ScalarFillSample& sample) {
     FillPill(renderer, rect, RenderColorId::Track);
 
     const int width = rect.Width();
     const int height = rect.Height();
-    if (width <= 0 || height <= 0 || !drawFill) {
+    if (width <= 0 || height <= 0 || !sample.valueRatio.has_value()) {
         return std::nullopt;
     }
 
-    const double clampedRatio = ClampFinite(ratio, 0.0, 1.0);
+    const double clampedRatio = ClampFinite(*sample.valueRatio, 0.0, 1.0);
     const int straightWidth = std::max(0, width - height);
     const int fillWidth = std::min(width, height + static_cast<int>(std::round(clampedRatio * straightWidth)));
     RenderRect fillRect = rect;
     fillRect.right = fillRect.left + fillWidth;
     FillPill(renderer, fillRect, RenderColorId::Accent);
 
-    if (!peakRatio.has_value()) {
+    if (!sample.peakRatio.has_value()) {
         return std::nullopt;
     }
 
-    const double peak = ClampFinite(*peakRatio, 0.0, 1.0);
+    const double peak = ClampFinite(*sample.peakRatio, 0.0, 1.0);
     const int markerWidth = std::min(width, std::max(1, std::max(renderer.Renderer().ScaleLogical(4), height)));
     const int centerX = rect.left + static_cast<int>(std::round(peak * width));
     const int minLeft = rect.left;

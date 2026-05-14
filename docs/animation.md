@@ -28,12 +28,12 @@ The current code already provides several pieces the animation design depends on
 - `MetricSource` already exposes normalized scalar ratios, recent-peak ratios, smoothed throughput histories, shared throughput graph maxima, and time-marker offsets.
 - The live renderer and screenshot renderer use the same Direct2D and DirectWrite scene, so deterministic diagnostics rendering can keep reusing the existing immediate draw path.
 
-The current code is missing the pieces that make live animation possible:
+The current implementation adds the shared animation cadence, D2D-free animation DTOs, stable data keys, renderer-owned interpolation state, widget-host sample resolution, live repaint scheduling, and deterministic offscreen bypass. It still does not include the target renderer split described below:
 
 - The live window draw path is immediate-mode and UI-thread-owned: `DashboardApp::Paint()` calls `DashboardRenderer::DrawWindow()`, which draws the full frame into `D2DRenderer` synchronously.
 - `D2DRenderer` currently owns a single-threaded Direct2D factory and an `ID2D1HwndRenderTarget`; it does not expose a render-thread presenter, shared layer bitmaps, bitmap blits, DXGI flip-model presentation, or dirty-rectangle presentation.
-- Widgets currently draw static text, tracks, fills, peak markers, edit regions, and overlay-affecting dynamic artifacts in one `Draw()` call.
-- There is no renderer-safe animation scene contract, animation data key, interpolation state, render-thread mailbox, bitmap pool, or resize-generation synchronization.
+- Widgets still draw static text, tracks, fills, peak markers, edit regions, and overlay-affecting dynamic artifacts in one `Draw()` call.
+- There is no render-thread mailbox, bitmap pool, or resize-generation synchronization.
 - Layout-edit dragged-child replay currently happens by re-entering widget draw code in the normal frame rather than by composing independent static and animated layers.
 
 ## Target Behavior

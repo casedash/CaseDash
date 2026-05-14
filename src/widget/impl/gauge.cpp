@@ -252,16 +252,25 @@ void GaugeWidget::ResolveLayoutState(const WidgetHost& renderer, const RenderRec
 void GaugeWidget::Draw(WidgetHost& renderer, const WidgetLayout& widget, const MetricSource& metrics) const {
     const MetricValue& metric = metrics.ResolveMetric(metric_);
     const GaugeSegmentLayout& gaugeLayout = layoutState_.segmentLayout;
-    const double clampedRatio = ClampFinite(metric.ratio, 0.0, 1.0);
+    const bool drawMetricValue =
+        metric.state == MetricValueState::Available && renderer.CurrentRenderMode() != WidgetHost::RenderMode::Blank;
+    ScalarFillSample targetSample;
+    if (drawMetricValue) {
+        targetSample.valueRatio = metric.ratio;
+        targetSample.peakRatio = metric.peakRatio;
+    }
+    const ScalarFillSample animatedSample =
+        renderer.ResolveAnimatedScalarFill(AnimationDataKey{AnimationDataKind::ScalarFill, metric_, {}}, targetSample);
+    const double clampedRatio = ClampFinite(animatedSample.valueRatio.value_or(0.0), 0.0, 1.0);
     const int filledSegments =
-        clampedRatio <= 0.0
+        !animatedSample.valueRatio.has_value() || clampedRatio <= 0.0
             ? 0
             : std::clamp(static_cast<int>(std::ceil(clampedRatio * static_cast<double>(gaugeLayout.segmentCount))),
                   1,
                   gaugeLayout.segmentCount);
-    const double clampedPeakRatio = ClampFinite(metric.peakRatio, 0.0, 1.0);
+    const double clampedPeakRatio = ClampFinite(animatedSample.peakRatio.value_or(0.0), 0.0, 1.0);
     const int peakSegment =
-        clampedPeakRatio <= 0.0
+        !animatedSample.peakRatio.has_value() || clampedPeakRatio <= 0.0
             ? -1
             : std::clamp(
                   static_cast<int>(std::ceil(clampedPeakRatio * static_cast<double>(gaugeLayout.segmentCount))) - 1,
@@ -271,16 +280,15 @@ void GaugeWidget::Draw(WidgetHost& renderer, const WidgetLayout& widget, const M
     const RenderStroke trackStroke =
         RenderStroke::Solid(RenderColorId::Track, static_cast<float>(layoutState_.ringThickness));
     renderer.Renderer().DrawArcs(layoutState_.ringSegments, trackStroke);
-    const bool drawMetricValue =
-        metric.state == MetricValueState::Available && renderer.CurrentRenderMode() != WidgetHost::RenderMode::Blank;
-    if (drawMetricValue && filledSegments > 0) {
+    if (animatedSample.valueRatio.has_value() && filledSegments > 0) {
         const RenderStroke accentStroke =
             RenderStroke::Solid(RenderColorId::Accent, static_cast<float>(layoutState_.ringThickness));
         renderer.Renderer().DrawArcs(
             std::span<const RenderArc>(layoutState_.ringSegments.data(), static_cast<size_t>(filledSegments)),
             accentStroke);
     }
-    if (drawMetricValue && peakSegment >= 0 && static_cast<size_t>(peakSegment) < layoutState_.ringSegments.size()) {
+    if (animatedSample.valueRatio.has_value() && peakSegment >= 0 &&
+        static_cast<size_t>(peakSegment) < layoutState_.ringSegments.size()) {
         const size_t peakSegmentIndex = static_cast<size_t>(peakSegment);
         renderer.Renderer().DrawArc(layoutState_.ringSegments[peakSegmentIndex],
             RenderStroke::Solid(RenderColorId::PeakGhost, static_cast<float>(layoutState_.ringThickness)));

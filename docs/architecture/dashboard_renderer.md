@@ -8,6 +8,7 @@
 - Implement `WidgetHost` for widget drawing and layout-edit artifact registration.
 - Own the registered artifact storage, shared affordance presets, and low-level anchor-region construction used by layout editing.
 - Own the fixed-slot metric definition and sample-text lookup cache in `impl/metric_lookup_cache.*`.
+- Own the live dashboard animation timeline in `impl/animation_timeline.*`; widgets publish stable animation keys and target samples through `WidgetHost`, while deterministic offscreen rendering bypasses interpolation.
 - Render selected and hovered layout-edit highlights, layout and widget guides, gap anchors, size-similarity indicators, dotted outlines, and dragged container-child replay.
 - Produce copied `LayoutEditActiveRegions` snapshots for live layout editing and diagnostics screenshot validation.
 - Supply resolved-card summaries, card-chrome artifact hooks, and rendering hooks needed by the layout-guide-sheet package.

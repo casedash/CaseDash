@@ -91,7 +91,9 @@ HICON CreateThemedAppIcon(const AppConfig& config, int size) {
 
 DashboardApp::DashboardApp(const DiagnosticsOptions& diagnosticsOptions, bool bringToFrontOnRun)
     : renderer_(trace_), diagnosticsOptions_(diagnosticsOptions), layoutEditController_(*this),
-      shellUi_(std::make_unique<DashboardShellUi>(*this)), bringToFrontOnRun_(bringToFrontOnRun) {}
+      shellUi_(std::make_unique<DashboardShellUi>(*this)), bringToFrontOnRun_(bringToFrontOnRun) {
+    renderer_.SetLiveAnimationEnabled(true);
+}
 
 DashboardApp::~DashboardApp() = default;
 
@@ -1092,6 +1094,14 @@ LRESULT DashboardApp::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam) 
                 InvalidateRect(hwnd_, nullptr, FALSE);
                 return 0;
             }
+            if (wParam == kAnimationFrameTimerId) {
+                if (renderer_.HasActiveDashboardAnimation()) {
+                    InvalidateRect(hwnd_, nullptr, FALSE);
+                } else {
+                    KillTimer(hwnd_, kAnimationFrameTimerId);
+                }
+                return 0;
+            }
             if (wParam == kPlacementTimerId) {
                 RetryConfigPlacementIfPending();
                 return 0;
@@ -1386,6 +1396,7 @@ LRESULT DashboardApp::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam) 
         case WM_DESTROY:
             KillTimer(hwnd_, kMoveTimerId);
             KillTimer(hwnd_, kPlacementTimerId);
+            KillTimer(hwnd_, kAnimationFrameTimerId);
             if (state.telemetry != nullptr) {
                 state.telemetry->Shutdown();
             }
@@ -1422,6 +1433,11 @@ void DashboardApp::Paint() {
     renderer_.DrawWindow(snapshot, rendererDashboardOverlayState_);
     const auto drawEnd = std::chrono::steady_clock::now();
     EndPaint(hwnd_, &ps);
+    if (renderer_.HasActiveDashboardAnimation()) {
+        SetTimer(hwnd_, kAnimationFrameTimerId, kAnimationFrameTimerMs, nullptr);
+    } else {
+        KillTimer(hwnd_, kAnimationFrameTimerId);
+    }
     const auto paintEnd = std::chrono::steady_clock::now();
     RecordLayoutEditTracePhase(TracePhase::PaintDraw, drawEnd - drawStart);
     RecordLayoutEditTracePhase(TracePhase::PaintTotal, paintEnd - paintStart);

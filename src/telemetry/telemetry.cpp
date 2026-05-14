@@ -8,7 +8,6 @@
 namespace {
 
 using Clock = std::chrono::steady_clock;
-constexpr auto kTelemetryRefreshInterval = std::chrono::milliseconds(500);
 constexpr const char* kRetainedHistorySeriesRefs[] = {
     "cpu.ram",
     "cpu.load",
