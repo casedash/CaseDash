@@ -4,21 +4,36 @@
 #include <vector>
 
 #include "dashboard_renderer/impl/animation_timeline.h"
+#include "widget/impl/animation_primitives.h"
 
 namespace {
 
 using Clock = DashboardAnimationTimeline::Clock;
 
 AnimationDataKey ScalarKey(std::string subject) {
-    return AnimationDataKey{AnimationDataKind::ScalarFill, std::move(subject), {}};
+    return AnimationDataKey{std::move(subject), {}};
 }
 
 AnimationDataKey ThroughputKey(std::string subject) {
-    return AnimationDataKey{AnimationDataKind::ThroughputChart, std::move(subject), {}};
+    return AnimationDataKey{std::move(subject), {}};
 }
 
 ScalarFillSample ScalarTarget(double value, double peak) {
     return ScalarFillSample{value, peak};
+}
+
+ScalarFillSample ResolveScalar(
+    DashboardAnimationTimeline& timeline, const AnimationDataKey& key, const ScalarFillSample& target) {
+    WidgetAnimationStatePtr targetState = MakeScalarFillAnimationState(target);
+    WidgetAnimationStatePtr sampled = timeline.Resolve(key, *targetState);
+    return ScalarFillSampleFromState(*sampled);
+}
+
+ThroughputChartSample ResolveThroughput(
+    DashboardAnimationTimeline& timeline, const AnimationDataKey& key, const ThroughputChartSample& target) {
+    WidgetAnimationStatePtr targetState = MakeThroughputChartAnimationState(target);
+    WidgetAnimationStatePtr sampled = timeline.Resolve(key, *targetState);
+    return ThroughputChartSampleFromState(*sampled);
 }
 
 }  // namespace
@@ -29,7 +44,7 @@ TEST(AnimationTimeline, FirstSeenScalarStartsAtZeroAndReachesTarget) {
     const AnimationDataKey key = ScalarKey("cpu.load");
 
     timeline.BeginFrame(start);
-    ScalarFillSample sample = timeline.ResolveScalar(key, ScalarTarget(0.8, 0.9));
+    ScalarFillSample sample = ResolveScalar(timeline, key, ScalarTarget(0.8, 0.9));
     timeline.EndFrame();
 
     ASSERT_TRUE(sample.valueRatio.has_value());
@@ -39,7 +54,7 @@ TEST(AnimationTimeline, FirstSeenScalarStartsAtZeroAndReachesTarget) {
     EXPECT_TRUE(timeline.HasActiveAnimations(start + std::chrono::milliseconds(250)));
 
     timeline.BeginFrame(start + std::chrono::milliseconds(500));
-    sample = timeline.ResolveScalar(key, ScalarTarget(0.8, 0.9));
+    sample = ResolveScalar(timeline, key, ScalarTarget(0.8, 0.9));
     timeline.EndFrame();
 
     ASSERT_TRUE(sample.valueRatio.has_value());
@@ -55,11 +70,11 @@ TEST(AnimationTimeline, InterruptedScalarUsesCurrentInterpolatedValueAsNewStart)
     const AnimationDataKey key = ScalarKey("gpu.vram");
 
     timeline.BeginFrame(start);
-    (void)timeline.ResolveScalar(key, ScalarTarget(1.0, 1.0));
+    (void)ResolveScalar(timeline, key, ScalarTarget(1.0, 1.0));
     timeline.EndFrame();
 
     timeline.BeginFrame(start + std::chrono::milliseconds(250));
-    ScalarFillSample sample = timeline.ResolveScalar(key, ScalarTarget(0.2, 0.4));
+    ScalarFillSample sample = ResolveScalar(timeline, key, ScalarTarget(0.2, 0.4));
     timeline.EndFrame();
 
     ASSERT_TRUE(sample.valueRatio.has_value());
@@ -68,7 +83,7 @@ TEST(AnimationTimeline, InterruptedScalarUsesCurrentInterpolatedValueAsNewStart)
     EXPECT_DOUBLE_EQ(*sample.peakRatio, 1.0);
 
     timeline.BeginFrame(start + std::chrono::milliseconds(500));
-    sample = timeline.ResolveScalar(key, ScalarTarget(0.2, 0.4));
+    sample = ResolveScalar(timeline, key, ScalarTarget(0.2, 0.4));
     timeline.EndFrame();
 
     ASSERT_TRUE(sample.valueRatio.has_value());
@@ -77,21 +92,40 @@ TEST(AnimationTimeline, InterruptedScalarUsesCurrentInterpolatedValueAsNewStart)
     EXPECT_DOUBLE_EQ(*sample.peakRatio, 0.7);
 }
 
+TEST(AnimationTimeline, UnchangedScalarTargetKeepsProgressAcrossLayoutOnlyFrames) {
+    DashboardAnimationTimeline timeline(std::chrono::milliseconds(500));
+    const Clock::time_point start = Clock::time_point{};
+    const AnimationDataKey key = ScalarKey("cpu.load");
+
+    timeline.BeginFrame(start);
+    (void)ResolveScalar(timeline, key, ScalarTarget(0.8, 0.9));
+    timeline.EndFrame();
+
+    timeline.BeginFrame(start + std::chrono::milliseconds(250));
+    const ScalarFillSample sample = ResolveScalar(timeline, key, ScalarTarget(0.8, 0.9));
+    timeline.EndFrame();
+
+    ASSERT_TRUE(sample.valueRatio.has_value());
+    EXPECT_DOUBLE_EQ(*sample.valueRatio, 0.4);
+    ASSERT_TRUE(sample.peakRatio.has_value());
+    EXPECT_DOUBLE_EQ(*sample.peakRatio, 0.9);
+}
+
 TEST(AnimationTimeline, UnavailableScalarAnimatesToZeroThenDisappears) {
     DashboardAnimationTimeline timeline(std::chrono::milliseconds(500));
     const Clock::time_point start = Clock::time_point{};
     const AnimationDataKey key = ScalarKey("gpu.fps");
 
     timeline.BeginFrame(start);
-    (void)timeline.ResolveScalar(key, ScalarTarget(0.6, 0.75));
+    (void)ResolveScalar(timeline, key, ScalarTarget(0.6, 0.75));
     timeline.EndFrame();
 
     timeline.BeginFrame(start + std::chrono::milliseconds(500));
-    (void)timeline.ResolveScalar(key, ScalarTarget(0.6, 0.75));
+    (void)ResolveScalar(timeline, key, ScalarTarget(0.6, 0.75));
     timeline.EndFrame();
 
     timeline.BeginFrame(start + std::chrono::milliseconds(600));
-    ScalarFillSample sample = timeline.ResolveScalar(key, ScalarFillSample{});
+    ScalarFillSample sample = ResolveScalar(timeline, key, ScalarFillSample{});
     timeline.EndFrame();
 
     ASSERT_TRUE(sample.valueRatio.has_value());
@@ -100,7 +134,7 @@ TEST(AnimationTimeline, UnavailableScalarAnimatesToZeroThenDisappears) {
     EXPECT_DOUBLE_EQ(*sample.peakRatio, 0.75);
 
     timeline.BeginFrame(start + std::chrono::milliseconds(1100));
-    sample = timeline.ResolveScalar(key, ScalarFillSample{});
+    sample = ResolveScalar(timeline, key, ScalarFillSample{});
     timeline.EndFrame();
 
     EXPECT_FALSE(sample.valueRatio.has_value());
@@ -119,11 +153,11 @@ TEST(AnimationTimeline, ThroughputVectorsAlignByNewestSample) {
     first.guideStepMbps = 5.0;
 
     timeline.BeginFrame(start);
-    (void)timeline.ResolveThroughput(key, first);
+    (void)ResolveThroughput(timeline, key, first);
     timeline.EndFrame();
 
     timeline.BeginFrame(start + std::chrono::milliseconds(500));
-    (void)timeline.ResolveThroughput(key, first);
+    (void)ResolveThroughput(timeline, key, first);
     timeline.EndFrame();
 
     ThroughputChartSample next;
@@ -133,11 +167,11 @@ TEST(AnimationTimeline, ThroughputVectorsAlignByNewestSample) {
     next.guideStepMbps = 5.0;
 
     timeline.BeginFrame(start + std::chrono::milliseconds(600));
-    (void)timeline.ResolveThroughput(key, next);
+    (void)ResolveThroughput(timeline, key, next);
     timeline.EndFrame();
 
     timeline.BeginFrame(start + std::chrono::milliseconds(850));
-    const ThroughputChartSample sample = timeline.ResolveThroughput(key, next);
+    const ThroughputChartSample sample = ResolveThroughput(timeline, key, next);
     timeline.EndFrame();
 
     ASSERT_EQ(sample.samples.size(), 3u);
@@ -160,11 +194,11 @@ TEST(AnimationTimeline, ThroughputCarriesPlotShiftAndTargetTailWhenPhaseAdvances
     first.timeMarkerOffsetSamples = 8.0;
 
     timeline.BeginFrame(start);
-    (void)timeline.ResolveThroughput(key, first);
+    (void)ResolveThroughput(timeline, key, first);
     timeline.EndFrame();
 
     timeline.BeginFrame(start + std::chrono::milliseconds(500));
-    (void)timeline.ResolveThroughput(key, first);
+    (void)ResolveThroughput(timeline, key, first);
     timeline.EndFrame();
 
     ThroughputChartSample next;
@@ -173,11 +207,11 @@ TEST(AnimationTimeline, ThroughputCarriesPlotShiftAndTargetTailWhenPhaseAdvances
     next.timeMarkerOffsetSamples = 9.0;
 
     timeline.BeginFrame(start + std::chrono::milliseconds(600));
-    (void)timeline.ResolveThroughput(key, next);
+    (void)ResolveThroughput(timeline, key, next);
     timeline.EndFrame();
 
     timeline.BeginFrame(start + std::chrono::milliseconds(850));
-    const ThroughputChartSample sample = timeline.ResolveThroughput(key, next);
+    const ThroughputChartSample sample = ResolveThroughput(timeline, key, next);
     timeline.EndFrame();
 
     EXPECT_DOUBLE_EQ(sample.plotShiftSamples, 0.5);
@@ -195,11 +229,11 @@ TEST(AnimationTimeline, InterruptedThroughputScrollContinuesFromCurrentPlotShift
     first.timeMarkerOffsetSamples = 8.0;
 
     timeline.BeginFrame(start);
-    (void)timeline.ResolveThroughput(key, first);
+    (void)ResolveThroughput(timeline, key, first);
     timeline.EndFrame();
 
     timeline.BeginFrame(start + std::chrono::milliseconds(500));
-    (void)timeline.ResolveThroughput(key, first);
+    (void)ResolveThroughput(timeline, key, first);
     timeline.EndFrame();
 
     ThroughputChartSample second;
@@ -208,7 +242,7 @@ TEST(AnimationTimeline, InterruptedThroughputScrollContinuesFromCurrentPlotShift
     second.timeMarkerOffsetSamples = 9.0;
 
     timeline.BeginFrame(start + std::chrono::milliseconds(600));
-    (void)timeline.ResolveThroughput(key, second);
+    (void)ResolveThroughput(timeline, key, second);
     timeline.EndFrame();
 
     ThroughputChartSample third;
@@ -217,14 +251,14 @@ TEST(AnimationTimeline, InterruptedThroughputScrollContinuesFromCurrentPlotShift
     third.timeMarkerOffsetSamples = 10.0;
 
     timeline.BeginFrame(start + std::chrono::milliseconds(850));
-    ThroughputChartSample sample = timeline.ResolveThroughput(key, third);
+    ThroughputChartSample sample = ResolveThroughput(timeline, key, third);
     timeline.EndFrame();
 
     EXPECT_DOUBLE_EQ(sample.plotShiftSamples, 0.5);
     EXPECT_EQ(sample.samples, (std::vector<double>{0.0, 10.0, 30.0, 70.0, 90.0}));
 
     timeline.BeginFrame(start + std::chrono::milliseconds(1100));
-    sample = timeline.ResolveThroughput(key, third);
+    sample = ResolveThroughput(timeline, key, third);
     timeline.EndFrame();
 
     EXPECT_DOUBLE_EQ(sample.plotShiftSamples, 1.25);
@@ -242,22 +276,22 @@ TEST(AnimationTimeline, ThroughputTimeMarkerMovesForwardAcrossWrap) {
     first.timeMarkerOffsetSamples = 19.0;
 
     timeline.BeginFrame(start);
-    (void)timeline.ResolveThroughput(key, first);
+    (void)ResolveThroughput(timeline, key, first);
     timeline.EndFrame();
 
     timeline.BeginFrame(start + std::chrono::milliseconds(500));
-    (void)timeline.ResolveThroughput(key, first);
+    (void)ResolveThroughput(timeline, key, first);
     timeline.EndFrame();
 
     ThroughputChartSample next = first;
     next.timeMarkerOffsetSamples = 1.0;
 
     timeline.BeginFrame(start + std::chrono::milliseconds(600));
-    (void)timeline.ResolveThroughput(key, next);
+    (void)ResolveThroughput(timeline, key, next);
     timeline.EndFrame();
 
     timeline.BeginFrame(start + std::chrono::milliseconds(850));
-    const ThroughputChartSample sample = timeline.ResolveThroughput(key, next);
+    const ThroughputChartSample sample = ResolveThroughput(timeline, key, next);
     timeline.EndFrame();
 
     EXPECT_DOUBLE_EQ(sample.timeMarkerOffsetSamples, 20.0);
@@ -269,7 +303,7 @@ TEST(AnimationTimeline, UntouchedKeysAreDiscardedAfterAFrame) {
     const AnimationDataKey key = ScalarKey("cpu.clock");
 
     timeline.BeginFrame(start);
-    (void)timeline.ResolveScalar(key, ScalarTarget(1.0, 1.0));
+    (void)ResolveScalar(timeline, key, ScalarTarget(1.0, 1.0));
     timeline.EndFrame();
     EXPECT_TRUE(timeline.HasActiveAnimations(start + std::chrono::milliseconds(100)));
 

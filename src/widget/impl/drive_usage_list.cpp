@@ -3,9 +3,13 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <memory>
 #include <optional>
+#include <utility>
+#include <vector>
 
 #include "telemetry/metrics.h"
+#include "widget/impl/animation_primitives.h"
 #include "widget/impl/pill_bar.h"
 #include "widget/widget_host.h"
 
@@ -137,17 +141,12 @@ int ComputeLowestStackedSegmentTop(int top, int height, int width, int segmentCo
     return lastSegmentTop;
 }
 
-void DrawSegmentIndicator(WidgetHost& renderer,
-    const RenderRect& rect,
-    int segmentCount,
-    int segmentGap,
-    double ratio,
-    RenderColorId trackColor,
-    RenderColorId accentColor) {
+std::vector<RenderRect> SegmentIndicatorRects(const RenderRect& rect, int segmentCount, int segmentGap) {
+    std::vector<RenderRect> rects;
     const int width = (std::max)(0, rect.right - rect.left);
     const int height = (std::max)(0, rect.bottom - rect.top);
     if (width <= 0 || height <= 0 || segmentCount <= 0) {
-        return;
+        return rects;
     }
 
     const int maxGap = segmentCount <= 1 ? 0 : (std::max)(0, (height - segmentCount) / (segmentCount - 1));
@@ -156,11 +155,7 @@ void DrawSegmentIndicator(WidgetHost& renderer,
     const int availableHeight = (std::max)(segmentCount, height - totalGap);
     const int baseSegmentHeight = (std::max)(1, availableHeight / segmentCount);
     const int remainder = (std::max)(0, availableHeight - (baseSegmentHeight * segmentCount));
-    const double clampedRatio = std::clamp(ratio, 0.0, 1.0);
-    const int filledSegments =
-        clampedRatio > 0.0
-            ? std::clamp(static_cast<int>(std::ceil(clampedRatio * static_cast<double>(segmentCount))), 1, segmentCount)
-            : 0;
+    rects.reserve(static_cast<size_t>(segmentCount));
     int top = rect.top;
     for (int index = segmentCount - 1; index >= 0; --index) {
         const int extra = (segmentCount - 1 - index) < remainder ? 1 : 0;
@@ -168,15 +163,70 @@ void DrawSegmentIndicator(WidgetHost& renderer,
         const int visualHeight = (std::min)(segmentHeight, (std::max)(2, width / 2));
         const int segmentTop = top + (std::max)(0, (segmentHeight - visualHeight) / 2);
         RenderRect segmentRect{rect.left, segmentTop, rect.right, (std::min)(rect.bottom, segmentTop + visualHeight)};
-        renderer.Renderer().FillSolidRect(segmentRect, trackColor);
-
-        if (index < filledSegments) {
-            renderer.Renderer().FillSolidRect(segmentRect, accentColor);
-        }
-
+        rects.push_back(segmentRect);
         top = segmentRect.bottom + clampedGap;
     }
+    return rects;
 }
+
+void DrawSegmentIndicatorTrack(
+    Renderer& renderer, const RenderRect& rect, int segmentCount, int segmentGap, RenderColorId trackColor) {
+    for (const RenderRect& segmentRect : SegmentIndicatorRects(rect, segmentCount, segmentGap)) {
+        renderer.FillSolidRect(segmentRect, trackColor);
+    }
+}
+
+void DrawSegmentIndicatorFill(Renderer& renderer,
+    const RenderRect& rect,
+    int segmentCount,
+    int segmentGap,
+    double ratio,
+    RenderColorId accentColor) {
+    const double clampedRatio = std::clamp(ratio, 0.0, 1.0);
+    const int filledSegments =
+        clampedRatio > 0.0
+            ? std::clamp(static_cast<int>(std::ceil(clampedRatio * static_cast<double>(segmentCount))), 1, segmentCount)
+            : 0;
+    int index = segmentCount - 1;
+    for (const RenderRect& segmentRect : SegmentIndicatorRects(rect, segmentCount, segmentGap)) {
+        if (index < filledSegments) {
+            renderer.FillSolidRect(segmentRect, accentColor);
+        }
+        --index;
+    }
+}
+
+class DriveActivityAnimation final : public WidgetAnimation {
+public:
+    DriveActivityAnimation(
+        AnimationDataKey key, RenderRect rect, int segmentCount, int segmentGap, ScalarFillSample target)
+        : key_(std::move(key)), rect_(rect), segmentCount_(segmentCount), segmentGap_(segmentGap),
+          target_(std::move(target)) {}
+
+    const AnimationDataKey& Key() const override {
+        return key_;
+    }
+
+    WidgetAnimationStatePtr TargetState() const override {
+        return MakeScalarFillAnimationState(target_);
+    }
+
+    void Draw(Renderer& renderer, const WidgetAnimationState& state) const override {
+        DrawSegmentIndicatorFill(renderer,
+            rect_,
+            segmentCount_,
+            segmentGap_,
+            ScalarFillSampleFromState(state).valueRatio.value_or(0.0),
+            RenderColorId::Accent);
+    }
+
+private:
+    AnimationDataKey key_;
+    RenderRect rect_{};
+    int segmentCount_ = 0;
+    int segmentGap_ = 0;
+    ScalarFillSample target_;
+};
 
 int EffectiveDriveHeaderHeight(const WidgetHost& renderer) {
     const int headerGap =
@@ -387,27 +437,29 @@ void DriveUsageListWidget::Draw(WidgetHost& renderer, const WidgetLayout& widget
             writeTarget.valueRatio = drive->writeActivity;
             usageTarget.valueRatio = drive->usedPercent / 100.0;
         }
-        const ScalarFillSample readSample = renderer.ResolveAnimatedScalarFill(
-            AnimationDataKey{AnimationDataKind::ScalarFill, drive->label, "read"}, readTarget);
-        const ScalarFillSample writeSample = renderer.ResolveAnimatedScalarFill(
-            AnimationDataKey{AnimationDataKind::ScalarFill, drive->label, "write"}, writeTarget);
-        const ScalarFillSample usageSample = renderer.ResolveAnimatedScalarFill(
-            AnimationDataKey{AnimationDataKind::ScalarFill, drive->label, "used"}, usageTarget);
-        DrawSegmentIndicator(renderer,
+        DrawSegmentIndicatorTrack(renderer.Renderer(),
             readIndicatorRect,
             layoutState_.activitySegments,
             layoutState_.activitySegmentGap,
-            readSample.valueRatio.value_or(0.0),
-            RenderColorId::Track,
-            RenderColorId::Accent);
-        DrawSegmentIndicator(renderer,
+            RenderColorId::Track);
+        renderer.AddWidgetAnimation(std::make_unique<DriveActivityAnimation>(AnimationDataKey{drive->label, "read"},
+            readIndicatorRect,
+            layoutState_.activitySegments,
+            layoutState_.activitySegmentGap,
+            readTarget));
+        DrawSegmentIndicatorTrack(renderer.Renderer(),
             writeIndicatorRect,
             layoutState_.activitySegments,
             layoutState_.activitySegmentGap,
-            writeSample.valueRatio.value_or(0.0),
-            RenderColorId::Track,
-            RenderColorId::Accent);
-        DrawWidgetPillBar(renderer, barRect, usageSample);
+            RenderColorId::Track);
+        renderer.AddWidgetAnimation(std::make_unique<DriveActivityAnimation>(AnimationDataKey{drive->label, "write"},
+            writeIndicatorRect,
+            layoutState_.activitySegments,
+            layoutState_.activitySegmentGap,
+            writeTarget));
+        DrawWidgetPillBarTrack(renderer.Renderer(), barRect);
+        renderer.AddWidgetAnimation(
+            MakeWidgetPillBarAnimation(AnimationDataKey{drive->label, "used"}, barRect, usageTarget));
         const int splitX = barRect.left + ((std::max)(0, barRect.right - barRect.left) / 2);
         renderer.EditArtifacts().RegisterDynamicColorEditRegion(WidgetHost::LayoutEditParameter::ColorAccent,
             RenderRect{barRect.left, barRect.top, splitX, barRect.bottom});

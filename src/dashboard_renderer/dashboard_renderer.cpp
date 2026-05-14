@@ -164,26 +164,15 @@ std::optional<MetricListReorderOverlayState> DashboardRenderer::ActiveMetricList
     return drag;
 }
 
-ScalarFillSample DashboardRenderer::ResolveAnimatedScalarFill(
-    const AnimationDataKey& key, const ScalarFillSample& target, AnimationCompositionPlane) {
-    if (!liveAnimationEnabled_ || !liveAnimationFrameActive_ || renderMode_ != RenderMode::Normal) {
-        return target;
+void DashboardRenderer::AddWidgetAnimation(WidgetAnimationPtr animation) {
+    if (animation == nullptr) {
+        return;
     }
-    return animationTimeline_.ResolveScalar(key, target);
-}
-
-ThroughputChartSample DashboardRenderer::ResolveAnimatedThroughputChart(
-    const AnimationDataKey& key, const ThroughputChartSample& target, AnimationCompositionPlane) {
-    if (!liveAnimationEnabled_ || !liveAnimationFrameActive_ || renderMode_ != RenderMode::Normal) {
-        return target;
+    if (!widgetAnimationCollectionActive_) {
+        WidgetHost::AddWidgetAnimation(std::move(animation));
+        return;
     }
-    return animationTimeline_.ResolveThroughput(key, target);
-}
-
-void DashboardRenderer::RegisterAnimationPrimitive(const DashboardAnimationPrimitive& primitive) {
-    if (liveAnimationFrameActive_) {
-        animationScene_.primitives.push_back(primitive);
-    }
+    widgetAnimations_.push_back(std::move(animation));
 }
 
 int DashboardRenderer::WindowWidth() const {
@@ -353,19 +342,59 @@ bool DashboardRenderer::DrawWindow(const SystemSnapshot& snapshot, const Dashboa
     lastError_.clear();
     const bool animateLiveFrame = liveAnimationEnabled_ && renderMode_ == RenderMode::Normal;
     if (animateLiveFrame) {
-        animationScene_.primitives.clear();
         animationTimeline_.BeginFrame(std::chrono::steady_clock::now());
-        liveAnimationFrameActive_ = true;
     }
-    renderer_->DrawWindow(WindowWidth(), WindowHeight(), [&] { DrawFrame(snapshot, overlayState); });
+    renderer_->DrawWindow(WindowWidth(), WindowHeight(), [&] { DrawFrameWithAnimations(snapshot, overlayState); });
     if (animateLiveFrame) {
-        liveAnimationFrameActive_ = false;
         animationTimeline_.EndFrame();
     }
     if (!renderer_->LastError().empty()) {
         lastError_ = renderer_->LastError();
     }
     return lastError_.empty();
+}
+
+void DashboardRenderer::DrawFrameWithAnimations(
+    const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState) {
+    BeginWidgetAnimationCollection();
+    DrawFrame(snapshot, overlayState);
+    EndWidgetAnimationCollection();
+}
+
+void DashboardRenderer::BeginWidgetAnimationCollection() {
+    widgetAnimations_.clear();
+    widgetAnimationCollectionActive_ = true;
+}
+
+void DashboardRenderer::FlushWidgetAnimations() {
+    if (widgetAnimations_.empty()) {
+        return;
+    }
+
+    std::vector<WidgetAnimationPtr> animations;
+    animations.swap(widgetAnimations_);
+    const bool collectionWasActive = widgetAnimationCollectionActive_;
+    widgetAnimationCollectionActive_ = false;
+    for (WidgetAnimationPtr& animation : animations) {
+        if (animation == nullptr) {
+            continue;
+        }
+        WidgetAnimationStatePtr target = animation->TargetState();
+        if (target == nullptr) {
+            continue;
+        }
+        WidgetAnimationStatePtr sampled = animationTimeline_.Resolve(animation->Key(), *target);
+        if (sampled != nullptr) {
+            animation->Draw(Renderer(), *sampled);
+        }
+    }
+    widgetAnimationCollectionActive_ = collectionWasActive;
+}
+
+void DashboardRenderer::EndWidgetAnimationCollection() {
+    FlushWidgetAnimations();
+    widgetAnimations_.clear();
+    widgetAnimationCollectionActive_ = false;
 }
 
 void DashboardRenderer::DrawFrame(const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState) {
@@ -383,9 +412,11 @@ void DashboardRenderer::DrawFrame(const SystemSnapshot& snapshot, const Dashboar
             }
         }
     }
+    FlushWidgetAnimations();
     layoutResolver_->ResolveDynamicEditArtifactCollisions();
     layoutEditOverlayRenderer_->Draw(overlayState, metrics);
     DrawMoveOverlay(overlayState.moveOverlay);
+    FlushWidgetAnimations();
     layoutResolver_->dynamicAnchorRegistrationEnabled_ = false;
     activeOverlayState_ = nullptr;
 }
@@ -397,8 +428,8 @@ bool DashboardRenderer::SaveSnapshotPng(const FilePath& imagePath, const SystemS
 bool DashboardRenderer::SaveSnapshotPng(
     const FilePath& imagePath, const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState) {
     lastError_.clear();
-    const bool saved =
-        renderer_->SavePng(imagePath, WindowWidth(), WindowHeight(), [&] { DrawFrame(snapshot, overlayState); });
+    const bool saved = renderer_->SavePng(
+        imagePath, WindowWidth(), WindowHeight(), [&] { DrawFrameWithAnimations(snapshot, overlayState); });
     if (!renderer_->LastError().empty()) {
         lastError_ = renderer_->LastError();
     }
@@ -542,7 +573,7 @@ LayoutGuideSheetCardChromeArtifacts DashboardRenderer::BuildLayoutGuideSheetCard
 bool DashboardRenderer::RenderSnapshotOffscreen(
     const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState) {
     lastError_.clear();
-    renderer_->DrawOffscreen(WindowWidth(), WindowHeight(), [&] { DrawFrame(snapshot, overlayState); });
+    renderer_->DrawOffscreen(WindowWidth(), WindowHeight(), [&] { DrawFrameWithAnimations(snapshot, overlayState); });
     if (!renderer_->LastError().empty()) {
         lastError_ = renderer_->LastError();
     }

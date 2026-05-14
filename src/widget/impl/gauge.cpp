@@ -2,9 +2,12 @@
 
 #include <algorithm>
 #include <cmath>
+#include <memory>
+#include <utility>
 
 #include "telemetry/metrics.h"
 #include "util/numeric_safety.h"
+#include "widget/impl/animation_primitives.h"
 #include "widget/widget_host.h"
 
 namespace {
@@ -179,6 +182,73 @@ int EffectiveGaugePreferredRadius(const WidgetHost& renderer, const std::string&
     return (std::max)(1, outerRadius);
 }
 
+int GaugeFilledSegmentCount(const GaugeSegmentLayout& layout, const ScalarFillSample& sample) {
+    const double clampedRatio = ClampFinite(sample.valueRatio.value_or(0.0), 0.0, 1.0);
+    return !sample.valueRatio.has_value() || clampedRatio <= 0.0
+               ? 0
+               : std::clamp(static_cast<int>(std::ceil(clampedRatio * static_cast<double>(layout.segmentCount))),
+                     1,
+                     layout.segmentCount);
+}
+
+int GaugePeakSegment(const GaugeSegmentLayout& layout, const ScalarFillSample& sample) {
+    const double clampedPeakRatio = ClampFinite(sample.peakRatio.value_or(0.0), 0.0, 1.0);
+    return !sample.peakRatio.has_value() || clampedPeakRatio <= 0.0
+               ? -1
+               : std::clamp(
+                     static_cast<int>(std::ceil(clampedPeakRatio * static_cast<double>(layout.segmentCount))) - 1,
+                     0,
+                     layout.segmentCount - 1);
+}
+
+void DrawGaugeFill(Renderer& renderer,
+    const GaugeSegmentLayout& gaugeLayout,
+    const std::vector<RenderArc>& ringSegments,
+    int ringThickness,
+    const ScalarFillSample& sample) {
+    const int filledSegments = GaugeFilledSegmentCount(gaugeLayout, sample);
+    const int peakSegment = GaugePeakSegment(gaugeLayout, sample);
+    if (sample.valueRatio.has_value() && filledSegments > 0) {
+        const RenderStroke accentStroke = RenderStroke::Solid(RenderColorId::Accent, static_cast<float>(ringThickness));
+        renderer.DrawArcs(
+            std::span<const RenderArc>(ringSegments.data(), static_cast<size_t>(filledSegments)), accentStroke);
+    }
+    if (sample.valueRatio.has_value() && peakSegment >= 0 && static_cast<size_t>(peakSegment) < ringSegments.size()) {
+        renderer.DrawArc(ringSegments[static_cast<size_t>(peakSegment)],
+            RenderStroke::Solid(RenderColorId::PeakGhost, static_cast<float>(ringThickness)));
+    }
+}
+
+class GaugeFillAnimation final : public WidgetAnimation {
+public:
+    GaugeFillAnimation(AnimationDataKey key,
+        GaugeSegmentLayout gaugeLayout,
+        std::vector<RenderArc> ringSegments,
+        int ringThickness,
+        ScalarFillSample target)
+        : key_(std::move(key)), gaugeLayout_(gaugeLayout), ringSegments_(std::move(ringSegments)),
+          ringThickness_(ringThickness), target_(std::move(target)) {}
+
+    const AnimationDataKey& Key() const override {
+        return key_;
+    }
+
+    WidgetAnimationStatePtr TargetState() const override {
+        return MakeScalarFillAnimationState(target_);
+    }
+
+    void Draw(Renderer& renderer, const WidgetAnimationState& state) const override {
+        DrawGaugeFill(renderer, gaugeLayout_, ringSegments_, ringThickness_, ScalarFillSampleFromState(state));
+    }
+
+private:
+    AnimationDataKey key_;
+    GaugeSegmentLayout gaugeLayout_{};
+    std::vector<RenderArc> ringSegments_;
+    int ringThickness_ = 1;
+    ScalarFillSample target_;
+};
+
 }  // namespace
 
 void GaugeWidget::Initialize(const LayoutNodeConfig& node) {
@@ -259,39 +329,19 @@ void GaugeWidget::Draw(WidgetHost& renderer, const WidgetLayout& widget, const M
         targetSample.valueRatio = metric.ratio;
         targetSample.peakRatio = metric.peakRatio;
     }
-    const ScalarFillSample animatedSample =
-        renderer.ResolveAnimatedScalarFill(AnimationDataKey{AnimationDataKind::ScalarFill, metric_, {}}, targetSample);
-    const double clampedRatio = ClampFinite(animatedSample.valueRatio.value_or(0.0), 0.0, 1.0);
-    const int filledSegments =
-        !animatedSample.valueRatio.has_value() || clampedRatio <= 0.0
-            ? 0
-            : std::clamp(static_cast<int>(std::ceil(clampedRatio * static_cast<double>(gaugeLayout.segmentCount))),
-                  1,
-                  gaugeLayout.segmentCount);
-    const double clampedPeakRatio = ClampFinite(animatedSample.peakRatio.value_or(0.0), 0.0, 1.0);
-    const int peakSegment =
-        !animatedSample.peakRatio.has_value() || clampedPeakRatio <= 0.0
-            ? -1
-            : std::clamp(
-                  static_cast<int>(std::ceil(clampedPeakRatio * static_cast<double>(gaugeLayout.segmentCount))) - 1,
-                  0,
-                  gaugeLayout.segmentCount - 1);
+    const int peakSegment = GaugePeakSegment(gaugeLayout, targetSample);
 
     const RenderStroke trackStroke =
         RenderStroke::Solid(RenderColorId::Track, static_cast<float>(layoutState_.ringThickness));
     renderer.Renderer().DrawArcs(layoutState_.ringSegments, trackStroke);
-    if (animatedSample.valueRatio.has_value() && filledSegments > 0) {
-        const RenderStroke accentStroke =
-            RenderStroke::Solid(RenderColorId::Accent, static_cast<float>(layoutState_.ringThickness));
-        renderer.Renderer().DrawArcs(
-            std::span<const RenderArc>(layoutState_.ringSegments.data(), static_cast<size_t>(filledSegments)),
-            accentStroke);
-    }
-    if (animatedSample.valueRatio.has_value() && peakSegment >= 0 &&
+    renderer.AddWidgetAnimation(std::make_unique<GaugeFillAnimation>(AnimationDataKey{metric_, {}},
+        gaugeLayout,
+        layoutState_.ringSegments,
+        layoutState_.ringThickness,
+        targetSample));
+    if (targetSample.valueRatio.has_value() && peakSegment >= 0 &&
         static_cast<size_t>(peakSegment) < layoutState_.ringSegments.size()) {
         const size_t peakSegmentIndex = static_cast<size_t>(peakSegment);
-        renderer.Renderer().DrawArc(layoutState_.ringSegments[peakSegmentIndex],
-            RenderStroke::Solid(RenderColorId::PeakGhost, static_cast<float>(layoutState_.ringThickness)));
         if (peakSegmentIndex < layoutState_.ringSegmentBounds.size() &&
             !layoutState_.ringSegmentBounds[peakSegmentIndex].IsEmpty()) {
             renderer.EditArtifacts().RegisterDynamicColorEditRegion(

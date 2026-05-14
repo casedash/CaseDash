@@ -101,13 +101,7 @@ public:
     int ScaleLogical(int value) const;
     std::optional<MetricListReorderOverlayState> ActiveMetricListReorderDrag(
         const LayoutEditWidgetIdentity& widget) const override;
-    ScalarFillSample ResolveAnimatedScalarFill(const AnimationDataKey& key,
-        const ScalarFillSample& target,
-        AnimationCompositionPlane plane = AnimationCompositionPlane::AboveSnapshot) override;
-    ThroughputChartSample ResolveAnimatedThroughputChart(const AnimationDataKey& key,
-        const ThroughputChartSample& target,
-        AnimationCompositionPlane plane = AnimationCompositionPlane::AboveSnapshot) override;
-    void RegisterAnimationPrimitive(const DashboardAnimationPrimitive& primitive) override;
+    void AddWidgetAnimation(WidgetAnimationPtr animation) override;
 
 private:
     friend class DashboardLayoutResolver;
@@ -134,7 +128,11 @@ private:
         bool instantiateWidgets);
     void BuildWidgetEditGuides();
     void BuildStaticEditableAnchors();
+    void DrawFrameWithAnimations(const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState);
     void DrawFrame(const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState);
+    void BeginWidgetAnimationCollection();
+    void FlushWidgetAnimations();
+    void EndWidgetAnimationCollection();
     bool ResolveLayout(bool includeWidgetState = true);
     void ResolveNodeWidgets(const LayoutNodeConfig& node,
         const RenderRect& rect,
@@ -183,8 +181,8 @@ private:
     bool layoutGuideDragActive_ = false;
     bool interactiveDragTraceActive_ = false;
     bool liveAnimationEnabled_ = false;
-    bool liveAnimationFrameActive_ = false;
+    bool widgetAnimationCollectionActive_ = false;
     const DashboardOverlayState* activeOverlayState_ = nullptr;
     DashboardAnimationTimeline animationTimeline_;
-    DashboardAnimationScene animationScene_;
+    std::vector<WidgetAnimationPtr> widgetAnimations_;
 };

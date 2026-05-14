@@ -153,12 +153,11 @@ void DrawMetricListRow(WidgetHost& renderer,
         targetSample.valueRatio = row.ratio;
         targetSample.peakRatio = row.peakRatio;
     }
-    const AnimationCompositionPlane plane =
-        registerEditRegions ? AnimationCompositionPlane::AboveSnapshot : AnimationCompositionPlane::AboveOverlay;
     const std::string subject = rowIndex < static_cast<int>(metricRefs.size()) ? metricRefs[rowIndex] : std::string{};
-    const ScalarFillSample animatedSample = renderer.ResolveAnimatedScalarFill(
-        AnimationDataKey{AnimationDataKind::ScalarFill, subject, {}}, targetSample, plane);
-    const std::optional<RenderRect> peakMarkerRect = DrawWidgetPillBar(renderer, barRect, animatedSample);
+    DrawWidgetPillBarTrack(renderer.Renderer(), barRect);
+    renderer.AddWidgetAnimation(MakeWidgetPillBarAnimation(AnimationDataKey{subject, {}}, barRect, targetSample));
+    const std::optional<RenderRect> peakMarkerRect =
+        WidgetPillBarPeakMarkerRect(renderer.Renderer(), barRect, targetSample);
     if (!registerEditRegions) {
         return;
     }

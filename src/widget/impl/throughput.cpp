@@ -3,9 +3,12 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <memory>
+#include <utility>
 
 #include "telemetry/metrics.h"
 #include "util/numeric_safety.h"
+#include "widget/impl/animation_primitives.h"
 #include "widget/widget_host.h"
 
 namespace {
@@ -19,9 +22,9 @@ struct PlotPoint {
 
 constexpr double kPlotEpsilon = 0.000001;
 
-void FillCircle(WidgetHost& renderer, int centerX, int centerY, int diameter, RenderColorId color) {
+void FillCircle(Renderer& renderer, int centerX, int centerY, int diameter, RenderColorId color) {
     const int radius = diameter / 2;
-    renderer.Renderer().FillSolidEllipse(
+    renderer.FillSolidEllipse(
         RenderRect{centerX - radius, centerY - radius, centerX - radius + diameter, centerY - radius + diameter},
         color);
 }
@@ -142,7 +145,33 @@ std::optional<double> PlotYAtX(const std::vector<PlotPoint>& points, int x) {
     return std::nullopt;
 }
 
-void DrawGraph(WidgetHost& renderer,
+void DrawGraphSnapshot(WidgetHost& renderer,
+    const RenderRect& rect,
+    const ThroughputGraphLayout& layout,
+    double maxValue,
+    const std::optional<LayoutEditAnchorBinding>& maxLabelEditable) {
+    renderer.Renderer().FillSolidRect(rect, RenderColorId::GraphBackground);
+    maxValue = FiniteNonNegativeOr(maxValue, 10.0);
+    if (maxValue <= 0.0) {
+        maxValue = 10.0;
+    }
+    char maxLabel[32];
+    sprintf_s(maxLabel, "%.0f", maxValue);
+    RenderRect maxRect{rect.left, rect.top, rect.left + layout.axisWidth, layout.graphTop};
+    if (renderer.CurrentRenderMode() != WidgetHost::RenderMode::Blank) {
+        const WidgetHost::TextLayoutResult maxLabelLayout = renderer.Renderer().DrawTextBlock(maxRect,
+            maxLabel,
+            TextStyleId::Small,
+            RenderColorId::MutedText,
+            TextLayoutOptions::SingleLine(TextHorizontalAlign::Center, TextVerticalAlign::Center));
+        if (maxLabelEditable.has_value()) {
+            renderer.EditArtifacts().RegisterDynamicTextAnchor(
+                maxLabelLayout, *maxLabelEditable, WidgetHost::LayoutEditParameter::ColorMutedText);
+        }
+    }
+}
+
+void DrawGraphAnimated(Renderer& renderer,
     const RenderRect& rect,
     const ThroughputGraphLayout& layout,
     const std::vector<double>& history,
@@ -151,8 +180,8 @@ void DrawGraph(WidgetHost& renderer,
     double timeMarkerOffsetSamples,
     double plotShiftSamples,
     double timeMarkerIntervalSamples,
-    const std::optional<LayoutEditAnchorBinding>& maxLabelEditable) {
-    renderer.Renderer().FillSolidRect(rect, RenderColorId::GraphBackground);
+    double labelMaxValue,
+    bool drawValues) {
     maxValue = FiniteNonNegativeOr(maxValue, 10.0);
     if (maxValue <= 0.0) {
         maxValue = 10.0;
@@ -173,7 +202,7 @@ void DrawGraph(WidgetHost& renderer,
             std::max(layout.plotTop, lineTop),
             layout.graphRight,
             std::min(layout.graphBottom + 1, lineTop + layout.guideStrokeWidth)};
-        renderer.Renderer().FillSolidRect(lineRect, markerColor);
+        renderer.FillSolidRect(lineRect, markerColor);
     }
 
     if (!history.empty()) {
@@ -185,7 +214,7 @@ void DrawGraph(WidgetHost& renderer,
             const int lineLeft = centerX - (layout.guideStrokeWidth / 2);
             RenderRect lineRect{
                 lineLeft, rect.top, std::min(layout.graphRight + 1, lineLeft + layout.guideStrokeWidth), rect.bottom};
-            renderer.Renderer().FillSolidRect(lineRect, markerColor);
+            renderer.FillSolidRect(lineRect, markerColor);
         }
     }
 
@@ -200,27 +229,24 @@ void DrawGraph(WidgetHost& renderer,
         horizontalAxisTop,
         rect.right,
         std::min(rect.bottom, horizontalAxisTop + layout.guideStrokeWidth)};
-    renderer.Renderer().FillSolidRect(verticalAxisRect, axisColor);
-    renderer.Renderer().FillSolidRect(horizontalAxisRect, axisColor);
+    renderer.FillSolidRect(verticalAxisRect, axisColor);
+    renderer.FillSolidRect(horizontalAxisRect, axisColor);
 
-    char maxLabel[32];
-    sprintf_s(maxLabel, "%.0f", maxValue);
-    RenderRect maxRect{rect.left, rect.top, rect.left + layout.axisWidth, layout.graphTop};
-    if (renderer.CurrentRenderMode() != WidgetHost::RenderMode::Blank) {
-        const WidgetHost::TextLayoutResult maxLabelLayout = renderer.Renderer().DrawTextBlock(maxRect,
-            maxLabel,
-            TextStyleId::Small,
-            RenderColorId::MutedText,
-            TextLayoutOptions::SingleLine(TextHorizontalAlign::Center, TextVerticalAlign::Center));
-        if (maxLabelEditable.has_value()) {
-            renderer.EditArtifacts().RegisterDynamicTextAnchor(
-                maxLabelLayout, *maxLabelEditable, WidgetHost::LayoutEditParameter::ColorMutedText);
-        }
-    }
-
-    if (renderer.CurrentRenderMode() == WidgetHost::RenderMode::Blank) {
+    if (!drawValues) {
         return;
     }
+
+    labelMaxValue = FiniteNonNegativeOr(labelMaxValue, 10.0);
+    if (labelMaxValue <= 0.0) {
+        labelMaxValue = 10.0;
+    }
+    char maxLabel[32];
+    sprintf_s(maxLabel, "%.0f", labelMaxValue);
+    renderer.DrawTextBlock(RenderRect{rect.left, rect.top, rect.left + layout.axisWidth, layout.graphTop},
+        maxLabel,
+        TextStyleId::Small,
+        RenderColorId::MutedText,
+        TextLayoutOptions::SingleLine(TextHorizontalAlign::Center, TextVerticalAlign::Center));
 
     const RenderColorId plotColor = RenderColorId::Accent;
     std::vector<PlotPoint> plotPoints;
@@ -237,7 +263,7 @@ void DrawGraph(WidgetHost& renderer,
     const std::vector<RenderPoint> clippedPlotPoints =
         ClipPlotPointsToGraph(plotPoints, layout.graphLeft, layout.graphRight);
     if (clippedPlotPoints.size() >= 2) {
-        renderer.Renderer().DrawPolyline(
+        renderer.DrawPolyline(
             clippedPlotPoints, RenderStroke::Solid(plotColor, static_cast<float>(layout.plotStrokeWidth)));
     }
 
@@ -248,6 +274,49 @@ void DrawGraph(WidgetHost& renderer,
             renderer, layout.graphRight, static_cast<int>(std::round(leaderY)), layout.leaderDiameter, plotColor);
     }
 }
+
+class ThroughputChartAnimation final : public WidgetAnimation {
+public:
+    ThroughputChartAnimation(AnimationDataKey key,
+        RenderRect rect,
+        ThroughputGraphLayout layout,
+        ThroughputChartSample target,
+        double timeMarkerIntervalSamples,
+        bool drawValues)
+        : key_(std::move(key)), rect_(rect), layout_(layout), target_(std::move(target)),
+          timeMarkerIntervalSamples_(timeMarkerIntervalSamples), drawValues_(drawValues) {}
+
+    const AnimationDataKey& Key() const override {
+        return key_;
+    }
+
+    WidgetAnimationStatePtr TargetState() const override {
+        return MakeThroughputChartAnimationState(target_);
+    }
+
+    void Draw(Renderer& renderer, const WidgetAnimationState& state) const override {
+        const ThroughputChartSample& sample = ThroughputChartSampleFromState(state);
+        DrawGraphAnimated(renderer,
+            rect_,
+            layout_,
+            sample.samples,
+            sample.maxGraph,
+            sample.guideStepMbps,
+            sample.timeMarkerOffsetSamples,
+            sample.plotShiftSamples,
+            timeMarkerIntervalSamples_,
+            target_.maxGraph,
+            drawValues_);
+    }
+
+private:
+    AnimationDataKey key_;
+    RenderRect rect_{};
+    ThroughputGraphLayout layout_{};
+    ThroughputChartSample target_;
+    double timeMarkerIntervalSamples_ = 20.0;
+    bool drawValues_ = true;
+};
 
 int EffectiveThroughputPreferredHeight(const WidgetHost& renderer) {
     const int headerHeight = renderer.Renderer().TextMetrics().smallText;
@@ -330,19 +399,19 @@ void ThroughputWidget::Draw(WidgetHost& renderer, const WidgetLayout& widget, co
     targetSample.maxGraph = metric.maxGraph;
     targetSample.timeMarkerOffsetSamples = metric.timeMarkerOffsetSamples;
     targetSample.guideStepMbps = metric.guideStepMbps;
-    const ThroughputChartSample animatedSample = renderer.ResolveAnimatedThroughputChart(
-        AnimationDataKey{AnimationDataKind::ThroughputChart, metric_, {}}, targetSample);
-    DrawGraph(renderer,
+    const bool drawValues = renderer.CurrentRenderMode() != WidgetHost::RenderMode::Blank;
+    DrawGraphSnapshot(renderer,
         layout.graphRect,
         layout,
-        animatedSample.samples,
-        animatedSample.maxGraph,
-        animatedSample.guideStepMbps,
-        animatedSample.timeMarkerOffsetSamples,
-        animatedSample.plotShiftSamples,
-        metric.timeMarkerIntervalSamples,
+        targetSample.maxGraph,
         renderer.MakeEditableTextBinding(
             widget, WidgetHost::LayoutEditParameter::FontSmall, 2, renderer.Config().layout.fonts.smallText.size));
+    renderer.AddWidgetAnimation(std::make_unique<ThroughputChartAnimation>(AnimationDataKey{metric_, {}},
+        layout.graphRect,
+        layout,
+        targetSample,
+        metric.timeMarkerIntervalSamples,
+        drawValues));
 }
 
 void ThroughputWidget::BuildStaticAnchors(WidgetHost& renderer, const WidgetLayout& widget) const {

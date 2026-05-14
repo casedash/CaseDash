@@ -215,10 +215,12 @@ add_executable(CaseDash WIN32
     src/dashboard_renderer/impl/layout_edit_overlay_renderer.cpp
     src/renderer/impl/palette.cpp
     src/renderer/impl/text_width_cache.cpp
+    src/widget/animation.cpp
     src/widget/animation_types.cpp
     src/widget/widget.cpp
     src/widget/widget_host.cpp
     src/widget/layout_edit_types.cpp
+    src/widget/impl/animation_primitives.cpp
     src/widget/impl/card_chrome.cpp
     src/widget/impl/pill_bar.cpp
     src/widget/impl/text.cpp
@@ -320,11 +322,13 @@ set(casedash_release_speed_sources
     src/telemetry/impl/system_info_support.cpp
     src/telemetry/metrics.cpp
     src/telemetry/telemetry.cpp
+    src/widget/animation.cpp
     src/widget/animation_types.cpp
     src/widget/card_chrome_layout.cpp
     src/widget/layout_edit_types.cpp
     src/widget/widget.cpp
     src/widget/widget_host.cpp
+    src/widget/impl/animation_primitives.cpp
     src/widget/impl/card_chrome.cpp
     src/widget/impl/pill_bar.cpp
     src/widget/impl/clock_date.cpp
@@ -586,6 +590,7 @@ add_executable(CaseDashTests
     src/telemetry/telemetry.cpp
     src/telemetry/impl/collector.cpp
     src/telemetry/metrics.cpp
+    src/widget/animation.cpp
     src/widget/animation_types.cpp
     src/widget/card_chrome_layout.cpp
     src/renderer/renderer.cpp
@@ -593,6 +598,7 @@ add_executable(CaseDashTests
     src/widget/widget.cpp
     src/widget/widget_host.cpp
     src/widget/layout_edit_types.cpp
+    src/widget/impl/animation_primitives.cpp
     src/widget/impl/card_chrome.cpp
     src/widget/impl/pill_bar.cpp
     src/widget/impl/text.cpp
@@ -759,10 +765,12 @@ add_executable(CaseDashBenchmarks
     src/dashboard_renderer/impl/layout_edit_overlay_renderer.cpp
     src/renderer/impl/palette.cpp
     src/renderer/impl/text_width_cache.cpp
+    src/widget/animation.cpp
     src/widget/animation_types.cpp
     src/widget/widget.cpp
     src/widget/widget_host.cpp
     src/widget/layout_edit_types.cpp
+    src/widget/impl/animation_primitives.cpp
     src/widget/impl/card_chrome.cpp
     src/widget/impl/pill_bar.cpp
     src/widget/impl/text.cpp

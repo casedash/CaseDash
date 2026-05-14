@@ -28,11 +28,11 @@ The current code already provides several pieces the animation design depends on
 - `MetricSource` already exposes normalized scalar ratios, recent-peak ratios, smoothed throughput histories, shared throughput graph maxima, and time-marker offsets.
 - The live renderer and screenshot renderer use the same Direct2D and DirectWrite scene, so deterministic diagnostics rendering can keep reusing the existing immediate draw path.
 
-The current implementation adds the shared animation cadence, D2D-free animation DTOs, stable data keys, renderer-owned interpolation state, widget-host sample resolution, live repaint scheduling, and deterministic offscreen bypass. It still does not include the target renderer split described below:
+The current implementation adds the shared animation cadence, public animation identity and opaque state interfaces, widget-private animation state implementations, renderer-owned keyed interpolation state, widget-host animation submission, live repaint scheduling, and deterministic offscreen bypass. It still does not include the target renderer split described below:
 
 - The live window draw path is immediate-mode and UI-thread-owned: `DashboardApp::Paint()` calls `DashboardRenderer::DrawWindow()`, which draws the full frame into `D2DRenderer` synchronously.
 - `D2DRenderer` currently owns a single-threaded Direct2D factory and an `ID2D1HwndRenderTarget`; it does not expose a render-thread presenter, shared layer bitmaps, bitmap blits, DXGI flip-model presentation, or dirty-rectangle presentation.
-- Widgets still draw static text, tracks, fills, peak markers, edit regions, and overlay-affecting dynamic artifacts in one `Draw()` call.
+- Widgets draw snapshot text, tracks, and edit artifacts before submitting widget-owned animation objects, but the snapshot, animations, and overlay still render during one UI-thread frame rather than through independent render-thread layers.
 - There is no render-thread mailbox, bitmap pool, or resize-generation synchronization.
 - Layout-edit dragged-child replay currently happens by re-entering widget draw code in the normal frame rather than by composing independent static and animated layers.
 
@@ -68,16 +68,16 @@ The main thread repaints the snapshot layer when telemetry text changes, layout 
 
 ### Animation Layer
 
-The animation layer is not stored as a bitmap. It is a list of immutable animation primitives plus a render-thread data timeline. The render thread redraws only the current animation primitives on each animation frame.
+The animation layer is not stored as a bitmap. It is a list of immutable widget animation draw objects plus a render-thread data timeline. The render thread redraws only the current widget animation objects on each animation frame.
 
-Animation primitives contain only renderer-safe geometry and render color ids. They do not retain widget objects, config references, metric-source references, string views, or main-thread-owned containers.
+Widget animation objects contain renderer-safe geometry and widget-packaged target data. They do not retain metric-source references, config references, string views, or main-thread-owned containers. Concrete animation data types stay private to the widget package; the render thread stores and samples them through the opaque `WidgetAnimationState` and `WidgetAnimationTransition` interfaces.
 
-Each animation primitive also carries a composition plane:
+In the target render-thread split, widget animation objects can also carry a widget-private composition plane:
 
-- `AboveSnapshot` draws the primitive after the snapshot layer and before the overlay layer.
-- `AboveOverlay` draws the primitive after the overlay layer.
+- `AboveSnapshot` draws the animation after the snapshot layer and before the overlay layer.
+- `AboveOverlay` draws the animation after the overlay layer.
 
-Normal dashboard visuals use `AboveSnapshot`. Animated values that belong to a dragged child use `AboveOverlay` so the dragged child can keep animating while its static overlay representation tracks the pointer above the dashboard.
+Normal dashboard visuals use `AboveSnapshot`. Animated values that belong to a dragged child use `AboveOverlay` so the dragged child can keep animating while its static overlay representation tracks the pointer above the dashboard. The current immediate implementation preserves this ordering by flushing base widget animations before overlay drawing and overlay-submitted animations after overlay drawing.
 
 ### Overlay Layer
 
@@ -99,7 +99,7 @@ For the live dashboard, the main thread:
 
 - Accepts telemetry updates from the existing pending-update handoff.
 - Resolves the latest `MetricSource`.
-- Builds an immutable `DashboardAnimationScene` from the resolved layout and metric data.
+- Builds an immutable widget animation scene from the resolved layout and metric data.
 - Paints the opaque snapshot bitmap and optional transparent overlay bitmap.
 - Publishes the most recent layer update to the render thread through an overwrite-only mailbox.
 
@@ -128,9 +128,10 @@ Animation data is keyed independently from draw geometry so multiple primitives 
 
 `AnimationDataKey` contains:
 
-- `AnimationDataKind kind`.
 - `std::string subject`.
 - Optional `std::string lane`.
+
+The concrete data category is not encoded into the key and is not exposed to the dashboard renderer. The key itself represents the stable logical data source only.
 
 Stable subjects use metric refs where possible:
 
@@ -141,20 +142,33 @@ Stable subjects use metric refs where possible:
 
 The key follows the logical data source rather than the visual slot. Reordering metric rows or moving widgets preserves interpolation continuity when the same metric remains visible.
 
-### Scalar Samples
+### Widget Animation Objects
 
-`ScalarFillSample` is the shared data object for pill bars, gauge values, drive usage, and drive activity.
+Widgets resolve metric data while they still have access to `MetricSource`. Each widget draws its snapshot content, packages the target animation data into a widget-private `WidgetAnimationState`, and submits a `WidgetAnimation` through `WidgetHost::AddWidgetAnimation()`.
+
+The public animation interface exposes:
+
+- `AnimationDataKey` for stable logical identity.
+- `WidgetAnimation`, which can return a target state and draw a sampled state on a regular `Renderer`.
+- `WidgetAnimationState`, which can clone itself, create first-seen and retarget starts, compare compatible targets, and create transitions.
+- `WidgetAnimationTransition`, which samples an opaque state at a normalized progress value.
+
+The dashboard renderer never resolves metrics for animations and never switches on scalar, throughput, gauge, or activity payload types. It keeps old and new opaque states by `AnimationDataKey` and asks the target state to build the transition.
+
+### Widget-Private Scalar Samples
+
+`ScalarFillSample` is a widget-private data object for pill bars, gauge values, drive usage, and drive activity.
 
 Fields:
 
 - `std::optional<double> valueRatio` - normalized value in `[0, 1]`; `std::nullopt` means unavailable and draws no value fill.
 - `std::optional<double> peakRatio` - normalized recent-peak or recent-max indicator in `[0, 1]`; `std::nullopt` means no peak indicator.
 
-The main thread clamps finite values before publishing. It publishes `std::nullopt` instead of NaN or infinity. The render thread clamps again before drawing so stale or malformed data cannot escape into geometry.
+Widget-private state construction clamps finite values before they enter the dashboard timeline. It stores `std::nullopt` instead of NaN or infinity and clamps again before drawing so stale or malformed data cannot escape into geometry.
 
-### Throughput Samples
+### Widget-Private Throughput Samples
 
-`ThroughputChartSample` is the shared data object for throughput chart animation.
+`ThroughputChartSample` is a widget-private data object for throughput chart animation.
 
 Fields:
 
@@ -165,26 +179,9 @@ Fields:
   sequence further left while target tail samples enter from the right.
 - `double guideStepMbps` - guide spacing selected from the target max.
 
-The sample vector uses the same smoothed adjacent-pair history that `MetricSource::ResolveThroughput()` exposes today. The render thread treats non-finite sample values as `0`.
+The sample vector uses the same smoothed adjacent-pair history that `MetricSource::ResolveThroughput()` exposes today. Widget-private state construction treats non-finite sample values as `0`.
 
-### Animation Primitives
-
-`DashboardAnimationPrimitive` is a value type with:
-
-- `AnimationPrimitiveKind kind`.
-- `AnimationCompositionPlane plane`.
-- `AnimationDataKey dataKey`.
-- `RenderRect bounds`.
-- One geometry payload for the primitive kind.
-
-Primitive kinds:
-
-- `PillBar` - draws the animated fill and optional peak marker inside a prepainted track.
-- `Gauge` - draws the animated gauge value and optional peak marker over prepainted track segments.
-- `ThroughputChart` - draws animated chart grid elements that depend on scale or phase, plot polyline, and leader over the prepainted chart background.
-- `StackedActivity` - draws the animated filled portions of drive read/write activity indicators over prepainted empty segments.
-
-The main thread tags each primitive with the plane matching its static content. A dragged child publishes its own animated primitives as `AboveOverlay`; underlying widgets keep their ordinary `AboveSnapshot` primitives. No main-thread visibility subtraction is needed for drag overlap.
+Concrete animation geometry is a widget implementation detail. Pill bars, gauges, throughput charts, and drive activity indicators each own small private `WidgetAnimation` implementations that know how to draw their sampled private state onto `Renderer`.
 
 ## Interpolation
 
@@ -290,7 +287,7 @@ The render thread discards any update whose surface generation does not match it
 - Keeps animation data only when the new update carries compatible data keys.
 
 The immediate renderer implementation follows the same data rule inside `DashboardAnimationTimeline`: config,
-layout, row-order, scale, and render-mode changes keep keyed scalar and throughput tracks alive. A track is removed
+layout, row-order, scale, and render-mode changes keep keyed opaque widget animation tracks alive. A track is removed
 only when its data key is not touched by the next live normal frame, so compatible metrics continue from their current
 interpolated value after layout edits instead of restarting from zero.
 
@@ -309,8 +306,14 @@ When the snapshot version or overlay version changes, the render thread treats t
 The first implementation should avoid a new top-level source package unless the source dependency rules are updated in the same change. The target ownership is:
 
 - `src/widget/animation_types.h`
-  - Owns D2D-free animation DTOs: data keys, sample types, primitive kinds, geometry payloads, and scene containers.
-  - Depends only on `renderer/render_types.h`, standard library types, and lower-level utility helpers when needed.
+  - Owns public animation identity through stable data keys.
+  - Depends only on standard library types and lower-level utility helpers when needed.
+- `src/widget/animation.h`
+  - Owns the public opaque animation interfaces: `WidgetAnimation`, `WidgetAnimationState`, and `WidgetAnimationTransition`.
+  - Exposes drawing only as `Renderer&` plus an opaque sampled state.
+- `src/widget/impl/animation_primitives.*`
+  - Owns widget-private scalar and throughput sample state, transition, interpolation, and sanitization implementations.
+  - Is not included from outside the `widget` package.
 - `src/widget/impl/pill_bar.*`
   - Keeps pill-bar geometry helpers.
   - Adds helpers that produce `PillBar` animation primitives and draw pill-bar snapshot tracks.
@@ -324,15 +327,14 @@ The first implementation should avoid a new top-level source package unless the 
 - `src/widget/impl/throughput.*`
   - Adds `ThroughputChart` primitives and keeps chart label text in the snapshot layer.
 - `src/widget/widget_host.h`
-  - Adds a widget-host method for registering animation primitives with the current scene build.
+  - Exposes widget animation submission through `AddWidgetAnimation()`.
+  - Does not expose widget-private sample types, primitive geometry, or transition details.
 - `src/dashboard_renderer/dashboard_renderer.*`
   - Owns live scene building, deterministic draw fallback, layer build orchestration, and render-thread handoff.
   - Keeps the existing immediate draw path for deterministic offscreen rendering.
-- `src/dashboard_renderer/impl/animation_scene_builder.*`
-  - Owns conversion from widget-registered primitives plus `MetricSource` values into immutable `DashboardAnimationScene` updates.
 - `src/dashboard_renderer/impl/animation_timeline.*`
-  - Owns render-thread interpolation state, data-key maps, interruption handling, and value sampling.
-  - Creates zero-initialized start samples for first-seen animation keys.
+  - Owns render-thread interpolation state, opaque data-key maps, interruption handling, and state sampling.
+  - Asks widget-private state objects to create zero-initialized starts, retarget starts, and transitions.
 - `src/dashboard_renderer/impl/layer_bitmap_pool.*`
   - Owns reusable layer bitmap allocation and recycling.
 - `src/dashboard_renderer/impl/render_thread.*`
