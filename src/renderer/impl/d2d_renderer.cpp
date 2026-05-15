@@ -55,10 +55,6 @@ const void* D2DRenderBitmapResourceTypeToken() {
     return &token;
 }
 
-RECT DxgiRectFromRenderRect(const RenderRect& rect) {
-    return RECT{rect.left, rect.top, rect.right, rect.bottom};
-}
-
 class D2DSharedDevice final {
 public:
     bool Ensure(std::string& errorText) {
@@ -1103,19 +1099,11 @@ bool D2DRenderer::PresentDxgiWindow(std::span<const RenderRect> dirtyRects) {
         return true;
     }
 
-    std::vector<RECT> dxgiDirtyRects;
-    dxgiDirtyRects.reserve(dirtyRects.size());
-    for (const RenderRect& rect : dirtyRects) {
-        if (!rect.IsEmpty()) {
-            dxgiDirtyRects.push_back(DxgiRectFromRenderRect(rect));
-        }
-    }
+    // Dirty regions are already restored inside the retained back buffer; DXGI dirty-present metadata is slower here.
+    (void)dirtyRects;
 
-    DXGI_PRESENT_PARAMETERS presentParameters{};
-    presentParameters.DirtyRectsCount = static_cast<UINT>(dxgiDirtyRects.size());
-    presentParameters.pDirtyRects = dxgiDirtyRects.empty() ? nullptr : dxgiDirtyRects.data();
     const UINT syncInterval = d2dImmediatePresent_ ? 0u : 1u;
-    const HRESULT hr = dxgiSwapChain_->Present1(syncInterval, 0, &presentParameters);
+    const HRESULT hr = dxgiSwapChain_->Present(syncInterval, 0);
     if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET) {
         DiscardWindowTarget("dxgi_device_lost");
         lastError_ = "renderer:dxgi_present_device_lost hr=" + FormatHresult(hr);
