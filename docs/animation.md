@@ -357,7 +357,7 @@ The first implementation should avoid a new top-level source package unless the 
   - Adds focused tests for scalar interpolation, interrupted animations, throughput vector alignment, surface-version target recreation, and animation composition-plane tagging.
 - `tests/benchmarks.cpp`
   - Keeps deterministic paint benchmarks single-threaded while forcing the same layer-bitmap build and final composition steps as the live pipeline.
-  - Owns the `animation` benchmark, which builds one fake-metric, no-overlay live presentation frame and repeatedly presents the stored frame through the render-thread animation timeline and composition path.
+  - Owns the `animation` benchmark, which builds one fake-metric, no-overlay live presentation frame and repeatedly presents the stored frame through the render-thread animation timeline and composition path while keeping each measured frame inside the active transition window.
 
 ## Validation
 

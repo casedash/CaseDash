@@ -49,6 +49,8 @@ namespace {
 using Clock = std::chrono::steady_clock;
 using Duration = std::chrono::duration<double, std::milli>;
 
+constexpr size_t kAnimationBenchmarkActiveTransitionChunkFrames = 120;
+
 enum class BenchPhase {
     TelemetryUpdate = 0,
     HoverHitTest,
@@ -699,17 +701,31 @@ AnimationBenchTotals RunAnimationFrameBenchmark(DashboardPresentationFrame frame
         return totals;
     }
 
-    const auto loopStart = Clock::now();
-    for (size_t iteration = 0; iteration < iterations; ++iteration) {
-        const auto frameStart = Clock::now();
+    size_t remainingFrames = iterations;
+    while (remainingFrames > 0) {
+        presenter.ResetTimeline();
         if (!presenter.PresentStoredFrameSynchronously()) {
             totals.succeeded = false;
-            totals.errorText = "animation frame present failed: " + presenter.LastError();
+            totals.errorText = "animation frame seed failed: " + presenter.LastError();
             break;
         }
-        RecordPhase(totals.frame, Clock::now() - frameStart);
+
+        const size_t chunkFrames = std::min(kAnimationBenchmarkActiveTransitionChunkFrames, remainingFrames);
+        for (size_t iteration = 0; iteration < chunkFrames; ++iteration) {
+            const auto frameStart = Clock::now();
+            if (!presenter.PresentStoredFrameSynchronously()) {
+                totals.succeeded = false;
+                totals.errorText = "animation frame present failed: " + presenter.LastError();
+                break;
+            }
+            RecordPhase(totals.frame, Clock::now() - frameStart);
+        }
+        if (!totals.succeeded) {
+            break;
+        }
+        remainingFrames -= chunkFrames;
     }
-    totals.animationLoop.total = Clock::now() - loopStart;
+    totals.animationLoop.total = totals.frame.total;
     if (totals.frame.samples > 0) {
         totals.animationLoop.perIteration = totals.animationLoop.total / static_cast<double>(totals.frame.samples);
     }
@@ -1005,7 +1021,8 @@ int RunAnimationBenchmarkCommand(size_t iterations, double renderScale, Trace& t
     std::cout << "animation_benchmark iterations=" << iterations << " render_scale=" << renderScale
               << " window=" << frame.width << "x" << frame.height
               << " snapshot_animations=" << frame.snapshotAnimations.size()
-              << " overlay_animations=" << frame.overlayAnimations.size() << "\n";
+              << " overlay_animations=" << frame.overlayAnimations.size()
+              << " active_chunk_frames=" << kAnimationBenchmarkActiveTransitionChunkFrames << "\n";
     const AnimationBenchTotals totals = RunAnimationFrameBenchmark(std::move(frame), hwnd, iterations);
     DestroyWindow(hwnd);
     renderer.Shutdown();
