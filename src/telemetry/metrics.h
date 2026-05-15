@@ -8,6 +8,7 @@
 #include "config/config.h"
 #include "config/metric_catalog.h"
 #include "telemetry/telemetry.h"
+#include "telemetry/timing.h"
 
 enum class MetricValueState {
     Unavailable,
@@ -35,7 +36,7 @@ struct ThroughputMetric {
     double maxGraph = 10.0;
     double guideStepMbps = 5.0;
     double timeMarkerOffsetSamples = 0.0;
-    double timeMarkerIntervalSamples = 20.0;
+    double timeMarkerIntervalSamples = kThroughputTimeMarkerIntervalSamples;
 };
 
 struct DriveRow {

@@ -46,7 +46,7 @@ The dashboard uses only Windows-native telemetry plus supported hardware-provide
 - The UI style stays high-contrast and minimal: dark background, bright foreground text, restrained separators, rounded cards, compact headers, and shared visual rhythm across comparable cards.
 - CPU and GPU gauges share one fitted gauge size within the active layout even when their surrounding cards differ in height.
 - Metric rows and usage bars render as rounded horizontal fills, throughput widgets render scrolling retained-history lines with shared time markers, and drive activity renders as stacked whole-segment indicators.
-- In the live window, data-driven fills and throughput plots interpolate across the 0.5 second telemetry cadence. Snapshot text, card chrome, labels, layout geometry, and edit affordances update only at snapshot or interaction boundaries.
+- In the live window, data-driven fills and throughput plots interpolate across the 250 ms telemetry cadence. Snapshot text, card chrome, labels, layout geometry, and edit affordances update only at snapshot or interaction boundaries.
 - Deterministic renders, including blank mode, saved screenshots, layout-guide-sheet output, app-icon output, and offscreen validation renders, draw target snapshot values directly without live interpolation.
 - Metric-list rows can show a small right-aligned annotation above the bar when the resolved metric supplies one; `gpu.fps` uses this annotation for the cleaned presenting application name, or a warning-colored `!admin` indicator when only the presenting application name needs elevated access. When the FPS application name and FPS value share too little row width, the application name is shortened with a middle `...` while preserving the first letters and final letter so the value text remains unobscured.
 - Palette colors include alpha. Gauge peak segments and metric-list recent-peak markers use the shared peak ghost color from the palette, and short permission-required metric indicators use the shared warning color.
@@ -90,13 +90,13 @@ The dashboard uses only Windows-native telemetry plus supported hardware-provide
 - If a hardware provider is unavailable or unsupported, the dashboard stays running and shows those provider-owned values as unavailable instead of failing the app.
 - Network content shows current upload and download throughput plus a footer line with the selected adapter name and IPv4 address when available.
 - Storage throughput uses system-wide disk I/O counters, while per-drive rows use the currently selected drive set.
-- Throughput graph smoothing keeps only complete adjacent-sample averages, so graph maximum selection uses smoothed values without a raw endpoint and does not depend on retained-history scroll phase.
+- Throughput graph smoothing uses four telemetry points per displayed chart point, so each point represents a one-second moving average at the 250 ms cadence. Graph maximum selection uses smoothed values without a raw endpoint and does not depend on retained-history scroll phase.
 - Layout metric references are the only source of truth for which logical board metrics are requested from the board provider.
 - The board mapping section connects those logical names to provider-specific sensor names. Empty CPU and system bindings use first-use auto-detection from the active provider's sensor names; otherwise, bound board metrics resolve when the mapped sensor exists. Supported provider details are defined in [docs/hardware.md](hardware.md).
 
 ## Refresh, Units, And Instance Behavior
 
-- The telemetry runtime owns collection on a 0.5 second cadence, skips missed intervals after process stalls or machine sleep, and publishes each new snapshot to the dashboard when collection finishes.
+- The telemetry runtime owns collection on a 250 ms cadence, skips missed intervals after process stalls or machine sleep, and publishes each new snapshot to the dashboard when collection finishes.
 - The telemetry cadence is the shared duration used by live dashboard animation, so a visual transition completes as the next steady-state telemetry snapshot becomes due.
 - CPU, GPU, network, storage, drive activity, retained histories, and the clock all refresh from that telemetry-owned cadence.
 - The dashboard redraws after receiving a new telemetry snapshot instead of driving collection from the UI message loop.

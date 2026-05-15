@@ -7,6 +7,7 @@
 #include <string_view>
 #include <utility>
 
+#include "telemetry/timing.h"
 #include "util/numeric_safety.h"
 
 namespace {
@@ -193,15 +194,25 @@ std::vector<double> SmoothThroughputHistory(const std::vector<double>& history) 
     }
 
     std::vector<double> smoothed;
-    smoothed.reserve(history.size());
-    if (history.size() == 1) {
-        smoothed.push_back(FiniteNonNegativeOr(history.front()));
+    if (history.size() < kThroughputHistorySmoothingSamples) {
+        double total = 0.0;
+        for (double sample : history) {
+            total += FiniteNonNegativeOr(sample);
+        }
+        smoothed.push_back(total / static_cast<double>(history.size()));
         return smoothed;
     }
 
-    // Keep only complete adjacent-pair averages so no raw endpoint can drive graph scaling.
-    for (size_t i = 1; i < history.size(); ++i) {
-        smoothed.push_back((FiniteNonNegativeOr(history[i - 1]) + FiniteNonNegativeOr(history[i])) / 2.0);
+    smoothed.reserve(history.size() - kThroughputHistorySmoothingSamples + 1u);
+    double windowTotal = 0.0;
+    for (size_t i = 0; i < history.size(); ++i) {
+        windowTotal += FiniteNonNegativeOr(history[i]);
+        if (i >= kThroughputHistorySmoothingSamples) {
+            windowTotal -= FiniteNonNegativeOr(history[i - kThroughputHistorySmoothingSamples]);
+        }
+        if (i + 1u >= kThroughputHistorySmoothingSamples) {
+            smoothed.push_back(windowTotal / static_cast<double>(kThroughputHistorySmoothingSamples));
+        }
     }
     return smoothed;
 }
@@ -234,8 +245,9 @@ double GetThroughputGuideStep(double maxGraph) {
 
 double GetTimeMarkerOffsetSamples(const SYSTEMTIME& now) {
     const double secondsIntoTenSecondWindow =
-        std::fmod(static_cast<double>(now.wSecond) + (static_cast<double>(now.wMilliseconds) / 1000.0), 10.0);
-    return secondsIntoTenSecondWindow / 0.5;
+        std::fmod(static_cast<double>(now.wSecond) + (static_cast<double>(now.wMilliseconds) / 1000.0),
+            kThroughputTimeMarkerIntervalSeconds);
+    return secondsIntoTenSecondWindow / kTelemetryRefreshIntervalSeconds;
 }
 
 double ResolveMetricRatio(const MetricDefinitionConfig& definition, double value, double telemetryScale = 0.0) {
@@ -998,7 +1010,7 @@ const ThroughputMetric& MetricSource::ResolveThroughput(const std::string& metri
         metric.guideStepMbps = GetThroughputGuideStep(metric.maxGraph);
     }
     metric.timeMarkerOffsetSamples = throughputSharedState_.timeMarkerOffsetSamples;
-    metric.timeMarkerIntervalSamples = 20.0;
+    metric.timeMarkerIntervalSamples = kThroughputTimeMarkerIntervalSamples;
     if (definition != nullptr) {
         metric.label = definition->label;
         metric.valueText = FormatMetricValueText(*definition, metricRef, metric.valueMbps);

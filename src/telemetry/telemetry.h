@@ -2,7 +2,6 @@
 
 #include <windows.h>
 
-#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -14,6 +13,7 @@
 #include "config/telemetry_settings.h"
 #include "telemetry/board/board_vendor.h"
 #include "telemetry/metric_types.h"
+#include "telemetry/timing.h"
 #include "util/file_path.h"
 #include "util/trace.h"
 
@@ -155,8 +155,6 @@ protected:
     ~TelemetryUpdateSink() = default;
 };
 
-inline constexpr auto kTelemetryRefreshInterval = std::chrono::milliseconds(500);
-
 class TelemetryRuntime {
 public:
     virtual ~TelemetryRuntime() = default;
@@ -170,19 +168,19 @@ public:
     virtual void Shutdown() = 0;
 
     // Thread-safe. Blocks behind any active telemetry collection, applies settings on the telemetry-owned collector,
-    // publishes one fresh update, and leaves the 500 ms worker cadence running.
+    // publishes one fresh update, and leaves the telemetry worker cadence running.
     virtual void Reconfigure(const TelemetrySettings& settings) = 0;
 
     // Thread-safe. Blocks behind any active telemetry collection, changes the network selection on the telemetry-owned
-    // collector, publishes one fresh update, and leaves the 500 ms worker cadence running.
+    // collector, publishes one fresh update, and leaves the telemetry worker cadence running.
     virtual void SetPreferredNetworkAdapterName(std::string adapterName) = 0;
 
     // Thread-safe. Blocks behind any active telemetry collection, changes the storage selection on the telemetry-owned
-    // collector, publishes one fresh update, and leaves the 500 ms worker cadence running.
+    // collector, publishes one fresh update, and leaves the telemetry worker cadence running.
     virtual void SetSelectedStorageDrives(std::vector<std::string> driveLetters) = 0;
 
     // Thread-safe. Blocks behind any active telemetry collection, refreshes runtime selections on the telemetry-owned
-    // collector, publishes one fresh update, and leaves the 500 ms worker cadence running.
+    // collector, publishes one fresh update, and leaves the telemetry worker cadence running.
     virtual void RefreshSelections() = 0;
 
     // Thread-safe. Returns a copy of the latest published telemetry update without invoking the callback.

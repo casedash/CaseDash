@@ -5,7 +5,7 @@ See also: [specifications.md](specifications.md) for user-visible dashboard beha
 
 ## Purpose
 
-The live dashboard animates metric visuals between telemetry snapshots so values feel continuous across the shared 500 ms telemetry cadence while idle CPU usage stays low.
+The live dashboard animates metric visuals between telemetry snapshots so values feel continuous across the shared 250 ms telemetry cadence while idle CPU usage stays low.
 
 Animation applies to data-driven visuals:
 
@@ -18,7 +18,7 @@ Animation does not apply to text, card chrome, widget labels, layout geometry, o
 
 ## Behavior
 
-On each accepted telemetry snapshot, the main thread publishes snapshot text and widget-packaged animation target states. The first frame for that snapshot shows the snapshot text while animated visuals continue from their previous sampled values. Animated visuals interpolate to their targets over the 500 ms telemetry cadence.
+On each accepted telemetry snapshot, the main thread publishes snapshot text and widget-packaged animation target states. The first frame for that snapshot shows the snapshot text while animated visuals continue from their previous sampled values. Animated visuals interpolate to their targets over the 250 ms telemetry cadence.
 
 If another telemetry snapshot arrives during an active interpolation, the render thread samples the current visual state and uses that sampled state as the start for the next transition. Motion remains continuous.
 
@@ -111,7 +111,7 @@ Keys follow data, not visual slots. Reordering rows or moving widgets preserves 
 
 `ScalarFillSample` is the widget-private state used by pill bars, gauges, drive usage, and drive activity. It stores an optional normalized value ratio and optional normalized peak ratio. Missing values draw no fill or marker. State construction clamps finite values to `[0, 1]` and stores `std::nullopt` for NaN or infinity.
 
-`ThroughputChartSample` is the widget-private state used by throughput charts. It stores smoothed retained-history samples in display order, shared vertical graph maximum, time-marker offset in sample units, fractional plot shift in sample units, and guide spacing. Non-finite sample values become `0`.
+`ThroughputChartSample` is the widget-private state used by throughput charts. It stores smoothed retained-history samples in display order, shared vertical graph maximum, time-marker offset in sample units, fractional plot shift in sample units, and guide spacing. Non-finite sample values become `0`. The retained chart history keeps 120 raw samples, which covers 30 seconds at the 250 ms cadence. Throughput smoothing uses a four-sample moving average, so each plotted sample represents one second of telemetry data.
 
 Widget-private animation primitives own their render geometry. They draw sampled private state onto `Renderer` and report conservative dirty bounds for retained composition.
 
@@ -123,7 +123,7 @@ Scalar fill values and peak values use clamped linear interpolation:
 value = start + (target - start) * progress
 ```
 
-`progress` runs from `0` to `1` across the 500 ms animation duration.
+`progress` runs from `0` to `1` across the 250 ms animation duration.
 
 First-seen and unavailable scalar values use these rules:
 
@@ -162,7 +162,7 @@ Timeline resets are explicit lifecycle events, such as disabling live animation 
 
 ### Telemetry Worker
 
-`TelemetryRuntime` collects telemetry on the shared 500 ms cadence, skips missed intervals after stalls or sleep, and publishes copied updates through its sink contract.
+`TelemetryRuntime` collects telemetry on the shared 250 ms cadence, skips missed intervals after stalls or sleep, and publishes copied updates through its sink contract.
 
 ### Main Thread
 
@@ -270,7 +270,7 @@ Animation code follows the maintained package boundaries documented under [archi
 - `widget` owns animation identity, opaque animation interfaces, widget-private sample states, transitions, and concrete animation primitives.
 - `dashboard_renderer` owns layer construction, widget-host animation collection, live-layer bitmap pooling, frame handoff, and the render-thread animation timeline.
 - `renderer` owns generic D2D-free bitmap, retained composition, dirty redraw, and live presentation APIs plus Direct2D/DirectWrite/WIC/DXGI implementation details.
-- `telemetry` owns the shared 500 ms refresh cadence and the snapshot data consumed by widget metric resolution.
+- `telemetry` owns the shared 250 ms refresh cadence and the snapshot data consumed by widget metric resolution.
 - `dashboard` owns shell invalidation, telemetry update draining, window-size synchronization, and layout-edit interaction flow.
 
 `dashboard_renderer/impl/render_thread.*` and `dashboard_renderer/impl/dashboard_renderer_benchmark.*` are package-private implementation modules. Production include sites use `DashboardRenderer` instead of render-thread presentation structures.

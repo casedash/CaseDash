@@ -1,10 +1,10 @@
 #include "telemetry/impl/retained_history.h"
 
+#include "telemetry/timing.h"
 #include "util/numeric_safety.h"
 
 namespace {
 
-constexpr size_t kRecentHistorySamples = 60;
 constexpr size_t kMaxCachedHistoryIndex = 0xffffu - 1u;
 
 size_t HistoryKeyIndex(RetainedHistoryKey key) {
@@ -14,7 +14,7 @@ size_t HistoryKeyIndex(RetainedHistoryKey key) {
 RetainedHistorySeries CreateRetainedHistorySeries(std::string_view seriesRef) {
     RetainedHistorySeries history;
     history.seriesRef = std::string(seriesRef);
-    history.samples.assign(kRecentHistorySamples, 0.0);
+    history.samples.assign(kRetainedHistorySamples, 0.0);
     return history;
 }
 

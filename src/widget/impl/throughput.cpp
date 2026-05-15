@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "telemetry/metrics.h"
+#include "telemetry/timing.h"
 #include "util/numeric_safety.h"
 #include "widget/impl/animation_primitives.h"
 #include "widget/widget_host.h"
@@ -186,8 +187,9 @@ void DrawGraphAnimated(Renderer& renderer,
         maxValue = 10.0;
     }
     const double guideStep = IsFiniteDouble(guideStepMbps) && guideStepMbps > 0.0 ? guideStepMbps : 5.0;
-    const double markerInterval =
-        IsFiniteDouble(timeMarkerIntervalSamples) && timeMarkerIntervalSamples > 0.0 ? timeMarkerIntervalSamples : 20.0;
+    const double markerInterval = IsFiniteDouble(timeMarkerIntervalSamples) && timeMarkerIntervalSamples > 0.0
+                                      ? timeMarkerIntervalSamples
+                                      : kThroughputTimeMarkerIntervalSamples;
     const double plotShift = FiniteNonNegativeOr(plotShiftSamples);
     const size_t visibleSampleCount = VisibleSampleCount(history.size(), plotShift);
     const size_t historyDenominator = std::max<size_t>(1, visibleSampleCount - 1);
@@ -303,7 +305,7 @@ private:
     AnimationDataKey key_;
     RenderRect rect_{};
     ThroughputGraphLayout layout_{};
-    double timeMarkerIntervalSamples_ = 20.0;
+    double timeMarkerIntervalSamples_ = kThroughputTimeMarkerIntervalSamples;
     bool drawValues_ = true;
 };
 

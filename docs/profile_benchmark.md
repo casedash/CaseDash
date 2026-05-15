@@ -12,7 +12,7 @@ This file records the current benchmark baselines, latest confirmed hotspots, an
 - Start the elevated daemon once with `profile_benchmark.cmd /daemon-start` when repeated unattended profiling runs are needed.
 - Build the benchmark executable with `build.cmd /benchmarks` for direct benchmark runs; normal `build.cmd` and release or validation builds do not build `CaseDashBenchmarks.exe`.
 - Measure the animation presenter benchmark with `build\CaseDashBenchmarks.exe animation 240 2`; this benchmark uses fake metrics, builds one no-overlay snapshot layer plus animation list, hands the frame to a benchmark render worker, and then repeatedly requests stored-frame presentation through the same bitmap composition and animation timeline path used by the render thread. It measures short active-transition chunks so every reported frame includes main-to-render-thread request handoff and `WidgetAnimationTransition::Sample()` work, but it uses immediate non-vsynced presentation so monitor cadence is not part of the result.
-- Measure the snapshot handoff benchmark with `build\CaseDashBenchmarks.exe snapshot-handoff 20 2`; this benchmark uses fake metrics, forces a new snapshot revision each iteration, keeps a visible render-thread window presenting on vsync, rebuilds the no-overlay snapshot layer into pooled hardware-backed layer bitmaps, publishes the complete frame through the live asynchronous handoff, and reports frame-build cost separately from publish cost. The benchmark uses a 450 ms update cadence so the next snapshot build starts while the previous 500 ms animation is still active; cadence waits are excluded from the reported timing totals, and animation-only render-thread frames are suspended only while a changed layer bitmap is rebuilt.
+- Measure the snapshot handoff benchmark with `build\CaseDashBenchmarks.exe snapshot-handoff 20 2`; this benchmark uses fake metrics, forces a new snapshot revision each iteration, keeps a visible render-thread window presenting on vsync, rebuilds the no-overlay snapshot layer into pooled hardware-backed layer bitmaps, publishes the complete frame through the live asynchronous handoff, and reports frame-build cost separately from publish cost. The benchmark uses a 200 ms update cadence so the next snapshot build starts while the previous 250 ms animation is still active; cadence waits are excluded from the reported timing totals, and animation-only render-thread frames are suspended only while a changed layer bitmap is rebuilt.
 - Measure the repeatable layout-edit benchmark with `build\CaseDashBenchmarks.exe edit-layout 240 2`.
 - Measure the in-memory layout-guide-sheet generation benchmark with `build\CaseDashBenchmarks.exe layout-guide-sheet 20 2`.
 - Measure the repeatable layout-switch benchmark with `build\CaseDashBenchmarks.exe layout-switch 240 2`.
@@ -216,9 +216,9 @@ These changes produced real wins and remain in the codebase:
 ### Hypothesis: Cache the presented-FPS GPU Engine cross-check within one telemetry cadence
 
 - Change:
-  - Temporarily cached the FPS ETW provider's GPU Engine 3D PDH cross-check for 0.5 seconds while leaving ETW event ingestion and present-event selection active.
+  - Temporarily cached the FPS ETW provider's GPU Engine 3D PDH cross-check for one telemetry cadence while leaving ETW event ingestion and present-event selection active.
 - Result:
-  - Rejected and reverted because it made the tight-loop benchmark hide cost that the real app pays on each 0.5 second telemetry sample.
+  - Rejected and reverted because it made the tight-loop benchmark hide cost that the real app pays on each telemetry sample.
 - Observed effect:
   - With the cache, `build\CaseDashBenchmarks.exe update-telemetry 240 2` appeared to improve to about `update_loop per_iter_ms=4.14`, `telemetry_update avg_ms=2.10`, and `paint_draw avg_ms=2.04`, and the daemon-backed profile no longer showed `PresentedFpsEtwProvider::Sample` as a top app-inclusive function.
   - After reverting the cache, `build\CaseDashBenchmarks.exe update-telemetry 240 2` landed at `update_loop per_iter_ms=5.25`, `telemetry_update avg_ms=3.09`, and `paint_draw avg_ms=2.16`.

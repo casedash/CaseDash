@@ -2,6 +2,7 @@
 #include <limits>
 
 #include "telemetry/impl/retained_history.h"
+#include "telemetry/timing.h"
 
 TEST(TelemetryRetainedHistory, PushSampleCreatesSeriesAndKeepsRollingWindow) {
     RetainedHistoryStore store;
@@ -12,7 +13,7 @@ TEST(TelemetryRetainedHistory, PushSampleCreatesSeriesAndKeepsRollingWindow) {
 
     ASSERT_EQ(snapshot.retainedHistories.size(), 1u);
     ASSERT_EQ(snapshot.retainedHistories[0].seriesRef, "cpu.load");
-    ASSERT_EQ(snapshot.retainedHistories[0].samples.size(), 60u);
+    ASSERT_EQ(snapshot.retainedHistories[0].samples.size(), kRetainedHistorySamples);
     EXPECT_EQ(snapshot.retainedHistories[0].samples.back(), 50.0);
 }
 

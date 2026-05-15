@@ -4,12 +4,12 @@
 #include <cmath>
 #include <memory>
 
+#include "telemetry/timing.h"
 #include "util/numeric_safety.h"
 
 namespace {
 
 constexpr double kEpsilon = 0.000001;
-constexpr double kTimeMarkerIntervalSamples = 20.0;
 
 const void* ScalarFillAnimationTypeToken() {
     static const int token = 0;
@@ -185,7 +185,7 @@ bool ThroughputHasActiveChange(const ThroughputChartSample& start, const Through
 double ForwardMarkerDelta(double startOffsetSamples, double targetOffsetSamples) {
     double markerDelta = targetOffsetSamples - startOffsetSamples;
     if (markerDelta < 0.0) {
-        markerDelta += kTimeMarkerIntervalSamples;
+        markerDelta += kThroughputTimeMarkerIntervalSamples;
     }
     return markerDelta;
 }

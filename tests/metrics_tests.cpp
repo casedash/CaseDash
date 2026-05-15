@@ -286,7 +286,7 @@ TEST(Metrics, ResolvesThroughputAndDriveTextFromConfiguredStyles) {
     drive.writeMbps = 5.0;
     snapshot.drives.push_back(drive);
 
-    AddHistorySeries(snapshot, "network.upload", {55.0, 70.0, 78.4});
+    AddHistorySeries(snapshot, "network.upload", {55.0, 70.0, 78.4, 93.4});
 
     MetricSource source(snapshot, metrics);
 
@@ -322,13 +322,13 @@ TEST(Metrics, ScalesThroughputGraphsFromSmoothedHistoryInsteadOfCurrentSamples) 
     EXPECT_DOUBLE_EQ(source.ResolveThroughput("storage.write").maxGraph, 10.0);
 
     SystemSnapshot spikingSnapshot;
-    AddHistorySeries(spikingSnapshot, "network.upload", {0.0, 0.0, 1000.0});
-    AddHistorySeries(spikingSnapshot, "network.download", {0.0, 0.0, 0.0});
+    AddHistorySeries(spikingSnapshot, "network.upload", {0.0, 0.0, 0.0, 1000.0});
+    AddHistorySeries(spikingSnapshot, "network.download", {0.0, 0.0, 0.0, 0.0});
 
     MetricSource spikingSource(spikingSnapshot, metrics);
 
-    EXPECT_DOUBLE_EQ(spikingSource.ResolveThroughput("network.upload").history.back(), 500.0);
-    EXPECT_DOUBLE_EQ(spikingSource.ResolveThroughput("network.upload").maxGraph, 500.0);
+    EXPECT_DOUBLE_EQ(spikingSource.ResolveThroughput("network.upload").history.back(), 250.0);
+    EXPECT_DOUBLE_EQ(spikingSource.ResolveThroughput("network.upload").maxGraph, 250.0);
 }
 
 TEST(Metrics, KeepsSingleThroughputHistorySampleSoGraphsStartImmediately) {
@@ -352,9 +352,10 @@ TEST(Metrics, KeepsThroughputGraphScaleStableAsAlternatingSpikeHistoryScrolls) {
 
     for (int scrollStep = 0; scrollStep < 4; ++scrollStep) {
         SystemSnapshot snapshot;
-        AddHistorySeries(
-            snapshot, "network.upload", AlternatingThroughputSpikeHistory(60, scrollStep % 2 == 1, kSpikeMbps));
-        AddHistorySeries(snapshot, "network.download", std::vector<double>(60, 0.0));
+        AddHistorySeries(snapshot,
+            "network.upload",
+            AlternatingThroughputSpikeHistory(kRetainedHistorySamples, scrollStep % 2 == 1, kSpikeMbps));
+        AddHistorySeries(snapshot, "network.download", std::vector<double>(kRetainedHistorySamples, 0.0));
 
         MetricSource source(snapshot, metrics);
         const ThroughputMetric& upload = source.ResolveThroughput("network.upload");
@@ -368,10 +369,10 @@ TEST(Metrics, UsesCoarseThroughputGuideStepsForLargeNetworkAndStorageGraphs) {
     const MetricsSectionConfig metrics = BuildMetricsConfig();
     SystemSnapshot snapshot;
 
-    AddHistorySeries(snapshot, "network.upload", {0.0, 200.0, 350.0});
-    AddHistorySeries(snapshot, "network.download", {0.0, 0.0, 0.0});
-    AddHistorySeries(snapshot, "storage.read", {0.0, 200.0, 350.0});
-    AddHistorySeries(snapshot, "storage.write", {0.0, 0.0, 0.0});
+    AddHistorySeries(snapshot, "network.upload", {0.0, 200.0, 350.0, 650.0});
+    AddHistorySeries(snapshot, "network.download", {0.0, 0.0, 0.0, 0.0});
+    AddHistorySeries(snapshot, "storage.read", {0.0, 200.0, 350.0, 650.0});
+    AddHistorySeries(snapshot, "storage.write", {0.0, 0.0, 0.0, 0.0});
 
     MetricSource source(snapshot, metrics);
 

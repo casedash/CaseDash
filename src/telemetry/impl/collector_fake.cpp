@@ -6,6 +6,7 @@
 #include <cstdint>
 
 #include "telemetry/impl/collector_storage_selection.h"
+#include "telemetry/timing.h"
 #include "util/file_path.h"
 #include "util/strings.h"
 #include "util/trace.h"
@@ -43,7 +44,6 @@ struct SyntheticThroughputSpec {
     uint32_t seed = 0;
 };
 
-constexpr size_t kSyntheticHistorySamples = 60;
 constexpr double kSyntheticCpuMemoryTotalGb = 63.943493;
 constexpr double kSyntheticCpuMemoryPeakRatio = 0.75;
 constexpr const char* kSyntheticRequestedFanNames[] = {"cpu", "system"};
@@ -85,8 +85,8 @@ std::string ReadBinaryFile(const FilePath& path) {
 
 std::vector<double> BuildSyntheticHistory(uint64_t tick, const SyntheticHistorySpec& spec) {
     std::vector<double> samples;
-    samples.reserve(kSyntheticHistorySamples);
-    for (size_t i = 0; i < kSyntheticHistorySamples; ++i) {
+    samples.reserve(kRetainedHistorySamples);
+    for (size_t i = 0; i < kRetainedHistorySamples; ++i) {
         const double position = static_cast<double>(i) + static_cast<double>(tick) * 3.0;
         const double value = spec.base + std::sin(position / spec.periodA) * spec.amplitudeA +
                              std::cos((position + 7.0) / spec.periodB) * spec.amplitudeB;
@@ -121,8 +121,8 @@ double SyntheticPulse(double position, double period, double offset, double widt
 
 std::vector<double> BuildSyntheticThroughputHistory(uint64_t tick, const SyntheticThroughputSpec& spec) {
     std::vector<double> samples;
-    samples.reserve(kSyntheticHistorySamples);
-    for (size_t i = 0; i < kSyntheticHistorySamples; ++i) {
+    samples.reserve(kRetainedHistorySamples);
+    for (size_t i = 0; i < kRetainedHistorySamples; ++i) {
         const double position = static_cast<double>(i) + static_cast<double>(tick) * 2.5;
         const double drift =
             std::sin(position / spec.periodA) * spec.driftA + std::cos((position + 9.0) / spec.periodB) * spec.driftB;
