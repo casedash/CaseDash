@@ -770,6 +770,31 @@ bool DashboardRenderer::BuildAnimationBenchmarkFrame(
     return true;
 }
 
+bool DashboardRenderer::BuildSnapshotHandoffBenchmarkFrame(
+    const SystemSnapshot& snapshot, DashboardPresentationFrame& frame) {
+    lastError_.clear();
+    DashboardOverlayState overlayState;
+    const bool built = BuildPresentationFrame(snapshot, overlayState, frame);
+    if (!built) {
+        return false;
+    }
+    frame.animate = false;
+    return true;
+}
+
+bool DashboardRenderer::PresentSnapshotHandoffBenchmarkFrame(DashboardPresentationFrame frame) {
+    lastError_.clear();
+    if (presentationHwnd_ != nullptr) {
+        presentation_.Configure(presentationHwnd_, true, true);
+    }
+    const bool presented = presentationHwnd_ == nullptr ? presentation_.PresentFrameSynchronously(std::move(frame))
+                                                        : presentation_.PublishFrameSynchronously(std::move(frame));
+    if (!presented) {
+        lastError_ = presentation_.LastError();
+    }
+    return presented && lastError_.empty();
+}
+
 std::vector<LayoutGuideSheetCardSummary> DashboardRenderer::CollectLayoutGuideSheetCardSummaries() const {
     std::vector<LayoutGuideSheetCardSummary> summaries;
     summaries.reserve(layoutResolver_->resolvedLayout_.cards.size());

@@ -130,6 +130,7 @@ void DashboardRenderThread::SetBitmapPool(std::shared_ptr<DashboardLayerBitmapPo
 }
 
 void DashboardRenderThread::Shutdown() {
+    std::optional<std::uint64_t> canceledSynchronousToken;
     {
         std::lock_guard lock(mutex_);
         stopRequested_ = true;
@@ -137,6 +138,13 @@ void DashboardRenderThread::Shutdown() {
             ReleaseFrameLayers(std::move(*pendingFrame_));
             pendingFrame_.reset();
         }
+        if (pendingFrameCompletionToken_.has_value()) {
+            canceledSynchronousToken = pendingFrameCompletionToken_;
+            pendingFrameCompletionToken_.reset();
+        }
+    }
+    if (canceledSynchronousToken.has_value()) {
+        CompleteSynchronousPublish(*canceledSynchronousToken, false, "renderer:render_thread_shutdown");
     }
     wake_.notify_all();
     if (thread_.joinable()) {
@@ -162,6 +170,7 @@ bool DashboardRenderThread::PublishFrame(DashboardPresentationFrame frame) {
     if (!threaded_) {
         return PresentFrameSynchronously(std::move(frame));
     }
+    std::optional<std::uint64_t> canceledSynchronousToken;
     {
         std::lock_guard lock(mutex_);
         if (stopRequested_ || !thread_.joinable()) {
@@ -171,11 +180,62 @@ bool DashboardRenderThread::PublishFrame(DashboardPresentationFrame frame) {
         }
         if (pendingFrame_.has_value()) {
             ReleaseFrameLayers(std::move(*pendingFrame_));
+            if (pendingFrameCompletionToken_.has_value()) {
+                canceledSynchronousToken = pendingFrameCompletionToken_;
+                pendingFrameCompletionToken_.reset();
+            }
         }
         pendingFrame_ = std::move(frame);
     }
+    if (canceledSynchronousToken.has_value()) {
+        CompleteSynchronousPublish(*canceledSynchronousToken, false, "renderer:frame_replaced");
+    }
     wake_.notify_one();
     return true;
+}
+
+bool DashboardRenderThread::PublishFrameSynchronously(DashboardPresentationFrame frame) {
+    if (!threaded_) {
+        return PresentFrameSynchronously(std::move(frame));
+    }
+
+    std::uint64_t token = 0;
+    std::optional<std::uint64_t> canceledSynchronousToken;
+    {
+        std::lock_guard lock(mutex_);
+        if (stopRequested_ || !thread_.joinable()) {
+            lastError_ = "renderer:render_thread_not_running";
+            ReleaseFrameLayers(std::move(frame));
+            return false;
+        }
+        if (pendingFrame_.has_value()) {
+            ReleaseFrameLayers(std::move(*pendingFrame_));
+            if (pendingFrameCompletionToken_.has_value()) {
+                canceledSynchronousToken = pendingFrameCompletionToken_;
+                pendingFrameCompletionToken_.reset();
+            }
+        }
+        token = ++nextSynchronousPublishToken_;
+        pendingFrame_ = std::move(frame);
+        pendingFrameCompletionToken_ = token;
+    }
+    if (canceledSynchronousToken.has_value()) {
+        CompleteSynchronousPublish(*canceledSynchronousToken, false, "renderer:frame_replaced");
+    }
+    wake_.notify_one();
+
+    std::unique_lock lock(mutex_);
+    wake_.wait(lock, [&] { return completedSynchronousPublishToken_ >= token || stopRequested_; });
+    if (completedSynchronousPublishToken_ < token) {
+        lastError_ = "renderer:render_thread_shutdown";
+        return false;
+    }
+
+    const bool ok = completedSynchronousPublishOk_;
+    if (!ok) {
+        lastError_ = completedSynchronousPublishError_;
+    }
+    return ok;
 }
 
 bool DashboardRenderThread::PresentFrameSynchronously(DashboardPresentationFrame frame) {
@@ -556,11 +616,24 @@ void DashboardRenderThread::ReleaseBitmap(RenderBitmap bitmap) const {
     }
 }
 
+void DashboardRenderThread::CompleteSynchronousPublish(std::uint64_t token, bool ok, std::string error) {
+    {
+        std::lock_guard lock(mutex_);
+        if (token > completedSynchronousPublishToken_) {
+            completedSynchronousPublishToken_ = token;
+            completedSynchronousPublishOk_ = ok;
+            completedSynchronousPublishError_ = std::move(error);
+        }
+    }
+    wake_.notify_all();
+}
+
 void DashboardRenderThread::ThreadMain() {
     std::unique_ptr<Renderer> renderer = CreateRenderer();
     DashboardAnimationTimeline timeline;
     DashboardPresentedFrameState presentedState;
     std::optional<DashboardPresentationFrame> activeFrame;
+    std::optional<std::uint64_t> activeFrameCompletionToken;
 
     for (;;) {
         {
@@ -590,12 +663,17 @@ void DashboardRenderThread::ThreadMain() {
                 discardReason_.clear();
             }
             if (pendingFrame_.has_value()) {
+                const std::optional<std::uint64_t> pendingCompletionToken = pendingFrameCompletionToken_;
                 if (activeFrame.has_value()) {
                     MergeFrame(*activeFrame, std::move(*pendingFrame_));
                 } else {
                     activeFrame = std::move(*pendingFrame_);
                 }
                 pendingFrame_.reset();
+                pendingFrameCompletionToken_.reset();
+                if (pendingCompletionToken.has_value()) {
+                    activeFrameCompletionToken = pendingCompletionToken;
+                }
             }
         }
 
@@ -604,6 +682,11 @@ void DashboardRenderThread::ThreadMain() {
         }
 
         const bool presented = PresentFrame(*renderer, timeline, *activeFrame, presentedState);
+        if (activeFrameCompletionToken.has_value()) {
+            CompleteSynchronousPublish(
+                *activeFrameCompletionToken, presented, presented ? std::string{} : renderer->LastError());
+            activeFrameCompletionToken.reset();
+        }
         if (!presented) {
             ReleaseFrameLayers(std::move(*activeFrame));
             activeFrame.reset();
@@ -620,6 +703,10 @@ void DashboardRenderThread::ThreadMain() {
         // Animation cadence comes from the vsynced presentation backend; the render thread must not add a timer.
     }
 
+    if (activeFrameCompletionToken.has_value()) {
+        CompleteSynchronousPublish(*activeFrameCompletionToken, false, "renderer:render_thread_shutdown");
+        activeFrameCompletionToken.reset();
+    }
     if (activeFrame.has_value()) {
         ReleaseFrameLayers(std::move(*activeFrame));
         activeFrame.reset();

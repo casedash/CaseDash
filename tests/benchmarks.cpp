@@ -40,6 +40,7 @@
     X(LayoutGuideSheet, "layout-guide-sheet")                                                                          \
     X(LayoutSwitch, "layout-switch")                                                                                   \
     X(MouseHover, "mouse-hover")                                                                                       \
+    X(SnapshotHandoff, "snapshot-handoff")                                                                             \
     X(ThemeChange, "theme-change")                                                                                     \
     X(UpdateTelemetry, "update-telemetry")
 
@@ -641,6 +642,14 @@ struct AnimationBenchTotals {
     bool succeeded = true;
 };
 
+struct SnapshotHandoffBenchTotals {
+    BenchResult handoffLoop;
+    PhaseStats frameBuild;
+    PhaseStats frameHandoff;
+    std::string errorText;
+    bool succeeded = true;
+};
+
 class AnimationBenchmarkRenderWorker {
 public:
     explicit AnimationBenchmarkRenderWorker(HWND hwnd) : hwnd_(hwnd) {}
@@ -864,6 +873,48 @@ AnimationBenchTotals RunAnimationFrameBenchmark(DashboardPresentationFrame frame
     if (totals.frame.samples > 0) {
         totals.animationLoop.perIteration = totals.animationLoop.total / static_cast<double>(totals.frame.samples);
     }
+    return totals;
+}
+
+SnapshotHandoffBenchTotals RunSnapshotHandoffBenchmark(
+    DashboardRenderer& renderer, SystemSnapshot snapshot, size_t iterations) {
+    SnapshotHandoffBenchTotals totals{};
+    if (iterations == 0) {
+        return totals;
+    }
+
+    DashboardPresentationFrame warmupFrame;
+    ++snapshot.revision;
+    if (!renderer.BuildSnapshotHandoffBenchmarkFrame(snapshot, warmupFrame) ||
+        !renderer.PresentSnapshotHandoffBenchmarkFrame(std::move(warmupFrame))) {
+        totals.succeeded = false;
+        totals.errorText = "snapshot handoff warmup failed: " + renderer.LastError();
+        return totals;
+    }
+
+    const auto loopStart = Clock::now();
+    for (size_t iteration = 0; iteration < iterations; ++iteration) {
+        ++snapshot.revision;
+
+        DashboardPresentationFrame frame;
+        const auto buildStart = Clock::now();
+        if (!renderer.BuildSnapshotHandoffBenchmarkFrame(snapshot, frame)) {
+            totals.succeeded = false;
+            totals.errorText = "snapshot frame build failed: " + renderer.LastError();
+            return totals;
+        }
+        RecordPhase(totals.frameBuild, Clock::now() - buildStart);
+
+        const auto handoffStart = Clock::now();
+        if (!renderer.PresentSnapshotHandoffBenchmarkFrame(std::move(frame))) {
+            totals.succeeded = false;
+            totals.errorText = "snapshot frame handoff failed: " + renderer.LastError();
+            return totals;
+        }
+        RecordPhase(totals.frameHandoff, Clock::now() - handoffStart);
+    }
+    totals.handoffLoop.total = Clock::now() - loopStart;
+    totals.handoffLoop.perIteration = totals.handoffLoop.total / static_cast<double>(iterations);
     return totals;
 }
 
@@ -1170,6 +1221,49 @@ int RunAnimationBenchmarkCommand(size_t iterations, double renderScale, Trace& t
     return 0;
 }
 
+int RunSnapshotHandoffBenchmarkCommand(size_t iterations, double renderScale, Trace& trace) {
+    const AppConfig config = LoadConfig(SourceConfigPath(), false, BenchmarkConfigParseContext());
+    std::unique_ptr<TelemetryCollector> telemetry = CreateBenchmarkFakeTelemetryCollector(config, trace);
+    if (telemetry == nullptr) {
+        std::cerr << "fake telemetry init failed\n";
+        return 1;
+    }
+
+    const AppConfig runtimeConfig = BuildEffectiveRuntimeConfig(config, telemetry->ResolvedSelections());
+    DashboardRenderer renderer(trace);
+    renderer.SetConfig(runtimeConfig);
+    renderer.SetRenderScale(renderScale);
+    renderer.SetRenderMode(DashboardRenderer::RenderMode::Normal);
+
+    HWND hwnd =
+        CreateBenchmarkWindow(renderer.WindowWidth(), renderer.WindowHeight(), "CaseDashSnapshotHandoffBenchmark");
+    if (hwnd == nullptr) {
+        std::cerr << "benchmark window creation failed\n";
+        return 1;
+    }
+    if (!renderer.Initialize(hwnd)) {
+        std::cerr << "renderer init failed: " << renderer.LastError() << "\n";
+        DestroyWindow(hwnd);
+        return 1;
+    }
+
+    std::cout << "snapshot_handoff_benchmark mode=threaded_immediate iterations=" << iterations
+              << " render_scale=" << renderScale << " window=" << renderer.WindowWidth() << "x"
+              << renderer.WindowHeight() << "\n";
+    const SnapshotHandoffBenchTotals totals = RunSnapshotHandoffBenchmark(renderer, telemetry->Snapshot(), iterations);
+    renderer.Shutdown();
+    DestroyWindow(hwnd);
+    if (!totals.succeeded) {
+        std::cerr << totals.errorText << "\n";
+        return 1;
+    }
+
+    PrintBenchLoopResult("snapshot_loop", totals.handoffLoop);
+    PrintPhaseResult("presentation_frame_build", totals.frameBuild);
+    PrintPhaseResult("presentation_frame_handoff", totals.frameHandoff);
+    return 0;
+}
+
 int RunLayoutSwitchBenchmarkCommand(size_t iterations, double renderScale, Trace& trace) {
     const AppConfig config = LoadConfig(SourceConfigPath(), false, BenchmarkConfigParseContext());
     std::unique_ptr<TelemetryCollector> telemetry = CreateBenchmarkFakeTelemetryCollector(config, trace);
@@ -1351,6 +1445,8 @@ int RunBenchmarkCommand(const BenchmarkCommandLine& commandLine, Trace& trace) {
             return RunLayoutSwitchBenchmarkCommand(commandLine.iterations, commandLine.renderScale, trace);
         case Benchmark::MouseHover:
             return RunMouseHoverBenchmarkCommand(commandLine.iterations, commandLine.renderScale, trace);
+        case Benchmark::SnapshotHandoff:
+            return RunSnapshotHandoffBenchmarkCommand(commandLine.iterations, commandLine.renderScale, trace);
         case Benchmark::ThemeChange:
             return RunThemeChangeBenchmarkCommand(commandLine.iterations, commandLine.renderScale, trace);
         case Benchmark::UpdateTelemetry:

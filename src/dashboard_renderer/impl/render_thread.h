@@ -80,6 +80,8 @@ public:
     void SetBitmapPool(std::shared_ptr<DashboardLayerBitmapPool> pool);
     void Shutdown();
     bool PublishFrame(DashboardPresentationFrame frame);
+    // Designed only for benchmark harnesses that need to include render-thread handoff synchronization.
+    bool PublishFrameSynchronously(DashboardPresentationFrame frame);
     bool PresentFrameSynchronously(DashboardPresentationFrame frame);
     bool PresentFrameSynchronously(Renderer& renderer, DashboardPresentationFrame frame);
     // Designed only for benchmark harnesses that repeatedly present a stored frame.
@@ -140,6 +142,7 @@ private:
     void MergeFrame(DashboardPresentationFrame& target, DashboardPresentationFrame update) const;
     void ReleaseFrameLayers(DashboardPresentationFrame frame) const;
     void ReleaseBitmap(RenderBitmap bitmap) const;
+    void CompleteSynchronousPublish(std::uint64_t token, bool ok, std::string error);
     void ThreadMain();
     void WriteTrace(std::string text) const;
     void SetLastError(std::string error);
@@ -157,7 +160,12 @@ private:
     mutable std::mutex mutex_;
     std::condition_variable wake_;
     std::optional<DashboardPresentationFrame> pendingFrame_;
+    std::optional<std::uint64_t> pendingFrameCompletionToken_;
     std::thread thread_;
+    std::uint64_t nextSynchronousPublishToken_ = 0;
+    std::uint64_t completedSynchronousPublishToken_ = 0;
+    bool completedSynchronousPublishOk_ = true;
+    std::string completedSynchronousPublishError_;
     bool stopRequested_ = false;
     bool resetTimelineRequested_ = false;
     bool discardTargetRequested_ = false;

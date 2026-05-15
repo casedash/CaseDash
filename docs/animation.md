@@ -32,7 +32,7 @@ The current implementation adds the shared animation cadence, public animation i
 
 - The live window draw path is split: `DashboardApp::Paint()` calls `DashboardRenderer::DrawWindow()`, the main thread paints snapshot and optional overlay layers into renderer-owned bitmap resources, collects immutable widget animation objects, and publishes the newest complete frame to `DashboardRenderThread`.
 - `DashboardRenderThread` owns the HWND renderer, the keyed `DashboardAnimationTimeline`, an overwrite-only mailbox, surface-version handling, and the animation frame loop. It composes snapshot bitmap, snapshot animations, optional overlay bitmap, and overlay animations on the render thread.
-- Snapshot and overlay layer bitmaps are acquired from a dashboard-renderer pool and returned after the render thread replaces or discards the frame that owns them. The benchmark immediate-present path uses the same acquire/release rule while staying single-threaded, so paint benchmarks measure layer bitmap construction and final composition without scheduler noise.
+- Snapshot and overlay layer bitmaps are acquired from a dashboard-renderer pool and returned after the render thread replaces or discards the frame that owns them. Single-threaded paint benchmarks use the same acquire/release rule while avoiding scheduler noise, and the `snapshot-handoff` benchmark keeps snapshot construction on the main-thread renderer while waiting for immediate render-thread handoff and presentation.
 - `D2DRenderer` exposes generic layer bitmap drawing, bitmap-region drawing, bitmap composition, and retained dirty-window composition. Live presentation uses a renderer-private DXGI flip-model swap chain behind the render-thread boundary, while deterministic offscreen exports keep using WIC-backed Direct2D targets.
 - Widgets draw snapshot text and tracks while submitting widget-owned animation objects that the dashboard renderer records in the active layer's animation list. Widget overlay hooks submit animations for content that moves above the base dashboard during layout editing.
 - Layout-edit dragged-child replay happens by re-entering widget draw code in the overlay pass under the drag translation. Its widget animations are recorded in the overlay list and use the render-thread timeline.
@@ -369,6 +369,7 @@ The first implementation should avoid a new top-level source package unless the 
 - `tests/benchmarks.cpp`
   - Keeps deterministic paint benchmarks single-threaded while forcing the same layer-bitmap build and final composition steps as the live pipeline.
   - Owns the `animation` benchmark, which builds one fake-metric, no-overlay live presentation frame, hands it to a benchmark render worker, and repeatedly requests stored-frame presentation through the render-thread animation timeline and composition path while keeping each measured frame inside the active transition window. The measured loop includes main-to-render-thread request handoff but uses immediate non-vsynced presentation so monitor cadence is not part of the result.
+  - Owns the `snapshot-handoff` benchmark, which forces a new fake-metric snapshot revision each iteration, rebuilds the no-overlay snapshot layer into pooled hardware-backed layer bitmaps, hands the frame to the render thread, waits for immediate non-vsynced presentation, and reports frame-build cost separately from render-thread handoff and synchronization cost.
 
 ## Validation
 
@@ -377,7 +378,7 @@ Implementation validation should use staged checks:
 - Unit-test interpolation and composition-plane assignment without creating a window.
 - Keep existing screenshot, active-region, layout-guide-sheet, and widget tests deterministic by rendering target values directly.
 - Run `build.cmd` and `test.cmd` after implementation changes.
-- Run `build.cmd /benchmarks` and compare `animation`, `edit-layout`, `mouse-hover`, `layout-switch`, `theme-change`, and `update-telemetry` against [docs/profile_benchmark.md](profile_benchmark.md) baselines when live draw-path behavior changes.
+- Run `build.cmd /benchmarks` and compare `animation`, `snapshot-handoff`, `edit-layout`, `mouse-hover`, `layout-switch`, `theme-change`, and `update-telemetry` against [docs/profile_benchmark.md](profile_benchmark.md) baselines when live draw-path behavior changes.
 - Add focused diagnostics screenshot validation for blank mode, layout-edit hover, metric-list row drag, container-child drag, and throughput chart rendering.
 
 ## Resolved Design Choices
