@@ -238,8 +238,10 @@ add_executable(CaseDash WIN32
     src/layout_guide_sheet/impl/layout_guide_sheet_placement.cpp
     src/layout_guide_sheet/impl/layout_guide_sheet_renderer.cpp
     src/dashboard_renderer/dashboard_renderer.cpp
+    src/util/high_precision_timer.cpp
     src/util/utf8.cpp
     src/util/trace.cpp
+    src/util/trace_timing.cpp
     src/vendor/adlx/SDK/ADLXHelper/Windows/Cpp/ADLXHelper.cpp
     src/vendor/adlx/SDK/Platform/Windows/WinAPIs.cpp
 )
@@ -636,8 +638,10 @@ add_executable(CaseDashTests
     src/telemetry/impl/collector_fake.cpp
     src/telemetry/impl/collector_storage_selection.cpp
     src/telemetry/impl/retained_history.cpp
+    src/util/high_precision_timer.cpp
     src/util/utf8.cpp
     src/util/trace.cpp
+    src/util/trace_timing.cpp
     src/telemetry/fps_service_protocol.cpp
   )
 target_include_directories(CaseDashTests PRIVATE
@@ -798,8 +802,10 @@ add_executable(CaseDashBenchmarks
     src/util/localization_catalog.cpp
     src/util/resource_loader.cpp
     src/util/lightweight_mutex.cpp
+    src/util/high_precision_timer.cpp
     src/util/utf8.cpp
     src/util/trace.cpp
+    src/util/trace_timing.cpp
     src/vendor/adlx/SDK/ADLXHelper/Windows/Cpp/ADLXHelper.cpp
     src/vendor/adlx/SDK/Platform/Windows/WinAPIs.cpp
 )

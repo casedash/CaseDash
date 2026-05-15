@@ -12,6 +12,7 @@
 - Embedded resource loading.
 - Localization catalog access.
 - Numeric safety helpers, DPI scale conversion, and domain-neutral numeric text formatting.
+- High-precision timer and trace-scoped timing aggregation helpers for low-overhead runtime profiling.
 - Lightweight mutex locking for shared runtime state that needs a small platform-backed guard without exposing the native primitive in package APIs.
 - Win32 HRESULT text formatting in the narrow Win32 formatting module.
 - Trace line emission and trace value formatting built from domain-neutral formatters.

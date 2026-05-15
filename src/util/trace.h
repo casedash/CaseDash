@@ -4,6 +4,8 @@
 #include <string>
 #include <string_view>
 
+#include "util/trace_timing.h"
+
 enum class TracePrefix : unsigned char {
     AmdAdlx,
     Crash,
@@ -24,6 +26,7 @@ enum class TracePrefix : unsigned char {
     LayoutSwitch,
     MsiCenter,
     NvidiaNvml,
+    Profile,
     Telemetry,
     UnsupportedBoard,
     UnsupportedGpu,
@@ -35,6 +38,8 @@ public:
     explicit Trace(std::FILE* output = nullptr);
 
     void SetOutput(std::FILE* output);
+    bool Enabled() const;
+    TraceTimingCollector& Timings() const;
 
     void Write(const char* text) const;
     void Write(const std::string& text) const;
@@ -64,4 +69,5 @@ public:
 
 private:
     std::FILE* output_ = nullptr;
+    mutable TraceTimingCollector timings_;
 };

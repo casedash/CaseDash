@@ -287,6 +287,9 @@ bool DashboardRenderThread::PresentFrame(Renderer& renderer,
     DashboardAnimationTimeline& timeline,
     DashboardPresentationFrame& frame,
     DashboardPresentedFrameState& presentedState) {
+    const Trace* trace = trace_.load();
+    TraceTimingScope timing =
+        trace != nullptr ? trace->Timings().Measure(*trace, "animation_frame") : TraceTimingScope{};
     const bool metricTargetsUpdated =
         !presentedState.hasMetricVersion || presentedState.versions.metricVersion != frame.versions.metricVersion;
     if (!PrepareRenderer(renderer, frame, presentedState)) {

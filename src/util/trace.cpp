@@ -54,6 +54,8 @@ const char* TracePrefixText(TracePrefix prefix) {
             return "msi_center:";
         case TracePrefix::NvidiaNvml:
             return "nvidia_nvml:";
+        case TracePrefix::Profile:
+            return "profile:";
         case TracePrefix::Telemetry:
             return "telemetry:";
         case TracePrefix::UnsupportedBoard:
@@ -81,7 +83,21 @@ void WriteTraceLine(std::FILE* output, const char* prefix, const char* text) {
 Trace::Trace(std::FILE* output) : output_(output) {}
 
 void Trace::SetOutput(std::FILE* output) {
+    if (output_ != nullptr && output_ != output) {
+        timings_.Flush(*this);
+    }
     output_ = output;
+    if (output_ != nullptr) {
+        timings_.Reset();
+    }
+}
+
+bool Trace::Enabled() const {
+    return output_ != nullptr;
+}
+
+TraceTimingCollector& Trace::Timings() const {
+    return timings_;
 }
 
 void Trace::Write(const char* text) const {

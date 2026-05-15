@@ -37,6 +37,20 @@ bool AreScalesEqual(double left, double right) {
     return std::abs(left - right) < kScaleEpsilon;
 }
 
+const char* TraceTimingOperationName(LayoutEditHost::TracePhase phase) {
+    switch (phase) {
+        case LayoutEditHost::TracePhase::Snap:
+            return "snap";
+        case LayoutEditHost::TracePhase::Apply:
+            return "apply";
+        case LayoutEditHost::TracePhase::PaintTotal:
+            return "paint_total";
+        case LayoutEditHost::TracePhase::PaintDraw:
+            return "paint_draw";
+    }
+    return "unknown";
+}
+
 POINT ClampPointToWindowBounds(POINT point, int width, int height) {
     const int maxX = std::max(0, width - 1);
     const int maxY = std::max(0, height - 1);
@@ -142,6 +156,7 @@ LayoutEditActiveRegions DashboardApp::CollectLayoutEditActiveRegions() const {
 }
 
 LayoutEditHoverResolution DashboardApp::ResolveLayoutEditHover(RenderPoint clientPoint) const {
+    auto timing = trace_.Timings().Measure(trace_, "hover_hit_test");
     return renderer_.ResolveLayoutEditHover(rendererDashboardOverlayState_, clientPoint);
 }
 
@@ -1441,6 +1456,7 @@ void DashboardApp::BeginLayoutEditTraceSession(const char* kind, const std::stri
 }
 
 void DashboardApp::RecordLayoutEditTracePhase(TracePhase phase, std::chrono::nanoseconds elapsed) {
+    trace_.Timings().Record(trace_, TraceTimingOperationName(phase), elapsed);
     layoutEditTraceSession_.Record(phase, elapsed);
 }
 
