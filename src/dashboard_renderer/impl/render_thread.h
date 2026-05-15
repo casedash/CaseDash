@@ -124,6 +124,8 @@ private:
     void DrawAnimations(Renderer& renderer,
         DashboardAnimationTimeline* timeline,
         const std::vector<DashboardPresentationAnimation>& animations,
+        int width,
+        int height,
         std::uint64_t targetVersion) const;
     PreparedDirtyFrame PrepareDirtyFrame(
         DashboardAnimationTimeline* timeline, const DashboardPresentationFrame& frame) const;

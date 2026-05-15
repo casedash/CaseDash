@@ -26,6 +26,13 @@ RenderRect ClipRectToSurface(RenderRect rect, int width, int height) {
     return rect;
 }
 
+RenderRect AnimationClipBounds(const WidgetAnimation& animation, RenderPoint translation, int width, int height) {
+    return ClipRectToSurface(
+        OffsetRect(animation.DirtyBounds(), translation).Inflate(kAnimationDirtyPadding, kAnimationDirtyPadding),
+        width,
+        height);
+}
+
 const char* BoolText(bool value) {
     return value ? "yes" : "no";
 }
@@ -366,11 +373,13 @@ void DashboardRenderThread::DrawFrame(Renderer& renderer,
     const DashboardPresentationFrame& frame,
     DashboardAnimationTimeline::Clock::time_point) const {
     renderer.DrawBitmap(frame.snapshotLayer, RenderPoint{0, 0});
-    DrawAnimations(renderer, timeline, frame.snapshotAnimations, frame.versions.metricVersion);
+    DrawAnimations(
+        renderer, timeline, frame.snapshotAnimations, frame.width, frame.height, frame.versions.metricVersion);
     if (frame.overlayLayer.has_value()) {
         renderer.DrawBitmap(*frame.overlayLayer, RenderPoint{0, 0});
     }
-    DrawAnimations(renderer, timeline, frame.overlayAnimations, frame.versions.metricVersion);
+    DrawAnimations(
+        renderer, timeline, frame.overlayAnimations, frame.width, frame.height, frame.versions.metricVersion);
 }
 
 void DashboardRenderThread::DrawFrameDirty(Renderer& renderer,
@@ -388,10 +397,16 @@ void DashboardRenderThread::DrawFrameDirty(Renderer& renderer,
 void DashboardRenderThread::DrawAnimations(Renderer& renderer,
     DashboardAnimationTimeline* timeline,
     const std::vector<DashboardPresentationAnimation>& animations,
+    int width,
+    int height,
     std::uint64_t targetVersion) const {
     for (const DashboardPresentationAnimation& command : animations) {
         const WidgetAnimationPtr& animation = command.animation;
         if (animation == nullptr || command.targetState == nullptr) {
+            continue;
+        }
+        const RenderRect clipRect = AnimationClipBounds(*animation, command.translation, width, height);
+        if (clipRect.IsEmpty()) {
             continue;
         }
         WidgetAnimationStatePtr sampled;
@@ -401,6 +416,7 @@ void DashboardRenderThread::DrawAnimations(Renderer& renderer,
             drawState = sampled.get();
         }
         if (drawState != nullptr) {
+            renderer.PushClipRect(clipRect);
             if (command.translation.x != 0 || command.translation.y != 0) {
                 renderer.PushTranslation(command.translation);
             }
@@ -408,6 +424,7 @@ void DashboardRenderThread::DrawAnimations(Renderer& renderer,
             if (command.translation.x != 0 || command.translation.y != 0) {
                 renderer.PopTranslation();
             }
+            renderer.PopClipRect();
         }
     }
 }
@@ -447,9 +464,7 @@ void DashboardRenderThread::AppendPreparedDirtyAnimations(DashboardAnimationTime
         if (animation == nullptr || command.targetState == nullptr) {
             continue;
         }
-        RenderRect bounds = OffsetRect(animation->DirtyBounds(), command.translation)
-                                .Inflate(kAnimationDirtyPadding, kAnimationDirtyPadding);
-        bounds = ClipRectToSurface(bounds, width, height);
+        RenderRect bounds = AnimationClipBounds(*animation, command.translation, width, height);
         if (bounds.IsEmpty()) {
             continue;
         }
