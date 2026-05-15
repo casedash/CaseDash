@@ -33,7 +33,7 @@ The current implementation adds the shared animation cadence, public animation i
 - The live window draw path is split: `DashboardApp::Paint()` calls `DashboardRenderer::DrawWindow()`, the main thread paints snapshot and optional overlay layers into renderer-owned bitmap resources, collects immutable widget animation objects, and publishes the newest complete frame to `DashboardRenderThread`.
 - `DashboardRenderThread` owns the HWND renderer, the keyed `DashboardAnimationTimeline`, an overwrite-only mailbox, surface-version handling, and the animation frame loop. It composes snapshot bitmap, snapshot animations, optional overlay bitmap, and overlay animations on the render thread. While the main thread rebuilds changed layer bitmaps, the render thread skips old animation-only frames so both threads do not compete for the shared Direct2D device.
 - Snapshot and overlay layer bitmaps are acquired from a dashboard-renderer pool and returned after the render thread replaces or discards the frame that owns them. Single-threaded paint benchmarks use the same acquire/release rule while avoiding scheduler noise, and the `snapshot-handoff` benchmark keeps snapshot construction on the main-thread renderer while a visible benchmark HWND presents through the live vsynced render thread.
-- `D2DRenderer` exposes generic layer bitmap drawing, bitmap-region drawing, bitmap composition, and retained dirty-window composition. Live presentation uses a renderer-private DXGI flip-model swap chain behind the render-thread boundary, while deterministic offscreen exports keep using WIC-backed Direct2D targets.
+- `D2DRenderer` exposes deterministic bitmap drawing, explicit live-layer bitmap drawing, bitmap-region drawing, bitmap composition, and retained dirty-window composition. Live presentation uses tagged shared-resource layer bitmaps and a renderer-private DXGI flip-model swap chain behind the render-thread boundary, while deterministic offscreen exports keep using WIC-backed Direct2D targets.
 - Widgets draw snapshot text and tracks while submitting widget-owned animation objects that the dashboard renderer records in the active layer's animation list. Widget overlay hooks submit animations for content that moves above the base dashboard during layout editing.
 - Layout-edit dragged-child replay happens by re-entering widget draw code in the overlay pass under the drag translation. Its widget animations are recorded in the overlay list and use the render-thread timeline.
 
@@ -266,11 +266,11 @@ Renderer-facing additions are generic:
 Each thread owns its renderer caches:
 
 - The main thread owns the offscreen layer painter and its palette/text/icon caches.
-- The dashboard renderer owns the cross-thread layer bitmap pool. The main thread acquires writable layer bitmaps from it, and the render thread returns superseded frame-owned bitmaps after presentation handoff.
+- The dashboard renderer owns the cross-thread live-layer bitmap pool. The main thread acquires writable `RenderBitmapStorage::LiveLayer` bitmaps from it, and the render thread returns superseded frame-owned live-layer bitmaps after presentation handoff. Generic deterministic bitmaps never enter this pool.
 - The render thread owns live presentation and its palette/text/icon/target-local bitmap caches.
 - Palette and renderer style updates are copied by value into each thread. No thread mutates a palette that another thread can read.
 
-Live layer bitmaps are Direct2D device bitmaps allocated from a shared Direct3D-backed resource domain, so the main-thread layer painter can hand them to the render thread without CPU readback or upload. The shared Direct2D factory is created in multithreaded mode; each renderer instance owns its own device context and caches, while shared bitmap resources remain opaque behind `RenderBitmapResource`. WIC-backed bitmaps are reserved for deterministic screenshots and validation exports.
+Live layer bitmaps are Direct2D device bitmaps allocated from a shared Direct3D-backed resource domain through `Renderer::DrawToLiveLayerBitmap()`, so the main-thread layer painter can hand them to the render thread without CPU readback or upload. The shared Direct2D factory is created in multithreaded mode; each renderer instance owns its own device context and caches, while shared bitmap resources remain opaque behind `RenderBitmapResource`. WIC-backed `Renderer::DrawToBitmap()` bitmaps are reserved for deterministic screenshots and validation exports.
 
 ## Window Size And DPI Synchronization
 

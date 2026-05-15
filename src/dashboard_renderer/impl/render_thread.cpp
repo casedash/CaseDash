@@ -58,10 +58,10 @@ void RecordAnimationFrameTiming(const Trace* trace, HighPrecisionTimer::Tick sta
 
 }  // namespace
 
-RenderBitmap DashboardLayerBitmapPool::Acquire(int width, int height) {
+RenderBitmap DashboardLayerBitmapPool::AcquireLiveLayerBitmap(int width, int height) {
     std::lock_guard lock(mutex_);
     const auto matches = [&](const RenderBitmap& bitmap) {
-        return bitmap.width == width && bitmap.height == height && !bitmap.Empty();
+        return bitmap.width == width && bitmap.height == height && bitmap.IsLiveLayer();
     };
     const auto it = std::find_if(available_.begin(), available_.end(), matches);
     if (it == available_.end()) {
@@ -72,8 +72,8 @@ RenderBitmap DashboardLayerBitmapPool::Acquire(int width, int height) {
     return bitmap;
 }
 
-void DashboardLayerBitmapPool::Release(RenderBitmap bitmap) {
-    if (bitmap.Empty()) {
+void DashboardLayerBitmapPool::ReleaseLiveLayerBitmap(RenderBitmap bitmap) {
+    if (!bitmap.IsLiveLayer()) {
         return;
     }
 
@@ -559,7 +559,7 @@ void DashboardRenderThread::ReleaseFrameLayers(DashboardPresentationFrame frame)
 
 void DashboardRenderThread::ReleaseBitmap(RenderBitmap bitmap) const {
     if (bitmapPool_ != nullptr) {
-        bitmapPool_->Release(std::move(bitmap));
+        bitmapPool_->ReleaseLiveLayerBitmap(std::move(bitmap));
     }
 }
 

@@ -114,6 +114,11 @@ private:
     friend class DashboardLayoutEditOverlayRenderer;
     friend class LayoutGuideSheetRenderer;
 
+    struct PresentationBuildOptions {
+        bool useLiveLayerBitmaps = false;
+        bool forceCompleteLayers = false;
+    };
+
     void DrawMoveOverlay(const DashboardMoveOverlayState& overlayState);
     void DrawResolvedWidget(const WidgetLayout& widget, const MetricSource& metrics);
     void DrawResolvedWidgetOverlay(const WidgetLayout& widget, const MetricSource& metrics);
@@ -136,8 +141,10 @@ private:
         bool instantiateWidgets);
     void BuildWidgetEditGuides();
     void BuildStaticEditableAnchors();
-    bool BuildPresentationFrame(
-        const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState, DashboardPresentationFrame& frame);
+    bool BuildPresentationFrame(const SystemSnapshot& snapshot,
+        const DashboardOverlayState& overlayState,
+        DashboardPresentationFrame& frame,
+        PresentationBuildOptions options);
     void DrawFrame(const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState);
     void DrawSnapshotLayer(const DashboardOverlayState& overlayState, const MetricSource& metrics);
     void DrawOverlayLayerStatic(const DashboardOverlayState& overlayState, const MetricSource& metrics);
@@ -154,9 +161,15 @@ private:
         const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState, std::uint64_t surfaceVersion) const;
     void MarkSnapshotLayerUpdated(
         const SystemSnapshot& snapshot, const std::string& overlaySignature, std::uint64_t surfaceVersion);
-    bool CanReuseLayerBitmaps() const;
+    bool CanReuseLiveLayerBitmaps(PresentationBuildOptions options) const;
+    bool DrawLayerBitmap(RenderBitmap& bitmap,
+        int width,
+        int height,
+        RenderBitmapClear clear,
+        Renderer::DrawCallback draw,
+        PresentationBuildOptions options);
     void ClearReusableLayerBitmaps();
-    RenderBitmap AcquireLayerBitmap(int width, int height) const;
+    RenderBitmap AcquireLiveLayerBitmap(int width, int height) const;
     void RecycleFrameLayers(DashboardPresentationFrame frame) const;
     bool ResolveLayout(bool includeWidgetState = true);
     void ResolveNodeWidgets(const LayoutNodeConfig& node,

@@ -61,8 +61,8 @@ struct DashboardPresentedFrameState {
 
 class DashboardLayerBitmapPool {
 public:
-    RenderBitmap Acquire(int width, int height);
-    void Release(RenderBitmap bitmap);
+    RenderBitmap AcquireLiveLayerBitmap(int width, int height);
+    void ReleaseLiveLayerBitmap(RenderBitmap bitmap);
     void Clear();
 
 private:

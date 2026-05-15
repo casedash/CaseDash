@@ -44,12 +44,19 @@ public:
     virtual const void* TypeToken() const = 0;
 };
 
+enum class RenderBitmapStorage {
+    Generic,
+    LiveLayer,
+};
+
 struct RenderBitmap {
     int width = 0;
     int height = 0;
+    RenderBitmapStorage storage = RenderBitmapStorage::Generic;
     std::shared_ptr<RenderBitmapResource> resource;
 
     bool Empty() const;
+    bool IsLiveLayer() const;
 };
 
 enum class RenderBitmapClear {
@@ -68,8 +75,6 @@ public:
     virtual void AttachWindow(HWND hwnd) = 0;
     virtual void Shutdown() = 0;
     virtual void SetImmediatePresent(bool enabled) = 0;
-    virtual void SetHardwareLayerBitmaps(bool enabled) = 0;
-    virtual bool HardwareLayerBitmapsEnabled() const = 0;
     virtual void DiscardWindowTarget(std::string_view reason = {}) = 0;
     virtual bool DrawWindow(int width, int height, const DrawCallback& draw) = 0;
     virtual bool DrawWindowRetained(int width, int height, const DrawCallback& draw) = 0;
@@ -77,6 +82,8 @@ public:
         int width, int height, std::span<const RenderRect> dirtyRects, const DirtyDrawCallback& draw) = 0;
     virtual bool DrawOffscreen(int width, int height, const DrawCallback& draw) = 0;
     virtual bool DrawToBitmap(
+        RenderBitmap& bitmap, int width, int height, RenderBitmapClear clear, const DrawCallback& draw) = 0;
+    virtual bool DrawToLiveLayerBitmap(
         RenderBitmap& bitmap, int width, int height, RenderBitmapClear clear, const DrawCallback& draw) = 0;
     virtual bool SavePng(const FilePath& imagePath, int width, int height, const DrawCallback& draw) = 0;
     virtual const std::string& LastError() const = 0;

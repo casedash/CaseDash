@@ -12,3 +12,7 @@ bool RenderBitmap::Empty() const {
     }
     return resource == nullptr;
 }
+
+bool RenderBitmap::IsLiveLayer() const {
+    return !Empty() && storage == RenderBitmapStorage::LiveLayer;
+}

@@ -177,18 +177,10 @@ D2DSharedDevice& SharedD2DDevice() {
 
 class D2DRenderBitmapResource final : public RenderBitmapResource {
 public:
-    explicit D2DRenderBitmapResource(Microsoft::WRL::ComPtr<IWICBitmap> bitmap) : wicBitmap_(std::move(bitmap)) {}
-
     D2DRenderBitmapResource(Microsoft::WRL::ComPtr<IWICBitmap> bitmap, Microsoft::WRL::ComPtr<ID2D1RenderTarget> target)
         : wicBitmap_(std::move(bitmap)), wicRenderTarget_(std::move(target)) {}
 
-    explicit D2DRenderBitmapResource(Microsoft::WRL::ComPtr<ID2D1Bitmap> bitmap) : d2dBitmap_(std::move(bitmap)) {}
-
     explicit D2DRenderBitmapResource(Microsoft::WRL::ComPtr<ID2D1Bitmap1> bitmap) : targetBitmap_(std::move(bitmap)) {}
-
-    D2DRenderBitmapResource(
-        Microsoft::WRL::ComPtr<ID2D1BitmapRenderTarget> target, Microsoft::WRL::ComPtr<ID2D1Bitmap> bitmap)
-        : compatibleTarget_(std::move(target)), d2dBitmap_(std::move(bitmap)) {}
 
     const void* TypeToken() const override {
         return D2DRenderBitmapResourceTypeToken();
@@ -203,15 +195,11 @@ public:
     }
 
     ID2D1Bitmap* D2DBitmap() const {
-        return targetBitmap_ != nullptr ? targetBitmap_.Get() : d2dBitmap_.Get();
+        return targetBitmap_.Get();
     }
 
     ID2D1Bitmap1* TargetBitmap() const {
         return targetBitmap_.Get();
-    }
-
-    ID2D1BitmapRenderTarget* CompatibleTarget() const {
-        return compatibleTarget_.Get();
     }
 
     ID2D1Bitmap* CachedD2DBitmap(ID2D1RenderTarget* target) const {
@@ -242,8 +230,6 @@ public:
 private:
     Microsoft::WRL::ComPtr<IWICBitmap> wicBitmap_;
     Microsoft::WRL::ComPtr<ID2D1RenderTarget> wicRenderTarget_;
-    Microsoft::WRL::ComPtr<ID2D1BitmapRenderTarget> compatibleTarget_;
-    Microsoft::WRL::ComPtr<ID2D1Bitmap> d2dBitmap_;
     Microsoft::WRL::ComPtr<ID2D1Bitmap1> targetBitmap_;
     mutable ID2D1RenderTarget* cachedD2DBitmapTarget_ = nullptr;
     mutable Microsoft::WRL::ComPtr<ID2D1Bitmap> cachedD2DBitmap_;
@@ -457,14 +443,6 @@ void D2DRenderer::SetImmediatePresent(bool enabled) {
     DiscardWindowTarget("present_mode_change");
 }
 
-void D2DRenderer::SetHardwareLayerBitmaps(bool enabled) {
-    hardwareLayerBitmapsEnabled_ = enabled;
-}
-
-bool D2DRenderer::HardwareLayerBitmapsEnabled() const {
-    return hardwareLayerBitmapsEnabled_;
-}
-
 const std::string& D2DRenderer::LastError() const {
     return lastError_;
 }
@@ -535,73 +513,16 @@ bool D2DRenderer::DrawToBitmap(
         return false;
     }
 
-    if (hardwareLayerBitmapsEnabled_) {
-        if (DrawToHardwareBitmap(output, width, height, clear, draw)) {
-            return true;
-        }
-        if (!lastError_.empty()) {
-            return false;
-        }
-    }
-
     const UINT bitmapWidth = static_cast<UINT>(std::max(1, width));
     const UINT bitmapHeight = static_cast<UINT>(std::max(1, height));
     const D2D1_COLOR_F clearColor = clear == RenderBitmapClear::Transparent
                                         ? D2D1::ColorF(0.0f, 0.0f, 0.0f, 0.0f)
                                         : palette_.Get(RenderColorId::Background).ToD2DColorF();
-    const bool keepCurrentWindowRetainMode = d2dWindowRenderTarget_ != nullptr && d2dWindowRetainContents_;
-    if (hardwareLayerBitmapsEnabled_ && hwnd_ != nullptr &&
-        EnsureWindowRenderTarget(width, height, keepCurrentWindowRetainMode) && d2dWindowRenderTarget_ != nullptr) {
-        Microsoft::WRL::ComPtr<ID2D1BitmapRenderTarget> bitmapRenderTarget;
-        if (output.width == static_cast<int>(bitmapWidth) && output.height == static_cast<int>(bitmapHeight) &&
-            output.resource != nullptr && output.resource->TypeToken() == D2DRenderBitmapResourceTypeToken()) {
-            const auto* resource = static_cast<const D2DRenderBitmapResource*>(output.resource.get());
-            bitmapRenderTarget = resource->CompatibleTarget();
-        }
-        if (bitmapRenderTarget == nullptr) {
-            const D2D1_SIZE_F desiredSize =
-                D2D1::SizeF(static_cast<float>(bitmapWidth), static_cast<float>(bitmapHeight));
-            const D2D1_SIZE_U desiredPixelSize = D2D1::SizeU(bitmapWidth, bitmapHeight);
-            const D2D1_PIXEL_FORMAT desiredFormat =
-                D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED);
-            const HRESULT compatibleHr = d2dWindowRenderTarget_->CreateCompatibleRenderTarget(&desiredSize,
-                &desiredPixelSize,
-                &desiredFormat,
-                D2D1_COMPATIBLE_RENDER_TARGET_OPTIONS_NONE,
-                bitmapRenderTarget.GetAddressOf());
-            if (FAILED(compatibleHr) || bitmapRenderTarget == nullptr) {
-                bitmapRenderTarget.Reset();
-            }
-        }
-        if (bitmapRenderTarget != nullptr) {
-            if (!BeginDirect2DDraw(bitmapRenderTarget.Get(), ActiveDrawTarget::Bitmap)) {
-                return false;
-            }
-            d2dActiveRenderTarget_->Clear(clearColor);
-            draw();
-            EndDirect2DDraw();
-            if (!lastError_.empty()) {
-                return false;
-            }
-
-            Microsoft::WRL::ComPtr<ID2D1Bitmap> bitmap;
-            const HRESULT bitmapHr = bitmapRenderTarget->GetBitmap(bitmap.GetAddressOf());
-            if (FAILED(bitmapHr) || bitmap == nullptr) {
-                lastError_ = "renderer:layer_compatible_bitmap_failed hr=" + FormatHresult(bitmapHr);
-                return false;
-            }
-            output.width = static_cast<int>(bitmapWidth);
-            output.height = static_cast<int>(bitmapHeight);
-            output.resource =
-                std::make_shared<D2DRenderBitmapResource>(std::move(bitmapRenderTarget), std::move(bitmap));
-            return true;
-        }
-    }
-
     Microsoft::WRL::ComPtr<IWICBitmap> bitmap;
     Microsoft::WRL::ComPtr<ID2D1RenderTarget> bitmapRenderTarget;
     if (output.width == static_cast<int>(bitmapWidth) && output.height == static_cast<int>(bitmapHeight) &&
-        output.resource != nullptr && output.resource->TypeToken() == D2DRenderBitmapResourceTypeToken()) {
+        output.storage == RenderBitmapStorage::Generic && output.resource != nullptr &&
+        output.resource->TypeToken() == D2DRenderBitmapResourceTypeToken()) {
         const auto* resource = static_cast<const D2DRenderBitmapResource*>(output.resource.get());
         if (resource->WicBitmap() != nullptr && resource->WicRenderTarget() != nullptr) {
             bitmap = resource->WicBitmap();
@@ -644,11 +565,12 @@ bool D2DRenderer::DrawToBitmap(
 
     output.width = static_cast<int>(bitmapWidth);
     output.height = static_cast<int>(bitmapHeight);
+    output.storage = RenderBitmapStorage::Generic;
     output.resource = std::make_shared<D2DRenderBitmapResource>(std::move(bitmap), std::move(bitmapRenderTarget));
     return true;
 }
 
-bool D2DRenderer::DrawToHardwareBitmap(
+bool D2DRenderer::DrawToLiveLayerBitmap(
     RenderBitmap& output, int width, int height, RenderBitmapClear clear, const DrawCallback& draw) {
     if (!EnsureDeviceContext()) {
         return false;
@@ -658,7 +580,8 @@ bool D2DRenderer::DrawToHardwareBitmap(
     const UINT bitmapHeight = static_cast<UINT>(std::max(1, height));
     Microsoft::WRL::ComPtr<ID2D1Bitmap1> targetBitmap;
     if (output.width == static_cast<int>(bitmapWidth) && output.height == static_cast<int>(bitmapHeight) &&
-        output.resource != nullptr && output.resource->TypeToken() == D2DRenderBitmapResourceTypeToken()) {
+        output.storage == RenderBitmapStorage::LiveLayer && output.resource != nullptr &&
+        output.resource->TypeToken() == D2DRenderBitmapResourceTypeToken()) {
         const auto* resource = static_cast<const D2DRenderBitmapResource*>(output.resource.get());
         targetBitmap = resource->TargetBitmap();
     }
@@ -695,6 +618,7 @@ bool D2DRenderer::DrawToHardwareBitmap(
 
     output.width = static_cast<int>(bitmapWidth);
     output.height = static_cast<int>(bitmapHeight);
+    output.storage = RenderBitmapStorage::LiveLayer;
     output.resource = std::make_shared<D2DRenderBitmapResource>(std::move(targetBitmap));
     return true;
 }

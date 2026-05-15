@@ -121,14 +121,6 @@ public:
 
     void SetImmediatePresent(bool) override {}
 
-    void SetHardwareLayerBitmaps(bool enabled) override {
-        hardwareLayerBitmapsEnabled_ = enabled;
-    }
-
-    bool HardwareLayerBitmapsEnabled() const override {
-        return hardwareLayerBitmapsEnabled_;
-    }
-
     void DiscardWindowTarget(std::string_view = {}) override {}
 
     bool DrawWindow(int, int, const DrawCallback& draw) override {
@@ -155,6 +147,17 @@ public:
         RenderBitmap& bitmap, int width, int height, RenderBitmapClear, const DrawCallback& draw) override {
         bitmap.width = width;
         bitmap.height = height;
+        bitmap.storage = RenderBitmapStorage::Generic;
+        bitmap.resource = std::make_shared<MetricListTestRenderBitmapResource>();
+        draw();
+        return true;
+    }
+
+    bool DrawToLiveLayerBitmap(
+        RenderBitmap& bitmap, int width, int height, RenderBitmapClear, const DrawCallback& draw) override {
+        bitmap.width = width;
+        bitmap.height = height;
+        bitmap.storage = RenderBitmapStorage::LiveLayer;
         bitmap.resource = std::make_shared<MetricListTestRenderBitmapResource>();
         draw();
         return true;
@@ -334,7 +337,6 @@ private:
     TextStyleMetrics textMetrics_{};
     std::vector<MetricDefinitionConfig> definitions_;
     std::string empty_;
-    bool hardwareLayerBitmapsEnabled_ = false;
 };
 
 MetricListWidget BuildMetricListWidget() {

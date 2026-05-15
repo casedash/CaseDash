@@ -27,8 +27,6 @@ public:
     void AttachWindow(HWND hwnd) override;
     void Shutdown() override;
     void SetImmediatePresent(bool enabled) override;
-    void SetHardwareLayerBitmaps(bool enabled) override;
-    bool HardwareLayerBitmapsEnabled() const override;
     void DiscardWindowTarget(std::string_view reason = {}) override;
     bool DrawWindow(int width, int height, const DrawCallback& draw) override;
     bool DrawWindowRetained(int width, int height, const DrawCallback& draw) override;
@@ -36,6 +34,8 @@ public:
         int width, int height, std::span<const RenderRect> dirtyRects, const DirtyDrawCallback& draw) override;
     bool DrawOffscreen(int width, int height, const DrawCallback& draw) override;
     bool DrawToBitmap(
+        RenderBitmap& bitmap, int width, int height, RenderBitmapClear clear, const DrawCallback& draw) override;
+    bool DrawToLiveLayerBitmap(
         RenderBitmap& bitmap, int width, int height, RenderBitmapClear clear, const DrawCallback& draw) override;
     bool SavePng(const FilePath& imagePath, int width, int height, const DrawCallback& draw) override;
     const std::string& LastError() const override;
@@ -96,8 +96,6 @@ private:
     bool EnsureDxgiWindowTarget(int width, int height, bool retainContents);
     bool CreateDxgiWindowTargetBitmap();
     bool PresentDxgiWindow();
-    bool DrawToHardwareBitmap(
-        RenderBitmap& output, int width, int height, RenderBitmapClear clear, const DrawCallback& draw);
     bool BeginDirect2DDraw(ID2D1RenderTarget* target, ActiveDrawTarget targetKind);
     void EndDirect2DDraw();
     bool BeginWindowDraw(int width, int height, bool retainContents);
@@ -148,7 +146,6 @@ private:
     ID2D1RenderTarget* d2dActiveRenderTarget_ = nullptr;
     ActiveDrawTarget d2dActiveDrawTarget_ = ActiveDrawTarget::None;
     bool d2dImmediatePresent_ = false;
-    bool hardwareLayerBitmapsEnabled_ = false;
     bool d2dWindowRetainContents_ = false;
     bool dxgiWindowRetainContents_ = false;
     int dxgiWindowWidth_ = 0;

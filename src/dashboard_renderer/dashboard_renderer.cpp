@@ -130,7 +130,6 @@ void DashboardRenderer::SetImmediatePresent(bool enabled) {
     overlayLayerVisible_ = false;
     renderer_->AttachWindow(immediatePresent_ ? presentationHwnd_ : nullptr);
     renderer_->SetImmediatePresent(enabled);
-    renderer_->SetHardwareLayerBitmaps(presentationHwnd_ != nullptr);
     presentation_.Configure(presentationHwnd_, presentationHwnd_ != nullptr && !immediatePresent_, immediatePresent_);
     ClearReusableLayerBitmaps();
 }
@@ -422,7 +421,11 @@ bool DashboardRenderer::DrawWindow(const SystemSnapshot& snapshot, const Dashboa
     DashboardPresentationFrame frame;
     {
         auto timing = trace_.Timings().Measure(trace_, "presentation_frame_build");
-        if (!BuildPresentationFrame(snapshot, overlayState, frame)) {
+        const PresentationBuildOptions options{
+            presentationHwnd_ != nullptr,
+            false,
+        };
+        if (!BuildPresentationFrame(snapshot, overlayState, frame, options)) {
             return false;
         }
     }
@@ -439,8 +442,10 @@ bool DashboardRenderer::DrawWindow(const SystemSnapshot& snapshot, const Dashboa
     return presented && lastError_.empty();
 }
 
-bool DashboardRenderer::BuildPresentationFrame(
-    const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState, DashboardPresentationFrame& frame) {
+bool DashboardRenderer::BuildPresentationFrame(const SystemSnapshot& snapshot,
+    const DashboardOverlayState& overlayState,
+    DashboardPresentationFrame& frame,
+    PresentationBuildOptions options) {
     BeginWidgetAnimationCollection();
     activeOverlayState_ = &overlayState;
 
@@ -450,9 +455,10 @@ bool DashboardRenderer::BuildPresentationFrame(
     frame.style = BuildRendererStyle();
     const std::uint64_t surfaceVersion = ResolveSurfaceVersion();
     const std::string overlaySignature = SnapshotOverlaySignature(overlayState);
-    const bool updateSnapshot = ShouldUpdateSnapshotLayer(snapshot, overlayState, surfaceVersion);
+    const bool updateSnapshot =
+        options.forceCompleteLayers || ShouldUpdateSnapshotLayer(snapshot, overlayState, surfaceVersion);
     const bool overlayVisible = overlayState.ShouldDrawOverlayLayer();
-    const bool updateOverlay = overlayVisible || overlayLayerVisible_;
+    const bool updateOverlay = options.forceCompleteLayers || overlayVisible || overlayLayerVisible_;
 
     frame.versions.surfaceVersion = surfaceVersion;
     frame.versions.snapshotVersion = snapshotVersion_;
@@ -477,16 +483,21 @@ bool DashboardRenderer::BuildPresentationFrame(
         layoutResolver_->ClearDynamicEditArtifacts();
         layoutResolver_->dynamicAnchorRegistrationEnabled_ = overlayState.ShouldRegisterDynamicEditArtifacts();
         BeginWidgetAnimationLayer(WidgetAnimationLayer::Snapshot);
-        if (CanReuseLayerBitmaps()) {
-            frame.snapshotLayer = AcquireLayerBitmap(frame.width, frame.height);
+        if (CanReuseLiveLayerBitmaps(options)) {
+            frame.snapshotLayer = AcquireLiveLayerBitmap(frame.width, frame.height);
         }
         const bool snapshotDrawn = [&] {
             auto timing = trace_.Timings().Measure(trace_, "snapshot_layer_bitmap");
-            return renderer_->DrawToBitmap(
-                frame.snapshotLayer, frame.width, frame.height, RenderBitmapClear::Background, [&] {
+            return DrawLayerBitmap(
+                frame.snapshotLayer,
+                frame.width,
+                frame.height,
+                RenderBitmapClear::Background,
+                [&] {
                     auto contentTiming = trace_.Timings().Measure(trace_, "snapshot_layer_content");
                     DrawSnapshotLayer(overlayState, *metrics);
-                });
+                },
+                options);
         }();
         if (!snapshotDrawn) {
             lastError_ = renderer_->LastError();
@@ -510,21 +521,26 @@ bool DashboardRenderer::BuildPresentationFrame(
         layoutResolver_->TagOverlayAffordanceLayers(overlayState);
         BeginWidgetAnimationLayer(WidgetAnimationLayer::Overlay);
         RenderBitmap overlayBitmap;
-        if (CanReuseLayerBitmaps()) {
-            overlayBitmap = AcquireLayerBitmap(frame.width, frame.height);
+        if (CanReuseLiveLayerBitmaps(options)) {
+            overlayBitmap = AcquireLiveLayerBitmap(frame.width, frame.height);
         }
         const bool overlayDrawn = [&] {
             auto timing = trace_.Timings().Measure(trace_, "overlay_layer_bitmap");
-            return renderer_->DrawToBitmap(
-                overlayBitmap, frame.width, frame.height, RenderBitmapClear::Transparent, [&] {
+            return DrawLayerBitmap(
+                overlayBitmap,
+                frame.width,
+                frame.height,
+                RenderBitmapClear::Transparent,
+                [&] {
                     auto contentTiming = trace_.Timings().Measure(trace_, "overlay_layer_content");
                     DrawOverlayLayerStatic(overlayState, *metrics);
-                });
+                },
+                options);
         }();
         if (!overlayDrawn) {
             lastError_ = renderer_->LastError();
             if (layerBitmapPool_ != nullptr) {
-                layerBitmapPool_->Release(std::move(overlayBitmap));
+                layerBitmapPool_->ReleaseLiveLayerBitmap(std::move(overlayBitmap));
             }
             RecycleFrameLayers(std::move(frame));
             EndWidgetAnimationCollection();
@@ -634,8 +650,20 @@ void DashboardRenderer::MarkSnapshotLayerUpdated(
     snapshotLayerOverlaySignature_ = overlaySignature;
 }
 
-bool DashboardRenderer::CanReuseLayerBitmaps() const {
-    return presentationHwnd_ != nullptr && layerBitmapPool_ != nullptr;
+bool DashboardRenderer::CanReuseLiveLayerBitmaps(PresentationBuildOptions options) const {
+    return options.useLiveLayerBitmaps && layerBitmapPool_ != nullptr;
+}
+
+bool DashboardRenderer::DrawLayerBitmap(RenderBitmap& bitmap,
+    int width,
+    int height,
+    RenderBitmapClear clear,
+    Renderer::DrawCallback draw,
+    PresentationBuildOptions options) {
+    if (options.useLiveLayerBitmaps) {
+        return renderer_->DrawToLiveLayerBitmap(bitmap, width, height, clear, draw);
+    }
+    return renderer_->DrawToBitmap(bitmap, width, height, clear, draw);
 }
 
 void DashboardRenderer::ClearReusableLayerBitmaps() {
@@ -644,17 +672,17 @@ void DashboardRenderer::ClearReusableLayerBitmaps() {
     }
 }
 
-RenderBitmap DashboardRenderer::AcquireLayerBitmap(int width, int height) const {
-    return layerBitmapPool_ != nullptr ? layerBitmapPool_->Acquire(width, height) : RenderBitmap{};
+RenderBitmap DashboardRenderer::AcquireLiveLayerBitmap(int width, int height) const {
+    return layerBitmapPool_ != nullptr ? layerBitmapPool_->AcquireLiveLayerBitmap(width, height) : RenderBitmap{};
 }
 
 void DashboardRenderer::RecycleFrameLayers(DashboardPresentationFrame frame) const {
     if (layerBitmapPool_ == nullptr) {
         return;
     }
-    layerBitmapPool_->Release(std::move(frame.snapshotLayer));
+    layerBitmapPool_->ReleaseLiveLayerBitmap(std::move(frame.snapshotLayer));
     if (frame.overlayLayer.has_value()) {
-        layerBitmapPool_->Release(std::move(*frame.overlayLayer));
+        layerBitmapPool_->ReleaseLiveLayerBitmap(std::move(*frame.overlayLayer));
     }
 }
 
@@ -766,11 +794,12 @@ bool DashboardRenderer::SaveSnapshotPng(const FilePath& imagePath, const SystemS
 bool DashboardRenderer::SaveSnapshotPng(
     const FilePath& imagePath, const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState) {
     lastError_.clear();
-    const bool previousHardwareLayerBitmaps = renderer_->HardwareLayerBitmapsEnabled();
-    renderer_->SetHardwareLayerBitmaps(false);
     DashboardPresentationFrame frame;
-    if (!BuildPresentationFrame(snapshot, overlayState, frame)) {
-        renderer_->SetHardwareLayerBitmaps(previousHardwareLayerBitmaps);
+    const PresentationBuildOptions options{
+        false,
+        true,
+    };
+    if (!BuildPresentationFrame(snapshot, overlayState, frame, options)) {
         return false;
     }
     frame.animate = false;
@@ -780,18 +809,18 @@ bool DashboardRenderer::SaveSnapshotPng(
         lastError_ = renderer_->LastError();
     }
     RecycleFrameLayers(std::move(frame));
-    renderer_->SetHardwareLayerBitmaps(previousHardwareLayerBitmaps);
     return saved;
 }
 
 bool DashboardRenderer::BuildAnimationBenchmarkFrame(
     const SystemSnapshot& snapshot, DashboardPresentationFrame& frame) {
     lastError_.clear();
-    const bool previousHardwareLayerBitmaps = renderer_->HardwareLayerBitmapsEnabled();
-    renderer_->SetHardwareLayerBitmaps(true);
     DashboardOverlayState overlayState;
-    const bool built = BuildPresentationFrame(snapshot, overlayState, frame);
-    renderer_->SetHardwareLayerBitmaps(previousHardwareLayerBitmaps);
+    const PresentationBuildOptions options{
+        true,
+        true,
+    };
+    const bool built = BuildPresentationFrame(snapshot, overlayState, frame, options);
     if (!built) {
         return false;
     }
@@ -803,7 +832,11 @@ bool DashboardRenderer::BuildSnapshotHandoffBenchmarkFrame(
     const SystemSnapshot& snapshot, DashboardPresentationFrame& frame) {
     lastError_.clear();
     DashboardOverlayState overlayState;
-    const bool built = BuildPresentationFrame(snapshot, overlayState, frame);
+    const PresentationBuildOptions options{
+        presentationHwnd_ != nullptr,
+        false,
+    };
+    const bool built = BuildPresentationFrame(snapshot, overlayState, frame, options);
     if (!built) {
         return false;
     }
@@ -958,7 +991,11 @@ bool DashboardRenderer::RenderSnapshotOffscreen(
     const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState) {
     lastError_.clear();
     DashboardPresentationFrame frame;
-    if (!BuildPresentationFrame(snapshot, overlayState, frame)) {
+    const PresentationBuildOptions options{
+        false,
+        true,
+    };
+    if (!BuildPresentationFrame(snapshot, overlayState, frame, options)) {
         return false;
     }
     frame.animate = false;
@@ -1353,7 +1390,6 @@ bool DashboardRenderer::Initialize(HWND hwnd) {
     ClearReusableLayerBitmaps();
     renderer_->AttachWindow(immediatePresent_ ? hwnd : nullptr);
     renderer_->SetImmediatePresent(immediatePresent_);
-    renderer_->SetHardwareLayerBitmaps(hwnd != nullptr);
     presentation_.Configure(hwnd, hwnd != nullptr && !immediatePresent_, immediatePresent_);
     if (!renderer_->SetStyle(BuildRendererStyle()) || !ResolveLayout()) {
         lastError_ = renderer_->LastError().empty() ? "renderer:initialize_failed" : renderer_->LastError();
@@ -1371,7 +1407,6 @@ void DashboardRenderer::Shutdown() {
     snapshotLayerValid_ = false;
     overlayLayerVisible_ = false;
     ClearReusableLayerBitmaps();
-    renderer_->SetHardwareLayerBitmaps(false);
     renderer_->Shutdown();
 }
 
