@@ -54,6 +54,7 @@ using Clock = std::chrono::steady_clock;
 using Duration = std::chrono::duration<double, std::milli>;
 
 constexpr size_t kAnimationBenchmarkActiveTransitionChunkFrames = 120;
+constexpr auto kSnapshotHandoffBenchmarkCadence = kTelemetryRefreshInterval - std::chrono::milliseconds(50);
 
 enum class BenchPhase {
     TelemetryUpdate = 0,
@@ -317,6 +318,77 @@ std::vector<RenderPoint> BuildMouseHoverPath(int width, int height, size_t itera
             static_cast<int>(std::lround(t * static_cast<double>(maxY)))});
     }
     return path;
+}
+
+double SnapshotHandoffWave(size_t iteration, double phase) {
+    return 0.5 + (0.5 * std::sin((static_cast<double>(iteration) * 0.37) + phase));
+}
+
+double SnapshotHandoffRange(size_t iteration, double phase, double minimum, double maximum) {
+    return minimum + ((maximum - minimum) * SnapshotHandoffWave(iteration, phase));
+}
+
+SystemSnapshot BuildSnapshotHandoffIterationSnapshot(const SystemSnapshot& baseSnapshot, size_t iteration) {
+    SystemSnapshot snapshot = baseSnapshot;
+    snapshot.revision = baseSnapshot.revision + iteration + 1;
+    snapshot.cpu.loadPercent = SnapshotHandoffRange(iteration, 0.0, 5.0, 95.0);
+    snapshot.cpu.clock.value = SnapshotHandoffRange(iteration, 0.6, 2.5, 4.9);
+    snapshot.cpu.memory.usedGb = SnapshotHandoffRange(iteration, 1.2, 4.0, 48.0);
+    snapshot.gpu.loadPercent = SnapshotHandoffRange(iteration, 1.8, 2.0, 98.0);
+    snapshot.gpu.temperature.value = SnapshotHandoffRange(iteration, 2.4, 35.0, 85.0);
+    snapshot.gpu.clock.value = SnapshotHandoffRange(iteration, 3.0, 100.0, 2400.0);
+    snapshot.gpu.fan.value = SnapshotHandoffRange(iteration, 3.6, 0.0, 2600.0);
+    snapshot.gpu.fps.value = SnapshotHandoffRange(iteration, 4.2, 48.0, 165.0);
+    snapshot.gpu.vram.usedGb = SnapshotHandoffRange(iteration, 4.8, 1.0, 14.0);
+    snapshot.network.uploadMbps = SnapshotHandoffRange(iteration, 5.4, 0.0, 80.0);
+    snapshot.network.downloadMbps = SnapshotHandoffRange(iteration, 6.0, 0.0, 120.0);
+    snapshot.storage.readMbps = SnapshotHandoffRange(iteration, 6.6, 0.0, 160.0);
+    snapshot.storage.writeMbps = SnapshotHandoffRange(iteration, 7.2, 0.0, 120.0);
+
+    for (size_t index = 0; index < snapshot.boardTemperatures.size(); ++index) {
+        snapshot.boardTemperatures[index].metric.value =
+            SnapshotHandoffRange(iteration, 7.8 + static_cast<double>(index), 30.0, 85.0);
+    }
+    for (size_t index = 0; index < snapshot.boardFans.size(); ++index) {
+        snapshot.boardFans[index].metric.value =
+            SnapshotHandoffRange(iteration, 9.0 + static_cast<double>(index), 400.0, 2400.0);
+    }
+    for (size_t index = 0; index < snapshot.drives.size(); ++index) {
+        DriveInfo& drive = snapshot.drives[index];
+        drive.usedPercent = SnapshotHandoffRange(iteration, 11.0 + static_cast<double>(index), 10.0, 95.0);
+        drive.readMbps = SnapshotHandoffRange(iteration, 15.0 + static_cast<double>(index), 0.0, 180.0);
+        drive.writeMbps = SnapshotHandoffRange(iteration, 19.0 + static_cast<double>(index), 0.0, 120.0);
+        if (drive.totalGb > 0.0) {
+            drive.freeGb = drive.totalGb * (1.0 - (drive.usedPercent / 100.0));
+        }
+    }
+    for (size_t seriesIndex = 0; seriesIndex < snapshot.retainedHistories.size(); ++seriesIndex) {
+        RetainedHistorySeries& series = snapshot.retainedHistories[seriesIndex];
+        for (size_t sampleIndex = 0; sampleIndex < series.samples.size(); ++sampleIndex) {
+            const double scale =
+                0.75 + (0.5 * SnapshotHandoffWave(iteration,
+                                  23.0 + static_cast<double>(seriesIndex) + (static_cast<double>(sampleIndex) * 0.07)));
+            series.samples[sampleIndex] = std::max(0.0, series.samples[sampleIndex] * scale);
+        }
+    }
+    return snapshot;
+}
+
+void PumpBenchmarkMessagesUntil(Clock::time_point deadline) {
+    while (Clock::now() < deadline) {
+        MSG message{};
+        while (PeekMessageW(&message, nullptr, 0, 0, PM_REMOVE)) {
+            TranslateMessage(&message);
+            DispatchMessageW(&message);
+        }
+        const auto now = Clock::now();
+        if (now >= deadline) {
+            break;
+        }
+        const auto remaining = deadline - now;
+        constexpr auto maxSleep = std::chrono::duration_cast<Clock::duration>(std::chrono::milliseconds(5));
+        std::this_thread::sleep_for(remaining < maxSleep ? remaining : maxSleep);
+    }
 }
 
 HWND CreateBenchmarkWindow(int width, int height, std::string_view title) {
@@ -645,7 +717,7 @@ struct AnimationBenchTotals {
 struct SnapshotHandoffBenchTotals {
     BenchResult handoffLoop;
     PhaseStats frameBuild;
-    PhaseStats frameHandoff;
+    PhaseStats framePublish;
     std::string errorText;
     bool succeeded = true;
 };
@@ -877,24 +949,25 @@ AnimationBenchTotals RunAnimationFrameBenchmark(DashboardPresentationFrame frame
 }
 
 SnapshotHandoffBenchTotals RunSnapshotHandoffBenchmark(
-    DashboardRenderer& renderer, SystemSnapshot snapshot, size_t iterations) {
+    DashboardRenderer& renderer, const SystemSnapshot& baseSnapshot, size_t iterations) {
     SnapshotHandoffBenchTotals totals{};
     if (iterations == 0) {
         return totals;
     }
 
     DashboardPresentationFrame warmupFrame;
-    ++snapshot.revision;
-    if (!renderer.BuildSnapshotHandoffBenchmarkFrame(snapshot, warmupFrame) ||
-        !renderer.PresentSnapshotHandoffBenchmarkFrame(std::move(warmupFrame))) {
+    const SystemSnapshot warmupSnapshot = BuildSnapshotHandoffIterationSnapshot(baseSnapshot, 0);
+    if (!renderer.BuildSnapshotHandoffBenchmarkFrame(warmupSnapshot, warmupFrame) ||
+        !renderer.PublishSnapshotHandoffBenchmarkFrame(std::move(warmupFrame))) {
         totals.succeeded = false;
         totals.errorText = "snapshot handoff warmup failed: " + renderer.LastError();
         return totals;
     }
+    PumpBenchmarkMessagesUntil(Clock::now() + kSnapshotHandoffBenchmarkCadence);
 
-    const auto loopStart = Clock::now();
     for (size_t iteration = 0; iteration < iterations; ++iteration) {
-        ++snapshot.revision;
+        const auto iterationStart = Clock::now();
+        const SystemSnapshot snapshot = BuildSnapshotHandoffIterationSnapshot(baseSnapshot, iteration + 1);
 
         DashboardPresentationFrame frame;
         const auto buildStart = Clock::now();
@@ -905,15 +978,16 @@ SnapshotHandoffBenchTotals RunSnapshotHandoffBenchmark(
         }
         RecordPhase(totals.frameBuild, Clock::now() - buildStart);
 
-        const auto handoffStart = Clock::now();
-        if (!renderer.PresentSnapshotHandoffBenchmarkFrame(std::move(frame))) {
+        const auto publishStart = Clock::now();
+        if (!renderer.PublishSnapshotHandoffBenchmarkFrame(std::move(frame))) {
             totals.succeeded = false;
-            totals.errorText = "snapshot frame handoff failed: " + renderer.LastError();
+            totals.errorText = "snapshot frame publish failed: " + renderer.LastError();
             return totals;
         }
-        RecordPhase(totals.frameHandoff, Clock::now() - handoffStart);
+        RecordPhase(totals.framePublish, Clock::now() - publishStart);
+        PumpBenchmarkMessagesUntil(iterationStart + kSnapshotHandoffBenchmarkCadence);
     }
-    totals.handoffLoop.total = Clock::now() - loopStart;
+    totals.handoffLoop.total = Duration(totals.frameBuild.total + totals.framePublish.total);
     totals.handoffLoop.perIteration = totals.handoffLoop.total / static_cast<double>(iterations);
     return totals;
 }
@@ -1234,6 +1308,7 @@ int RunSnapshotHandoffBenchmarkCommand(size_t iterations, double renderScale, Tr
     renderer.SetConfig(runtimeConfig);
     renderer.SetRenderScale(renderScale);
     renderer.SetRenderMode(DashboardRenderer::RenderMode::Normal);
+    renderer.SetLiveAnimationEnabled(true);
 
     HWND hwnd =
         CreateBenchmarkWindow(renderer.WindowWidth(), renderer.WindowHeight(), "CaseDashSnapshotHandoffBenchmark");
@@ -1241,13 +1316,16 @@ int RunSnapshotHandoffBenchmarkCommand(size_t iterations, double renderScale, Tr
         std::cerr << "benchmark window creation failed\n";
         return 1;
     }
+    ShowWindow(hwnd, SW_SHOWNOACTIVATE);
+    UpdateWindow(hwnd);
     if (!renderer.Initialize(hwnd)) {
         std::cerr << "renderer init failed: " << renderer.LastError() << "\n";
         DestroyWindow(hwnd);
         return 1;
     }
 
-    std::cout << "snapshot_handoff_benchmark mode=threaded_immediate iterations=" << iterations
+    std::cout << "snapshot_handoff_benchmark mode=threaded_vsync telemetry_cadence_ms="
+              << kSnapshotHandoffBenchmarkCadence.count() << " iterations=" << iterations
               << " render_scale=" << renderScale << " window=" << renderer.WindowWidth() << "x"
               << renderer.WindowHeight() << "\n";
     const SnapshotHandoffBenchTotals totals = RunSnapshotHandoffBenchmark(renderer, telemetry->Snapshot(), iterations);
@@ -1260,7 +1338,7 @@ int RunSnapshotHandoffBenchmarkCommand(size_t iterations, double renderScale, Tr
 
     PrintBenchLoopResult("snapshot_loop", totals.handoffLoop);
     PrintPhaseResult("presentation_frame_build", totals.frameBuild);
-    PrintPhaseResult("presentation_frame_handoff", totals.frameHandoff);
+    PrintPhaseResult("presentation_frame_publish", totals.framePublish);
     return 0;
 }
 

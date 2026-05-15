@@ -778,21 +778,17 @@ bool DashboardRenderer::BuildSnapshotHandoffBenchmarkFrame(
     if (!built) {
         return false;
     }
-    frame.animate = false;
     return true;
 }
 
-bool DashboardRenderer::PresentSnapshotHandoffBenchmarkFrame(DashboardPresentationFrame frame) {
+bool DashboardRenderer::PublishSnapshotHandoffBenchmarkFrame(DashboardPresentationFrame frame) {
     lastError_.clear();
-    if (presentationHwnd_ != nullptr) {
-        presentation_.Configure(presentationHwnd_, true, true);
-    }
-    const bool presented = presentationHwnd_ == nullptr ? presentation_.PresentFrameSynchronously(std::move(frame))
-                                                        : presentation_.PublishFrameSynchronously(std::move(frame));
-    if (!presented) {
+    const bool published = presentationHwnd_ == nullptr ? presentation_.PresentFrameSynchronously(std::move(frame))
+                                                        : presentation_.PublishFrame(std::move(frame));
+    if (!published) {
         lastError_ = presentation_.LastError();
     }
-    return presented && lastError_.empty();
+    return published && lastError_.empty();
 }
 
 std::vector<LayoutGuideSheetCardSummary> DashboardRenderer::CollectLayoutGuideSheetCardSummaries() const {

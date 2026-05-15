@@ -87,8 +87,8 @@ public:
     bool BuildAnimationBenchmarkFrame(const SystemSnapshot& snapshot, DashboardPresentationFrame& frame);
     // Designed only for benchmarks that measure snapshot layer construction before threaded handoff.
     bool BuildSnapshotHandoffBenchmarkFrame(const SystemSnapshot& snapshot, DashboardPresentationFrame& frame);
-    // Designed only for benchmarks that measure render-thread handoff without live vsync cadence.
-    bool PresentSnapshotHandoffBenchmarkFrame(DashboardPresentationFrame frame);
+    // Designed only for benchmarks that publish through the live render-thread handoff.
+    bool PublishSnapshotHandoffBenchmarkFrame(DashboardPresentationFrame frame);
     std::vector<LayoutGuideSheetCardSummary> CollectLayoutGuideSheetCardSummaries() const;
     bool RenderSnapshotOffscreen(const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState);
     bool PrimeLayoutEditDynamicRegions(const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState);
