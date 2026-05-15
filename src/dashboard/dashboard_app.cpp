@@ -313,7 +313,8 @@ void DashboardApp::SetDashboardWindowGeometry(
         (windowRect.right - windowRect.left) != width || (windowRect.bottom - windowRect.top) != height;
     if (sizeChanged) {
         renderer_.DiscardWindowRenderTarget(reason);
-        flags |= SWP_NOREDRAW;
+        // Surface changes render a fresh frame explicitly; do not let USER32 preserve old client pixels.
+        flags |= SWP_NOREDRAW | SWP_NOCOPYBITS;
     }
 
     SetWindowPos(hwnd_, nullptr, left, top, width, height, flags);
