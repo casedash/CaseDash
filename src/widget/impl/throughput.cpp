@@ -277,7 +277,12 @@ public:
     }
 
     RenderRect DirtyBounds() const override {
-        return rect_;
+        RenderRect bounds = rect_;
+        const int strokeWidthPadding = layout_.plotStrokeWidth;
+        const int verticalPadding = std::max(layout_.leaderRadius, strokeWidthPadding);
+        bounds.top -= verticalPadding;
+        bounds.bottom += verticalPadding;
+        return bounds;
     }
 
     void Draw(Renderer& renderer, const WidgetAnimationState& state) const override {
