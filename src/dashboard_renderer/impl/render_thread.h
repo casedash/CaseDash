@@ -42,6 +42,15 @@ struct DashboardPresentationFrame {
     bool overlayLayerUpdated = true;
 };
 
+struct DashboardPresentedFrameState {
+    std::uint64_t surfaceVersion = 0;
+    std::uint64_t snapshotVersion = 0;
+    std::uint64_t overlayVersion = 0;
+    std::uint64_t animationGeometryVersion = 0;
+    bool hasFrame = false;
+    bool retainedContents = false;
+};
+
 class DashboardLayerBitmapPool {
 public:
     RenderBitmap Acquire(int width, int height);
@@ -75,19 +84,31 @@ public:
     std::string LastError() const;
 
 private:
-    bool PrepareRenderer(Renderer& renderer, const DashboardPresentationFrame& frame, std::uint64_t& version);
+    bool PrepareRenderer(
+        Renderer& renderer, const DashboardPresentationFrame& frame, DashboardPresentedFrameState& state);
     bool PresentFrame(Renderer& renderer,
         DashboardAnimationTimeline& timeline,
         DashboardPresentationFrame& frame,
-        std::uint64_t& version);
+        DashboardPresentedFrameState& presentedState);
     void DrawFrame(Renderer& renderer,
         DashboardAnimationTimeline* timeline,
         const DashboardPresentationFrame& frame,
+        DashboardAnimationTimeline::Clock::time_point now) const;
+    void DrawFrameDirty(Renderer& renderer,
+        DashboardAnimationTimeline* timeline,
+        const DashboardPresentationFrame& frame,
+        const RenderRect& dirtyRect,
         DashboardAnimationTimeline::Clock::time_point now) const;
     void DrawAnimations(Renderer& renderer,
         DashboardAnimationTimeline* timeline,
         const std::vector<DashboardPresentationAnimation>& animations,
         std::uint64_t targetVersion) const;
+    void DrawAnimationsDirty(Renderer& renderer,
+        DashboardAnimationTimeline* timeline,
+        const std::vector<DashboardPresentationAnimation>& animations,
+        std::uint64_t targetVersion,
+        const RenderRect& dirtyRect) const;
+    std::vector<RenderRect> AnimationDirtyRects(const DashboardPresentationFrame& frame) const;
     void MergeFrame(DashboardPresentationFrame& target, DashboardPresentationFrame update) const;
     void ReleaseFrameLayers(DashboardPresentationFrame frame) const;
     void ReleaseBitmap(RenderBitmap bitmap) const;
@@ -99,7 +120,7 @@ private:
     std::atomic_bool immediatePresent_{false};
     std::unique_ptr<Renderer> syncRenderer_;
     DashboardAnimationTimeline syncTimeline_;
-    std::uint64_t syncSurfaceVersion_ = 0;
+    DashboardPresentedFrameState syncPresentedState_;
     std::optional<DashboardPresentationFrame> syncFrame_;
     std::shared_ptr<DashboardLayerBitmapPool> bitmapPool_;
 

@@ -327,11 +327,43 @@ bool D2DRenderer::IsDrawActive() const {
 }
 
 bool D2DRenderer::DrawWindow(int width, int height, const DrawCallback& draw) {
-    if (!BeginWindowDraw(width, height)) {
+    if (!BeginWindowDraw(width, height, false)) {
         return false;
     }
     d2dActiveRenderTarget_->Clear(palette_.Get(RenderColorId::Background).ToD2DColorF());
     draw();
+    EndWindowDraw();
+    return lastError_.empty();
+}
+
+bool D2DRenderer::DrawWindowRetained(int width, int height, const DrawCallback& draw) {
+    if (!BeginWindowDraw(width, height, true)) {
+        return false;
+    }
+    d2dActiveRenderTarget_->Clear(palette_.Get(RenderColorId::Background).ToD2DColorF());
+    draw();
+    EndWindowDraw();
+    return lastError_.empty();
+}
+
+bool D2DRenderer::DrawWindowDirty(
+    int width, int height, std::span<const RenderRect> dirtyRects, const DirtyDrawCallback& draw) {
+    if (dirtyRects.empty()) {
+        return true;
+    }
+    if (!BeginWindowDraw(width, height, true)) {
+        return false;
+    }
+
+    for (const RenderRect& dirtyRect : dirtyRects) {
+        if (dirtyRect.IsEmpty()) {
+            continue;
+        }
+        PushClipRect(dirtyRect);
+        draw(dirtyRect);
+        PopClipRect();
+    }
+
     EndWindowDraw();
     return lastError_.empty();
 }
@@ -351,7 +383,9 @@ bool D2DRenderer::DrawToBitmap(
     const D2D1_COLOR_F clearColor = clear == RenderBitmapClear::Transparent
                                         ? D2D1::ColorF(0.0f, 0.0f, 0.0f, 0.0f)
                                         : palette_.Get(RenderColorId::Background).ToD2DColorF();
-    if (hwnd_ != nullptr && EnsureWindowRenderTarget(width, height) && d2dWindowRenderTarget_ != nullptr) {
+    const bool keepCurrentWindowRetainMode = d2dWindowRenderTarget_ != nullptr && d2dWindowRetainContents_;
+    if (hwnd_ != nullptr && EnsureWindowRenderTarget(width, height, keepCurrentWindowRetainMode) &&
+        d2dWindowRenderTarget_ != nullptr) {
         Microsoft::WRL::ComPtr<ID2D1BitmapRenderTarget> bitmapRenderTarget;
         if (output.width == static_cast<int>(bitmapWidth) && output.height == static_cast<int>(bitmapHeight) &&
             output.resource != nullptr && output.resource->TypeToken() == D2DRenderBitmapResourceTypeToken()) {
@@ -685,6 +719,7 @@ void D2DRenderer::ShutdownDirect2D() {
     d2dDashedStrokeStyle_.Reset();
     d2dSolidStrokeStyle_.Reset();
     d2dWindowRenderTarget_.Reset();
+    d2dWindowRetainContents_ = false;
     wicFactory_.Reset();
     if (wicComInitialized_) {
         CoUninitialize();
@@ -694,20 +729,24 @@ void D2DRenderer::ShutdownDirect2D() {
     d2dFactory_.Reset();
 }
 
-bool D2DRenderer::EnsureWindowRenderTarget(int width, int height) {
+bool D2DRenderer::EnsureWindowRenderTarget(int width, int height, bool retainContents) {
     if (hwnd_ == nullptr || !InitializeDirect2D()) {
         return false;
     }
 
     const UINT targetWidth = static_cast<UINT>(std::max(1, width));
     const UINT targetHeight = static_cast<UINT>(std::max(1, height));
+    if (d2dWindowRenderTarget_ != nullptr && d2dWindowRetainContents_ != retainContents) {
+        DiscardWindowTarget("retain_mode_change");
+    }
     if (d2dWindowRenderTarget_ == nullptr) {
         const D2D1_RENDER_TARGET_PROPERTIES properties = D2D1::RenderTargetProperties(D2D1_RENDER_TARGET_TYPE_DEFAULT,
             D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_IGNORE),
             96.0f,
             96.0f);
-        const D2D1_PRESENT_OPTIONS presentOptions =
-            d2dImmediatePresent_ ? D2D1_PRESENT_OPTIONS_IMMEDIATELY : D2D1_PRESENT_OPTIONS_NONE;
+        const D2D1_PRESENT_OPTIONS presentOptions = static_cast<D2D1_PRESENT_OPTIONS>(
+            (retainContents ? D2D1_PRESENT_OPTIONS_RETAIN_CONTENTS : D2D1_PRESENT_OPTIONS_NONE) |
+            (d2dImmediatePresent_ ? D2D1_PRESENT_OPTIONS_IMMEDIATELY : D2D1_PRESENT_OPTIONS_NONE));
         const HRESULT hr = d2dFactory_->CreateHwndRenderTarget(properties,
             D2D1::HwndRenderTargetProperties(hwnd_, D2D1::SizeU(targetWidth, targetHeight), presentOptions),
             d2dWindowRenderTarget_.ReleaseAndGetAddressOf());
@@ -715,6 +754,7 @@ bool D2DRenderer::EnsureWindowRenderTarget(int width, int height) {
             lastError_ = "renderer:d2d_hwnd_target_failed hr=" + FormatHresult(hr);
             return false;
         }
+        d2dWindowRetainContents_ = retainContents;
         d2dCache_.ResetTarget();
         return true;
     }
@@ -727,7 +767,7 @@ bool D2DRenderer::EnsureWindowRenderTarget(int width, int height) {
     if (FAILED(hr)) {
         d2dWindowRenderTarget_.Reset();
         d2dCache_.ResetTarget();
-        return EnsureWindowRenderTarget(width, height);
+        return EnsureWindowRenderTarget(width, height, retainContents);
     }
     d2dCache_.Clear();
     return true;
@@ -778,8 +818,8 @@ void D2DRenderer::EndDirect2DDraw() {
     }
 }
 
-bool D2DRenderer::BeginWindowDraw(int width, int height) {
-    if (!EnsureWindowRenderTarget(width, height) || d2dWindowRenderTarget_ == nullptr) {
+bool D2DRenderer::BeginWindowDraw(int width, int height, bool retainContents) {
+    if (!EnsureWindowRenderTarget(width, height, retainContents) || d2dWindowRenderTarget_ == nullptr) {
         return false;
     }
     return BeginDirect2DDraw(d2dWindowRenderTarget_.Get());
@@ -796,6 +836,7 @@ void D2DRenderer::DiscardWindowTarget(std::string_view reason) {
         d2dActiveRenderTarget_ = nullptr;
     }
     d2dWindowRenderTarget_.Reset();
+    d2dWindowRetainContents_ = false;
     d2dCache_.ResetTarget();
     panelIconAtlasMask_.Reset();
     panelIconAtlasMaskTarget_ = nullptr;
@@ -842,11 +883,11 @@ void D2DRenderer::PopTranslation() {
     d2dTransformStack_.pop_back();
 }
 
-bool D2DRenderer::DrawBitmap(const RenderBitmap& bitmap, RenderPoint origin) {
-    if (!IsDrawActive() || bitmap.Empty()) {
-        return false;
-    }
+Microsoft::WRL::ComPtr<ID2D1Bitmap> D2DRenderer::D2DBitmapForRenderBitmap(const RenderBitmap& bitmap) {
     Microsoft::WRL::ComPtr<ID2D1Bitmap> d2dBitmap;
+    if (!IsDrawActive() || bitmap.Empty()) {
+        return d2dBitmap;
+    }
     const D2D1_BITMAP_PROPERTIES properties =
         D2D1::BitmapProperties(D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED));
     HRESULT hr = E_FAIL;
@@ -876,6 +917,14 @@ bool D2DRenderer::DrawBitmap(const RenderBitmap& bitmap, RenderPoint origin) {
     }
     if (FAILED(hr) || d2dBitmap == nullptr) {
         lastError_ = "renderer:draw_bitmap_create_failed hr=" + FormatHresult(hr);
+        return {};
+    }
+    return d2dBitmap;
+}
+
+bool D2DRenderer::DrawBitmap(const RenderBitmap& bitmap, RenderPoint origin) {
+    Microsoft::WRL::ComPtr<ID2D1Bitmap> d2dBitmap = D2DBitmapForRenderBitmap(bitmap);
+    if (d2dBitmap == nullptr) {
         return false;
     }
     d2dActiveRenderTarget_->DrawBitmap(d2dBitmap.Get(),
@@ -885,6 +934,34 @@ bool D2DRenderer::DrawBitmap(const RenderBitmap& bitmap, RenderPoint origin) {
             static_cast<float>(origin.y + bitmap.height)),
         1.0f,
         D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR);
+    return true;
+}
+
+bool D2DRenderer::DrawBitmapRegion(const RenderBitmap& bitmap, const RenderRect& sourceRect, RenderPoint targetOrigin) {
+    if (sourceRect.IsEmpty()) {
+        return false;
+    }
+    Microsoft::WRL::ComPtr<ID2D1Bitmap> d2dBitmap = D2DBitmapForRenderBitmap(bitmap);
+    if (d2dBitmap == nullptr) {
+        return false;
+    }
+    RenderRect clippedSource = sourceRect;
+    clippedSource.left = std::clamp(clippedSource.left, 0, bitmap.width);
+    clippedSource.top = std::clamp(clippedSource.top, 0, bitmap.height);
+    clippedSource.right = std::clamp(clippedSource.right, 0, bitmap.width);
+    clippedSource.bottom = std::clamp(clippedSource.bottom, 0, bitmap.height);
+    if (clippedSource.IsEmpty()) {
+        return false;
+    }
+    targetOrigin.x += clippedSource.left - sourceRect.left;
+    targetOrigin.y += clippedSource.top - sourceRect.top;
+    const D2D1_RECT_F destinationRect = D2D1::RectF(static_cast<float>(targetOrigin.x),
+        static_cast<float>(targetOrigin.y),
+        static_cast<float>(targetOrigin.x + clippedSource.Width()),
+        static_cast<float>(targetOrigin.y + clippedSource.Height()));
+    const D2D1_RECT_F sourceD2DRect = D2DRectFromRenderRect(clippedSource);
+    d2dActiveRenderTarget_->DrawBitmap(
+        d2dBitmap.Get(), destinationRect, 1.0f, D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR, &sourceD2DRect);
     return true;
 }
 

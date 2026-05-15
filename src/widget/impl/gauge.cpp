@@ -242,6 +242,16 @@ public:
         return MakeScalarFillAnimationState(target_);
     }
 
+    RenderRect DirtyBounds() const override {
+        if (ringSegments_.empty()) {
+            return {};
+        }
+        const RenderArc& first = ringSegments_.front();
+        const int radius = (std::max)(first.radiusX, first.radiusY) + ((std::max)(1, ringThickness_) / 2);
+        return RenderRect{
+            first.center.x - radius, first.center.y - radius, first.center.x + radius, first.center.y + radius};
+    }
+
     void Draw(Renderer& renderer, const WidgetAnimationState& state) const override {
         DrawGaugeFill(renderer, gaugeLayout_, ringSegments_, ringThickness_, ScalarFillSampleFromState(state));
     }

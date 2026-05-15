@@ -299,6 +299,10 @@ public:
         return MakeThroughputChartAnimationState(target_);
     }
 
+    RenderRect DirtyBounds() const override {
+        return rect_;
+    }
+
     void Draw(Renderer& renderer, const WidgetAnimationState& state) const override {
         const ThroughputChartSample& sample = ThroughputChartSampleFromState(state);
         DrawGraphAnimated(renderer,

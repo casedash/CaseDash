@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "renderer/render_types.h"
 #include "widget/animation_types.h"
 
 class Renderer;
@@ -43,6 +44,7 @@ public:
     virtual const AnimationDataKey& Key() const = 0;
     virtual WidgetAnimationLayer Layer() const = 0;
     virtual WidgetAnimationStatePtr TargetState() const = 0;
+    virtual RenderRect DirtyBounds() const = 0;
     virtual void Draw(::Renderer& renderer, const WidgetAnimationState& state) const = 0;
 };
 

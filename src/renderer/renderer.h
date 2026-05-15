@@ -60,6 +60,7 @@ enum class RenderBitmapClear {
 class Renderer {
 public:
     using DrawCallback = FunctionRef<void()>;
+    using DirtyDrawCallback = FunctionRef<void(const RenderRect&)>;
 
     virtual ~Renderer() = default;
 
@@ -69,6 +70,9 @@ public:
     virtual void SetImmediatePresent(bool enabled) = 0;
     virtual void DiscardWindowTarget(std::string_view reason = {}) = 0;
     virtual bool DrawWindow(int width, int height, const DrawCallback& draw) = 0;
+    virtual bool DrawWindowRetained(int width, int height, const DrawCallback& draw) = 0;
+    virtual bool DrawWindowDirty(
+        int width, int height, std::span<const RenderRect> dirtyRects, const DirtyDrawCallback& draw) = 0;
     virtual bool DrawOffscreen(int width, int height, const DrawCallback& draw) = 0;
     virtual bool DrawToBitmap(
         RenderBitmap& bitmap, int width, int height, RenderBitmapClear clear, const DrawCallback& draw) = 0;
@@ -94,6 +98,8 @@ public:
     virtual void PushTranslation(RenderPoint offset) = 0;
     virtual void PopTranslation() = 0;
     virtual bool DrawBitmap(const RenderBitmap& bitmap, RenderPoint origin) = 0;
+    virtual bool DrawBitmapRegion(
+        const RenderBitmap& bitmap, const RenderRect& sourceRect, RenderPoint targetOrigin) = 0;
     virtual bool DrawIcon(std::string_view iconName, const RenderRect& rect) = 0;
     virtual bool FillSolidRect(const RenderRect& rect, RenderColorId color) = 0;
     virtual bool FillSolidRoundedRect(const RenderRect& rect, int radius, RenderColorId color) = 0;

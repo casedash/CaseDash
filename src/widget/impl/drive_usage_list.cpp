@@ -219,6 +219,10 @@ public:
         return MakeScalarFillAnimationState(target_);
     }
 
+    RenderRect DirtyBounds() const override {
+        return rect_;
+    }
+
     void Draw(Renderer& renderer, const WidgetAnimationState& state) const override {
         DrawSegmentIndicatorFill(renderer,
             rect_,

@@ -128,6 +128,18 @@ public:
         return true;
     }
 
+    bool DrawWindowRetained(int, int, const DrawCallback& draw) override {
+        draw();
+        return true;
+    }
+
+    bool DrawWindowDirty(int, int, std::span<const RenderRect> dirtyRects, const DirtyDrawCallback& draw) override {
+        for (const RenderRect& dirtyRect : dirtyRects) {
+            draw(dirtyRect);
+        }
+        return true;
+    }
+
     bool DrawOffscreen(int, int, const DrawCallback& draw) override {
         draw();
         return true;
@@ -202,6 +214,10 @@ public:
     void PopTranslation() override {}
 
     bool DrawBitmap(const RenderBitmap&, RenderPoint) override {
+        return true;
+    }
+
+    bool DrawBitmapRegion(const RenderBitmap&, const RenderRect&, RenderPoint) override {
         return true;
     }
 

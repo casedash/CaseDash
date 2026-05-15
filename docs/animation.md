@@ -33,7 +33,7 @@ The current implementation adds the shared animation cadence, public animation i
 - The live window draw path is split: `DashboardApp::Paint()` calls `DashboardRenderer::DrawWindow()`, the main thread paints snapshot and optional overlay layers into renderer-owned bitmap resources, collects immutable widget animation objects, and publishes the newest complete frame to `DashboardRenderThread`.
 - `DashboardRenderThread` owns the HWND presenter renderer, the keyed `DashboardAnimationTimeline`, an overwrite-only mailbox, surface-version handling, and the animation frame loop. It composes snapshot bitmap, snapshot animations, optional overlay bitmap, and overlay animations on the presenter thread.
 - Snapshot and overlay layer bitmaps are acquired from a dashboard-renderer pool and returned after the render thread replaces or discards the frame that owns them. The benchmark immediate-present path uses the same acquire/release rule while staying single-threaded, so paint benchmarks measure layer bitmap construction and final composition without scheduler noise.
-- `D2DRenderer` exposes generic layer bitmap drawing and bitmap composition. The live presenter currently uses the existing Direct2D HWND render target behind the render-thread boundary; replacing that target with the planned DXGI flip-model swap chain remains a renderer-backend step.
+- `D2DRenderer` exposes generic layer bitmap drawing, bitmap-region drawing, bitmap composition, and retained dirty-window composition. The live presenter currently uses the existing Direct2D HWND render target behind the render-thread boundary; replacing that target with the planned DXGI flip-model swap chain remains a renderer-backend step.
 - Widgets draw snapshot text and tracks while submitting widget-owned animation objects tagged with the current dashboard layer. Widget overlay hooks submit overlay-tagged animations for content that moves above the base dashboard during layout editing.
 - Layout-edit dragged-child replay happens by re-entering widget draw code in the overlay pass under the drag translation. Its widget animations use the overlay tag and the render-thread timeline.
 
@@ -157,6 +157,7 @@ The public animation interface exposes:
 - `AnimationDataKey` for stable logical identity.
 - `WidgetAnimationLayer`, which identifies whether the animation belongs to the snapshot layer or overlay layer.
 - `WidgetAnimation`, which can return a target state and draw a sampled state on a regular `Renderer`.
+- A conservative dirty bound for the animation command. This is a generic render-space invalidation rectangle, not widget-private geometry.
 - `WidgetAnimationState`, which can clone itself, create first-seen and retarget starts, compare compatible targets, and create transitions.
 - `WidgetAnimationTransition`, which samples an opaque state at a normalized progress value.
 
@@ -303,9 +304,9 @@ The main thread always publishes a complete snapshot layer after a size, DPI, sc
 
 ## Dirty Rectangles
 
-Telemetry snapshot updates and layout/style changes present the full window because they update the snapshot layer or animation geometry.
+Telemetry snapshot updates and layout/style changes present the full window because they update the snapshot layer or animation geometry. When animation is enabled, those full redraws use the same retained presenter target as dirty animation frames so the HWND target is not recreated between a metrics update and the following animation ticks.
 
-Animation geometry changes only when the snapshot version or overlay version changes. If neither version changed, animation geometry is unchanged and animation-only frames may mark the current animation primitive bounds dirty without merging old and new boxes.
+Animation geometry changes only when the snapshot version or overlay version changes. If neither version changed, animation geometry is unchanged and animation-only frames mark each current animation primitive bound dirty. The retained dirty presenter restores only each dirty region from the snapshot bitmap, restores the same region from the overlay bitmap when an overlay exists, then draws the animations that intersect that dirty region. Dirty bounds are not coalesced.
 
 When the snapshot version or overlay version changes, the render thread treats the whole live surface as dirty. Config edits, layout edits, and active drags redraw at least one of those layers on the main thread, so the render thread does not try to infer smaller dirty regions from old and new animation geometry. During active drags, the overlay bitmap version changes on each drag frame, and the render thread cannot inspect the overlay's internal delta.
 

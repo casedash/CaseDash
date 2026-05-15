@@ -28,6 +28,9 @@ public:
     void SetImmediatePresent(bool enabled) override;
     void DiscardWindowTarget(std::string_view reason = {}) override;
     bool DrawWindow(int width, int height, const DrawCallback& draw) override;
+    bool DrawWindowRetained(int width, int height, const DrawCallback& draw) override;
+    bool DrawWindowDirty(
+        int width, int height, std::span<const RenderRect> dirtyRects, const DirtyDrawCallback& draw) override;
     bool DrawOffscreen(int width, int height, const DrawCallback& draw) override;
     bool DrawToBitmap(
         RenderBitmap& bitmap, int width, int height, RenderBitmapClear clear, const DrawCallback& draw) override;
@@ -55,6 +58,7 @@ public:
     void PushTranslation(RenderPoint offset) override;
     void PopTranslation() override;
     bool DrawBitmap(const RenderBitmap& bitmap, RenderPoint origin) override;
+    bool DrawBitmapRegion(const RenderBitmap& bitmap, const RenderRect& sourceRect, RenderPoint targetOrigin) override;
     bool DrawIcon(std::string_view iconName, const RenderRect& rect) override;
     bool FillSolidRect(const RenderRect& rect, RenderColorId color) override;
     bool FillSolidRoundedRect(const RenderRect& rect, int radius, RenderColorId color) override;
@@ -77,10 +81,10 @@ private:
     bool LoadIcons();
     void ReleaseIcons();
     bool RebuildTextFormatsAndMetrics();
-    bool EnsureWindowRenderTarget(int width, int height);
+    bool EnsureWindowRenderTarget(int width, int height, bool retainContents);
     bool BeginDirect2DDraw(ID2D1RenderTarget* target);
     void EndDirect2DDraw();
-    bool BeginWindowDraw(int width, int height);
+    bool BeginWindowDraw(int width, int height, bool retainContents);
     void EndWindowDraw();
     bool DrawToWicBitmap(int width,
         int height,
@@ -102,6 +106,7 @@ private:
         std::span<const Microsoft::WRL::ComPtr<ID2D1PathGeometry>> geometries, size_t count) const;
     bool FillD2DGeometry(ID2D1Geometry* geometry, RenderColorId color);
     bool DrawD2DGeometry(ID2D1Geometry* geometry, const RenderStroke& stroke);
+    Microsoft::WRL::ComPtr<ID2D1Bitmap> D2DBitmapForRenderBitmap(const RenderBitmap& bitmap);
     bool IsDrawActive() const;
 
     RendererStyle style_{};
@@ -123,6 +128,7 @@ private:
     Microsoft::WRL::ComPtr<ID2D1StrokeStyle> d2dDashedStrokeStyle_;
     ID2D1RenderTarget* d2dActiveRenderTarget_ = nullptr;
     bool d2dImmediatePresent_ = false;
+    bool d2dWindowRetainContents_ = false;
     bool wicComInitialized_ = false;
     int d2dClipDepth_ = 0;
     std::vector<D2D1_MATRIX_3X2_F> d2dTransformStack_;
