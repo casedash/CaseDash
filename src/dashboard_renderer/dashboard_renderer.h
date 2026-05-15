@@ -83,9 +83,8 @@ public:
     bool SaveSnapshotPng(const FilePath& imagePath, const SystemSnapshot& snapshot);
     bool SaveSnapshotPng(
         const FilePath& imagePath, const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState);
-#ifdef CASEDASH_BENCHMARK_TARGET
+    // Designed only for single-threaded benchmarks that need a reusable animated presentation frame.
     bool BuildAnimationBenchmarkFrame(const SystemSnapshot& snapshot, DashboardPresentationFrame& frame);
-#endif
     std::vector<LayoutGuideSheetCardSummary> CollectLayoutGuideSheetCardSummaries() const;
     bool RenderSnapshotOffscreen(const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState);
     bool PrimeLayoutEditDynamicRegions(const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState);

@@ -162,7 +162,6 @@ bool DashboardRenderThread::PresentFrameSynchronously(Renderer& renderer, Dashbo
     return presented;
 }
 
-#ifdef CASEDASH_BENCHMARK_TARGET
 bool DashboardRenderThread::PresentStoredFrameSynchronously() {
     if (syncRenderer_ == nullptr || !syncFrame_.has_value()) {
         SetLastError("renderer:no_stored_frame");
@@ -174,7 +173,6 @@ bool DashboardRenderThread::PresentStoredFrameSynchronously() {
     }
     return presented;
 }
-#endif
 
 bool DashboardRenderThread::RenderFrameOffscreen(Renderer& renderer, DashboardPresentationFrame frame) {
     if (!renderer.SetStyle(frame.style)) {

@@ -748,7 +748,6 @@ bool DashboardRenderer::SaveSnapshotPng(
     return saved;
 }
 
-#ifdef CASEDASH_BENCHMARK_TARGET
 bool DashboardRenderer::BuildAnimationBenchmarkFrame(
     const SystemSnapshot& snapshot, DashboardPresentationFrame& frame) {
     lastError_.clear();
@@ -760,7 +759,6 @@ bool DashboardRenderer::BuildAnimationBenchmarkFrame(
     frame.animate = true;
     return true;
 }
-#endif
 
 std::vector<LayoutGuideSheetCardSummary> DashboardRenderer::CollectLayoutGuideSheetCardSummaries() const {
     std::vector<LayoutGuideSheetCardSummary> summaries;

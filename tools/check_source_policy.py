@@ -16,6 +16,7 @@ EXCLUDED_PREFIXES = ("src/vendor/",)
 STD_FUNCTION_RE = re.compile(r"\bstd\s*::\s*function\b")
 STD_FILESYSTEM_RE = re.compile(r"\bstd\s*::\s*filesystem\b")
 FILESYSTEM_INCLUDE_RE = re.compile(r"^\s*#\s*include\s*<\s*filesystem\s*>")
+CONDITIONAL_COMPILATION_RE = re.compile(r"^\s*#\s*(?:if|ifdef|ifndef|elif|else|endif)\b")
 CONST_WIDE_STRING_DECL_RE = re.compile(
     r"^\s*(?:(?:static|inline)\s+)*(?:constexpr|const)\b(?=[^=;\n]*\bwchar_t\b)[^=;\n]*=\s*$"
 )
@@ -274,6 +275,17 @@ def collect_violations(files: list[Path]) -> list[Violation]:
                         message=(
                             "std::filesystem is not allowed in maintained source; use src/util/file_path.* helpers "
                             "so path handling stays Win32-backed without pulling filesystem machinery into the app."
+                        ),
+                    )
+                )
+            if CONDITIONAL_COMPILATION_RE.search(line):
+                violations.append(
+                    Violation(
+                        relpath=file_rel,
+                        line=line_number,
+                        message=(
+                            "conditional compilation guards are not allowed in maintained source; keep code compiled "
+                            "for every native target and let the linker remove unreferenced target-specific helpers."
                         ),
                     )
                 )
