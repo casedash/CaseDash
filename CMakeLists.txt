@@ -483,6 +483,7 @@ target_link_options(CaseDash PRIVATE
 target_link_libraries(CaseDash PRIVATE
     user32
     gdi32
+    d3d11
     d2d1
     dwrite
     pdh
@@ -672,6 +673,7 @@ target_link_libraries(CaseDashTests PRIVATE
     GTest::gtest_main
     user32
     gdi32
+    d3d11
     d2d1
     dwrite
     ole32
@@ -856,6 +858,7 @@ target_link_options(CaseDashBenchmarks PRIVATE
 target_link_libraries(CaseDashBenchmarks PRIVATE
     user32
     gdi32
+    d3d11
     d2d1
     dwrite
     pdh

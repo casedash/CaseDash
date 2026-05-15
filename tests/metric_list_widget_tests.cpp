@@ -121,6 +121,14 @@ public:
 
     void SetImmediatePresent(bool) override {}
 
+    void SetHardwareLayerBitmaps(bool enabled) override {
+        hardwareLayerBitmapsEnabled_ = enabled;
+    }
+
+    bool HardwareLayerBitmapsEnabled() const override {
+        return hardwareLayerBitmapsEnabled_;
+    }
+
     void DiscardWindowTarget(std::string_view = {}) override {}
 
     bool DrawWindow(int, int, const DrawCallback& draw) override {
@@ -326,6 +334,7 @@ private:
     TextStyleMetrics textMetrics_{};
     std::vector<MetricDefinitionConfig> definitions_;
     std::string empty_;
+    bool hardwareLayerBitmapsEnabled_ = false;
 };
 
 MetricListWidget BuildMetricListWidget() {

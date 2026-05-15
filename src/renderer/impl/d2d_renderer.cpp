@@ -1,9 +1,12 @@
 #include "renderer/impl/d2d_renderer.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstring>
+#include <d3d11.h>
 #include <memory>
+#include <mutex>
 #include <utility>
 
 #include "renderer/impl/d2d_render_conversions.h"
@@ -52,6 +55,129 @@ const void* D2DRenderBitmapResourceTypeToken() {
     return &token;
 }
 
+RECT DxgiRectFromRenderRect(const RenderRect& rect) {
+    return RECT{rect.left, rect.top, rect.right, rect.bottom};
+}
+
+class D2DSharedDevice final {
+public:
+    bool Ensure(std::string& errorText) {
+        std::lock_guard lock(mutex_);
+        if (d2dFactory_ != nullptr && d2dDevice_ != nullptr && d3dDevice_ != nullptr && dxgiFactory_ != nullptr) {
+            return true;
+        }
+
+        if (d2dFactory_ == nullptr) {
+            D2D1_FACTORY_OPTIONS options{};
+            const HRESULT hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_MULTI_THREADED,
+                __uuidof(ID2D1Factory1),
+                &options,
+                reinterpret_cast<void**>(d2dFactory_.ReleaseAndGetAddressOf()));
+            if (FAILED(hr) || d2dFactory_ == nullptr) {
+                errorText = "renderer:d2d_factory_failed hr=" + FormatHresult(hr);
+                return false;
+            }
+        }
+
+        if (d3dDevice_ == nullptr) {
+            const std::array<D3D_FEATURE_LEVEL, 4> preferredFeatureLevels{
+                D3D_FEATURE_LEVEL_11_1,
+                D3D_FEATURE_LEVEL_11_0,
+                D3D_FEATURE_LEVEL_10_1,
+                D3D_FEATURE_LEVEL_10_0,
+            };
+            const std::array<D3D_FEATURE_LEVEL, 3> fallbackFeatureLevels{
+                D3D_FEATURE_LEVEL_11_0,
+                D3D_FEATURE_LEVEL_10_1,
+                D3D_FEATURE_LEVEL_10_0,
+            };
+            D3D_FEATURE_LEVEL createdFeatureLevel = D3D_FEATURE_LEVEL_10_0;
+            const auto createDevice = [&](D3D_DRIVER_TYPE driverType, auto featureLevels) {
+                return D3D11CreateDevice(nullptr,
+                    driverType,
+                    nullptr,
+                    D3D11_CREATE_DEVICE_BGRA_SUPPORT,
+                    featureLevels.data(),
+                    static_cast<UINT>(featureLevels.size()),
+                    D3D11_SDK_VERSION,
+                    d3dDevice_.ReleaseAndGetAddressOf(),
+                    &createdFeatureLevel,
+                    d3dContext_.ReleaseAndGetAddressOf());
+            };
+            HRESULT hr = createDevice(D3D_DRIVER_TYPE_HARDWARE, preferredFeatureLevels);
+            if (hr == E_INVALIDARG) {
+                hr = createDevice(D3D_DRIVER_TYPE_HARDWARE, fallbackFeatureLevels);
+            }
+            if (FAILED(hr) || d3dDevice_ == nullptr) {
+                hr = createDevice(D3D_DRIVER_TYPE_WARP, preferredFeatureLevels);
+                if (hr == E_INVALIDARG) {
+                    hr = createDevice(D3D_DRIVER_TYPE_WARP, fallbackFeatureLevels);
+                }
+            }
+            if (FAILED(hr) || d3dDevice_ == nullptr) {
+                errorText = "renderer:d3d_device_failed hr=" + FormatHresult(hr);
+                return false;
+            }
+        }
+
+        if (d2dDevice_ == nullptr || dxgiFactory_ == nullptr) {
+            Microsoft::WRL::ComPtr<IDXGIDevice> dxgiDevice;
+            HRESULT hr = d3dDevice_.As(&dxgiDevice);
+            if (FAILED(hr) || dxgiDevice == nullptr) {
+                errorText = "renderer:dxgi_device_query_failed hr=" + FormatHresult(hr);
+                return false;
+            }
+            hr = d2dFactory_->CreateDevice(dxgiDevice.Get(), d2dDevice_.ReleaseAndGetAddressOf());
+            if (FAILED(hr) || d2dDevice_ == nullptr) {
+                errorText = "renderer:d2d_device_failed hr=" + FormatHresult(hr);
+                return false;
+            }
+
+            Microsoft::WRL::ComPtr<IDXGIAdapter> adapter;
+            hr = dxgiDevice->GetAdapter(adapter.GetAddressOf());
+            if (FAILED(hr) || adapter == nullptr) {
+                errorText = "renderer:dxgi_adapter_failed hr=" + FormatHresult(hr);
+                return false;
+            }
+            hr = adapter->GetParent(IID_PPV_ARGS(dxgiFactory_.ReleaseAndGetAddressOf()));
+            if (FAILED(hr) || dxgiFactory_ == nullptr) {
+                errorText = "renderer:dxgi_factory_failed hr=" + FormatHresult(hr);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    ID2D1Factory1* D2DFactory() const {
+        return d2dFactory_.Get();
+    }
+
+    ID2D1Device* D2DDevice() const {
+        return d2dDevice_.Get();
+    }
+
+    ID3D11Device* D3DDevice() const {
+        return d3dDevice_.Get();
+    }
+
+    IDXGIFactory2* DxgiFactory() const {
+        return dxgiFactory_.Get();
+    }
+
+private:
+    std::mutex mutex_;
+    Microsoft::WRL::ComPtr<ID2D1Factory1> d2dFactory_;
+    Microsoft::WRL::ComPtr<ID3D11Device> d3dDevice_;
+    Microsoft::WRL::ComPtr<ID3D11DeviceContext> d3dContext_;
+    Microsoft::WRL::ComPtr<ID2D1Device> d2dDevice_;
+    Microsoft::WRL::ComPtr<IDXGIFactory2> dxgiFactory_;
+};
+
+D2DSharedDevice& SharedD2DDevice() {
+    static D2DSharedDevice device;
+    return device;
+}
+
 class D2DRenderBitmapResource final : public RenderBitmapResource {
 public:
     explicit D2DRenderBitmapResource(Microsoft::WRL::ComPtr<IWICBitmap> bitmap) : wicBitmap_(std::move(bitmap)) {}
@@ -60,6 +186,8 @@ public:
         : wicBitmap_(std::move(bitmap)), wicRenderTarget_(std::move(target)) {}
 
     explicit D2DRenderBitmapResource(Microsoft::WRL::ComPtr<ID2D1Bitmap> bitmap) : d2dBitmap_(std::move(bitmap)) {}
+
+    explicit D2DRenderBitmapResource(Microsoft::WRL::ComPtr<ID2D1Bitmap1> bitmap) : targetBitmap_(std::move(bitmap)) {}
 
     D2DRenderBitmapResource(
         Microsoft::WRL::ComPtr<ID2D1BitmapRenderTarget> target, Microsoft::WRL::ComPtr<ID2D1Bitmap> bitmap)
@@ -78,7 +206,11 @@ public:
     }
 
     ID2D1Bitmap* D2DBitmap() const {
-        return d2dBitmap_.Get();
+        return targetBitmap_ != nullptr ? targetBitmap_.Get() : d2dBitmap_.Get();
+    }
+
+    ID2D1Bitmap1* TargetBitmap() const {
+        return targetBitmap_.Get();
     }
 
     ID2D1BitmapRenderTarget* CompatibleTarget() const {
@@ -115,6 +247,7 @@ private:
     Microsoft::WRL::ComPtr<ID2D1RenderTarget> wicRenderTarget_;
     Microsoft::WRL::ComPtr<ID2D1BitmapRenderTarget> compatibleTarget_;
     Microsoft::WRL::ComPtr<ID2D1Bitmap> d2dBitmap_;
+    Microsoft::WRL::ComPtr<ID2D1Bitmap1> targetBitmap_;
     mutable ID2D1RenderTarget* cachedD2DBitmapTarget_ = nullptr;
     mutable Microsoft::WRL::ComPtr<ID2D1Bitmap> cachedD2DBitmap_;
     mutable ID2D1RenderTarget* cachedD2DBitmapBrushTarget_ = nullptr;
@@ -327,6 +460,14 @@ void D2DRenderer::SetImmediatePresent(bool enabled) {
     DiscardWindowTarget("present_mode_change");
 }
 
+void D2DRenderer::SetHardwareLayerBitmaps(bool enabled) {
+    hardwareLayerBitmapsEnabled_ = enabled;
+}
+
+bool D2DRenderer::HardwareLayerBitmapsEnabled() const {
+    return hardwareLayerBitmapsEnabled_;
+}
+
 const std::string& D2DRenderer::LastError() const {
     return lastError_;
 }
@@ -345,7 +486,7 @@ bool D2DRenderer::DrawWindow(int width, int height, const DrawCallback& draw) {
     }
     d2dActiveRenderTarget_->Clear(palette_.Get(RenderColorId::Background).ToD2DColorF());
     draw();
-    EndWindowDraw();
+    EndWindowDraw({});
     return lastError_.empty();
 }
 
@@ -355,7 +496,7 @@ bool D2DRenderer::DrawWindowRetained(int width, int height, const DrawCallback& 
     }
     d2dActiveRenderTarget_->Clear(palette_.Get(RenderColorId::Background).ToD2DColorF());
     draw();
-    EndWindowDraw();
+    EndWindowDraw({});
     return lastError_.empty();
 }
 
@@ -368,7 +509,7 @@ bool D2DRenderer::DrawWindowDirty(
         return false;
     }
     draw(dirtyRects);
-    EndWindowDraw();
+    EndWindowDraw(dirtyRects);
     return lastError_.empty();
 }
 
@@ -382,14 +523,23 @@ bool D2DRenderer::DrawToBitmap(
         return false;
     }
 
+    if (hardwareLayerBitmapsEnabled_) {
+        if (DrawToHardwareBitmap(output, width, height, clear, draw)) {
+            return true;
+        }
+        if (!lastError_.empty()) {
+            return false;
+        }
+    }
+
     const UINT bitmapWidth = static_cast<UINT>(std::max(1, width));
     const UINT bitmapHeight = static_cast<UINT>(std::max(1, height));
     const D2D1_COLOR_F clearColor = clear == RenderBitmapClear::Transparent
                                         ? D2D1::ColorF(0.0f, 0.0f, 0.0f, 0.0f)
                                         : palette_.Get(RenderColorId::Background).ToD2DColorF();
     const bool keepCurrentWindowRetainMode = d2dWindowRenderTarget_ != nullptr && d2dWindowRetainContents_;
-    if (hwnd_ != nullptr && EnsureWindowRenderTarget(width, height, keepCurrentWindowRetainMode) &&
-        d2dWindowRenderTarget_ != nullptr) {
+    if (hardwareLayerBitmapsEnabled_ && hwnd_ != nullptr &&
+        EnsureWindowRenderTarget(width, height, keepCurrentWindowRetainMode) && d2dWindowRenderTarget_ != nullptr) {
         Microsoft::WRL::ComPtr<ID2D1BitmapRenderTarget> bitmapRenderTarget;
         if (output.width == static_cast<int>(bitmapWidth) && output.height == static_cast<int>(bitmapHeight) &&
             output.resource != nullptr && output.resource->TypeToken() == D2DRenderBitmapResourceTypeToken()) {
@@ -412,7 +562,7 @@ bool D2DRenderer::DrawToBitmap(
             }
         }
         if (bitmapRenderTarget != nullptr) {
-            if (!BeginDirect2DDraw(bitmapRenderTarget.Get())) {
+            if (!BeginDirect2DDraw(bitmapRenderTarget.Get(), ActiveDrawTarget::Bitmap)) {
                 return false;
             }
             d2dActiveRenderTarget_->Clear(clearColor);
@@ -470,7 +620,7 @@ bool D2DRenderer::DrawToBitmap(
         }
     }
 
-    if (!BeginDirect2DDraw(bitmapRenderTarget.Get())) {
+    if (!BeginDirect2DDraw(bitmapRenderTarget.Get(), ActiveDrawTarget::Bitmap)) {
         return false;
     }
     d2dActiveRenderTarget_->Clear(clearColor);
@@ -483,6 +633,57 @@ bool D2DRenderer::DrawToBitmap(
     output.width = static_cast<int>(bitmapWidth);
     output.height = static_cast<int>(bitmapHeight);
     output.resource = std::make_shared<D2DRenderBitmapResource>(std::move(bitmap), std::move(bitmapRenderTarget));
+    return true;
+}
+
+bool D2DRenderer::DrawToHardwareBitmap(
+    RenderBitmap& output, int width, int height, RenderBitmapClear clear, const DrawCallback& draw) {
+    if (!EnsureDeviceContext()) {
+        return false;
+    }
+
+    const UINT bitmapWidth = static_cast<UINT>(std::max(1, width));
+    const UINT bitmapHeight = static_cast<UINT>(std::max(1, height));
+    Microsoft::WRL::ComPtr<ID2D1Bitmap1> targetBitmap;
+    if (output.width == static_cast<int>(bitmapWidth) && output.height == static_cast<int>(bitmapHeight) &&
+        output.resource != nullptr && output.resource->TypeToken() == D2DRenderBitmapResourceTypeToken()) {
+        const auto* resource = static_cast<const D2DRenderBitmapResource*>(output.resource.get());
+        targetBitmap = resource->TargetBitmap();
+    }
+    if (targetBitmap == nullptr) {
+        const D2D1_BITMAP_PROPERTIES1 properties = D2D1::BitmapProperties1(D2D1_BITMAP_OPTIONS_TARGET,
+            D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED),
+            96.0f,
+            96.0f);
+        const HRESULT hr = d2dDeviceContext_->CreateBitmap(
+            D2D1::SizeU(bitmapWidth, bitmapHeight), nullptr, 0, properties, targetBitmap.GetAddressOf());
+        if (FAILED(hr) || targetBitmap == nullptr) {
+            lastError_ = "renderer:layer_d2d_bitmap_failed hr=" + FormatHresult(hr);
+            return false;
+        }
+    }
+
+    Microsoft::WRL::ComPtr<ID2D1Image> previousTarget;
+    d2dDeviceContext_->GetTarget(previousTarget.GetAddressOf());
+    d2dDeviceContext_->SetTarget(targetBitmap.Get());
+    if (!BeginDirect2DDraw(d2dDeviceContext_.Get(), ActiveDrawTarget::Bitmap)) {
+        d2dDeviceContext_->SetTarget(previousTarget.Get());
+        return false;
+    }
+    const D2D1_COLOR_F clearColor = clear == RenderBitmapClear::Transparent
+                                        ? D2D1::ColorF(0.0f, 0.0f, 0.0f, 0.0f)
+                                        : palette_.Get(RenderColorId::Background).ToD2DColorF();
+    d2dActiveRenderTarget_->Clear(clearColor);
+    draw();
+    EndDirect2DDraw();
+    d2dDeviceContext_->SetTarget(previousTarget.Get());
+    if (!lastError_.empty()) {
+        return false;
+    }
+
+    output.width = static_cast<int>(bitmapWidth);
+    output.height = static_cast<int>(bitmapHeight);
+    output.resource = std::make_shared<D2DRenderBitmapResource>(std::move(targetBitmap));
     return true;
 }
 
@@ -517,7 +718,7 @@ bool D2DRenderer::DrawToWicBitmap(int width,
         return false;
     }
 
-    if (!BeginDirect2DDraw(bitmapRenderTarget.Get())) {
+    if (!BeginDirect2DDraw(bitmapRenderTarget.Get(), ActiveDrawTarget::Bitmap)) {
         return false;
     }
     d2dActiveRenderTarget_->Clear(palette_.Get(RenderColorId::Background).ToD2DColorF());
@@ -655,11 +856,10 @@ bool D2DRenderer::SaveWicBitmapPng(IWICBitmap* bitmap, const FilePath& imagePath
 
 bool D2DRenderer::InitializeDirect2D() {
     if (d2dFactory_ == nullptr) {
-        const HRESULT hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, d2dFactory_.ReleaseAndGetAddressOf());
-        if (FAILED(hr) || d2dFactory_ == nullptr) {
-            lastError_ = "renderer:d2d_factory_failed hr=" + FormatHresult(hr);
+        if (!SharedD2DDevice().Ensure(lastError_)) {
             return false;
         }
+        d2dFactory_ = SharedD2DDevice().D2DFactory();
     }
     if (dwriteFactory_ == nullptr) {
         const HRESULT hr = DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED,
@@ -685,6 +885,27 @@ bool D2DRenderer::InitializeDirect2D() {
             D2D1_DASH_STYLE_DOT,
             0.0f);
         d2dFactory_->CreateStrokeStyle(props, nullptr, 0, d2dDashedStrokeStyle_.GetAddressOf());
+    }
+    return true;
+}
+
+bool D2DRenderer::EnsureDeviceContext() {
+    if (!InitializeDirect2D()) {
+        return false;
+    }
+    if (d2dDeviceContext_ != nullptr) {
+        return true;
+    }
+    ID2D1Device* device = SharedD2DDevice().D2DDevice();
+    if (device == nullptr) {
+        lastError_ = "renderer:d2d_device_missing";
+        return false;
+    }
+    const HRESULT hr =
+        device->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, d2dDeviceContext_.ReleaseAndGetAddressOf());
+    if (FAILED(hr) || d2dDeviceContext_ == nullptr) {
+        lastError_ = "renderer:d2d_device_context_failed hr=" + FormatHresult(hr);
+        return false;
     }
     return true;
 }
@@ -717,13 +938,23 @@ bool D2DRenderer::InitializeWic() {
 void D2DRenderer::ShutdownDirect2D() {
     d2dClipDepth_ = 0;
     d2dActiveRenderTarget_ = nullptr;
+    d2dActiveDrawTarget_ = ActiveDrawTarget::None;
     d2dCache_.ResetTarget();
     panelIconAtlasMask_.Reset();
     panelIconAtlasMaskTarget_ = nullptr;
     d2dDashedStrokeStyle_.Reset();
     d2dSolidStrokeStyle_.Reset();
+    if (d2dDeviceContext_ != nullptr) {
+        d2dDeviceContext_->SetTarget(nullptr);
+    }
+    dxgiWindowTargetBitmap_.Reset();
+    dxgiSwapChain_.Reset();
+    d2dDeviceContext_.Reset();
     d2dWindowRenderTarget_.Reset();
     d2dWindowRetainContents_ = false;
+    dxgiWindowRetainContents_ = false;
+    dxgiWindowWidth_ = 0;
+    dxgiWindowHeight_ = 0;
     wicFactory_.Reset();
     if (wicComInitialized_) {
         CoUninitialize();
@@ -777,7 +1008,127 @@ bool D2DRenderer::EnsureWindowRenderTarget(int width, int height, bool retainCon
     return true;
 }
 
-bool D2DRenderer::BeginDirect2DDraw(ID2D1RenderTarget* target) {
+bool D2DRenderer::EnsureDxgiWindowTarget(int width, int height, bool retainContents) {
+    if (hwnd_ == nullptr || !EnsureDeviceContext()) {
+        return false;
+    }
+
+    const int targetWidth = std::max(1, width);
+    const int targetHeight = std::max(1, height);
+    if (dxgiSwapChain_ == nullptr) {
+        DXGI_SWAP_CHAIN_DESC1 swapChainDesc{};
+        swapChainDesc.Width = static_cast<UINT>(targetWidth);
+        swapChainDesc.Height = static_cast<UINT>(targetHeight);
+        swapChainDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+        swapChainDesc.Stereo = FALSE;
+        swapChainDesc.SampleDesc.Count = 1;
+        swapChainDesc.SampleDesc.Quality = 0;
+        swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+        swapChainDesc.BufferCount = 2;
+        swapChainDesc.Scaling = DXGI_SCALING_STRETCH;
+        swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
+        swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
+        IDXGIFactory2* factory = SharedD2DDevice().DxgiFactory();
+        ID3D11Device* device = SharedD2DDevice().D3DDevice();
+        if (factory == nullptr || device == nullptr) {
+            lastError_ = "renderer:dxgi_shared_device_missing";
+            return false;
+        }
+        const HRESULT hr = factory->CreateSwapChainForHwnd(
+            device, hwnd_, &swapChainDesc, nullptr, nullptr, dxgiSwapChain_.ReleaseAndGetAddressOf());
+        if (FAILED(hr) || dxgiSwapChain_ == nullptr) {
+            lastError_ = "renderer:dxgi_swap_chain_failed hr=" + FormatHresult(hr);
+            return false;
+        }
+        factory->MakeWindowAssociation(hwnd_, DXGI_MWA_NO_ALT_ENTER);
+        dxgiWindowWidth_ = targetWidth;
+        dxgiWindowHeight_ = targetHeight;
+        dxgiWindowRetainContents_ = retainContents;
+        return CreateDxgiWindowTargetBitmap();
+    }
+
+    if (dxgiWindowWidth_ == targetWidth && dxgiWindowHeight_ == targetHeight && dxgiWindowTargetBitmap_ != nullptr) {
+        dxgiWindowRetainContents_ = retainContents;
+        return true;
+    }
+
+    dxgiWindowTargetBitmap_.Reset();
+    d2dDeviceContext_->SetTarget(nullptr);
+    const HRESULT hr = dxgiSwapChain_->ResizeBuffers(
+        0, static_cast<UINT>(targetWidth), static_cast<UINT>(targetHeight), DXGI_FORMAT_UNKNOWN, 0);
+    if (FAILED(hr)) {
+        DiscardWindowTarget("dxgi_resize_failed");
+        lastError_ = "renderer:dxgi_resize_failed hr=" + FormatHresult(hr);
+        return false;
+    }
+    dxgiWindowWidth_ = targetWidth;
+    dxgiWindowHeight_ = targetHeight;
+    dxgiWindowRetainContents_ = retainContents;
+    d2dCache_.Clear();
+    return CreateDxgiWindowTargetBitmap();
+}
+
+bool D2DRenderer::CreateDxgiWindowTargetBitmap() {
+    if (dxgiSwapChain_ == nullptr || d2dDeviceContext_ == nullptr) {
+        lastError_ = "renderer:dxgi_target_missing";
+        return false;
+    }
+
+    Microsoft::WRL::ComPtr<IDXGISurface> backBuffer;
+    HRESULT hr = dxgiSwapChain_->GetBuffer(0, IID_PPV_ARGS(backBuffer.GetAddressOf()));
+    if (FAILED(hr) || backBuffer == nullptr) {
+        lastError_ = "renderer:dxgi_back_buffer_failed hr=" + FormatHresult(hr);
+        return false;
+    }
+
+    const D2D1_BITMAP_PROPERTIES1 properties =
+        D2D1::BitmapProperties1(D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW,
+            D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_IGNORE),
+            96.0f,
+            96.0f);
+    hr = d2dDeviceContext_->CreateBitmapFromDxgiSurface(
+        backBuffer.Get(), properties, dxgiWindowTargetBitmap_.ReleaseAndGetAddressOf());
+    if (FAILED(hr) || dxgiWindowTargetBitmap_ == nullptr) {
+        lastError_ = "renderer:dxgi_d2d_target_failed hr=" + FormatHresult(hr);
+        return false;
+    }
+    d2dCache_.ResetTarget();
+    panelIconAtlasMask_.Reset();
+    panelIconAtlasMaskTarget_ = nullptr;
+    return true;
+}
+
+bool D2DRenderer::PresentDxgiWindow(std::span<const RenderRect> dirtyRects) {
+    if (dxgiSwapChain_ == nullptr) {
+        return true;
+    }
+
+    std::vector<RECT> dxgiDirtyRects;
+    dxgiDirtyRects.reserve(dirtyRects.size());
+    for (const RenderRect& rect : dirtyRects) {
+        if (!rect.IsEmpty()) {
+            dxgiDirtyRects.push_back(DxgiRectFromRenderRect(rect));
+        }
+    }
+
+    DXGI_PRESENT_PARAMETERS presentParameters{};
+    presentParameters.DirtyRectsCount = static_cast<UINT>(dxgiDirtyRects.size());
+    presentParameters.pDirtyRects = dxgiDirtyRects.empty() ? nullptr : dxgiDirtyRects.data();
+    const UINT syncInterval = d2dImmediatePresent_ ? 0u : 1u;
+    const HRESULT hr = dxgiSwapChain_->Present1(syncInterval, 0, &presentParameters);
+    if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET) {
+        DiscardWindowTarget("dxgi_device_lost");
+        lastError_ = "renderer:dxgi_present_device_lost hr=" + FormatHresult(hr);
+        return false;
+    }
+    if (FAILED(hr)) {
+        lastError_ = "renderer:dxgi_present_failed hr=" + FormatHresult(hr);
+        return false;
+    }
+    return true;
+}
+
+bool D2DRenderer::BeginDirect2DDraw(ID2D1RenderTarget* target, ActiveDrawTarget targetKind) {
     if (target == nullptr) {
         lastError_ = "renderer:d2d_target_missing";
         return false;
@@ -785,6 +1136,7 @@ bool D2DRenderer::BeginDirect2DDraw(ID2D1RenderTarget* target) {
     d2dCache_.AttachTarget(target);
     lastError_.clear();
     d2dActiveRenderTarget_ = target;
+    d2dActiveDrawTarget_ = targetKind;
     d2dActiveRenderTarget_->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
     d2dActiveRenderTarget_->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_GRAYSCALE);
     d2dActiveRenderTarget_->BeginDraw();
@@ -804,9 +1156,10 @@ void D2DRenderer::EndDirect2DDraw() {
     while (!d2dTransformStack_.empty()) {
         PopTranslation();
     }
-    const bool activeWindowTarget = d2dActiveRenderTarget_ == d2dWindowRenderTarget_.Get();
+    const bool activeWindowTarget = d2dActiveDrawTarget_ == ActiveDrawTarget::Window;
     const HRESULT hr = d2dActiveRenderTarget_->EndDraw();
     d2dActiveRenderTarget_ = nullptr;
+    d2dActiveDrawTarget_ = ActiveDrawTarget::None;
     if (!activeWindowTarget) {
         d2dCache_.ResetTarget();
         panelIconAtlasMask_.Reset();
@@ -823,22 +1176,42 @@ void D2DRenderer::EndDirect2DDraw() {
 }
 
 bool D2DRenderer::BeginWindowDraw(int width, int height, bool retainContents) {
+    if (EnsureDxgiWindowTarget(width, height, retainContents) && d2dDeviceContext_ != nullptr) {
+        d2dDeviceContext_->SetTarget(dxgiWindowTargetBitmap_.Get());
+        return BeginDirect2DDraw(d2dDeviceContext_.Get(), ActiveDrawTarget::Window);
+    }
+    if (!lastError_.empty()) {
+        return false;
+    }
     if (!EnsureWindowRenderTarget(width, height, retainContents) || d2dWindowRenderTarget_ == nullptr) {
         return false;
     }
-    return BeginDirect2DDraw(d2dWindowRenderTarget_.Get());
+    return BeginDirect2DDraw(d2dWindowRenderTarget_.Get(), ActiveDrawTarget::Window);
 }
 
-void D2DRenderer::EndWindowDraw() {
+void D2DRenderer::EndWindowDraw(std::span<const RenderRect> dirtyRects) {
+    const bool presentingDxgi = d2dActiveRenderTarget_ == d2dDeviceContext_.Get() && dxgiSwapChain_ != nullptr;
     EndDirect2DDraw();
+    if (presentingDxgi && lastError_.empty()) {
+        PresentDxgiWindow(dirtyRects);
+    }
 }
 
 void D2DRenderer::DiscardWindowTarget(std::string_view reason) {
     (void)reason;
     d2dClipDepth_ = 0;
-    if (d2dActiveRenderTarget_ == d2dWindowRenderTarget_.Get()) {
+    if (d2dActiveDrawTarget_ == ActiveDrawTarget::Window) {
         d2dActiveRenderTarget_ = nullptr;
+        d2dActiveDrawTarget_ = ActiveDrawTarget::None;
     }
+    if (d2dDeviceContext_ != nullptr) {
+        d2dDeviceContext_->SetTarget(nullptr);
+    }
+    dxgiWindowTargetBitmap_.Reset();
+    dxgiSwapChain_.Reset();
+    dxgiWindowRetainContents_ = false;
+    dxgiWindowWidth_ = 0;
+    dxgiWindowHeight_ = 0;
     d2dWindowRenderTarget_.Reset();
     d2dWindowRetainContents_ = false;
     d2dCache_.ResetTarget();

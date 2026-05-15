@@ -3,8 +3,9 @@
 #include <windows.h>
 
 #include <array>
-#include <d2d1.h>
+#include <d2d1_1.h>
 #include <dwrite.h>
+#include <dxgi1_2.h>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -26,6 +27,8 @@ public:
     void AttachWindow(HWND hwnd) override;
     void Shutdown() override;
     void SetImmediatePresent(bool enabled) override;
+    void SetHardwareLayerBitmaps(bool enabled) override;
+    bool HardwareLayerBitmapsEnabled() const override;
     void DiscardWindowTarget(std::string_view reason = {}) override;
     bool DrawWindow(int width, int height, const DrawCallback& draw) override;
     bool DrawWindowRetained(int width, int height, const DrawCallback& draw) override;
@@ -76,17 +79,29 @@ public:
     bool FillPaths(std::span<const RenderPath> paths, RenderColorId color) override;
 
 private:
+    enum class ActiveDrawTarget {
+        None,
+        Window,
+        Bitmap,
+    };
+
     bool InitializeDirect2D();
     bool InitializeWic();
+    bool EnsureDeviceContext();
     void ShutdownDirect2D();
     bool LoadIcons();
     void ReleaseIcons();
     bool RebuildTextFormatsAndMetrics();
     bool EnsureWindowRenderTarget(int width, int height, bool retainContents);
-    bool BeginDirect2DDraw(ID2D1RenderTarget* target);
+    bool EnsureDxgiWindowTarget(int width, int height, bool retainContents);
+    bool CreateDxgiWindowTargetBitmap();
+    bool PresentDxgiWindow(std::span<const RenderRect> dirtyRects);
+    bool DrawToHardwareBitmap(
+        RenderBitmap& output, int width, int height, RenderBitmapClear clear, const DrawCallback& draw);
+    bool BeginDirect2DDraw(ID2D1RenderTarget* target, ActiveDrawTarget targetKind);
     void EndDirect2DDraw();
     bool BeginWindowDraw(int width, int height, bool retainContents);
-    void EndWindowDraw();
+    void EndWindowDraw(std::span<const RenderRect> dirtyRects);
     bool DrawToWicBitmap(int width,
         int height,
         const DrawCallback& draw,
@@ -119,7 +134,10 @@ private:
     RendererTextWidthCache textWidthCache_;
     std::string lastError_;
     HWND hwnd_ = nullptr;
-    Microsoft::WRL::ComPtr<ID2D1Factory> d2dFactory_;
+    Microsoft::WRL::ComPtr<ID2D1Factory1> d2dFactory_;
+    Microsoft::WRL::ComPtr<ID2D1DeviceContext> d2dDeviceContext_;
+    Microsoft::WRL::ComPtr<IDXGISwapChain1> dxgiSwapChain_;
+    Microsoft::WRL::ComPtr<ID2D1Bitmap1> dxgiWindowTargetBitmap_;
     Microsoft::WRL::ComPtr<ID2D1HwndRenderTarget> d2dWindowRenderTarget_;
     Microsoft::WRL::ComPtr<ID2D1Bitmap> panelIconAtlasMask_;
     ID2D1RenderTarget* panelIconAtlasMaskTarget_ = nullptr;
@@ -128,8 +146,13 @@ private:
     Microsoft::WRL::ComPtr<ID2D1StrokeStyle> d2dSolidStrokeStyle_;
     Microsoft::WRL::ComPtr<ID2D1StrokeStyle> d2dDashedStrokeStyle_;
     ID2D1RenderTarget* d2dActiveRenderTarget_ = nullptr;
+    ActiveDrawTarget d2dActiveDrawTarget_ = ActiveDrawTarget::None;
     bool d2dImmediatePresent_ = false;
+    bool hardwareLayerBitmapsEnabled_ = false;
     bool d2dWindowRetainContents_ = false;
+    bool dxgiWindowRetainContents_ = false;
+    int dxgiWindowWidth_ = 0;
+    int dxgiWindowHeight_ = 0;
     bool wicComInitialized_ = false;
     int d2dClipDepth_ = 0;
     std::vector<D2D1_MATRIX_3X2_F> d2dTransformStack_;

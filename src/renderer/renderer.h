@@ -68,6 +68,8 @@ public:
     virtual void AttachWindow(HWND hwnd) = 0;
     virtual void Shutdown() = 0;
     virtual void SetImmediatePresent(bool enabled) = 0;
+    virtual void SetHardwareLayerBitmaps(bool enabled) = 0;
+    virtual bool HardwareLayerBitmapsEnabled() const = 0;
     virtual void DiscardWindowTarget(std::string_view reason = {}) = 0;
     virtual bool DrawWindow(int width, int height, const DrawCallback& draw) = 0;
     virtual bool DrawWindowRetained(int width, int height, const DrawCallback& draw) = 0;

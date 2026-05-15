@@ -33,7 +33,7 @@ The current implementation adds the shared animation cadence, public animation i
 - The live window draw path is split: `DashboardApp::Paint()` calls `DashboardRenderer::DrawWindow()`, the main thread paints snapshot and optional overlay layers into renderer-owned bitmap resources, collects immutable widget animation objects, and publishes the newest complete frame to `DashboardRenderThread`.
 - `DashboardRenderThread` owns the HWND renderer, the keyed `DashboardAnimationTimeline`, an overwrite-only mailbox, surface-version handling, and the animation frame loop. It composes snapshot bitmap, snapshot animations, optional overlay bitmap, and overlay animations on the render thread.
 - Snapshot and overlay layer bitmaps are acquired from a dashboard-renderer pool and returned after the render thread replaces or discards the frame that owns them. The benchmark immediate-present path uses the same acquire/release rule while staying single-threaded, so paint benchmarks measure layer bitmap construction and final composition without scheduler noise.
-- `D2DRenderer` exposes generic layer bitmap drawing, bitmap-region drawing, bitmap composition, and retained dirty-window composition. Live presentation currently uses the existing Direct2D HWND render target behind the render-thread boundary; replacing that target with the planned DXGI flip-model swap chain remains a renderer-backend step.
+- `D2DRenderer` exposes generic layer bitmap drawing, bitmap-region drawing, bitmap composition, and retained dirty-window composition. Live presentation uses a renderer-private DXGI flip-model swap chain behind the render-thread boundary, while deterministic offscreen exports keep using WIC-backed Direct2D targets.
 - Widgets draw snapshot text and tracks while submitting widget-owned animation objects that the dashboard renderer records in the active layer's animation list. Widget overlay hooks submit animations for content that moves above the base dashboard during layout editing.
 - Layout-edit dragged-child replay happens by re-entering widget draw code in the overlay pass under the drag translation. Its widget animations are recorded in the overlay list and use the render-thread timeline.
 
@@ -121,10 +121,10 @@ The render thread:
 - Keeps previous animation data by key.
 - Computes interpolated animation values for the current frame time.
 - Composes snapshot, snapshot animations, optional overlay, and overlay animations in that order.
-- Presents the frame through the package-private render-thread presentation path while animations are active. The current backend uses the Direct2D HWND target; the planned DXGI flip-model swap chain remains inside `renderer`.
+- Presents the frame through the package-private render-thread presentation path while animations are active. The current backend uses a DXGI flip-model swap chain inside `renderer`.
 - Sleeps when no animation and no new layer update is pending.
 
-The render-thread HWND/device API remains package-private inside `dashboard_renderer`; shell code initializes the dashboard renderer with an HWND but does not receive direct render-thread controls.
+The render-thread HWND/device API remains package-private inside `dashboard_renderer`; shell code initializes the dashboard renderer with an HWND but does not receive direct render-thread controls. The DXGI swap chain and shared Direct3D/Direct2D device stay private to `renderer`.
 
 ## Animation Scene Contracts
 
@@ -270,7 +270,7 @@ Each thread owns its renderer caches:
 - The render thread owns live presentation and its palette/text/icon/target-local bitmap caches.
 - Palette and renderer style updates are copied by value into each thread. No thread mutates a palette that another thread can read.
 
-If Direct2D resources are shared across threads, the Direct2D factory is created in multithreaded mode and access follows the Direct2D multithread locking contract. If layer bitmaps are CPU/WIC-backed and uploaded per update, each renderer instance may keep thread-local Direct2D factories instead.
+Live layer bitmaps are Direct2D device bitmaps allocated from a shared Direct3D-backed resource domain, so the main-thread layer painter can hand them to the render thread without CPU readback or upload. The shared Direct2D factory is created in multithreaded mode; each renderer instance owns its own device context and caches, while shared bitmap resources remain opaque behind `RenderBitmapResource`. WIC-backed bitmaps are reserved for deterministic screenshots and validation exports.
 
 ## Window Size And DPI Synchronization
 
@@ -382,7 +382,7 @@ Implementation validation should use staged checks:
 
 - Drive read/write stacked activity indicators animate in the first implementation.
 - Gauge and drive-activity visuals render whole filled segments during animation.
-- Live presentation is isolated behind `DashboardRenderThread`; the current backend uses the existing Direct2D HWND target, and DXGI flip-model presentation remains the next renderer-backend replacement.
+- Live presentation is isolated behind `DashboardRenderThread`; the renderer backend presents the composed live frame through a DXGI flip-model swap chain.
 - Dragged widgets and container children keep animating while dragged; dragged-child animation primitives render above the overlay layer.
 - First-seen animation keys animate from zero, including application startup.
 - Unavailable targets animate down to zero before disappearing.

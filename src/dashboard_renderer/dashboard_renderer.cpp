@@ -107,6 +107,7 @@ void DashboardRenderer::SetImmediatePresent(bool enabled) {
     overlayLayerVisible_ = false;
     renderer_->AttachWindow(immediatePresent_ ? presentationHwnd_ : nullptr);
     renderer_->SetImmediatePresent(enabled);
+    renderer_->SetHardwareLayerBitmaps(presentationHwnd_ != nullptr);
     presentation_.Configure(presentationHwnd_, presentationHwnd_ != nullptr && !immediatePresent_, immediatePresent_);
     ClearReusableLayerBitmaps();
 }
@@ -715,8 +716,11 @@ bool DashboardRenderer::SaveSnapshotPng(const FilePath& imagePath, const SystemS
 bool DashboardRenderer::SaveSnapshotPng(
     const FilePath& imagePath, const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState) {
     lastError_.clear();
+    const bool previousHardwareLayerBitmaps = renderer_->HardwareLayerBitmapsEnabled();
+    renderer_->SetHardwareLayerBitmaps(false);
     DashboardPresentationFrame frame;
     if (!BuildPresentationFrame(snapshot, overlayState, frame)) {
+        renderer_->SetHardwareLayerBitmaps(previousHardwareLayerBitmaps);
         return false;
     }
     frame.animate = false;
@@ -726,14 +730,18 @@ bool DashboardRenderer::SaveSnapshotPng(
         lastError_ = renderer_->LastError();
     }
     RecycleFrameLayers(std::move(frame));
+    renderer_->SetHardwareLayerBitmaps(previousHardwareLayerBitmaps);
     return saved;
 }
 
 bool DashboardRenderer::BuildAnimationBenchmarkFrame(
     const SystemSnapshot& snapshot, DashboardPresentationFrame& frame) {
     lastError_.clear();
+    const bool previousHardwareLayerBitmaps = renderer_->HardwareLayerBitmapsEnabled();
+    renderer_->SetHardwareLayerBitmaps(true);
     DashboardOverlayState overlayState;
     const bool built = BuildPresentationFrame(snapshot, overlayState, frame);
+    renderer_->SetHardwareLayerBitmaps(previousHardwareLayerBitmaps);
     if (!built) {
         return false;
     }
@@ -1274,6 +1282,7 @@ bool DashboardRenderer::Initialize(HWND hwnd) {
     ClearReusableLayerBitmaps();
     renderer_->AttachWindow(immediatePresent_ ? hwnd : nullptr);
     renderer_->SetImmediatePresent(immediatePresent_);
+    renderer_->SetHardwareLayerBitmaps(hwnd != nullptr);
     presentation_.Configure(hwnd, hwnd != nullptr && !immediatePresent_, immediatePresent_);
     if (!renderer_->SetStyle(BuildRendererStyle()) || !ResolveLayout()) {
         lastError_ = renderer_->LastError().empty() ? "renderer:initialize_failed" : renderer_->LastError();
@@ -1291,6 +1300,7 @@ void DashboardRenderer::Shutdown() {
     snapshotLayerValid_ = false;
     overlayLayerVisible_ = false;
     ClearReusableLayerBitmaps();
+    renderer_->SetHardwareLayerBitmaps(false);
     renderer_->Shutdown();
 }
 
