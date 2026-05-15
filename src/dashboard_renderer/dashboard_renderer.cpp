@@ -193,25 +193,17 @@ std::optional<MetricListReorderOverlayState> DashboardRenderer::ActiveMetricList
     return drag;
 }
 
-WidgetAnimationLayer DashboardRenderer::CurrentWidgetAnimationLayer() const {
-    return currentWidgetAnimationLayer_;
-}
-
-void DashboardRenderer::AddWidgetAnimation(WidgetAnimationPtr animation) {
-    if (animation == nullptr) {
+void DashboardRenderer::AddWidgetAnimation(WidgetAnimationPtr animation, WidgetAnimationStatePtr targetState) {
+    if (animation == nullptr || targetState == nullptr) {
         return;
     }
     if (!widgetAnimationCollectionActive_) {
-        WidgetHost::AddWidgetAnimation(std::move(animation));
+        WidgetHost::AddWidgetAnimation(std::move(animation), std::move(targetState));
         return;
     }
-    WidgetAnimationStatePtr target = animation->TargetState();
-    if (target == nullptr) {
-        return;
-    }
-    WidgetAnimationsForLayer(animation->Layer())
+    WidgetAnimationsForLayer(currentWidgetAnimationLayer_)
         .push_back(DashboardPresentationAnimation{
-            std::move(animation), std::move(target), currentWidgetAnimationTranslation_});
+            std::move(animation), std::move(targetState), currentWidgetAnimationTranslation_});
 }
 
 int DashboardRenderer::WindowWidth() const {

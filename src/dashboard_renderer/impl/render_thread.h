@@ -26,7 +26,7 @@ struct DashboardPresentationAnimation {
 };
 
 struct DashboardPresentationVersions {
-    // Guards live presenter target recreation when size, DPI, or render scale changes.
+    // Guards live presentation target recreation when size, DPI, or render scale changes.
     std::uint64_t surfaceVersion = 0;
     // Guards snapshot bitmap replacement and full redraw when the opaque base layer changes.
     std::uint64_t snapshotVersion = 0;

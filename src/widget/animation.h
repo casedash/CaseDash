@@ -37,13 +37,12 @@ public:
     virtual WidgetAnimationTransitionPtr TransitionFrom(const WidgetAnimationState& start) const = 0;
 };
 
+// Render-thread draw primitive; the main thread only packages and transfers it.
 class WidgetAnimation {
 public:
     virtual ~WidgetAnimation() = default;
 
     virtual const AnimationDataKey& Key() const = 0;
-    virtual WidgetAnimationLayer Layer() const = 0;
-    virtual WidgetAnimationStatePtr TargetState() const = 0;
     virtual RenderRect DirtyBounds() const = 0;
     virtual void Draw(::Renderer& renderer, const WidgetAnimationState& state) const = 0;
 };

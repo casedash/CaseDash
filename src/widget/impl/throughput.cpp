@@ -264,26 +264,16 @@ void DrawGraphAnimated(Renderer& renderer,
 
 class ThroughputChartAnimation final : public WidgetAnimation {
 public:
-    ThroughputChartAnimation(WidgetAnimationLayer layer,
-        AnimationDataKey key,
+    ThroughputChartAnimation(AnimationDataKey key,
         RenderRect rect,
         ThroughputGraphLayout layout,
-        ThroughputChartSample target,
         double timeMarkerIntervalSamples,
         bool drawValues)
-        : layer_(layer), key_(std::move(key)), rect_(rect), layout_(layout), target_(std::move(target)),
-          timeMarkerIntervalSamples_(timeMarkerIntervalSamples), drawValues_(drawValues) {}
+        : key_(std::move(key)), rect_(rect), layout_(layout), timeMarkerIntervalSamples_(timeMarkerIntervalSamples),
+          drawValues_(drawValues) {}
 
     const AnimationDataKey& Key() const override {
         return key_;
-    }
-
-    WidgetAnimationLayer Layer() const override {
-        return layer_;
-    }
-
-    WidgetAnimationStatePtr TargetState() const override {
-        return MakeThroughputChartAnimationState(target_);
     }
 
     RenderRect DirtyBounds() const override {
@@ -305,11 +295,9 @@ public:
     }
 
 private:
-    WidgetAnimationLayer layer_ = WidgetAnimationLayer::Snapshot;
     AnimationDataKey key_;
     RenderRect rect_{};
     ThroughputGraphLayout layout_{};
-    ThroughputChartSample target_;
     double timeMarkerIntervalSamples_ = 20.0;
     bool drawValues_ = true;
 };
@@ -402,13 +390,10 @@ void ThroughputWidget::Draw(WidgetHost& renderer, const WidgetLayout& widget, co
         targetSample.maxGraph,
         renderer.MakeEditableTextBinding(
             widget, WidgetHost::LayoutEditParameter::FontSmall, 2, renderer.Config().layout.fonts.smallText.size));
-    renderer.AddWidgetAnimation(std::make_unique<ThroughputChartAnimation>(renderer.CurrentWidgetAnimationLayer(),
-        AnimationDataKey{metric_, {}},
-        layout.graphRect,
-        layout,
-        targetSample,
-        metric.timeMarkerIntervalSamples,
-        drawValues));
+    renderer.AddWidgetAnimation(
+        std::make_unique<ThroughputChartAnimation>(
+            AnimationDataKey{metric_, {}}, layout.graphRect, layout, metric.timeMarkerIntervalSamples, drawValues),
+        MakeThroughputChartAnimationState(targetSample));
 }
 
 void ThroughputWidget::BuildStaticAnchors(WidgetHost& renderer, const WidgetLayout& widget) const {

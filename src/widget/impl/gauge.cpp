@@ -221,25 +221,13 @@ void DrawGaugeFill(Renderer& renderer,
 
 class GaugeFillAnimation final : public WidgetAnimation {
 public:
-    GaugeFillAnimation(WidgetAnimationLayer layer,
-        AnimationDataKey key,
-        GaugeSegmentLayout gaugeLayout,
-        std::vector<RenderArc> ringSegments,
-        int ringThickness,
-        ScalarFillSample target)
-        : layer_(layer), key_(std::move(key)), gaugeLayout_(gaugeLayout), ringSegments_(std::move(ringSegments)),
-          ringThickness_(ringThickness), target_(std::move(target)) {}
+    GaugeFillAnimation(
+        AnimationDataKey key, GaugeSegmentLayout gaugeLayout, std::vector<RenderArc> ringSegments, int ringThickness)
+        : key_(std::move(key)), gaugeLayout_(gaugeLayout), ringSegments_(std::move(ringSegments)),
+          ringThickness_(ringThickness) {}
 
     const AnimationDataKey& Key() const override {
         return key_;
-    }
-
-    WidgetAnimationLayer Layer() const override {
-        return layer_;
-    }
-
-    WidgetAnimationStatePtr TargetState() const override {
-        return MakeScalarFillAnimationState(target_);
     }
 
     RenderRect DirtyBounds() const override {
@@ -257,12 +245,10 @@ public:
     }
 
 private:
-    WidgetAnimationLayer layer_ = WidgetAnimationLayer::Snapshot;
     AnimationDataKey key_;
     GaugeSegmentLayout gaugeLayout_{};
     std::vector<RenderArc> ringSegments_;
     int ringThickness_ = 1;
-    ScalarFillSample target_;
 };
 
 }  // namespace
@@ -350,12 +336,10 @@ void GaugeWidget::Draw(WidgetHost& renderer, const WidgetLayout& widget, const M
     const RenderStroke trackStroke =
         RenderStroke::Solid(RenderColorId::Track, static_cast<float>(layoutState_.ringThickness));
     renderer.Renderer().DrawArcs(layoutState_.ringSegments, trackStroke);
-    renderer.AddWidgetAnimation(std::make_unique<GaugeFillAnimation>(renderer.CurrentWidgetAnimationLayer(),
-        AnimationDataKey{metric_, {}},
-        gaugeLayout,
-        layoutState_.ringSegments,
-        layoutState_.ringThickness,
-        targetSample));
+    renderer.AddWidgetAnimation(
+        std::make_unique<GaugeFillAnimation>(
+            AnimationDataKey{metric_, {}}, gaugeLayout, layoutState_.ringSegments, layoutState_.ringThickness),
+        MakeScalarFillAnimationState(targetSample));
     if (targetSample.valueRatio.has_value() && peakSegment >= 0 &&
         static_cast<size_t>(peakSegment) < layoutState_.ringSegments.size()) {
         const size_t peakSegmentIndex = static_cast<size_t>(peakSegment);

@@ -198,25 +198,11 @@ void DrawSegmentIndicatorFill(Renderer& renderer,
 
 class DriveActivityAnimation final : public WidgetAnimation {
 public:
-    DriveActivityAnimation(WidgetAnimationLayer layer,
-        AnimationDataKey key,
-        RenderRect rect,
-        int segmentCount,
-        int segmentGap,
-        ScalarFillSample target)
-        : layer_(layer), key_(std::move(key)), rect_(rect), segmentCount_(segmentCount), segmentGap_(segmentGap),
-          target_(std::move(target)) {}
+    DriveActivityAnimation(AnimationDataKey key, RenderRect rect, int segmentCount, int segmentGap)
+        : key_(std::move(key)), rect_(rect), segmentCount_(segmentCount), segmentGap_(segmentGap) {}
 
     const AnimationDataKey& Key() const override {
         return key_;
-    }
-
-    WidgetAnimationLayer Layer() const override {
-        return layer_;
-    }
-
-    WidgetAnimationStatePtr TargetState() const override {
-        return MakeScalarFillAnimationState(target_);
     }
 
     RenderRect DirtyBounds() const override {
@@ -233,12 +219,10 @@ public:
     }
 
 private:
-    WidgetAnimationLayer layer_ = WidgetAnimationLayer::Snapshot;
     AnimationDataKey key_;
     RenderRect rect_{};
     int segmentCount_ = 0;
     int segmentGap_ = 0;
-    ScalarFillSample target_;
 };
 
 int EffectiveDriveHeaderHeight(const WidgetHost& renderer) {
@@ -455,26 +439,24 @@ void DriveUsageListWidget::Draw(WidgetHost& renderer, const WidgetLayout& widget
             layoutState_.activitySegments,
             layoutState_.activitySegmentGap,
             RenderColorId::Track);
-        renderer.AddWidgetAnimation(std::make_unique<DriveActivityAnimation>(renderer.CurrentWidgetAnimationLayer(),
-            AnimationDataKey{drive->label, "read"},
-            readIndicatorRect,
-            layoutState_.activitySegments,
-            layoutState_.activitySegmentGap,
-            readTarget));
+        renderer.AddWidgetAnimation(std::make_unique<DriveActivityAnimation>(AnimationDataKey{drive->label, "read"},
+                                        readIndicatorRect,
+                                        layoutState_.activitySegments,
+                                        layoutState_.activitySegmentGap),
+            MakeScalarFillAnimationState(readTarget));
         DrawSegmentIndicatorTrack(renderer.Renderer(),
             writeIndicatorRect,
             layoutState_.activitySegments,
             layoutState_.activitySegmentGap,
             RenderColorId::Track);
-        renderer.AddWidgetAnimation(std::make_unique<DriveActivityAnimation>(renderer.CurrentWidgetAnimationLayer(),
-            AnimationDataKey{drive->label, "write"},
-            writeIndicatorRect,
-            layoutState_.activitySegments,
-            layoutState_.activitySegmentGap,
-            writeTarget));
+        renderer.AddWidgetAnimation(std::make_unique<DriveActivityAnimation>(AnimationDataKey{drive->label, "write"},
+                                        writeIndicatorRect,
+                                        layoutState_.activitySegments,
+                                        layoutState_.activitySegmentGap),
+            MakeScalarFillAnimationState(writeTarget));
         DrawWidgetPillBarTrack(renderer.Renderer(), barRect);
-        renderer.AddWidgetAnimation(MakeWidgetPillBarAnimation(
-            renderer.CurrentWidgetAnimationLayer(), AnimationDataKey{drive->label, "used"}, barRect, usageTarget));
+        renderer.AddWidgetAnimation(MakeWidgetPillBarAnimation(AnimationDataKey{drive->label, "used"}, barRect),
+            MakeScalarFillAnimationState(usageTarget));
         const int splitX = barRect.left + ((std::max)(0, barRect.right - barRect.left) / 2);
         renderer.EditArtifacts().RegisterDynamicColorEditRegion(WidgetHost::LayoutEditParameter::ColorAccent,
             RenderRect{barRect.left, barRect.top, splitX, barRect.bottom});

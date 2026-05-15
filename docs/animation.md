@@ -28,14 +28,14 @@ The current code already provides several pieces the animation design depends on
 - `MetricSource` already exposes normalized scalar ratios, recent-peak ratios, smoothed throughput histories, shared throughput graph maxima, and time-marker offsets.
 - The live renderer and screenshot renderer use the same Direct2D and DirectWrite scene, so deterministic diagnostics rendering can keep reusing the existing immediate draw path.
 
-The current implementation adds the shared animation cadence, public animation identity and opaque state interfaces, widget-private animation state implementations, widget-host animation submission, deterministic offscreen bypass, snapshot/overlay layer bitmap construction, and a package-private render-thread presenter:
+The current implementation adds the shared animation cadence, public animation identity and opaque state interfaces, widget-private animation state implementations, widget-host animation submission, deterministic offscreen bypass, snapshot/overlay layer bitmap construction, and a package-private render-thread presentation path:
 
 - The live window draw path is split: `DashboardApp::Paint()` calls `DashboardRenderer::DrawWindow()`, the main thread paints snapshot and optional overlay layers into renderer-owned bitmap resources, collects immutable widget animation objects, and publishes the newest complete frame to `DashboardRenderThread`.
-- `DashboardRenderThread` owns the HWND presenter renderer, the keyed `DashboardAnimationTimeline`, an overwrite-only mailbox, surface-version handling, and the animation frame loop. It composes snapshot bitmap, snapshot animations, optional overlay bitmap, and overlay animations on the presenter thread.
+- `DashboardRenderThread` owns the HWND renderer, the keyed `DashboardAnimationTimeline`, an overwrite-only mailbox, surface-version handling, and the animation frame loop. It composes snapshot bitmap, snapshot animations, optional overlay bitmap, and overlay animations on the render thread.
 - Snapshot and overlay layer bitmaps are acquired from a dashboard-renderer pool and returned after the render thread replaces or discards the frame that owns them. The benchmark immediate-present path uses the same acquire/release rule while staying single-threaded, so paint benchmarks measure layer bitmap construction and final composition without scheduler noise.
-- `D2DRenderer` exposes generic layer bitmap drawing, bitmap-region drawing, bitmap composition, and retained dirty-window composition. The live presenter currently uses the existing Direct2D HWND render target behind the render-thread boundary; replacing that target with the planned DXGI flip-model swap chain remains a renderer-backend step.
-- Widgets draw snapshot text and tracks while submitting widget-owned animation objects tagged with the current dashboard layer. Widget overlay hooks submit overlay-tagged animations for content that moves above the base dashboard during layout editing.
-- Layout-edit dragged-child replay happens by re-entering widget draw code in the overlay pass under the drag translation. Its widget animations use the overlay tag and the render-thread timeline.
+- `D2DRenderer` exposes generic layer bitmap drawing, bitmap-region drawing, bitmap composition, and retained dirty-window composition. Live presentation currently uses the existing Direct2D HWND render target behind the render-thread boundary; replacing that target with the planned DXGI flip-model swap chain remains a renderer-backend step.
+- Widgets draw snapshot text and tracks while submitting widget-owned animation objects that the dashboard renderer records in the active layer's animation list. Widget overlay hooks submit animations for content that moves above the base dashboard during layout editing.
+- Layout-edit dragged-child replay happens by re-entering widget draw code in the overlay pass under the drag translation. Its widget animations are recorded in the overlay list and use the render-thread timeline.
 
 ## Target Behavior
 
@@ -67,7 +67,7 @@ The snapshot layer is opaque. It contains:
 - Animated-widget static backgrounds, including pill-bar tracks, gauge track segments, chart background, chart axes, and non-animated chart labels.
 - Static content for the current layout-edit drag state when that content belongs below animated fills.
 
-Widgets draw snapshot content through `Widget::Draw()` and submit `WidgetAnimationLayer::Snapshot` animations through `WidgetHost::AddWidgetAnimation()`. The dashboard renderer records those animation objects while painting the snapshot bitmap; only the render thread samples and draws them for the live window.
+Widgets draw snapshot content through `Widget::Draw()` and submit animation primitives plus opaque target states through `WidgetHost::AddWidgetAnimation()`. The dashboard renderer records those commands in the snapshot animation list while painting the snapshot bitmap; only the render thread samples and draws them for the live window.
 
 ### Overlay Layer
 
@@ -81,13 +81,13 @@ The overlay pass has three ordered sublayers:
 - Overlay-owned widget content, including metric-list dragged-row replay and container-child dragged-content replay.
 - Foreground edit affordances attached to the active dragged row or dragged child.
 
-Widgets draw overlay-owned content through `Widget::DrawOverlay()` and submit `WidgetAnimationLayer::Overlay` animations. Container-child drag replay also draws widgets in the overlay layer under the active drag translation. Edit affordances carry layout-edit owner tags and an overlay sublayer tag when they are registered; active drag state promotes affordances owned by the dragged row or child to the foreground sublayer, while fixed-content affordances stay in the background sublayer. Snapshot and overlay animations resolve through the same render-thread `DashboardAnimationTimeline`, so moving a widget or row from the snapshot layer to the overlay layer during drag does not reset ongoing data interpolation.
+Widgets draw overlay-owned content through `Widget::DrawOverlay()` and submit animation primitives plus opaque target states through `WidgetHost::AddWidgetAnimation()`. The dashboard renderer records those commands in the overlay animation list. Container-child drag replay also draws widgets in the overlay layer under the active drag translation. Edit affordances carry layout-edit owner tags and an overlay sublayer tag when they are registered; active drag state promotes affordances owned by the dragged row or child to the foreground sublayer, while fixed-content affordances stay in the background sublayer. Snapshot and overlay animations resolve through the same render-thread `DashboardAnimationTimeline`, so moving a widget or row from the snapshot layer to the overlay layer during drag does not reset ongoing data interpolation.
 
 ### Animation Draw Lists
 
 Animation draw lists are not stored as bitmaps. Each list contains immutable widget animation draw objects plus the render-space translation that was active when the widget submitted the animation. The keyed data timeline is owned by the render thread, which redraws the current widget animation commands for the active layer on each animation frame.
 
-Widget animation objects contain renderer-safe geometry. Animation draw commands carry the widget-packaged target state plus layer placement data such as drag translation; this keeps geometry changes separate from metric target changes. The render thread resolves animation targets against the metric version, not the snapshot or overlay geometry version, so scale and layout repackaging cannot replace an existing keyed target unless new metric data arrived. Commands do not retain metric-source references, config references, string views, or main-thread-owned containers. Concrete animation data types stay private to the widget package; the render thread stores and samples them through the opaque `WidgetAnimationState` and `WidgetAnimationTransition` interfaces.
+Widget animation objects contain renderer-safe geometry only. Animation draw commands carry that geometry object, the widget-packaged target state, and layer placement data such as drag translation; this keeps geometry changes separate from metric target changes and prevents the target payload from being duplicated inside the draw primitive. The render thread resolves animation targets against the metric version, not the snapshot or overlay geometry version, so scale and layout repackaging cannot replace an existing keyed target unless new metric data arrived. Commands do not retain metric-source references, config references, string views, or main-thread-owned containers. Concrete animation data types stay private to the widget package; the render thread stores and samples them through the opaque `WidgetAnimationState` and `WidgetAnimationTransition` interfaces.
 
 The main thread repaints the opaque snapshot bitmap when telemetry text changes, layout or scale changes, theme/style changes, render mode changes, or layout-edit drag state changes. It repaints the optional transparent overlay bitmap on layout-edit hover changes, drag changes, move-mode changes, and editor selection changes. Normal dashboard operation keeps no overlay bitmap alive.
 
@@ -113,7 +113,7 @@ The main thread does not queue stale layer updates. If a new drag frame or telem
 
 ### Render Thread
 
-The render thread owns the HWND presenter, the live render-target device state, animation timelines, target-local bitmap uploads, and frame presentation.
+The render thread owns the HWND presentation renderer, the live render-target device state, animation timelines, target-local bitmap uploads, and frame presentation.
 
 The render thread:
 
@@ -121,7 +121,7 @@ The render thread:
 - Keeps previous animation data by key.
 - Computes interpolated animation values for the current frame time.
 - Composes snapshot, snapshot animations, optional overlay, and overlay animations in that order.
-- Presents the frame through the package-private presenter while animations are active. The current backend uses the Direct2D HWND target; the planned DXGI flip-model swap chain remains inside `renderer`.
+- Presents the frame through the package-private render-thread presentation path while animations are active. The current backend uses the Direct2D HWND target; the planned DXGI flip-model swap chain remains inside `renderer`.
 - Sleeps when no animation and no new layer update is pending.
 
 The render-thread HWND/device API remains package-private inside `dashboard_renderer`; shell code initializes the dashboard renderer with an HWND but does not receive direct render-thread controls.
@@ -150,13 +150,13 @@ The key follows the logical data source rather than the visual slot. Reordering 
 
 ### Widget Animation Objects
 
-Widgets resolve metric data while they still have access to `MetricSource`. Each widget draws its snapshot content, packages the target animation data into a widget-private `WidgetAnimationState`, and submits a `WidgetAnimation` through `WidgetHost::AddWidgetAnimation()`. The dashboard renderer stores that opaque target state in the presentation command, so the render thread samples it between telemetry updates without asking widget code to resolve target data again.
+Widgets resolve metric data while they still have access to `MetricSource`. Each widget draws its snapshot content, packages the target animation data into a widget-private `WidgetAnimationState`, and submits that state together with a geometry-only `WidgetAnimation` through `WidgetHost::AddWidgetAnimation()`. The dashboard renderer stores that opaque target state in the presentation command, so the render thread samples it between telemetry updates without asking widget code to resolve target data again.
 
 The public animation interface exposes:
 
 - `AnimationDataKey` for stable logical identity.
-- `WidgetAnimationLayer`, which identifies whether the animation belongs to the snapshot layer or overlay layer.
-- `WidgetAnimation`, which can return a target state and draw a sampled state on a regular `Renderer`.
+- `WidgetAnimationLayer`, which identifies whether a dashboard renderer collection pass targets the snapshot layer or overlay layer.
+- `WidgetAnimation`, which identifies the data key, reports dirty geometry, and draws a supplied sampled state on a regular `Renderer`.
 - A conservative dirty bound for the animation command. This is a generic render-space invalidation rectangle, not widget-private geometry.
 - `WidgetAnimationState`, which can clone itself, create first-seen and retarget starts, compare compatible targets, and create transitions.
 - `WidgetAnimationTransition`, which samples an opaque state at a normalized progress value.
@@ -244,7 +244,7 @@ Dynamic edit artifacts are collected from the snapshot build using the target te
 
 During a metric-list row reorder drag, the main thread publishes animation geometry for the row's current drag position. The vacated row slot does not publish a duplicate animation primitive for that row.
 
-During a container-child reorder drag, the dragged child keeps animating while it tracks the pointer above underlying dashboard content. The main thread draws the dragged child's static content into the overlay layer and tags that child's animation primitives as `WidgetAnimationLayer::Overlay`. Underlying widgets keep ordinary `WidgetAnimationLayer::Snapshot` primitives. The main thread identifies the dragged child by layout-edit owner tags rather than by rectangle containment and does not compute drag-overlap visibility subtraction for animation primitives.
+During a container-child reorder drag, the dragged child keeps animating while it tracks the pointer above underlying dashboard content. The main thread draws the dragged child's static content into the overlay layer and records that child's animation commands in the overlay animation list. Underlying widgets keep ordinary snapshot animation commands. The main thread identifies the dragged child by layout-edit owner tags rather than by rectangle containment and does not compute drag-overlap visibility subtraction for animation primitives.
 
 Move mode uses the overlay layer for monitor name, scale, and relative-coordinate text. The dashboard content underneath continues to animate unless move-mode throttling is explicitly enabled later.
 
@@ -267,7 +267,7 @@ Each thread owns its renderer caches:
 
 - The main thread owns the offscreen layer painter and its palette/text/icon caches.
 - The dashboard renderer owns the cross-thread layer bitmap pool. The main thread acquires writable layer bitmaps from it, and the render thread returns superseded frame-owned bitmaps after presentation handoff.
-- The render thread owns the live presenter and its palette/text/icon/target-local bitmap caches.
+- The render thread owns live presentation and its palette/text/icon/target-local bitmap caches.
 - Palette and renderer style updates are copied by value into each thread. No thread mutates a palette that another thread can read.
 
 If Direct2D resources are shared across threads, the Direct2D factory is created in multithreaded mode and access follows the Direct2D multithread locking contract. If layer bitmaps are CPU/WIC-backed and uploaded per update, each renderer instance may keep thread-local Direct2D factories instead.
@@ -301,8 +301,8 @@ The render-thread and single-thread benchmark implementations follow the same da
 layout, row-order, scale, and render-mode changes keep keyed opaque widget animation tracks alive. A track is pruned
 only on a live frame that carries a new metric version and no longer touches that data key, so compatible metrics continue
 from their current interpolated value after layout edits instead of restarting from zero.
-DPI and scale application updates renderer style and layout in place; it does not shut down the presenter, because the
-presenter owns the animation timeline and `surfaceVersion` already handles target recreation.
+DPI and scale application updates renderer style and layout in place; it does not shut down the render thread, because
+the render thread owns the animation timeline and `surfaceVersion` already handles target recreation.
 
 Renderer trace output reports every animation timeline reset and any frame that prunes animation tracks. Reset lines use
 `renderer:animation_timeline_reset`; prune lines use `renderer:animation_timeline_prune` and include track counts, metric
@@ -312,9 +312,9 @@ The main thread always publishes a complete snapshot layer after a size, DPI, sc
 
 ## Dirty Rectangles
 
-Telemetry snapshot updates and layout/style changes present the full window because they update the snapshot layer or animation geometry. When animation is enabled, those full redraws use the same retained presenter target as dirty animation frames so the HWND target is not recreated between a metrics update and the following animation ticks.
+Telemetry snapshot updates and layout/style changes present the full window because they update the snapshot layer or animation geometry. When animation is enabled, those full redraws use the same retained render target as dirty animation frames so the HWND target is not recreated between a metrics update and the following animation ticks.
 
-Animation geometry changes only when the snapshot version or overlay version changes. If neither version changed, animation geometry is unchanged and animation-only frames prepare each current animation primitive once, collecting its conservative dirty bound and sampled draw state together. The retained dirty presenter restores those non-coalesced regions from the snapshot bitmap in one batched region-copy step, restores the same regions from the overlay bitmap when an overlay exists, then draws each prepared animation once. Dirty bounds are conservative enough to contain the animation's draw output, so the render thread does not need per-rectangle animation clipping.
+Animation geometry changes only when the snapshot version or overlay version changes. If neither version changed, animation geometry is unchanged and animation-only frames prepare each current animation primitive once, collecting its conservative dirty bound and sampled draw state together. The retained dirty-window path restores those non-coalesced regions from the snapshot bitmap in one batched region-copy step, restores the same regions from the overlay bitmap when an overlay exists, then draws each prepared animation once. Dirty bounds are conservative enough to contain the animation's draw output, so the render thread does not need per-rectangle animation clipping.
 
 When the snapshot version or overlay version changes, the render thread treats the whole live surface as dirty. Config edits, layout edits, and active drags redraw at least one of those layers on the main thread, so the render thread does not try to infer smaller dirty regions from old and new animation geometry. During active drags, the overlay bitmap version changes on each drag frame, and the render thread cannot inspect the overlay's internal delta.
 
@@ -353,7 +353,7 @@ The first implementation should avoid a new top-level source package unless the 
   - Owns render-thread interpolation state, opaque data-key maps, interruption handling, and state sampling.
   - Asks widget-private state objects to create zero-initialized starts, retarget starts, and transitions.
 - `src/dashboard_renderer/impl/render_thread.*`
-  - Owns the live render thread, single-thread benchmark presenter, mailbox, surface version, presentation loop, renderer/presenter instance, and render-thread animation timeline.
+  - Owns the live render thread, single-thread benchmark presentation path, mailbox, surface version, presentation loop, renderer instance, and render-thread animation timeline.
 - `src/renderer/*`
   - Owns generic bitmap, composition, and presentation primitives only.
   - Keeps Direct2D, DirectWrite, WIC, Direct3D, and DXGI implementation details inside `src/renderer/impl/`.
@@ -363,7 +363,7 @@ The first implementation should avoid a new top-level source package unless the 
   - Keeps shell input, invalidation, telemetry update draining, and layout-edit interaction.
   - Calls dashboard-renderer APIs instead of owning render-thread details.
 - `tests/*`
-  - Adds focused tests for scalar interpolation, interrupted animations, throughput vector alignment, surface-version target recreation, and animation composition-plane tagging.
+  - Adds focused tests for scalar interpolation, interrupted animations, throughput vector alignment, surface-version target recreation, and animation composition-plane assignment.
 - `tests/benchmarks.cpp`
   - Keeps deterministic paint benchmarks single-threaded while forcing the same layer-bitmap build and final composition steps as the live pipeline.
   - Owns the `animation` benchmark, which builds one fake-metric, no-overlay live presentation frame and repeatedly presents the stored frame through the render-thread animation timeline and composition path while keeping each measured frame inside the active transition window.
@@ -372,7 +372,7 @@ The first implementation should avoid a new top-level source package unless the 
 
 Implementation validation should use staged checks:
 
-- Unit-test interpolation and composition-plane tagging without creating a window.
+- Unit-test interpolation and composition-plane assignment without creating a window.
 - Keep existing screenshot, active-region, layout-guide-sheet, and widget tests deterministic by rendering target values directly.
 - Run `build.cmd` and `test.cmd` after implementation changes.
 - Run `build.cmd /benchmarks` and compare `animation`, `edit-layout`, `mouse-hover`, `layout-switch`, `theme-change`, and `update-telemetry` against [docs/profile_benchmark.md](profile_benchmark.md) baselines when live draw-path behavior changes.
@@ -382,7 +382,7 @@ Implementation validation should use staged checks:
 
 - Drive read/write stacked activity indicators animate in the first implementation.
 - Gauge and drive-activity visuals render whole filled segments during animation.
-- The live presenter is isolated behind `DashboardRenderThread`; the current backend uses the existing Direct2D HWND target, and DXGI flip-model presentation remains the next renderer-backend replacement.
+- Live presentation is isolated behind `DashboardRenderThread`; the current backend uses the existing Direct2D HWND target, and DXGI flip-model presentation remains the next renderer-backend replacement.
 - Dragged widgets and container children keep animating while dragged; dragged-child animation primitives render above the overlay layer.
 - First-seen animation keys animate from zero, including application startup.
 - Unavailable targets animate down to zero before disappearing.

@@ -103,8 +103,7 @@ public:
     int ScaleLogical(int value) const;
     std::optional<MetricListReorderOverlayState> ActiveMetricListReorderDrag(
         const LayoutEditWidgetIdentity& widget) const override;
-    WidgetAnimationLayer CurrentWidgetAnimationLayer() const override;
-    void AddWidgetAnimation(WidgetAnimationPtr animation) override;
+    void AddWidgetAnimation(WidgetAnimationPtr animation, WidgetAnimationStatePtr targetState) override;
 
 private:
     friend class DashboardLayoutResolver;
@@ -213,15 +212,15 @@ private:
     int presentedWidth_ = 0;
     int presentedHeight_ = 0;
     double presentedScale_ = 0.0;
-    // Guards presenter surface identity when window size or render scale changes.
+    // Guards presentation surface identity when window size or render scale changes.
     std::uint64_t surfaceVersion_ = 1;
     // Guards snapshot layer rebuilds when any dashboard config or layout value changes.
     std::uint64_t configVersion_ = 1;
-    // Guards presenter snapshot bitmap replacement when the opaque base layer is rebuilt.
+    // Guards presentation snapshot bitmap replacement when the opaque base layer is rebuilt.
     std::uint64_t snapshotVersion_ = 0;
-    // Guards presenter overlay bitmap replacement when transparent edit/drag content changes.
+    // Guards presentation overlay bitmap replacement when transparent edit/drag content changes.
     std::uint64_t overlayVersion_ = 0;
-    // Guards presenter dirty-animation reuse when animation command geometry changes.
+    // Guards presentation dirty-animation reuse when animation command geometry changes.
     std::uint64_t animationGeometryVersion_ = 0;
     bool snapshotLayerValid_ = false;
     bool overlayLayerVisible_ = false;

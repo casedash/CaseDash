@@ -155,8 +155,8 @@ void DrawMetricListRow(WidgetHost& renderer,
     }
     const std::string subject = rowIndex < static_cast<int>(metricRefs.size()) ? metricRefs[rowIndex] : std::string{};
     DrawWidgetPillBarTrack(renderer.Renderer(), barRect);
-    renderer.AddWidgetAnimation(MakeWidgetPillBarAnimation(
-        renderer.CurrentWidgetAnimationLayer(), AnimationDataKey{subject, {}}, barRect, targetSample));
+    renderer.AddWidgetAnimation(
+        MakeWidgetPillBarAnimation(AnimationDataKey{subject, {}}, barRect), MakeScalarFillAnimationState(targetSample));
     const std::optional<RenderRect> peakMarkerRect =
         WidgetPillBarPeakMarkerRect(renderer.Renderer(), barRect, targetSample);
     if (!registerEditRegions) {

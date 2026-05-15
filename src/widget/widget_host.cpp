@@ -1,16 +1,8 @@
 #include "widget/widget_host.h"
 
-WidgetAnimationLayer WidgetHost::CurrentWidgetAnimationLayer() const {
-    return WidgetAnimationLayer::Snapshot;
-}
-
-void WidgetHost::AddWidgetAnimation(WidgetAnimationPtr animation) {
-    if (animation == nullptr) {
+void WidgetHost::AddWidgetAnimation(WidgetAnimationPtr animation, WidgetAnimationStatePtr targetState) {
+    if (animation == nullptr || targetState == nullptr) {
         return;
     }
-    WidgetAnimationStatePtr target = animation->TargetState();
-    if (target == nullptr) {
-        return;
-    }
-    animation->Draw(Renderer(), *target);
+    animation->Draw(Renderer(), *targetState);
 }
