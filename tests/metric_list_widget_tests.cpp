@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <gtest/gtest.h>
+#include <memory>
 #include <optional>
 #include <span>
 #include <string>
@@ -12,6 +13,18 @@
 #include "widget/widget_host.h"
 
 namespace {
+
+const void* MetricListTestRenderBitmapResourceTypeToken() {
+    static const int token = 0;
+    return &token;
+}
+
+class MetricListTestRenderBitmapResource final : public RenderBitmapResource {
+public:
+    const void* TypeToken() const override {
+        return MetricListTestRenderBitmapResourceTypeToken();
+    }
+};
 
 struct DrawnText {
     RenderRect rect{};
@@ -124,8 +137,7 @@ public:
         RenderBitmap& bitmap, int width, int height, RenderBitmapClear, const DrawCallback& draw) override {
         bitmap.width = width;
         bitmap.height = height;
-        bitmap.stride = width * 4;
-        bitmap.bgra.assign(static_cast<size_t>(std::max(0, bitmap.stride) * std::max(0, height)), 0);
+        bitmap.resource = std::make_shared<MetricListTestRenderBitmapResource>();
         draw();
         return true;
     }

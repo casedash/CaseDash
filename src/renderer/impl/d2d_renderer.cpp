@@ -392,8 +392,6 @@ bool D2DRenderer::DrawToBitmap(
             }
             output.width = static_cast<int>(bitmapWidth);
             output.height = static_cast<int>(bitmapHeight);
-            output.stride = output.width * 4;
-            output.bgra.clear();
             output.resource =
                 std::make_shared<D2DRenderBitmapResource>(std::move(bitmapRenderTarget), std::move(bitmap));
             return true;
@@ -446,8 +444,6 @@ bool D2DRenderer::DrawToBitmap(
 
     output.width = static_cast<int>(bitmapWidth);
     output.height = static_cast<int>(bitmapHeight);
-    output.stride = output.width * 4;
-    output.bgra.clear();
     output.resource = std::make_shared<D2DRenderBitmapResource>(std::move(bitmap), std::move(bitmapRenderTarget));
     return true;
 }
@@ -877,13 +873,6 @@ bool D2DRenderer::DrawBitmap(const RenderBitmap& bitmap, RenderPoint origin) {
                 }
             }
         }
-    } else {
-        hr = d2dActiveRenderTarget_->CreateBitmap(
-            D2D1::SizeU(static_cast<UINT>(bitmap.width), static_cast<UINT>(bitmap.height)),
-            bitmap.bgra.data(),
-            static_cast<UINT>(bitmap.stride),
-            properties,
-            d2dBitmap.GetAddressOf());
     }
     if (FAILED(hr) || d2dBitmap == nullptr) {
         lastError_ = "renderer:draw_bitmap_create_failed hr=" + FormatHresult(hr);

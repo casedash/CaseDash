@@ -2,7 +2,6 @@
 
 #include <windows.h>
 
-#include <cstdint>
 #include <memory>
 #include <span>
 #include <string>
@@ -48,8 +47,6 @@ public:
 struct RenderBitmap {
     int width = 0;
     int height = 0;
-    int stride = 0;
-    std::vector<std::uint8_t> bgra;
     std::shared_ptr<RenderBitmapResource> resource;
 
     bool Empty() const;
