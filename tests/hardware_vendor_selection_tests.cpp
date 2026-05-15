@@ -17,10 +17,12 @@ struct KnownTestBoard {
 
 const KnownTestGpu kKnownTestGpus[] = {
     {GpuVendorInfo{0x1002u, "AMD Radeon RX 6800"}, GpuVendor::Amd},
+    {GpuVendorInfo{0x10deu, "NVIDIA GeForce RTX 3080"}, GpuVendor::Nvidia},
 };
 
 const KnownTestBoard kKnownTestBoards[] = {
     {BoardVendorInfo{"Gigabyte Technology Co., Ltd.", "X570 I AORUS PRO WIFI"}, BoardVendor::Gigabyte},
+    {BoardVendorInfo{"Micro-Star International Co., Ltd.", "MPG Z690 CARBON WIFI (MS-7D30)"}, BoardVendor::Msi},
 };
 
 }  // namespace
