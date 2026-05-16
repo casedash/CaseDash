@@ -36,28 +36,26 @@ void InitializeCpuCollector(RealTelemetryCollectorState& state) {
     state.trace_.WriteFmt(TracePrefix::Telemetry, "cpu_name value=\"%s\"", state.snapshot_.cpu.name.c_str());
 
     const PDH_STATUS queryStatus = PdhOpenQueryW(nullptr, 0, &state.cpu_.query);
-    state.trace_.WriteFmt(
-        TracePrefix::Telemetry, "pdh_open cpu_query status=%s", PdhStatusCodeString(queryStatus).c_str());
+    state.trace_.WriteFmt(TracePrefix::Telemetry, "pdh_open cpu_query status=%ld", static_cast<long>(queryStatus));
     const PDH_STATUS loadStatus = AddCounterCompat(
         state.cpu_.query, "\\Processor Information(_Total)\\% Processor Utility", &state.cpu_.loadCounter);
     state.trace_.WriteFmt(TracePrefix::Telemetry,
-        "pdh_add cpu_load path=\"\\\\Processor Information(_Total)\\\\%% Processor Utility\" status=%s",
-        PdhStatusCodeString(loadStatus).c_str());
+        "pdh_add cpu_load path=\"\\\\Processor Information(_Total)\\\\%% Processor Utility\" status=%ld",
+        static_cast<long>(loadStatus));
     if (state.cpu_.loadCounter == nullptr) {
         const PDH_STATUS fallbackStatus =
             AddCounterCompat(state.cpu_.query, "\\Processor(_Total)\\% Processor Time", &state.cpu_.loadCounter);
         state.trace_.WriteFmt(TracePrefix::Telemetry,
-            "pdh_add cpu_load_fallback path=\"\\\\Processor(_Total)\\\\%% Processor Time\" status=%s",
-            PdhStatusCodeString(fallbackStatus).c_str());
+            "pdh_add cpu_load_fallback path=\"\\\\Processor(_Total)\\\\%% Processor Time\" status=%ld",
+            static_cast<long>(fallbackStatus));
     }
     const PDH_STATUS frequencyStatus = AddCounterCompat(
         state.cpu_.query, "\\Processor Information(_Total)\\Processor Frequency", &state.cpu_.frequencyCounter);
     state.trace_.WriteFmt(TracePrefix::Telemetry,
-        "pdh_add cpu_frequency path=\"\\\\Processor Information(_Total)\\\\Processor Frequency\" status=%s",
-        PdhStatusCodeString(frequencyStatus).c_str());
+        "pdh_add cpu_frequency path=\"\\\\Processor Information(_Total)\\\\Processor Frequency\" status=%ld",
+        static_cast<long>(frequencyStatus));
     const PDH_STATUS collectStatus = PdhCollectQueryData(state.cpu_.query);
-    state.trace_.WriteFmt(
-        TracePrefix::Telemetry, "pdh_collect cpu_query status=%s", PdhStatusCodeString(collectStatus).c_str());
+    state.trace_.WriteFmt(TracePrefix::Telemetry, "pdh_collect cpu_query status=%ld", static_cast<long>(collectStatus));
 }
 
 void UpdateCpuMetrics(RealTelemetryCollectorState& state) {
@@ -68,8 +66,7 @@ void UpdateCpuMetrics(RealTelemetryCollectorState& state) {
     }
 
     const PDH_STATUS collectStatus = PdhCollectQueryData(state.cpu_.query);
-    state.trace_.WriteLazy(
-        TracePrefix::Telemetry, [&] { return "cpu_collect status=" + PdhStatusCodeString(collectStatus); });
+    state.trace_.WriteLazyFmt(TracePrefix::Telemetry, "cpu_collect status=%ld", static_cast<long>(collectStatus));
 
     PDH_FMT_COUNTERVALUE value{};
     PDH_STATUS loadStatus = PDH_INVALID_DATA;
@@ -79,10 +76,10 @@ void UpdateCpuMetrics(RealTelemetryCollectorState& state) {
             state.snapshot_.cpu.loadPercent = ClampFinite(value.doubleValue, 0.0, 100.0);
         }
     }
-    state.trace_.WriteLazy(TracePrefix::Telemetry, [&] {
-        return "cpu_load status=" + PdhStatusCodeString(loadStatus) + " " +
-               Trace::FormatValueDouble("value", state.snapshot_.cpu.loadPercent, 2);
-    });
+    state.trace_.WriteLazyFmt(TracePrefix::Telemetry,
+        "cpu_load status=%ld value=%.2f",
+        static_cast<long>(loadStatus),
+        state.snapshot_.cpu.loadPercent);
     state.retainedHistoryStore_.PushSample(
         state.snapshot_, RetainedHistoryKey::CpuLoad, state.snapshot_.cpu.loadPercent);
 
@@ -95,7 +92,7 @@ void UpdateCpuMetrics(RealTelemetryCollectorState& state) {
         }
     }
     state.trace_.WriteLazy(TracePrefix::Telemetry, [&] {
-        return "cpu_clock status=" + PdhStatusCodeString(clockStatus) + " value=" +
+        return "cpu_clock status=" + std::to_string(static_cast<long>(clockStatus)) + " value=" +
                (state.snapshot_.cpu.clock.value.has_value() ? FormatScalarMetric(state.snapshot_.cpu.clock, 2)
                                                             : std::string("N/A"));
     });

@@ -90,10 +90,8 @@ public:
     }
 
     void TraceQuerySuccess(int fanCount, int temperatureCount) override {
-        trace_.WriteLazy(TracePrefix::MsiCenter, [&] {
-            return "snapshot_done fan_count=" + std::to_string(fanCount) +
-                   " temp_count=" + std::to_string(temperatureCount);
-        });
+        trace_.WriteLazyFmt(
+            TracePrefix::MsiCenter, "snapshot_done fan_count=%d temp_count=%d", fanCount, temperatureCount);
     }
 
     void TraceInitializeException(const wchar_t* diagnostics) override {

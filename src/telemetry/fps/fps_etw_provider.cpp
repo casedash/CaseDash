@@ -563,7 +563,7 @@ private:
 
         const PDH_STATUS openStatus = PdhOpenQueryW(nullptr, 0, &gpuQuery_);
         if (openStatus != ERROR_SUCCESS || gpuQuery_ == nullptr) {
-            gpuUsageDiagnostics_ = " gpu3d_open=" + PdhStatusCodeString(openStatus);
+            gpuUsageDiagnostics_ = " gpu3d_open=" + std::to_string(static_cast<long>(openStatus));
             gpuQuery_ = nullptr;
             return;
         }
@@ -571,13 +571,13 @@ private:
         const PDH_STATUS addStatus =
             AddCounterCompat(gpuQuery_, "\\GPU Engine(*)\\Utilization Percentage", &gpu3dCounter_);
         if (addStatus != ERROR_SUCCESS || gpu3dCounter_ == nullptr) {
-            gpuUsageDiagnostics_ = " gpu3d_add=" + PdhStatusCodeString(addStatus);
+            gpuUsageDiagnostics_ = " gpu3d_add=" + std::to_string(static_cast<long>(addStatus));
             PdhCloseQuery(gpuQuery_);
             gpuQuery_ = nullptr;
             return;
         }
         const PDH_STATUS collectStatus = PdhCollectQueryData(gpuQuery_);
-        gpuUsageDiagnostics_ = " gpu3d_collect=" + PdhStatusCodeString(collectStatus);
+        gpuUsageDiagnostics_ = " gpu3d_collect=" + std::to_string(static_cast<long>(collectStatus));
         CapturePreviousGpu3dRawValuesLocked();
     }
 
@@ -623,8 +623,8 @@ private:
         DWORD itemCount = 0;
         PDH_STATUS status = PdhGetRawCounterArrayW(gpu3dCounter_, &bufferSize, &itemCount, nullptr);
         if (status != PDH_MORE_DATA) {
-            gpuUsageDiagnostics_ = " gpu3d_collect=" + PdhStatusCodeString(collectStatus) +
-                                   " gpu3d_prepare=" + PdhStatusCodeString(status);
+            gpuUsageDiagnostics_ = " gpu3d_collect=" + std::to_string(static_cast<long>(collectStatus)) +
+                                   " gpu3d_prepare=" + std::to_string(static_cast<long>(status));
             return;
         }
 
@@ -632,8 +632,8 @@ private:
         auto* items = reinterpret_cast<PDH_RAW_COUNTER_ITEM_W*>(gpuCounterArrayBuffer_.data());
         status = PdhGetRawCounterArrayW(gpu3dCounter_, &bufferSize, &itemCount, items);
         if (status != ERROR_SUCCESS) {
-            gpuUsageDiagnostics_ =
-                " gpu3d_collect=" + PdhStatusCodeString(collectStatus) + " gpu3d_fetch=" + PdhStatusCodeString(status);
+            gpuUsageDiagnostics_ = " gpu3d_collect=" + std::to_string(static_cast<long>(collectStatus)) +
+                                   " gpu3d_fetch=" + std::to_string(static_cast<long>(status));
             return;
         }
 
@@ -678,8 +678,8 @@ private:
         }
         previousGpuRawByInstance_.Swap(currentGpuRawByInstance_);
 
-        gpuUsageDiagnostics_ = " gpu3d_collect=" + PdhStatusCodeString(collectStatus) +
-                               " gpu3d_fetch=" + PdhStatusCodeString(status) +
+        gpuUsageDiagnostics_ = " gpu3d_collect=" + std::to_string(static_cast<long>(collectStatus)) +
+                               " gpu3d_fetch=" + std::to_string(static_cast<long>(status)) +
                                " top_gpu3d_process=" + ResolveProcessNameLocked(topGpu3dProcessId_) +
                                " top_gpu3d_pid=" + std::to_string(static_cast<unsigned long>(topGpu3dProcessId_)) +
                                " " + Trace::FormatValueDouble("top_gpu3d", topGpu3dUsage_, 1);

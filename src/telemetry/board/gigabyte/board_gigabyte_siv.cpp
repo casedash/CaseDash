@@ -116,10 +116,10 @@ public:
         snapshot_.diagnostics =
             "Gigabyte SIV hardware-monitor query completed. fan_count=" + std::to_string(snapshot_.fans.size()) +
             " temp_count=" + std::to_string(snapshot_.temperatures.size());
-        trace_.WriteLazy(TracePrefix::GigabyteSiv, [&] {
-            return "snapshot_done fan_count=" + std::to_string(snapshot_.fans.size()) +
-                   " temp_count=" + std::to_string(snapshot_.temperatures.size());
-        });
+        trace_.WriteLazyFmt(TracePrefix::GigabyteSiv,
+            "snapshot_done fan_count=%zu temp_count=%zu",
+            snapshot_.fans.size(),
+            snapshot_.temperatures.size());
         return std::move(snapshot_);
     }
 

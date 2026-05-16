@@ -32,10 +32,6 @@ struct NetworkCandidateState {
     bool connectorPresent = false;
 };
 
-std::string Win32StatusCodeString(DWORD status) {
-    return std::to_string(static_cast<unsigned long>(status));
-}
-
 bool AdapterMatchesRow(const IP_ADAPTER_ADDRESSES& adapter, const MIB_IF_ROW2& row) {
     return adapter.Luid.Value == row.InterfaceLuid.Value || adapter.IfIndex == row.InterfaceIndex ||
            adapter.Ipv6IfIndex == row.InterfaceIndex ||
@@ -159,23 +155,24 @@ void ResolveNetworkSelection(RealTelemetryCollectorState& state) {
     PMIB_IF_TABLE2 table = nullptr;
     const DWORD tableStatus = GetIfTable2(&table);
     if (tableStatus != NO_ERROR || table == nullptr) {
-        state.trace_.Write(TracePrefix::Telemetry,
-            ("network_table status=" + Win32StatusCodeString(tableStatus) +
-                " table=" + Trace::BoolText(table != nullptr))
-                .c_str());
+        state.trace_.WriteFmt(TracePrefix::Telemetry,
+            "network_table status=%lu table=%s",
+            static_cast<unsigned long>(tableStatus),
+            Trace::BoolText(table != nullptr));
         return;
     }
-    state.trace_.Write(TracePrefix::Telemetry,
-        ("network_table status=" + Win32StatusCodeString(tableStatus) + " entries=" + std::to_string(table->NumEntries))
-            .c_str());
+    state.trace_.WriteFmt(TracePrefix::Telemetry,
+        "network_table status=%lu entries=%lu",
+        static_cast<unsigned long>(tableStatus),
+        static_cast<unsigned long>(table->NumEntries));
 
     ULONG addressBufferSize = 0;
     const ULONG addressProbeStatus = GetAdaptersAddresses(
         AF_UNSPEC, GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST, nullptr, nullptr, &addressBufferSize);
-    state.trace_.Write(TracePrefix::Telemetry,
-        ("network_ip_probe status=" + Win32StatusCodeString(addressProbeStatus) +
-            " size=" + std::to_string(addressBufferSize))
-            .c_str());
+    state.trace_.WriteFmt(TracePrefix::Telemetry,
+        "network_ip_probe status=%lu size=%lu",
+        static_cast<unsigned long>(addressProbeStatus),
+        static_cast<unsigned long>(addressBufferSize));
 
     std::vector<BYTE> addressBuffer;
     IP_ADAPTER_ADDRESSES* addresses = nullptr;
@@ -186,10 +183,10 @@ void ResolveNetworkSelection(RealTelemetryCollectorState& state) {
         addressFetchStatus = GetAdaptersAddresses(
             AF_UNSPEC, GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST, nullptr, addresses, &addressBufferSize);
     }
-    state.trace_.Write(TracePrefix::Telemetry,
-        ("network_ip_fetch status=" + Win32StatusCodeString(addressFetchStatus) +
-            " size=" + std::to_string(addressBufferSize))
-            .c_str());
+    state.trace_.WriteFmt(TracePrefix::Telemetry,
+        "network_ip_fetch status=%lu size=%lu",
+        static_cast<unsigned long>(addressFetchStatus),
+        static_cast<unsigned long>(addressBufferSize));
     if (addressFetchStatus != NO_ERROR) {
         addresses = nullptr;
     }
@@ -329,10 +326,10 @@ void UpdateNetworkMetrics(RealTelemetryCollectorState& state, bool initializeOnl
     selected.InterfaceIndex = state.network_.selectedIndex;
     const DWORD rowStatus = GetIfEntry2(&selected);
     if (rowStatus != NO_ERROR) {
-        state.trace_.WriteLazy(TracePrefix::Telemetry, [&] {
-            return "network_row status=" + Win32StatusCodeString(rowStatus) +
-                   " interface=" + std::to_string(state.network_.selectedIndex);
-        });
+        state.trace_.WriteLazyFmt(TracePrefix::Telemetry,
+            "network_row status=%lu interface=%lu",
+            static_cast<unsigned long>(rowStatus),
+            state.network_.selectedIndex);
         return;
     }
 
