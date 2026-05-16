@@ -64,17 +64,7 @@ Each feature item uses short copy and, where useful, a small cropped screenshot 
 
 ## Hardware Section
 
-The hardware section lists currently supported providers and telemetry families:
-
-- AMD Radeon GPU telemetry through ADLX.
-- Intel GPU telemetry through Level Zero Sysman.
-- NVIDIA GPU telemetry through NVML.
-- Presented-FPS capture through ETW via the CaseDash service.
-- ASUS board temperature and fan telemetry through Armoury Crate ATKACPI.
-- MSI board temperature and fan telemetry through MSI Center SDK.
-- Gigabyte board temperature and fan telemetry through SIV.
-
-The website keeps this section concise; [docs/hardware.md](hardware.md) owns provider requirements and troubleshooting details.
+The hardware section gives visitors a concise support overview with one-line provider mentions and sends them to [docs/hardware.md](hardware.md) for the canonical supported-provider list, runtime requirements, provider-specific telemetry behavior, and troubleshooting details.
 
 ## Layout Section
 
