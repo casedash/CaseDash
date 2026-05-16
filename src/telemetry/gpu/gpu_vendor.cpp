@@ -1,5 +1,7 @@
 #include "telemetry/gpu/gpu_vendor.h"
 
+#include <windows.h>
+
 #include <cstdint>
 #include <dxgi.h>
 #include <memory>
@@ -18,6 +20,37 @@
 #include "util/utf8.h"
 
 namespace {
+
+using NtStatus = LONG;
+using D3DkmtHandle = UINT;
+
+constexpr int kD3DkmtQueryAdapterAddress = 6;
+
+struct D3DkmtOpenAdapterFromLuid {
+    LUID adapterLuid;
+    D3DkmtHandle adapter = 0;
+};
+
+struct D3DkmtAdapterAddress {
+    UINT busNumber = 0;
+    UINT deviceNumber = 0;
+    UINT functionNumber = 0;
+};
+
+struct D3DkmtQueryAdapterInfo {
+    D3DkmtHandle adapter = 0;
+    int type = 0;
+    void* privateDriverData = nullptr;
+    UINT privateDriverDataSize = 0;
+};
+
+struct D3DkmtCloseAdapter {
+    D3DkmtHandle adapter = 0;
+};
+
+using D3DkmtOpenAdapterFromLuidFn = NtStatus(WINAPI*)(D3DkmtOpenAdapterFromLuid*);
+using D3DkmtQueryAdapterInfoFn = NtStatus(WINAPI*)(const D3DkmtQueryAdapterInfo*);
+using D3DkmtCloseAdapterFn = NtStatus(WINAPI*)(const D3DkmtCloseAdapter*);
 
 class UnsupportedGpuTelemetryProvider final : public GpuVendorTelemetryProvider {
 public:
@@ -85,10 +118,10 @@ private:
 std::unique_ptr<GpuVendorTelemetryProvider> CreateGpuVendorProviderForVendor(
     Trace& trace, GpuVendor vendor, std::optional<GpuVendorInfo> adapter) {
     if (vendor == GpuVendor::Nvidia) {
-        return CreateNvidiaGpuTelemetryProvider(trace);
+        return CreateNvidiaGpuTelemetryProvider(trace, adapter);
     }
     if (vendor == GpuVendor::Amd) {
-        return CreateAmdGpuTelemetryProvider(trace);
+        return CreateAmdGpuTelemetryProvider(trace, adapter);
     }
     if (vendor == GpuVendor::Intel) {
         return CreateIntelGpuTelemetryProvider(trace, adapter);
@@ -109,6 +142,47 @@ int PreferredGpuAdapterMatchRank(const std::string& adapterName, std::string_vie
 
 double DedicatedVideoMemoryGb(std::uint64_t bytes) {
     return static_cast<double>(bytes) / (1024.0 * 1024.0 * 1024.0);
+}
+
+void PopulateAdapterPciAddress(GpuVendorInfo& info, LUID adapterLuid) {
+    HMODULE gdi = GetModuleHandleW(L"gdi32.dll");
+    if (gdi == nullptr) {
+        gdi = LoadLibraryW(L"gdi32.dll");
+    }
+    if (gdi == nullptr) {
+        return;
+    }
+
+    const auto openAdapter =
+        reinterpret_cast<D3DkmtOpenAdapterFromLuidFn>(GetProcAddress(gdi, "D3DKMTOpenAdapterFromLuid"));
+    const auto queryAdapter = reinterpret_cast<D3DkmtQueryAdapterInfoFn>(GetProcAddress(gdi, "D3DKMTQueryAdapterInfo"));
+    const auto closeAdapter = reinterpret_cast<D3DkmtCloseAdapterFn>(GetProcAddress(gdi, "D3DKMTCloseAdapter"));
+    if (openAdapter == nullptr || queryAdapter == nullptr || closeAdapter == nullptr) {
+        return;
+    }
+
+    D3DkmtOpenAdapterFromLuid open{};
+    open.adapterLuid = adapterLuid;
+    if (openAdapter(&open) < 0) {
+        return;
+    }
+
+    D3DkmtAdapterAddress address{};
+    D3DkmtQueryAdapterInfo query{};
+    query.adapter = open.adapter;
+    query.type = kD3DkmtQueryAdapterAddress;
+    query.privateDriverData = &address;
+    query.privateDriverDataSize = sizeof(address);
+    if (queryAdapter(&query) >= 0) {
+        info.hasPciAddress = true;
+        info.pciBus = address.busNumber;
+        info.pciDevice = address.deviceNumber;
+        info.pciFunction = address.functionNumber;
+    }
+
+    D3DkmtCloseAdapter close{};
+    close.adapter = open.adapter;
+    closeAdapter(&close);
 }
 
 }  // namespace
@@ -149,7 +223,10 @@ GpuAdapterSelection ResolveGpuAdapterSelection(Trace& trace, std::string_view pr
                 adapterName,
                 adapterIndex,
                 static_cast<std::uint64_t>(desc.DedicatedVideoMemory),
-                desc.DeviceId};
+                desc.DeviceId,
+                desc.SubSysId,
+                desc.Revision};
+            PopulateAdapterPciAddress(info, desc.AdapterLuid);
             const GpuVendor vendor = SelectGpuVendor(info);
             const int matchRank = PreferredGpuAdapterMatchRank(adapterName, preferredAdapterName);
             const bool select = !selection.selectedAdapter.has_value() ||
@@ -173,11 +250,17 @@ GpuAdapterSelection ResolveGpuAdapterSelection(Trace& trace, std::string_view pr
 
             char buffer[320];
             sprintf_s(buffer,
-                "adapter_candidate index=%u vendor_id=0x%04X device_id=0x%04X vendor=%s match_rank=%d "
-                "dedicated_gb=%.2f name=\"%s\"",
+                "adapter_candidate index=%u vendor_id=0x%04X device_id=0x%04X subsystem_id=0x%08X revision=0x%02X "
+                "pci=%04X:%02X:%02X.%u vendor=%s match_rank=%d dedicated_gb=%.2f name=\"%s\"",
                 adapterIndex,
                 desc.VendorId,
                 desc.DeviceId,
+                desc.SubSysId,
+                desc.Revision,
+                info.pciDomain,
+                info.pciBus,
+                info.pciDevice,
+                info.pciFunction,
                 GpuVendorName(vendor),
                 matchRank,
                 DedicatedVideoMemoryGb(info.dedicatedVideoMemoryBytes),
@@ -203,10 +286,17 @@ GpuAdapterSelection ResolveGpuAdapterSelection(Trace& trace, std::string_view pr
         const GpuVendor vendor = SelectGpuVendor(*selection.selectedAdapter);
         char buffer[320];
         sprintf_s(buffer,
-            "adapter_selected index=%u vendor_id=0x%04X device_id=0x%04X vendor=%s preferred=\"%s\" name=\"%s\"",
+            "adapter_selected index=%u vendor_id=0x%04X device_id=0x%04X subsystem_id=0x%08X revision=0x%02X "
+            "pci=%04X:%02X:%02X.%u vendor=%s preferred=\"%s\" name=\"%s\"",
             selection.selectedAdapter->adapterIndex,
             selection.selectedAdapter->vendorId,
             selection.selectedAdapter->deviceId,
+            selection.selectedAdapter->subSysId,
+            selection.selectedAdapter->revision,
+            selection.selectedAdapter->pciDomain,
+            selection.selectedAdapter->pciBus,
+            selection.selectedAdapter->pciDevice,
+            selection.selectedAdapter->pciFunction,
             GpuVendorName(vendor),
             std::string(preferredAdapterName).c_str(),
             selection.selectedAdapter->adapterName.c_str());

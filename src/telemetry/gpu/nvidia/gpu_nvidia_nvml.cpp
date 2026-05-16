@@ -3,12 +3,16 @@
 #include <windows.h>
 
 #include <array>
+#include <cstdint>
+#include <cstdio>
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 
 #include "telemetry/fps/fps_service_client_provider.h"
 #include "telemetry/gpu/gpu_vendor.h"
+#include "util/strings.h"
 #include "util/trace.h"
 #include "util/utf8.h"
 
@@ -40,6 +44,16 @@ struct NvmlFanSpeedInfo {
     unsigned int speed = 0;
 };
 
+struct NvmlPciInfo {
+    char busIdLegacy[16] = {};
+    unsigned int domain = 0;
+    unsigned int bus = 0;
+    unsigned int device = 0;
+    unsigned int pciDeviceId = 0;
+    unsigned int pciSubSystemId = 0;
+    char busId[32] = {};
+};
+
 constexpr unsigned int NvmlStructVersion(unsigned int size, unsigned int version) {
     return size | (version << 24);
 }
@@ -57,6 +71,7 @@ using NvmlDeviceGetTemperatureFn = NvmlReturn (*)(NvmlDevice, unsigned int, unsi
 using NvmlDeviceGetClockInfoFn = NvmlReturn (*)(NvmlDevice, unsigned int, unsigned int*);
 using NvmlDeviceGetMemoryInfoFn = NvmlReturn (*)(NvmlDevice, NvmlMemory*);
 using NvmlDeviceGetFanSpeedRpmFn = NvmlReturn (*)(NvmlDevice, NvmlFanSpeedInfo*);
+using NvmlDeviceGetPciInfoFn = NvmlReturn (*)(NvmlDevice, NvmlPciInfo*);
 
 template <typename Function> bool LoadFunction(HMODULE module, const char* name, Function& function) {
     function = reinterpret_cast<Function>(GetProcAddress(module, name));
@@ -96,6 +111,13 @@ public:
         loaded = LoadFunction(module_, "nvmlDeviceGetClockInfo", deviceGetClockInfo_) && loaded;
         loaded = LoadFunction(module_, "nvmlDeviceGetMemoryInfo", deviceGetMemoryInfo_) && loaded;
         LoadFunction(module_, "nvmlDeviceGetFanSpeedRPM", deviceGetFanSpeedRpm_);
+        LoadFunction(module_, "nvmlDeviceGetPciInfo_v3", deviceGetPciInfo_);
+        if (deviceGetPciInfo_ == nullptr) {
+            LoadFunction(module_, "nvmlDeviceGetPciInfo_v2", deviceGetPciInfo_);
+        }
+        if (deviceGetPciInfo_ == nullptr) {
+            LoadFunction(module_, "nvmlDeviceGetPciInfo", deviceGetPciInfo_);
+        }
 
         if (!loaded) {
             diagnostics = "NVML library is missing required entry points.";
@@ -160,6 +182,14 @@ public:
         return result;
     }
 
+    std::optional<NvmlReturn> PciInfo(NvmlDevice device, NvmlPciInfo& pci) const {
+        if (deviceGetPciInfo_ == nullptr) {
+            return std::nullopt;
+        }
+        pci = NvmlPciInfo{};
+        return deviceGetPciInfo_(device, &pci);
+    }
+
 private:
     HMODULE module_ = nullptr;
     NvmlInitFn init_ = nullptr;
@@ -173,12 +203,45 @@ private:
     NvmlDeviceGetClockInfoFn deviceGetClockInfo_ = nullptr;
     NvmlDeviceGetMemoryInfoFn deviceGetMemoryInfo_ = nullptr;
     NvmlDeviceGetFanSpeedRpmFn deviceGetFanSpeedRpm_ = nullptr;
+    NvmlDeviceGetPciInfoFn deviceGetPciInfo_ = nullptr;
     bool initialized_ = false;
 };
 
+std::string KnownNvmlName(const std::array<char, 128>& name) {
+    return name[0] != '\0' ? Utf8FromAnsi(name.data()) : std::string();
+}
+
+bool NvmlPackedDeviceIdMatches(unsigned int pciDeviceId, const GpuVendorInfo& adapter) {
+    const unsigned int low = pciDeviceId & 0xffffu;
+    const unsigned int high = (pciDeviceId >> 16) & 0xffffu;
+    return (low == adapter.vendorId && high == adapter.deviceId) ||
+           (low == adapter.deviceId && high == adapter.vendorId);
+}
+
+int NvidiaDeviceMatchRank(const GpuVendorInfo& adapter, const NvmlPciInfo* pci, const std::string& name) {
+    if (pci != nullptr && adapter.hasPciAddress && pci->domain == adapter.pciDomain && pci->bus == adapter.pciBus &&
+        pci->device == adapter.pciDevice) {
+        return 5;
+    }
+    if (pci != nullptr && NvmlPackedDeviceIdMatches(pci->pciDeviceId, adapter) &&
+        (adapter.subSysId == 0 || pci->pciSubSystemId == adapter.subSysId)) {
+        return 4;
+    }
+    if (!adapter.adapterName.empty()) {
+        if (EqualsInsensitive(name, adapter.adapterName)) {
+            return 3;
+        }
+        if (ContainsInsensitive(name, adapter.adapterName) || ContainsInsensitive(adapter.adapterName, name)) {
+            return 2;
+        }
+    }
+    return 1;
+}
+
 class NvidiaNvmlGpuTelemetryProvider final : public GpuVendorTelemetryProvider {
 public:
-    explicit NvidiaNvmlGpuTelemetryProvider(Trace& trace) : trace_(trace) {}
+    NvidiaNvmlGpuTelemetryProvider(Trace& trace, std::optional<GpuVendorInfo> adapter)
+        : trace_(trace), adapter_(std::move(adapter)) {}
 
     bool Initialize() override {
         trace_.Write(TracePrefix::NvidiaNvml, "initialize_begin");
@@ -203,21 +266,10 @@ public:
             return false;
         }
 
-        result = nvml_.DeviceHandleByIndex(0, device_);
-        trace_.Write(TracePrefix::NvidiaNvml,
-            "get_device result=\"" + nvml_.ResultText(result) + "\" available=" + Trace::BoolText(device_ != nullptr));
-        if (result != kNvmlSuccess || device_ == nullptr) {
-            diagnostics_ = "NVML failed to open first NVIDIA GPU: device=" + nvml_.ResultText(result);
+        if (!SelectDevice(deviceCount)) {
             return false;
         }
 
-        std::array<char, 128> name{};
-        const NvmlReturn nameResult = nvml_.DeviceName(device_, name.data(), static_cast<unsigned int>(name.size()));
-        trace_.Write(TracePrefix::NvidiaNvml,
-            "get_name result=\"" + nvml_.ResultText(nameResult) + "\" has_name=" + Trace::BoolText(name[0] != '\0'));
-        if (nameResult == kNvmlSuccess && name[0] != '\0') {
-            gpuName_ = Utf8FromAnsi(name.data());
-        }
         if (gpuName_.empty()) {
             gpuName_ = "NVIDIA GPU";
         }
@@ -346,6 +398,66 @@ public:
     }
 
 private:
+    bool SelectDevice(unsigned int deviceCount) {
+        int bestRank = -1;
+        NvmlDevice bestDevice = nullptr;
+        std::string bestName;
+        std::string bestMatch = "fallback";
+        NvmlReturn bestResult = kNvmlSuccess;
+
+        for (unsigned int index = 0; index < deviceCount; ++index) {
+            NvmlDevice candidate = nullptr;
+            const NvmlReturn handleResult = nvml_.DeviceHandleByIndex(index, candidate);
+            std::array<char, 128> name{};
+            const NvmlReturn nameResult =
+                candidate != nullptr ? nvml_.DeviceName(candidate, name.data(), static_cast<unsigned int>(name.size()))
+                                     : handleResult;
+            NvmlPciInfo pci{};
+            const std::optional<NvmlReturn> pciResult =
+                candidate != nullptr ? nvml_.PciInfo(candidate, pci) : std::nullopt;
+            const bool pciOk = pciResult.has_value() && *pciResult == kNvmlSuccess;
+            const std::string candidateName = nameResult == kNvmlSuccess ? KnownNvmlName(name) : std::string();
+            const int rank = candidate != nullptr && adapter_.has_value()
+                                 ? NvidiaDeviceMatchRank(*adapter_, pciOk ? &pci : nullptr, candidateName)
+                                 : (candidate != nullptr ? 1 : 0);
+            trace_.Write(TracePrefix::NvidiaNvml,
+                "device_candidate index=" + std::to_string(index) + " handle_result=\"" +
+                    nvml_.ResultText(handleResult) + "\" name_result=\"" + nvml_.ResultText(nameResult) +
+                    "\" pci_result=\"" +
+                    (pciResult.has_value() ? nvml_.ResultText(*pciResult) : std::string("unavailable")) +
+                    "\" pci=" + std::to_string(pci.domain) + ":" + std::to_string(pci.bus) + ":" +
+                    std::to_string(pci.device) + " pci_device_id=0x" + HexId(pci.pciDeviceId, 8) + " subsystem_id=0x" +
+                    HexId(pci.pciSubSystemId, 8) + " match_rank=" + std::to_string(rank) + " name=\"" + candidateName +
+                    "\"");
+            if (candidate != nullptr && rank > bestRank) {
+                bestRank = rank;
+                bestDevice = candidate;
+                bestName = candidateName;
+                bestResult = handleResult;
+                bestMatch = rank >= 5 ? "pci" : (rank >= 4 ? "device_id" : (rank >= 2 ? "name" : "fallback"));
+            }
+        }
+
+        device_ = bestDevice;
+        gpuName_ = bestMatch == "pci" && adapter_.has_value() && !adapter_->adapterName.empty() ? adapter_->adapterName
+                                                                                                : bestName;
+        trace_.Write(TracePrefix::NvidiaNvml,
+            "device_selected match=\"" + bestMatch + "\" rank=" + std::to_string(bestRank) + " display_name=\"" +
+                gpuName_ + "\" selected_adapter=\"" + (adapter_.has_value() ? adapter_->adapterName : std::string()) +
+                "\"");
+        if (device_ == nullptr) {
+            diagnostics_ = "NVML failed to open selected NVIDIA GPU: device=" + nvml_.ResultText(bestResult);
+            return false;
+        }
+        return true;
+    }
+
+    static std::string HexId(unsigned int value, int width) {
+        char buffer[16];
+        sprintf_s(buffer, "%0*X", width, value);
+        return buffer;
+    }
+
     bool HasFanSpeedRpm() const {
         unsigned int fanRpm = 0;
         const std::optional<NvmlReturn> result = device_ != nullptr ? nvml_.FanSpeedRpm(device_, fanRpm) : std::nullopt;
@@ -355,6 +467,7 @@ private:
     Trace& trace_;
     NvmlLibrary nvml_;
     NvmlDevice device_ = nullptr;
+    std::optional<GpuVendorInfo> adapter_;
     std::string gpuName_;
     std::string diagnostics_ = "NVML provider not initialized.";
     std::string fpsDiagnostics_ = "Presented FPS ETW provider not initialized.";
@@ -365,6 +478,7 @@ private:
 
 }  // namespace
 
-std::unique_ptr<GpuVendorTelemetryProvider> CreateNvidiaGpuTelemetryProvider(Trace& trace) {
-    return std::make_unique<NvidiaNvmlGpuTelemetryProvider>(trace);
+std::unique_ptr<GpuVendorTelemetryProvider> CreateNvidiaGpuTelemetryProvider(
+    Trace& trace, std::optional<GpuVendorInfo> adapter) {
+    return std::make_unique<NvidiaNvmlGpuTelemetryProvider>(trace, std::move(adapter));
 }

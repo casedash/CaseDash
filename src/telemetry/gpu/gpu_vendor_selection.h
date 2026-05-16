@@ -16,6 +16,13 @@ struct GpuVendorInfo {
     unsigned int adapterIndex = 0;
     std::uint64_t dedicatedVideoMemoryBytes = 0;
     unsigned int deviceId = 0;
+    unsigned int subSysId = 0;
+    unsigned int revision = 0;
+    bool hasPciAddress = false;
+    unsigned int pciDomain = 0;
+    unsigned int pciBus = 0;
+    unsigned int pciDevice = 0;
+    unsigned int pciFunction = 0;
 };
 
 struct GpuAdapterCandidate {

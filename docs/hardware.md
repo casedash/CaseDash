@@ -11,6 +11,7 @@ See also: [docs/specifications.md](specifications.md) for general product behavi
 - GPU telemetry selects the supported hardware provider from the configured GPU adapter identity. Empty GPU configuration selects the first non-software DXGI adapter.
 - On hybrid laptops, the integrated adapter can be the first DXGI adapter even when a discrete GPU is also installed; selecting a different adapter in the dashboard devices menu recreates the matching vendor provider for that adapter.
 - The displayed GPU product name uses the selected DXGI adapter description when available; provider diagnostics can still include lower-level runtime device names.
+- Vendor GPU providers match their runtime device handle to the selected DXGI adapter by PCI identity when the driver API exposes enough detail, then fall back to provider name matching.
 - Board telemetry selects the supported hardware provider from the baseboard manufacturer.
 - Trace output can include `gpu_vendor:*` and `board_vendor:*` selection details, provider-specific diagnostics, and unsupported-provider fallback markers.
 - Layout metric references are the source of truth for requested logical board metrics. The `[board]` mapping connects logical names to provider-specific sensor names.
@@ -19,7 +20,7 @@ See also: [docs/specifications.md](specifications.md) for general product behavi
 ## Adding Hardware Support
 
 - Provider selection stays split into three steps: extract vendor info, map vendor info to the vendor enum, and create the matching provider.
-- GPU extraction reads the selected non-software DXGI adapter identity into `GpuVendorInfo`, including the PCI vendor id, PCI device id, adapter index, dedicated-memory size, and adapter name.
+- GPU extraction reads the selected non-software DXGI adapter identity into `GpuVendorInfo`, including PCI vendor id, PCI device id, subsystem id, revision, PCI bus address when Windows reports it, adapter index, dedicated-memory size, and adapter name.
 - Board extraction reads baseboard registry strings into `BoardVendorInfo`, including manufacturer and product.
 - Vendor mapping lives in `src/telemetry/gpu/gpu_vendor_selection.*` and `src/telemetry/board/board_vendor_selection.*`; provider factories instantiate modules only after that mapping returns a supported enum value.
 - Each added GPU or board hardware module extends `tests/hardware_vendor_selection_tests.cpp` with a known-machine fixture from hardware that has actually run CaseDash. Record the GPU vendor id and adapter string for GPU support, the board manufacturer and product strings for board support, and the expected vendor enum values.
