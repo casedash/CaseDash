@@ -23,12 +23,14 @@ std::optional<BoardMetricBindingTarget> ResolveMetricBoardBindingTarget(std::str
         return BoardMetricBindingTarget{
             BoardMetricBindingKind::Temperature,
             std::string(metricId.substr(kBoardTemperatureMetricPrefix.size())),
+            false,
         };
     }
     if (metricId.rfind(kBoardFanMetricPrefix, 0) == 0) {
         return BoardMetricBindingTarget{
             BoardMetricBindingKind::Fan,
             std::string(metricId.substr(kBoardFanMetricPrefix.size())),
+            false,
         };
     }
     for (const MetricFallbackBoardBinding& fallback : kMetricFallbackBoardBindings) {
@@ -36,8 +38,27 @@ std::optional<BoardMetricBindingTarget> ResolveMetricBoardBindingTarget(std::str
             return BoardMetricBindingTarget{
                 fallback.kind,
                 std::string(fallback.logicalName),
+                true,
             };
         }
     }
     return std::nullopt;
+}
+
+bool ShouldExposeMetricBoardBinding(
+    std::string_view metricId, const std::vector<MetricBoardBindingUse>& activeBindings) {
+    const auto target = ResolveMetricBoardBindingTarget(metricId);
+    if (!target.has_value()) {
+        return false;
+    }
+    if (!target->fallback) {
+        return true;
+    }
+    for (const MetricBoardBindingUse& activeBinding : activeBindings) {
+        if (activeBinding.metricId == metricId && activeBinding.target.kind == target->kind &&
+            activeBinding.target.logicalName == target->logicalName) {
+            return true;
+        }
+    }
+    return false;
 }

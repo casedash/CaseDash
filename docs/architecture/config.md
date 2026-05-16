@@ -18,6 +18,6 @@
 
 - `config` may depend only on `config` and `util`.
 - Config parsing does not reach upward into telemetry, widgets, dashboard UI, diagnostics, or renderer implementation details.
-- Telemetry fallback, layout binding collection, and layout edit dialog controls consume the config-owned board-binding resolver instead of carrying separate fallback target tables.
+- Telemetry fallback, layout binding collection, and layout edit dialog controls consume the config-owned board-binding resolver and runtime active-binding helper instead of carrying separate fallback target tables.
 - Runtime-only placeholder metric metadata stays outside persisted config so `[metrics]` remains limited to configurable metric definitions.
 - C++-side synthesized fallback layout, card, widget, font, color, or styling defaults do not duplicate the embedded template.

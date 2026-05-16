@@ -77,6 +77,7 @@ public:
         dump.boardProvider.providerName = state_->board_.providerName;
         dump.boardProvider.diagnostics = state_->board_.providerDiagnostics;
         dump.boardProvider.available = state_->board_.providerAvailable;
+        dump.activeMetricBoardBindings = state_->activeMetricBoardBindings_;
         return dump;
     }
 

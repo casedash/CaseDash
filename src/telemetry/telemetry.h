@@ -10,6 +10,7 @@
 #include <string_view>
 #include <vector>
 
+#include "config/metric_board_binding.h"
 #include "config/telemetry_settings.h"
 #include "telemetry/board/board_vendor.h"
 #include "telemetry/gpu/gpu_vendor_selection.h"
@@ -130,6 +131,7 @@ struct TelemetryDump {
     SystemSnapshot snapshot;
     GpuProviderTelemetryState gpuProvider;
     BoardVendorTelemetrySample boardProvider;
+    std::vector<MetricBoardBindingUse> activeMetricBoardBindings;
 };
 
 struct TelemetryUpdate {

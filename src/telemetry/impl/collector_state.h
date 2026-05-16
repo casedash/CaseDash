@@ -90,6 +90,7 @@ struct RealTelemetryCollectorState {
     TelemetrySettings settings_;
     ResolvedTelemetrySelections resolvedSelections_;
     SystemSnapshot snapshot_;
+    std::vector<MetricBoardBindingUse> activeMetricBoardBindings_;
     BoardState board_;
     CpuState cpu_;
     GpuState gpu_;

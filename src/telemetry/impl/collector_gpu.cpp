@@ -119,6 +119,11 @@ std::optional<double> FindBoardFanRpm(const SystemSnapshot& snapshot, const std:
     return std::nullopt;
 }
 
+void RecordActiveMetricBoardBinding(
+    RealTelemetryCollectorState& state, std::string_view metricId, const BoardMetricBindingTarget& target) {
+    state.activeMetricBoardBindings_.push_back(MetricBoardBindingUse{std::string(metricId), target});
+}
+
 void ApplyBoardGpuFanFallback(RealTelemetryCollectorState& state) {
     if (state.snapshot_.gpu.fan.value.has_value()) {
         return;
@@ -130,6 +135,7 @@ void ApplyBoardGpuFanFallback(RealTelemetryCollectorState& state) {
     if (auto fanRpm = FindBoardFanRpm(state.snapshot_, target->logicalName); fanRpm.has_value()) {
         state.snapshot_.gpu.fan.value = *fanRpm;
         state.snapshot_.gpu.fan.unit = ScalarMetricUnit::Rpm;
+        RecordActiveMetricBoardBinding(state, kGpuFanMetricId, *target);
     }
 }
 
@@ -158,6 +164,7 @@ void ApplyIntelCpuTemperatureFallback(RealTelemetryCollectorState& state) {
         cpuTemperatureC.has_value()) {
         state.snapshot_.gpu.temperature.value = *cpuTemperatureC;
         state.snapshot_.gpu.temperature.unit = ScalarMetricUnit::Celsius;
+        RecordActiveMetricBoardBinding(state, kGpuTemperatureMetricId, *target);
         state.trace_.WriteLazy(TracePrefix::Telemetry, [&] {
             return "gpu_temperature_cpu_fallback temperature_c=" +
                    Trace::FormatValueDouble("value", *cpuTemperatureC, 1);
@@ -276,6 +283,7 @@ void ReconfigureGpuCollector(RealTelemetryCollectorState& state) {
 }
 
 void UpdateGpuMetrics(RealTelemetryCollectorState& state) {
+    state.activeMetricBoardBindings_.clear();
     bool hasVendorLoad = false;
     bool hasVendorVram = false;
 

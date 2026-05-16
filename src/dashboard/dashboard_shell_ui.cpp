@@ -640,7 +640,15 @@ const AppConfig& DashboardShellUi::CurrentConfig() const {
     return app_.controller_.State().config;
 }
 
+bool DashboardShellUi::ShouldShowMetricBoardBinding(const LayoutMetricEditKey& key) const {
+    const auto& state = app_.controller_.State();
+    return ShouldExposeMetricBoardBinding(key.metricId, state.telemetryUpdate.dump.activeMetricBoardBindings);
+}
+
 std::vector<std::string> DashboardShellUi::AvailableBoardMetricSensorBindings(const LayoutMetricEditKey& key) const {
+    if (!ShouldShowMetricBoardBinding(key)) {
+        return {};
+    }
     const auto target = ResolveMetricBoardBindingTarget(key.metricId);
     if (!target.has_value()) {
         return {};

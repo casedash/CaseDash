@@ -31,3 +31,17 @@ TEST(BoardMetricBinding, IgnoresMetricsWithoutBoardBindingEditors) {
     EXPECT_FALSE(ResolveMetricBoardBindingTarget("gpu.load").has_value());
     EXPECT_FALSE(ResolveMetricBoardBindingTarget("cpu.fan").has_value());
 }
+
+TEST(BoardMetricBinding, ExposesDirectBoardBindingsWithoutRuntimeFallbackUse) {
+    EXPECT_TRUE(ShouldExposeMetricBoardBinding("board.temp.cpu", {}));
+    EXPECT_TRUE(ShouldExposeMetricBoardBinding("board.fan.system", {}));
+}
+
+TEST(BoardMetricBinding, ExposesFallbackBindingsOnlyWhenRuntimeUsesThem) {
+    const auto gpuFan = ResolveMetricBoardBindingTarget("gpu.fan");
+    ASSERT_TRUE(gpuFan.has_value());
+
+    EXPECT_FALSE(ShouldExposeMetricBoardBinding("gpu.fan", {}));
+    EXPECT_FALSE(ShouldExposeMetricBoardBinding("gpu.temp", {MetricBoardBindingUse{"gpu.fan", *gpuFan}}));
+    EXPECT_TRUE(ShouldExposeMetricBoardBinding("gpu.fan", {MetricBoardBindingUse{"gpu.fan", *gpuFan}}));
+}
