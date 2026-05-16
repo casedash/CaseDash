@@ -3,6 +3,16 @@
 This document owns supported hardware-provider details, provider runtime requirements, provider-specific telemetry behavior, and provider troubleshooting.
 See also: [docs/specifications.md](specifications.md) for general product behavior, [docs/build.md](build.md) for build and developer setup, [docs/diagnostics.md](diagnostics.md) for diagnostics commands, and [docs/architecture/telemetry.md](architecture/telemetry.md) for telemetry package structure.
 
+## Support At A Glance
+
+- [AMD](#amd) - Radeon GPU telemetry through AMD ADLX.
+- [Intel](#intel) - Intel GPU telemetry through Level Zero Sysman.
+- [NVIDIA](#nvidia) - NVIDIA GPU telemetry through NVML.
+- [Presented FPS](#presented-fps) - active presenting-application FPS through Windows present-event telemetry and the CaseDash service.
+- [ASUS](#asus) - board CPU temperature and fan telemetry through Armoury Crate or ASUS System Control Interface ATKACPI.
+- [MSI](#msi) - board temperature and fan telemetry through MSI Center SDK.
+- [Gigabyte](#gigabyte) - board temperature and fan telemetry through Gigabyte SIV.
+
 ## Provider Model
 
 - CaseDash uses Windows-native telemetry for generic CPU, memory, network, storage, drive activity, clock, and presented-FPS data.
