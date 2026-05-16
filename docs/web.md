@@ -88,7 +88,7 @@ It includes:
 - The `Contributions` eyebrow.
 - The heading `Bring your hardware and ideas`.
 - Short copy inviting code, issues, sketches, ideas, themes, layouts, telemetry providers, localization, and practical feedback.
-- Copy explaining that provider work needs owners with matching hardware, SDKs, and patience.
+- Copy explaining that the most useful code contributions are new hardware providers, and that new hardware support is especially valuable when it comes from the owners of real machines and from someone who can test the result.
 - Repository and Issues links.
 
 ## Design System
