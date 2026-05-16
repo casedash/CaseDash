@@ -184,7 +184,11 @@ void ReplaceOrAppendKey(std::vector<std::string>& lines,
     }
 
     if (appendWhenMissing) {
-        lines.insert(lines.begin() + static_cast<std::ptrdiff_t>(sectionEnd), key + " = " + value);
+        size_t appendIndex = sectionEnd;
+        while (appendIndex > sectionStart + 1 && Trim(lines[appendIndex - 1]).empty()) {
+            --appendIndex;
+        }
+        lines.insert(lines.begin() + static_cast<std::ptrdiff_t>(appendIndex), key + " = " + value);
     }
 }
 
