@@ -91,7 +91,7 @@ std::unique_ptr<GpuVendorTelemetryProvider> CreateGpuVendorProviderForVendor(
         return CreateAmdGpuTelemetryProvider(trace);
     }
     if (vendor == GpuVendor::Intel) {
-        return CreateIntelGpuTelemetryProvider(trace, adapter.has_value() ? adapter->adapterName : std::string());
+        return CreateIntelGpuTelemetryProvider(trace, adapter);
     }
     return std::make_unique<UnsupportedGpuTelemetryProvider>(trace, std::move(adapter));
 }
@@ -145,8 +145,11 @@ GpuAdapterSelection ResolveGpuAdapterSelection(Trace& trace, std::string_view pr
         const bool software = SUCCEEDED(descHr) && (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) != 0;
         const std::string adapterName = SUCCEEDED(descHr) ? Utf8FromWide(desc.Description) : std::string();
         if (SUCCEEDED(descHr) && !software) {
-            GpuVendorInfo info{
-                desc.VendorId, adapterName, adapterIndex, static_cast<std::uint64_t>(desc.DedicatedVideoMemory)};
+            GpuVendorInfo info{desc.VendorId,
+                adapterName,
+                adapterIndex,
+                static_cast<std::uint64_t>(desc.DedicatedVideoMemory),
+                desc.DeviceId};
             const GpuVendor vendor = SelectGpuVendor(info);
             const int matchRank = PreferredGpuAdapterMatchRank(adapterName, preferredAdapterName);
             const bool select = !selection.selectedAdapter.has_value() ||
@@ -170,9 +173,11 @@ GpuAdapterSelection ResolveGpuAdapterSelection(Trace& trace, std::string_view pr
 
             char buffer[320];
             sprintf_s(buffer,
-                "adapter_candidate index=%u vendor_id=0x%04X vendor=%s match_rank=%d dedicated_gb=%.2f name=\"%s\"",
+                "adapter_candidate index=%u vendor_id=0x%04X device_id=0x%04X vendor=%s match_rank=%d "
+                "dedicated_gb=%.2f name=\"%s\"",
                 adapterIndex,
                 desc.VendorId,
+                desc.DeviceId,
                 GpuVendorName(vendor),
                 matchRank,
                 DedicatedVideoMemoryGb(info.dedicatedVideoMemoryBytes),
@@ -198,9 +203,10 @@ GpuAdapterSelection ResolveGpuAdapterSelection(Trace& trace, std::string_view pr
         const GpuVendor vendor = SelectGpuVendor(*selection.selectedAdapter);
         char buffer[320];
         sprintf_s(buffer,
-            "adapter_selected index=%u vendor_id=0x%04X vendor=%s preferred=\"%s\" name=\"%s\"",
+            "adapter_selected index=%u vendor_id=0x%04X device_id=0x%04X vendor=%s preferred=\"%s\" name=\"%s\"",
             selection.selectedAdapter->adapterIndex,
             selection.selectedAdapter->vendorId,
+            selection.selectedAdapter->deviceId,
             GpuVendorName(vendor),
             std::string(preferredAdapterName).c_str(),
             selection.selectedAdapter->adapterName.c_str());

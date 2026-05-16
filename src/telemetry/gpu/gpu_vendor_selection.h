@@ -15,6 +15,7 @@ struct GpuVendorInfo {
     std::string adapterName;
     unsigned int adapterIndex = 0;
     std::uint64_t dedicatedVideoMemoryBytes = 0;
+    unsigned int deviceId = 0;
 };
 
 struct GpuAdapterCandidate {

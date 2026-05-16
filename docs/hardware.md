@@ -19,7 +19,7 @@ See also: [docs/specifications.md](specifications.md) for general product behavi
 ## Adding Hardware Support
 
 - Provider selection stays split into three steps: extract vendor info, map vendor info to the vendor enum, and create the matching provider.
-- GPU extraction reads the selected non-software DXGI adapter identity into `GpuVendorInfo`, including the PCI vendor id, adapter index, dedicated-memory size, and adapter name.
+- GPU extraction reads the selected non-software DXGI adapter identity into `GpuVendorInfo`, including the PCI vendor id, PCI device id, adapter index, dedicated-memory size, and adapter name.
 - Board extraction reads baseboard registry strings into `BoardVendorInfo`, including manufacturer and product.
 - Vendor mapping lives in `src/telemetry/gpu/gpu_vendor_selection.*` and `src/telemetry/board/board_vendor_selection.*`; provider factories instantiate modules only after that mapping returns a supported enum value.
 - Each added GPU or board hardware module extends `tests/hardware_vendor_selection_tests.cpp` with a known-machine fixture from hardware that has actually run CaseDash. Record the GPU vendor id and adapter string for GPU support, the board manufacturer and product strings for board support, and the expected vendor enum values.

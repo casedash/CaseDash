@@ -9,6 +9,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -257,6 +258,31 @@ std::string KnownAnsiString(const char* text) {
     return value.empty() || EqualsInsensitive(value, "unknown") ? std::string{} : value;
 }
 
+int AdapterNameMatchRank(const ZesDeviceProperties& properties, const std::string& adapterName) {
+    if (adapterName.empty()) {
+        return 0;
+    }
+
+    const std::string names[] = {
+        KnownAnsiString(properties.modelName),
+        KnownAnsiString(properties.brandName),
+        KnownAnsiString(properties.core.name),
+    };
+    int bestRank = 0;
+    for (const std::string& name : names) {
+        if (name.empty()) {
+            continue;
+        }
+        if (EqualsInsensitive(name, adapterName)) {
+            return 2;
+        }
+        if (ContainsInsensitive(name, adapterName) || ContainsInsensitive(adapterName, name)) {
+            bestRank = 1;
+        }
+    }
+    return bestRank;
+}
+
 bool IsKnownMetric(double value) {
     return std::isfinite(value) && value >= 0.0;
 }
@@ -502,8 +528,8 @@ struct MemorySample {
 
 class IntelLevelZeroGpuTelemetryProvider final : public GpuVendorTelemetryProvider {
 public:
-    IntelLevelZeroGpuTelemetryProvider(Trace& trace, std::string adapterName)
-        : trace_(trace), adapterName_(std::move(adapterName)) {}
+    IntelLevelZeroGpuTelemetryProvider(Trace& trace, std::optional<GpuVendorInfo> adapter)
+        : trace_(trace), adapter_(std::move(adapter)) {}
 
     bool Initialize() override {
         trace_.Write(TracePrefix::IntelLevelZero, "initialize_begin");
@@ -596,8 +622,8 @@ public:
 
         const std::optional<MemorySample> memory = QueryMemory();
         trace_.WriteLazy(TracePrefix::IntelLevelZero, [&] {
-            return memory.has_value() ? "get_memory used_gb=" + Trace::FormatValueDouble("value", memory->usedGb, 2) +
-                                            " total_gb=" + Trace::FormatValueDouble("value", memory->totalGb, 2)
+            return memory.has_value() ? "get_memory " + Trace::FormatValueDouble("used_gb", memory->usedGb, 2) + " " +
+                                            Trace::FormatValueDouble("total_gb", memory->totalGb, 2)
                                       : "get_memory used_gb=N/A total_gb=N/A";
         });
         if (memory.has_value()) {
@@ -653,6 +679,11 @@ private:
             return false;
         }
 
+        ZesDevice fallbackDevice = nullptr;
+        ZesDeviceProperties fallbackProperties;
+        int fallbackNameRank = -1;
+        std::string fallbackMatch = "fallback";
+
         for (size_t driverIndex = 0; driverIndex < drivers.size(); ++driverIndex) {
             std::vector<ZesDevice> devices;
             const ZeResult deviceResult = levelZero_.Devices(drivers[driverIndex], devices);
@@ -669,20 +700,38 @@ private:
                 const bool intelGpu = propertiesResult == kZeResultSuccess &&
                                       properties.core.vendorId == kIntelVendorId &&
                                       properties.core.type == kZeDeviceTypeGpu;
+                const bool deviceIdMatch = intelGpu && adapter_.has_value() && adapter_->deviceId != 0 &&
+                                           properties.core.deviceId == adapter_->deviceId;
+                const int nameMatchRank =
+                    intelGpu && adapter_.has_value() ? AdapterNameMatchRank(properties, adapter_->adapterName) : 0;
                 trace_.Write(TracePrefix::IntelLevelZero,
                     "device_properties driver=" + std::to_string(driverIndex) +
                         " device=" + std::to_string(deviceIndex) + " result=\"" + ResultCodeString(propertiesResult) +
-                        "\" vendor_id=0x" + VendorIdText(properties.core.vendorId) +
-                        " type=" + std::to_string(properties.core.type) + " selected=" + Trace::BoolText(intelGpu));
+                        "\" vendor_id=0x" + VendorIdText(properties.core.vendorId) + " device_id=0x" +
+                        VendorIdText(properties.core.deviceId) + " type=" + std::to_string(properties.core.type) +
+                        " device_id_match=" + Trace::BoolText(deviceIdMatch) +
+                        " name_match_rank=" + std::to_string(nameMatchRank) +
+                        " selected=" + Trace::BoolText(intelGpu && (!adapter_.has_value() || deviceIdMatch)));
                 if (!intelGpu) {
                     continue;
                 }
 
-                device_ = devices[deviceIndex];
-                sysmanGpuName_ = ResolveGpuName(properties);
-                gpuName_ = adapterName_.empty() ? sysmanGpuName_ : adapterName_;
-                return true;
+                if (!adapter_.has_value() || deviceIdMatch) {
+                    SelectDevice(devices[deviceIndex], properties, adapter_.has_value() ? "device_id" : "first");
+                    return true;
+                }
+                if (nameMatchRank > fallbackNameRank) {
+                    fallbackDevice = devices[deviceIndex];
+                    fallbackProperties = properties;
+                    fallbackNameRank = nameMatchRank;
+                    fallbackMatch = nameMatchRank > 0 ? "name" : "fallback";
+                }
             }
+        }
+
+        if (fallbackDevice != nullptr) {
+            SelectDevice(fallbackDevice, fallbackProperties, fallbackMatch.c_str());
+            return true;
         }
 
         diagnostics_ = "Level Zero Sysman found no Intel GPU devices.";
@@ -706,6 +755,19 @@ private:
         }
         name = KnownAnsiString(properties.core.name);
         return name.empty() ? std::string("Intel GPU") : name;
+    }
+
+    void SelectDevice(ZesDevice device, const ZesDeviceProperties& properties, const char* matchKind) {
+        device_ = device;
+        sysmanGpuName_ = ResolveGpuName(properties);
+        gpuName_ = matchKind != nullptr && std::string_view(matchKind) == "device_id" && adapter_.has_value() &&
+                           !adapter_->adapterName.empty()
+                       ? adapter_->adapterName
+                       : sysmanGpuName_;
+        trace_.Write(TracePrefix::IntelLevelZero,
+            "device_selected match=\"" + std::string(matchKind != nullptr ? matchKind : "unknown") +
+                "\" sysman_name=\"" + sysmanGpuName_ + "\" display_name=\"" + gpuName_ + "\" selected_adapter=\"" +
+                (adapter_.has_value() ? adapter_->adapterName : std::string()) + "\"");
     }
 
     void EnumerateMetricHandles() {
@@ -932,7 +994,7 @@ private:
     Trace& trace_;
     LevelZeroLibrary levelZero_;
     ZesDevice device_ = nullptr;
-    std::string adapterName_;
+    std::optional<GpuVendorInfo> adapter_;
     std::string sysmanGpuName_ = "Intel GPU";
     std::string gpuName_ = "Intel GPU";
     std::string diagnostics_ = "Level Zero provider not initialized.";
@@ -954,6 +1016,7 @@ private:
 
 }  // namespace
 
-std::unique_ptr<GpuVendorTelemetryProvider> CreateIntelGpuTelemetryProvider(Trace& trace, std::string adapterName) {
-    return std::make_unique<IntelLevelZeroGpuTelemetryProvider>(trace, std::move(adapterName));
+std::unique_ptr<GpuVendorTelemetryProvider> CreateIntelGpuTelemetryProvider(
+    Trace& trace, std::optional<GpuVendorInfo> adapter) {
+    return std::make_unique<IntelLevelZeroGpuTelemetryProvider>(trace, std::move(adapter));
 }
