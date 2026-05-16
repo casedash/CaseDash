@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include "telemetry/gpu/gpu_vendor_selection.h"
 #include "telemetry/impl/collector_state.h"
 #include "telemetry/impl/collector_support.h"
 #include "util/numeric_safety.h"
@@ -124,6 +125,33 @@ void ApplyBoardGpuFanFallback(RealTelemetryCollectorState& state) {
     if (auto fanRpm = FindBoardGpuFanRpm(state.snapshot_); fanRpm.has_value()) {
         state.snapshot_.gpu.fan.value = *fanRpm;
         state.snapshot_.gpu.fan.unit = ScalarMetricUnit::Rpm;
+    }
+}
+
+std::optional<double> FindBoardCpuTemperatureC(const SystemSnapshot& snapshot) {
+    for (const auto& temperature : snapshot.boardTemperatures) {
+        if (temperature.name == "cpu") {
+            return FiniteOptional(temperature.metric.value);
+        }
+    }
+    return std::nullopt;
+}
+
+bool IsSelectedIntelGpu(const RealTelemetryCollectorState& state) {
+    return state.gpu_.selectedAdapter.has_value() && SelectGpuVendor(*state.gpu_.selectedAdapter) == GpuVendor::Intel;
+}
+
+void ApplyIntelCpuTemperatureFallback(RealTelemetryCollectorState& state) {
+    if (state.snapshot_.gpu.temperature.value.has_value() || !IsSelectedIntelGpu(state)) {
+        return;
+    }
+    if (auto cpuTemperatureC = FindBoardCpuTemperatureC(state.snapshot_); cpuTemperatureC.has_value()) {
+        state.snapshot_.gpu.temperature.value = *cpuTemperatureC;
+        state.snapshot_.gpu.temperature.unit = ScalarMetricUnit::Celsius;
+        state.trace_.WriteLazy(TracePrefix::Telemetry, [&] {
+            return "gpu_temperature_cpu_fallback temperature_c=" +
+                   Trace::FormatValueDouble("value", *cpuTemperatureC, 1);
+        });
     }
 }
 
@@ -253,6 +281,7 @@ void UpdateGpuMetrics(RealTelemetryCollectorState& state) {
         });
     }
     ApplyBoardGpuFanFallback(state);
+    ApplyIntelCpuTemperatureFallback(state);
 
     if (!hasVendorLoad && state.gpu_.query != nullptr) {
         const PDH_STATUS collectStatus = PdhCollectQueryData(state.gpu_.query);

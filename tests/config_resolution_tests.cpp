@@ -66,6 +66,21 @@ TEST(ConfigResolution, CollectsGpuFanFallbackBoardBindingFromGpuFanMetric) {
     EXPECT_EQ(selection.boardFanNames[1], "cpu");
 }
 
+TEST(ConfigResolution, CollectsCpuTemperatureFallbackBoardBindingFromGpuTemperatureMetric) {
+    LayoutConfig layout;
+    LayoutCardConfig card;
+    card.id = "gpu";
+    card.layout = MakeContainerNode("rows",
+        {MakeWidgetNode("metric_list", "gpu.temp, gpu.clock"), MakeWidgetNode("metric_list", "board.temp.vrm")});
+    layout.cards.push_back(card);
+
+    const LayoutBindingSelection selection = CollectLayoutBindings(layout);
+
+    ASSERT_EQ(selection.boardTemperatureNames.size(), 2u);
+    EXPECT_EQ(selection.boardTemperatureNames[0], "cpu");
+    EXPECT_EQ(selection.boardTemperatureNames[1], "vrm");
+}
+
 TEST(ConfigResolution, NormalizesConfiguredDrivesAndRemovesDuplicates) {
     const std::vector<std::string> drives = NormalizeConfiguredDrives({" c", "D:", "c\\", "", "1", "d"});
 

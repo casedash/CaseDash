@@ -15,7 +15,7 @@ See also: [docs/specifications.md](specifications.md) for general product behavi
 - Board telemetry selects the supported hardware provider from the baseboard manufacturer.
 - Trace output can include `gpu_vendor:*` and `board_vendor:*` selection details, provider-specific diagnostics, and unsupported-provider fallback markers.
 - Layout metric references are the source of truth for requested logical board metrics. The `[board]` mapping connects logical names to provider-specific sensor names.
-- Empty CPU, GPU, and system board bindings use first-use auto-detection from the active provider's sensor names; otherwise, bound board metrics resolve when the mapped sensor exists. The GPU board fan binding is requested by `gpu.fan` as a fallback source and does not need to appear as a `board.fan.gpu` widget metric.
+- Empty CPU, GPU, and system board bindings use first-use auto-detection from the active provider's sensor names; otherwise, bound board metrics resolve when the mapped sensor exists. The GPU board fan binding is requested by `gpu.fan` as a fallback source and does not need to appear as a `board.fan.gpu` widget metric. The CPU board temperature binding is requested by `gpu.temp` as the Intel fallback source.
 
 ## Adding Hardware Support
 
@@ -56,7 +56,7 @@ Troubleshooting:
 - Supported hardware family: Intel GPU telemetry.
 - Runtime dependency: Intel display driver with the Level Zero Sysman loader (`ze_loader.dll`) available.
 - Metrics include provider-supplied GPU telemetry such as engine load, temperature, clock, device-local memory, and fan speed when the driver exposes those Sysman components.
-- Integrated GPUs commonly expose no device-local memory or fan component; in those cases CaseDash keeps VRAM on the generic Windows dedicated-memory fallback and renders fan speed unavailable.
+- Integrated GPUs commonly expose no device-local memory or fan component; in those cases CaseDash keeps VRAM on the generic Windows dedicated-memory fallback and renders fan speed unavailable. When Level Zero exposes no native temperature sensor for the selected Intel GPU, CaseDash falls back to the resolved board CPU temperature for `gpu.temp` because integrated CPU and GPU telemetry describe the same package temperature source.
 - Presented FPS is the smoothed rolling presented-FPS rate from Windows DXGI, D3D9, or fallback DxgKrnl ETW present events because Level Zero Sysman has no native game-FPS metric.
 - Trace output can include `intel_level_zero:*` provider details and `unsupported_gpu` fallback markers.
 
