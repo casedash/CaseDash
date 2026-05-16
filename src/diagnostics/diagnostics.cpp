@@ -36,13 +36,18 @@ namespace {
 constexpr wchar_t kAppendBinaryMode[] = L"ab";  // _wfopen_s mode string follows the widened trace path.
 constexpr wchar_t kWriteBinaryMode[] = L"wb";   // _wfopen_s mode string follows the widened output path.
 
-bool TryParseInteger(std::string_view text, int& parsedValue) {
+std::string_view TrimAsciiView(std::string_view text) {
     while (!text.empty() && std::isspace(static_cast<unsigned char>(text.front())) != 0) {
         text.remove_prefix(1);
     }
     while (!text.empty() && std::isspace(static_cast<unsigned char>(text.back())) != 0) {
         text.remove_suffix(1);
     }
+    return text;
+}
+
+bool TryParseInteger(std::string_view text, int& parsedValue) {
+    text = TrimAsciiView(text);
     if (text.empty()) {
         return false;
     }
@@ -269,30 +274,43 @@ std::optional<int> TryParseAppIconSizeValue(const std::string& text) {
 
 void AssignTrimmedColonSwitchValue(const CommandLineArguments& commandLine, const char* name, std::string& target) {
     if (const auto value = GetColonSwitchValue(commandLine, name); value.has_value()) {
-        const std::string trimmed = Trim(*value);
+        const std::string_view trimmed = TrimAsciiView(*value);
         if (!trimmed.empty()) {
-            target = trimmed;
+            target.assign(trimmed);
         }
     }
 }
 
 bool TryParseTracePrefixFilter(std::string_view text, std::uint64_t& mask, std::string& invalidName) {
-    const std::vector<std::string> names = SplitTrimmed(text, ',');
-    if (names.empty()) {
+    mask = 0;
+    invalidName.clear();
+    bool hasName = false;
+    size_t start = 0;
+    while (start <= text.size()) {
+        const size_t delimiter = text.find(',', start);
+        std::string_view name =
+            delimiter == std::string_view::npos ? text.substr(start) : text.substr(start, delimiter - start);
+        name = TrimAsciiView(name);
+        if (!name.empty()) {
+            hasName = true;
+            const std::optional<TracePrefix> prefix = Trace::ParsePrefixName(name);
+            if (!prefix.has_value()) {
+                invalidName.assign(name);
+                return false;
+            }
+            mask |= Trace::PrefixMask(*prefix);
+        }
+        if (delimiter == std::string_view::npos) {
+            break;
+        }
+        start = delimiter + 1;
+    }
+
+    if (!hasName) {
         invalidName.clear();
         return false;
     }
 
-    mask = 0;
-    for (const std::string& name : names) {
-        const std::optional<TracePrefix> prefix = Trace::ParsePrefixName(name);
-        if (!prefix.has_value()) {
-            invalidName = name;
-            return false;
-        }
-        mask |= Trace::PrefixMask(*prefix);
-    }
-    invalidName.clear();
     return true;
 }
 
@@ -696,8 +714,6 @@ bool DiagnosticsSession::WriteOutputs(const TelemetryDump& dump, const AppConfig
                 appIconError,
                 "size=" + std::to_string(options_.appIconSize));
         }
-    }
-    if (options_.appIcon) {
         const std::string pathText = appIconPath_.string();
         WriteTraceMarker(TracePrefix::Diagnostics,
             "app_icon_saved path=\"" + pathText + "\" size=" + std::to_string(options_.appIconSize));
