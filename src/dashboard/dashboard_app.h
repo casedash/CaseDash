@@ -86,6 +86,7 @@ private:
     bool ShouldIgnoreCoveredLayoutEditPointer(POINT screenPoint, bool allowDuringDrag) const;
     void SuspendCoveredLayoutEditHover();
     void UpdateLayoutEditMouseTracking();
+    void RedrawMoveFrame();
     void RedrawLayoutEditDragFrame();
     void RelayLayoutEditTooltipMouseMessage(UINT message, WPARAM wParam, LPARAM lParam);
     void TraceLayoutEditUiEvent(TracePrefix prefix, const char* event, const std::string& details = {}) const;

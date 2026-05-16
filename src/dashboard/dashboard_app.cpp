@@ -610,7 +610,7 @@ void DashboardApp::StartMoveMode(bool hasCursorAnchorClientPoint, POINT cursorAn
     SetTimer(hwnd_, kMoveTimerId, kMoveTimerMs, nullptr);
     UpdateMoveTracking();
     SyncDashboardMoveOverlayState();
-    InvalidateRect(hwnd_, nullptr, FALSE);
+    RedrawMoveFrame();
 }
 
 void DashboardApp::StopMoveMode() {
@@ -1070,6 +1070,15 @@ void DashboardApp::UpdateLayoutEditMouseTracking() {
     }
 }
 
+void DashboardApp::RedrawMoveFrame() {
+    if (hwnd_ == nullptr || !controller_.State().isMoving) {
+        return;
+    }
+
+    // WM_TIMER and WM_PAINT are low-priority; move feedback must present from pointer traffic.
+    RedrawWindow(hwnd_, nullptr, nullptr, RDW_INVALIDATE | RDW_UPDATENOW | RDW_NOERASE);
+}
+
 void DashboardApp::RedrawLayoutEditDragFrame() {
     if (hwnd_ == nullptr || !layoutEditController_.HasActiveDrag()) {
         return;
@@ -1146,7 +1155,7 @@ LRESULT DashboardApp::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam) 
         case WM_TIMER:
             if (wParam == kMoveTimerId) {
                 UpdateMoveTracking();
-                InvalidateRect(hwnd_, nullptr, FALSE);
+                RedrawMoveFrame();
                 return 0;
             }
             if (wParam == kAnimationFrameTimerId) {
@@ -1268,6 +1277,11 @@ LRESULT DashboardApp::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam) 
             return 0;
         }
         case WM_MOUSEMOVE:
+            if (state.isMoving) {
+                UpdateMoveTracking();
+                RedrawMoveFrame();
+                return 0;
+            }
             if (state.isEditingLayout && !state.isMoving && !shellUi_->IsLayoutEditModalUiActive()) {
                 UpdateLayoutEditMouseTracking();
                 RenderPoint clientPoint{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
