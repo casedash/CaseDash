@@ -6,7 +6,6 @@
 #include <string_view>
 
 #include "util/text_format.h"
-#include "util/trace.h"
 
 namespace {
 
@@ -926,15 +925,21 @@ LayoutGuideSheetPlacementResult PlaceLayoutGuideSheetCallouts(
                                                 size_t secondIndex,
                                                 LayoutGuideSheetExitSide firstSide,
                                                 LayoutGuideSheetExitSide secondSide) {
+                const std::string_view cardId = sourceCardId();
+                const std::string_view firstKey = calloutKey(firstIndex);
+                const std::string_view secondKey = calloutKey(secondIndex);
                 traceDetails->push_back(FormatText(
-                    "intersection_card=%s intersection_kind=%s first_side=%s first_callout=%s second_side=%s "
-                    "second_callout=%s",
-                    Trace::QuoteText(sourceCardId()).c_str(),
-                    Trace::QuoteText(kind).c_str(),
-                    Trace::QuoteText(ExitSideName(firstSide)).c_str(),
-                    Trace::QuoteText(calloutKey(firstIndex)).c_str(),
-                    Trace::QuoteText(ExitSideName(secondSide)).c_str(),
-                    Trace::QuoteText(calloutKey(secondIndex)).c_str()));
+                    "intersection_card=\"%.*s\" intersection_kind=\"%s\" first_side=\"%s\" first_callout=\"%.*s\" "
+                    "second_side=\"%s\" second_callout=\"%.*s\"",
+                    static_cast<int>(cardId.size()),
+                    cardId.data(),
+                    kind,
+                    ExitSideName(firstSide),
+                    static_cast<int>(firstKey.size()),
+                    firstKey.data(),
+                    ExitSideName(secondSide),
+                    static_cast<int>(secondKey.size()),
+                    secondKey.data()));
             };
             for (size_t leaderIndex : leaders) {
                 const LayoutGuideSheetPlacementCallout& leader = callouts[leaderIndex];

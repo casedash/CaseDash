@@ -135,12 +135,11 @@ void TraceTimingCollector::EmitSnapshot(
         }
         const double totalMs = Milliseconds(entry.total);
         const double averageMs = totalMs / static_cast<double>(entry.samples);
-        const std::string operationText = Trace::QuoteText(entry.operation);
         const std::string totalText = FormatDoubleFixed(totalMs, 3);
         const std::string averageText = FormatDoubleFixed(averageMs, 3);
         trace.WriteFmt(TracePrefix::Profile,
-            "timing op=%s samples=%llu total_ms=%s avg_ms=%s interval_ms=%s",
-            operationText.c_str(),
+            "timing op=\"%s\" samples=%llu total_ms=%s avg_ms=%s interval_ms=%s",
+            entry.operation.c_str(),
             static_cast<unsigned long long>(entry.samples),
             totalText.c_str(),
             averageText.c_str(),

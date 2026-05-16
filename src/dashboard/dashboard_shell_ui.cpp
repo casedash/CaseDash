@@ -921,9 +921,8 @@ void DashboardShellUi::ExecuteCommand(
                 const size_t index = selected - kCommandLayoutBase;
                 if (index < state.config.layout.layouts.size()) {
                     const std::string& layoutName = state.config.layout.layouts[index].name;
-                    const std::string selectedLayout = Trace::QuoteText(layoutName);
                     app_.TraceLayoutEditUiEventFmt(
-                        TracePrefix::LayoutSwitch, "menu_command", "selected_layout=%s", selectedLayout.c_str());
+                        TracePrefix::LayoutSwitch, "menu_command", "selected_layout=\"%s\"", layoutName.c_str());
                     const bool suppressTooltipRefresh = app_.controller_.State().isEditingLayout;
                     if (suppressTooltipRefresh) {
                         app_.SetLayoutEditTooltipRefreshSuppressed(true);
@@ -937,7 +936,7 @@ void DashboardShellUi::ExecuteCommand(
                             app_.SetLayoutEditTooltipRefreshSuppressed(false);
                         }
                         app_.TraceLayoutEditUiEventFmt(
-                            TracePrefix::LayoutSwitch, "menu_failed", "selected_layout=%s", selectedLayout.c_str());
+                            TracePrefix::LayoutSwitch, "menu_failed", "selected_layout=\"%s\"", layoutName.c_str());
                         MessageBoxUtf8(app_.hwnd_, "Failed to switch layout.", MB_ICONERROR);
                     } else {
                         RefreshLayoutEditDialog();
@@ -945,7 +944,7 @@ void DashboardShellUi::ExecuteCommand(
                             app_.SetLayoutEditTooltipRefreshSuppressed(false);
                         }
                         app_.TraceLayoutEditUiEventFmt(
-                            TracePrefix::LayoutSwitch, "menu_done", "selected_layout=%s", selectedLayout.c_str());
+                            TracePrefix::LayoutSwitch, "menu_done", "selected_layout=\"%s\"", layoutName.c_str());
                     }
                 }
                 break;

@@ -162,15 +162,13 @@ void AppendCrashTrace(const FilePath& reportPath, const FilePath& dumpPath, EXCE
     const EXCEPTION_RECORD* record = exceptionPointers != nullptr ? exceptionPointers->ExceptionRecord : nullptr;
     const std::string code = record != nullptr ? ExceptionCodeText(record->ExceptionCode) : "unknown";
     const std::string address = PointerText(record != nullptr ? record->ExceptionAddress : nullptr);
+    const std::string reportText = reportPath.string();
+    const std::string dumpText = dumpPath.string();
     Trace trace(traceFile);
-    const std::string codeText = Trace::QuoteText(code);
-    const std::string addressText = Trace::QuoteText(address);
-    const std::string reportText = Trace::QuoteText(reportPath.string());
-    const std::string dumpText = Trace::QuoteText(dumpPath.string());
     trace.WriteFmt(TracePrefix::Crash,
-        "unhandled_exception code=%s address=%s report=%s minidump=%s",
-        codeText.c_str(),
-        addressText.c_str(),
+        "unhandled_exception code=\"%s\" address=\"%s\" report=\"%s\" minidump=\"%s\"",
+        code.c_str(),
+        address.c_str(),
         reportText.c_str(),
         dumpText.c_str());
     fclose(traceFile);

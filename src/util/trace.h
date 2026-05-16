@@ -69,8 +69,6 @@ public:
     static const char* BoolText(bool value);
     static std::string FormatTimestamp();
     static std::string FormatValueDouble(const char* label, double value, int precision = 3);
-    static std::string EscapeText(std::string_view text);
-    static std::string QuoteText(std::string_view text);
 
 private:
     std::FILE* output_ = nullptr;

@@ -147,17 +147,15 @@ public:
         const std::optional<FpsTelemetrySample> sample = QueryServiceSample(diagnostics);
         if (!sample.has_value()) {
             diagnostics_ = diagnostics.empty() ? "FPS service did not return a sample." : diagnostics;
-            trace_.WriteFmt(TracePrefix::FpsServiceClient,
-                "initialize_failed diagnostics=%s",
-                Trace::QuoteText(diagnostics_).c_str());
+            trace_.WriteFmt(
+                TracePrefix::FpsServiceClient, "initialize_failed diagnostics=\"%s\"", diagnostics_.c_str());
             return false;
         }
 
         cachedSample_ = *sample;
         diagnostics_ = sample->diagnostics.empty() ? "FPS service provider active." : sample->diagnostics;
         initialized_ = true;
-        trace_.WriteFmt(
-            TracePrefix::FpsServiceClient, "initialize_done diagnostics=%s", Trace::QuoteText(diagnostics_).c_str());
+        trace_.WriteFmt(TracePrefix::FpsServiceClient, "initialize_done diagnostics=\"%s\"", diagnostics_.c_str());
         return true;
     }
 
@@ -176,7 +174,7 @@ public:
             unavailable.processName = cachedSample_->processName;
         }
         trace_.WriteLazy(TracePrefix::FpsServiceClient,
-            [&] { return "sample_failed diagnostics=" + Trace::QuoteText(unavailable.diagnostics); });
+            [&] { return "sample_failed diagnostics=\"" + unavailable.diagnostics + "\""; });
         return unavailable;
     }
 

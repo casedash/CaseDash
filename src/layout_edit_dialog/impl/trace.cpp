@@ -4,7 +4,7 @@
 #include "layout_edit/layout_edit_target_descriptor.h"
 #include "layout_edit_dialog/impl/util.h"
 #include "layout_model/layout_edit_parameter_metadata.h"
-#include "util/trace.h"
+#include "util/text_format.h"
 
 namespace {
 
@@ -57,7 +57,7 @@ std::string BuildDialogTraceValues(HWND hwnd, const DialogTraceField* fields, si
 }  // namespace
 
 std::string QuoteTraceText(std::string_view text) {
-    return Trace::QuoteText(text);
+    return FormatText("\"%.*s\"", static_cast<int>(text.size()), text.data());
 }
 
 std::string FormatTraceColorHex(unsigned int color) {

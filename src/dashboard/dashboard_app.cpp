@@ -820,11 +820,10 @@ std::string DashboardApp::BuildLayoutEditUiTraceState() const {
     const auto& state = controller_.State();
     const HWND capture = GetCapture();
     const char* captureText = capture == nullptr ? "none" : (capture == hwnd_ ? "dashboard" : "other");
-    const std::string layoutText = Trace::QuoteText(state.config.display.layout);
     std::string trace =
-        FormatText("layout=%s editing=%s moving=%s modal_depth=%d tooltip_visible=%s tooltip_suppressed=%s "
+        FormatText("layout=\"%s\" editing=%s moving=%s modal_depth=%d tooltip_visible=%s tooltip_suppressed=%s "
                    "tooltip_rect_valid=%s mouse_tracking=%s drag_active=%s capture=\"%s\"",
-            layoutText.c_str(),
+            state.config.display.layout.c_str(),
             Trace::BoolText(state.isEditingLayout),
             Trace::BoolText(state.isMoving),
             layoutEditModalUiDepth_,
@@ -950,8 +949,8 @@ void DashboardApp::UpdateLayoutEditTooltip() {
     std::string tooltipError;
     std::string tooltipText;
     if (!BuildLayoutEditTooltipTextForPayload(controller_.State().config, target.payload, tooltipText, &tooltipError)) {
-        const std::string reasonText = Trace::QuoteText(tooltipError.empty() ? "unsupported_target" : tooltipError);
-        TraceLayoutEditUiEventFmt(TracePrefix::LayoutEditTooltip, "update_abort", "reason=%s", reasonText.c_str());
+        const char* reasonText = tooltipError.empty() ? "unsupported_target" : tooltipError.c_str();
+        TraceLayoutEditUiEventFmt(TracePrefix::LayoutEditTooltip, "update_abort", "reason=\"%s\"", reasonText);
         HideLayoutEditTooltip();
         return;
     }
@@ -991,15 +990,13 @@ void DashboardApp::UpdateLayoutEditTooltip() {
 
     if (!wasVisible || previousText != layoutEditTooltipText_ || previousRectValid != layoutEditTooltipRectValid_ ||
         !RectsEqual(previousRect, layoutEditTooltipRect_)) {
-        const std::string payloadText = Trace::QuoteText(LayoutEditTooltipPayloadTraceKind(target.payload));
-        const std::string shownTooltipText = Trace::QuoteText(layoutEditTooltipText_);
         TraceLayoutEditUiEventFmt(TracePrefix::LayoutEditTooltip,
             "show",
-            "payload=%s client_point=\"%d,%d\" text=%s",
-            payloadText.c_str(),
+            "payload=\"%s\" client_point=\"%d,%d\" text=\"%s\"",
+            LayoutEditTooltipPayloadTraceKind(target.payload),
             clientPoint.x,
             clientPoint.y,
-            shownTooltipText.c_str());
+            layoutEditTooltipText_.c_str());
     }
 }
 

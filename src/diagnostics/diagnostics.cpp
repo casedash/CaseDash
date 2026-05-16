@@ -81,22 +81,23 @@ bool TryParseHoverPointValue(const std::string& text, DiagnosticsHoverPoint& poi
 
 void WriteResolvedColorTraceLine(
     DiagnosticsSession& diagnostics, std::string_view section, std::string_view name, const ColorConfig& color) {
-    const std::string sectionText = Trace::QuoteText(section);
-    const std::string nameText = Trace::QuoteText(name);
-    const std::string valueText = Trace::QuoteText(FormatRgbaColorText(color.ToRgba()));
+    const std::string valueText = FormatRgbaColorText(color.ToRgba());
     if (!color.expression.empty()) {
-        const std::string expressionText = Trace::QuoteText(color.expression);
         diagnostics.WriteTraceMarkerFmt(TracePrefix::Diagnostics,
-            "resolved_color section=%s name=%s value=%s expression=%s",
-            sectionText.c_str(),
-            nameText.c_str(),
+            "resolved_color section=\"%.*s\" name=\"%.*s\" value=\"%s\" expression=\"%s\"",
+            static_cast<int>(section.size()),
+            section.data(),
+            static_cast<int>(name.size()),
+            name.data(),
             valueText.c_str(),
-            expressionText.c_str());
+            color.expression.c_str());
     } else {
         diagnostics.WriteTraceMarkerFmt(TracePrefix::Diagnostics,
-            "resolved_color section=%s name=%s value=%s",
-            sectionText.c_str(),
-            nameText.c_str(),
+            "resolved_color section=\"%.*s\" name=\"%.*s\" value=\"%s\"",
+            static_cast<int>(section.size()),
+            section.data(),
+            static_cast<int>(name.size()),
+            name.data(),
             valueText.c_str());
     }
 }
@@ -343,10 +344,8 @@ void WriteValidationFailureTrace(
     }
 
     Trace trace(traceFile);
-    const std::string reasonText = Trace::QuoteText(reason);
-    const std::string messageText = Trace::QuoteText(message);
     trace.WriteFmt(
-        TracePrefix::Diagnostics, "validation_failed reason=%s message=%s", reasonText.c_str(), messageText.c_str());
+        TracePrefix::Diagnostics, "validation_failed reason=\"%s\" message=\"%s\"", reason.c_str(), message.c_str());
     fclose(traceFile);
 }
 
@@ -889,8 +888,7 @@ bool ReloadTelemetryCollectorFromDisk(const FilePath& configPath,
         if (diagnostics != nullptr) {
             std::string traceText = "reload_config_failed";
             if (!reloadError.empty()) {
-                const std::string reloadErrorText = Trace::QuoteText(reloadError);
-                AppendFormat(traceText, " detail=%s", reloadErrorText.c_str());
+                AppendFormat(traceText, " detail=\"%s\"", reloadError.c_str());
             }
             diagnostics->WriteTraceMarker(TracePrefix::Diagnostics, traceText);
         }
@@ -969,24 +967,21 @@ bool SaveDumpScreenshot(const FilePath& imagePath,
             std::string tooltipText;
             const bool hasTooltipText =
                 BuildLayoutEditTooltipTextForPayload(config, target.payload, tooltipText, &tooltipError);
-            const std::string targetText = Trace::QuoteText(LayoutEditTooltipPayloadTraceKind(target.payload));
             if (hasTooltipText) {
-                const std::string tooltipTraceText = Trace::QuoteText(tooltipText);
                 trace.WriteFmt(TracePrefix::Diagnostics,
-                    "hover point=\"%d,%d\" target=%s tooltip=%s",
+                    "hover point=\"%d,%d\" target=\"%s\" tooltip=\"%s\"",
                     hoverPoint.x,
                     hoverPoint.y,
-                    targetText.c_str(),
-                    tooltipTraceText.c_str());
+                    LayoutEditTooltipPayloadTraceKind(target.payload),
+                    tooltipText.c_str());
             } else {
-                const std::string tooltipErrorText =
-                    Trace::QuoteText(tooltipError.empty() ? "unsupported_target" : tooltipError);
+                const char* tooltipErrorText = tooltipError.empty() ? "unsupported_target" : tooltipError.c_str();
                 trace.WriteFmt(TracePrefix::Diagnostics,
-                    "hover point=\"%d,%d\" target=%s tooltip_error=%s",
+                    "hover point=\"%d,%d\" target=\"%s\" tooltip_error=\"%s\"",
                     hoverPoint.x,
                     hoverPoint.y,
-                    targetText.c_str(),
-                    tooltipErrorText.c_str());
+                    LayoutEditTooltipPayloadTraceKind(target.payload),
+                    tooltipErrorText);
             }
         } else {
             trace.WriteFmt(
@@ -1046,8 +1041,7 @@ int RunDiagnosticsHeadlessMode(const DiagnosticsOptions& diagnosticsOptions) {
     if (telemetry == nullptr) {
         std::string traceText = "telemetry_initialize_failed";
         if (!telemetryError.empty()) {
-            const std::string telemetryErrorText = Trace::QuoteText(telemetryError);
-            AppendFormat(traceText, " detail=%s", telemetryErrorText.c_str());
+            AppendFormat(traceText, " detail=\"%s\"", telemetryError.c_str());
         }
         diagnostics.WriteTraceMarker(TracePrefix::Diagnostics, traceText);
         if (diagnostics.ShouldShowDialogs()) {
