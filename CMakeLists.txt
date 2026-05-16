@@ -140,7 +140,7 @@ add_executable(CaseDash WIN32
     src/layout_edit_dialog/impl/trace.cpp
     src/layout_edit_dialog/impl/tree.cpp
     src/layout_edit_dialog/impl/util.cpp
-    src/layout_edit/board_metric_binding.cpp
+    src/config/metric_board_binding.cpp
     src/layout_edit/layout_edit_hit_test.cpp
     src/layout_edit/layout_edit_active_region_trace.cpp
     src/layout_edit/layout_edit_controller.cpp
@@ -532,6 +532,7 @@ add_executable(CaseDashTests
     tests/metric_list_widget_tests.cpp
     tests/card_chrome_layout_tests.cpp
     tests/layout_snap_solver_tests.cpp
+    tests/board_metric_binding_tests.cpp
     tests/layout_edit_controller_tests.cpp
     tests/layout_edit_hit_test_tests.cpp
     tests/layout_edit_parameter_apply_tests.cpp
@@ -566,6 +567,7 @@ add_executable(CaseDashTests
     src/layout_model/layout_edit_layout_target.cpp
     src/layout_model/layout_edit_service.cpp
     src/layout_model/dashboard_overlay_state.cpp
+    src/config/metric_board_binding.cpp
     src/layout_edit/layout_edit_tree.cpp
     src/layout_model/layout_edit_parameter_metadata.cpp
     src/layout_edit/layout_edit_tooltip.cpp

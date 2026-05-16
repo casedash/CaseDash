@@ -6,12 +6,12 @@
 #include <commdlg.h>
 
 #include "build_version.h"
+#include "config/metric_board_binding.h"
 #include "dashboard/constants.h"
 #include "dashboard/dashboard_app.h"
 #include "dashboard/dashboard_menu_format.h"
 #include "diagnostics/diagnostics.h"
 #include "display/constants.h"
-#include "layout_edit/board_metric_binding.h"
 #include "layout_edit/layout_edit_service.h"
 #include "layout_edit/layout_edit_target_descriptor.h"
 #include "layout_edit/layout_edit_tooltip_payload.h"
@@ -641,7 +641,7 @@ const AppConfig& DashboardShellUi::CurrentConfig() const {
 }
 
 std::vector<std::string> DashboardShellUi::AvailableBoardMetricSensorBindings(const LayoutMetricEditKey& key) const {
-    const auto target = ParseBoardMetricBindingTarget(key.metricId);
+    const auto target = ResolveMetricBoardBindingTarget(key.metricId);
     if (!target.has_value()) {
         return {};
     }
@@ -716,7 +716,7 @@ bool DashboardShellUi::ApplyMetricPreview(const LayoutMetricEditKey& key,
         definition->unit = unit;
     }
     definition->label = label;
-    if (const auto target = ParseBoardMetricBindingTarget(key.metricId); target.has_value() && binding.has_value()) {
+    if (const auto target = ResolveMetricBoardBindingTarget(key.metricId); target.has_value() && binding.has_value()) {
         auto& bindings = target->kind == BoardMetricBindingKind::Temperature
                              ? updatedConfig.layout.board.temperatureSensorNames
                              : updatedConfig.layout.board.fanSensorNames;

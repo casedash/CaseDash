@@ -3,16 +3,10 @@
 #include <algorithm>
 #include <cctype>
 
+#include "config/metric_board_binding.h"
 #include "util/strings.h"
 
 namespace {
-
-constexpr char kBoardTemperaturePrefix[] = "board.temp.";
-constexpr char kBoardFanPrefix[] = "board.fan.";
-constexpr char kGpuTemperatureMetric[] = "gpu.temp";
-constexpr char kGpuTemperatureFallbackBoardName[] = "cpu";
-constexpr char kGpuFanMetric[] = "gpu.fan";
-constexpr char kGpuFanFallbackBoardName[] = "gpu";
 
 bool IsValidMetricId(std::string_view metricId) {
     if (metricId.empty()) {
@@ -42,14 +36,12 @@ void CollectLayoutBindingsRecursive(
         if (!IsValidMetricId(metricRef)) {
             continue;
         }
-        if (metricRef.rfind(kBoardTemperaturePrefix, 0) == 0) {
-            AddUniqueValue(boardTemperatures, metricRef.substr(std::string(kBoardTemperaturePrefix).size()));
-        } else if (metricRef.rfind(kBoardFanPrefix, 0) == 0) {
-            AddUniqueValue(boardFans, metricRef.substr(std::string(kBoardFanPrefix).size()));
-        } else if (metricRef == kGpuTemperatureMetric) {
-            AddUniqueValue(boardTemperatures, kGpuTemperatureFallbackBoardName);
-        } else if (metricRef == kGpuFanMetric) {
-            AddUniqueValue(boardFans, kGpuFanFallbackBoardName);
+        if (const auto target = ResolveMetricBoardBindingTarget(metricRef); target.has_value()) {
+            if (target->kind == BoardMetricBindingKind::Temperature) {
+                AddUniqueValue(boardTemperatures, target->logicalName);
+            } else {
+                AddUniqueValue(boardFans, target->logicalName);
+            }
         }
     }
 

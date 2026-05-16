@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include "config/metric_board_binding.h"
 #include "telemetry/gpu/gpu_vendor_selection.h"
 #include "telemetry/impl/collector_state.h"
 #include "telemetry/impl/collector_support.h"
@@ -109,9 +110,9 @@ void ApplyGpuVendorSample(RealTelemetryCollectorState& state, const GpuVendorTel
     }
 }
 
-std::optional<double> FindBoardGpuFanRpm(const SystemSnapshot& snapshot) {
+std::optional<double> FindBoardFanRpm(const SystemSnapshot& snapshot, const std::string& logicalName) {
     for (const auto& fan : snapshot.boardFans) {
-        if (fan.name == "gpu") {
+        if (fan.name == logicalName) {
             return FiniteOptional(fan.metric.value);
         }
     }
@@ -122,15 +123,19 @@ void ApplyBoardGpuFanFallback(RealTelemetryCollectorState& state) {
     if (state.snapshot_.gpu.fan.value.has_value()) {
         return;
     }
-    if (auto fanRpm = FindBoardGpuFanRpm(state.snapshot_); fanRpm.has_value()) {
+    const auto target = ResolveMetricBoardBindingTarget(kGpuFanMetricId);
+    if (!target.has_value() || target->kind != BoardMetricBindingKind::Fan) {
+        return;
+    }
+    if (auto fanRpm = FindBoardFanRpm(state.snapshot_, target->logicalName); fanRpm.has_value()) {
         state.snapshot_.gpu.fan.value = *fanRpm;
         state.snapshot_.gpu.fan.unit = ScalarMetricUnit::Rpm;
     }
 }
 
-std::optional<double> FindBoardCpuTemperatureC(const SystemSnapshot& snapshot) {
+std::optional<double> FindBoardTemperatureC(const SystemSnapshot& snapshot, const std::string& logicalName) {
     for (const auto& temperature : snapshot.boardTemperatures) {
-        if (temperature.name == "cpu") {
+        if (temperature.name == logicalName) {
             return FiniteOptional(temperature.metric.value);
         }
     }
@@ -145,7 +150,12 @@ void ApplyIntelCpuTemperatureFallback(RealTelemetryCollectorState& state) {
     if (state.snapshot_.gpu.temperature.value.has_value() || !IsSelectedIntelGpu(state)) {
         return;
     }
-    if (auto cpuTemperatureC = FindBoardCpuTemperatureC(state.snapshot_); cpuTemperatureC.has_value()) {
+    const auto target = ResolveMetricBoardBindingTarget(kGpuTemperatureMetricId);
+    if (!target.has_value() || target->kind != BoardMetricBindingKind::Temperature) {
+        return;
+    }
+    if (auto cpuTemperatureC = FindBoardTemperatureC(state.snapshot_, target->logicalName);
+        cpuTemperatureC.has_value()) {
         state.snapshot_.gpu.temperature.value = *cpuTemperatureC;
         state.snapshot_.gpu.temperature.unit = ScalarMetricUnit::Celsius;
         state.trace_.WriteLazy(TracePrefix::Telemetry, [&] {

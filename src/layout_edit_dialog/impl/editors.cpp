@@ -5,7 +5,7 @@
 #include <cmath>
 
 #include "config/color_expression.h"
-#include "layout_edit/board_metric_binding.h"
+#include "config/metric_board_binding.h"
 #include "layout_edit/layout_edit_parameter_edit.h"
 #include "layout_edit/layout_edit_service.h"
 #include "layout_edit/layout_edit_tooltip.h"
@@ -860,7 +860,7 @@ void PopulateLayoutEditSelection(LayoutEditDialogState* state, HWND hwnd) {
             definition != nullptr && definition->style != MetricDisplayStyle::LabelOnly ? definition->unit : "");
         SetDialogControlTextUtf8(
             hwnd, IDC_LAYOUT_EDIT_METRIC_LABEL_EDIT, definition != nullptr ? definition->label : "");
-        const auto bindingTarget = ParseBoardMetricBindingTarget(metricKey->metricId);
+        const auto bindingTarget = ResolveMetricBoardBindingTarget(metricKey->metricId);
         const bool showBinding = bindingTarget.has_value();
         const std::string selectedBinding =
             showBinding ? FindConfiguredBoardMetricBinding(config, *metricKey) : std::string();
@@ -1368,7 +1368,7 @@ bool PreviewSelectedMetric(LayoutEditDialogState* state, HWND hwnd) {
     const std::string unit =
         definition->style == MetricDisplayStyle::LabelOnly ? std::string() : Utf8FromWide(unitBuffer);
     const std::string label = Utf8FromWide(labelBuffer);
-    const auto bindingTarget = ParseBoardMetricBindingTarget(key->metricId);
+    const auto bindingTarget = ResolveMetricBoardBindingTarget(key->metricId);
     const std::optional<std::string> binding =
         bindingTarget.has_value()
             ? std::optional<std::string>(Trim(ReadDialogControlTextUtf8(hwnd, IDC_LAYOUT_EDIT_METRIC_BINDING_EDIT)))
@@ -1542,7 +1542,7 @@ bool RevertSelectedLayoutEditField(LayoutEditDialogState* state, HWND hwnd) {
             return false;
         }
         std::optional<std::string> binding;
-        if (const auto target = ParseBoardMetricBindingTarget(metricKey->metricId); target.has_value()) {
+        if (const auto target = ResolveMetricBoardBindingTarget(metricKey->metricId); target.has_value()) {
             const auto& bindings = target->kind == BoardMetricBindingKind::Temperature
                                        ? state->originalConfig.layout.board.temperatureSensorNames
                                        : state->originalConfig.layout.board.fanSensorNames;
