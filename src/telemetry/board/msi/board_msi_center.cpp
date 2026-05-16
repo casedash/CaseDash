@@ -94,8 +94,7 @@ public:
     }
 
     void TraceQuerySuccess(int fanCount, int temperatureCount) override {
-        trace_.WriteLazyFmt(
-            TracePrefix::MsiCenter, "snapshot_done fan_count=%d temp_count=%d", fanCount, temperatureCount);
+        trace_.WriteFmt(TracePrefix::MsiCenter, "snapshot_done fan_count=%d temp_count=%d", fanCount, temperatureCount);
     }
 
     void TraceInitializeException(const wchar_t* diagnostics) override {

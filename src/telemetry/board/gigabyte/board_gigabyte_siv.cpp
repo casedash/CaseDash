@@ -131,7 +131,7 @@ public:
             snapshot_.fans.size(),
             snapshot_.temperatures.size());
         snapshot_.diagnostics = diagnostics;
-        trace_.WriteLazyFmt(TracePrefix::GigabyteSiv,
+        trace_.WriteFmt(TracePrefix::GigabyteSiv,
             "snapshot_done fan_count=%zu temp_count=%zu",
             snapshot_.fans.size(),
             snapshot_.temperatures.size());

@@ -334,7 +334,7 @@ void UpdateNetworkMetrics(RealTelemetryCollectorState& state, bool initializeOnl
     selected.InterfaceIndex = state.network_.selectedIndex;
     const DWORD rowStatus = GetIfEntry2(&selected);
     if (rowStatus != NO_ERROR) {
-        state.trace_.WriteLazyFmt(TracePrefix::Telemetry,
+        state.trace_.WriteFmt(TracePrefix::Telemetry,
             "network_row status=%lu interface=%lu",
             static_cast<unsigned long>(rowStatus),
             state.network_.selectedIndex);
@@ -347,7 +347,7 @@ void UpdateNetworkMetrics(RealTelemetryCollectorState& state, bool initializeOnl
             state.snapshot_.network.uploadMbps = 0.0;
             state.snapshot_.network.downloadMbps = 0.0;
         }
-        state.trace_.WriteLazyFmt(TracePrefix::Telemetry,
+        state.trace_.WriteFmt(TracePrefix::Telemetry,
             "network_rates skipped=selection_missing interface=%lu",
             state.network_.selectedIndex);
         return;
@@ -374,7 +374,7 @@ void UpdateNetworkMetrics(RealTelemetryCollectorState& state, bool initializeOnl
                 state.snapshot_, RetainedHistoryKey::NetworkUpload, state.snapshot_.network.uploadMbps);
             state.retainedHistoryStore_.PushSample(
                 state.snapshot_, RetainedHistoryKey::NetworkDownload, state.snapshot_.network.downloadMbps);
-            state.trace_.WriteLazyFmt(TracePrefix::Telemetry,
+            state.trace_.WriteFmt(TracePrefix::Telemetry,
                 "network_rates interface=%lu seconds=value=%.3f upload_mbps=value=%.3f download_mbps=value=%.3f",
                 selected.InterfaceIndex,
                 seconds,

@@ -366,7 +366,7 @@ public:
 
         sample.available = hasAnyMetric;
         sample.diagnostics += " fps=" + fpsDiagnostics_;
-        trace_.WriteLazyFmt(TracePrefix::NvidiaNvml,
+        trace_.WriteFmt(TracePrefix::NvidiaNvml,
             "sample_done available=%s diagnostics=\"%s\"",
             Trace::BoolText(sample.available),
             sample.diagnostics.c_str());

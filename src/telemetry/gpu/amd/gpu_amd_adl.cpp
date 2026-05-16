@@ -212,14 +212,14 @@ public:
         IADLXGPUMetricsPtr metrics;
         trace().Write(TracePrefix::AmdAdlx, "get_current_metrics_begin");
         const ADLX_RESULT metricsResult = performanceMonitoring_->GetCurrentGPUMetrics(gpu_, &metrics);
-        trace().WriteLazyFmt(TracePrefix::AmdAdlx,
+        trace().WriteFmt(TracePrefix::AmdAdlx,
             "get_current_metrics_done result=%d available=%s",
             static_cast<int>(metricsResult),
             Trace::BoolText(metrics != nullptr));
         if (ADLX_FAILED(metricsResult) || !metrics) {
             sample.diagnostics = diagnostics_ + " current_metrics=" + AdlxResultCodeString(metricsResult);
             sample.available = false;
-            trace().WriteLazyFmt(
+            trace().WriteFmt(
                 TracePrefix::AmdAdlx, "get_current_metrics_failed diagnostics=\"%s\"", sample.diagnostics.c_str());
             return sample;
         }
@@ -229,7 +229,7 @@ public:
             adlx_double usage = 0.0;
             trace().Write(TracePrefix::AmdAdlx, "get_usage_begin");
             const ADLX_RESULT result = metrics->GPUUsage(&usage);
-            trace().WriteLazyFmt(
+            trace().WriteFmt(
                 TracePrefix::AmdAdlx, "get_usage_done result=%d value=%.1f", static_cast<int>(result), usage);
             if (ADLX_SUCCEEDED(result)) {
                 sample.loadPercent = usage;
@@ -241,7 +241,7 @@ public:
             adlx_double temperature = 0.0;
             trace().Write(TracePrefix::AmdAdlx, "get_temperature_begin");
             const ADLX_RESULT result = metrics->GPUTemperature(&temperature);
-            trace().WriteLazyFmt(TracePrefix::AmdAdlx,
+            trace().WriteFmt(TracePrefix::AmdAdlx,
                 "get_temperature_done result=%d value=%.1f",
                 static_cast<int>(result),
                 temperature);
@@ -255,7 +255,7 @@ public:
             adlx_int clockMhz = 0;
             trace().Write(TracePrefix::AmdAdlx, "get_clock_begin");
             const ADLX_RESULT result = metrics->GPUClockSpeed(&clockMhz);
-            trace().WriteLazyFmt(TracePrefix::AmdAdlx,
+            trace().WriteFmt(TracePrefix::AmdAdlx,
                 "get_clock_done result=%d value=%d",
                 static_cast<int>(result),
                 static_cast<int>(clockMhz));
@@ -269,7 +269,7 @@ public:
             adlx_int fanRpm = 0;
             trace().Write(TracePrefix::AmdAdlx, "get_fan_begin");
             const ADLX_RESULT result = metrics->GPUFanSpeed(&fanRpm);
-            trace().WriteLazyFmt(TracePrefix::AmdAdlx,
+            trace().WriteFmt(TracePrefix::AmdAdlx,
                 "get_fan_done result=%d value=%d",
                 static_cast<int>(result),
                 static_cast<int>(fanRpm));
@@ -283,7 +283,7 @@ public:
             adlx_int usedVramMb = 0;
             trace().Write(TracePrefix::AmdAdlx, "get_vram_begin");
             const ADLX_RESULT result = metrics->GPUVRAM(&usedVramMb);
-            trace().WriteLazyFmt(TracePrefix::AmdAdlx,
+            trace().WriteFmt(TracePrefix::AmdAdlx,
                 "get_vram_done result=%d value=%d",
                 static_cast<int>(result),
                 static_cast<int>(usedVramMb));
@@ -324,7 +324,7 @@ public:
 
         sample.available = hasAnyMetric;
         sample.diagnostics += " fps=" + fpsDiagnostics_;
-        trace().WriteLazyFmt(TracePrefix::AmdAdlx,
+        trace().WriteFmt(TracePrefix::AmdAdlx,
             "sample_done available=%s diagnostics=\"%s\"",
             Trace::BoolText(sample.available),
             sample.diagnostics.c_str());
@@ -336,7 +336,7 @@ private:
         IADLXFPSPtr fpsMetric;
         trace().Write(TracePrefix::AmdAdlx, "get_native_fps_begin");
         const ADLX_RESULT fpsMetricResult = performanceMonitoring_->GetCurrentFPS(&fpsMetric);
-        trace().WriteLazyFmt(TracePrefix::AmdAdlx,
+        trace().WriteFmt(TracePrefix::AmdAdlx,
             "get_native_fps_metric_done result=%d available=%s",
             static_cast<int>(fpsMetricResult),
             Trace::BoolText(fpsMetric != nullptr));
@@ -346,7 +346,7 @@ private:
 
         adlx_int fps = 0;
         const ADLX_RESULT fpsResult = fpsMetric->FPS(&fps);
-        trace().WriteLazyFmt(TracePrefix::AmdAdlx,
+        trace().WriteFmt(TracePrefix::AmdAdlx,
             "get_native_fps_done result=%d value=%d",
             static_cast<int>(fpsResult),
             static_cast<int>(fps));

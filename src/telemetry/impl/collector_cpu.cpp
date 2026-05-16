@@ -18,7 +18,7 @@ void UpdateMemory(RealTelemetryCollectorState& state) {
         state.snapshot_.cpu.memory.totalGb = memory.ullTotalPhys / (1024.0 * 1024.0 * 1024.0);
         state.snapshot_.cpu.memory.usedGb = (memory.ullTotalPhys - memory.ullAvailPhys) / (1024.0 * 1024.0 * 1024.0);
     }
-    state.trace_.WriteLazyFmt(TracePrefix::Telemetry,
+    state.trace_.WriteFmt(TracePrefix::Telemetry,
         "memory_status ok=%s total_gb=value=%.2f used_gb=value=%.2f",
         Trace::BoolText(ok != FALSE),
         state.snapshot_.cpu.memory.totalGb,
@@ -66,7 +66,7 @@ void UpdateCpuMetrics(RealTelemetryCollectorState& state) {
     }
 
     const PDH_STATUS collectStatus = PdhCollectQueryData(state.cpu_.query);
-    state.trace_.WriteLazyFmt(TracePrefix::Telemetry, "cpu_collect status=%ld", static_cast<long>(collectStatus));
+    state.trace_.WriteFmt(TracePrefix::Telemetry, "cpu_collect status=%ld", static_cast<long>(collectStatus));
 
     PDH_FMT_COUNTERVALUE value{};
     PDH_STATUS loadStatus = PDH_INVALID_DATA;
@@ -76,7 +76,7 @@ void UpdateCpuMetrics(RealTelemetryCollectorState& state) {
             state.snapshot_.cpu.loadPercent = ClampFinite(value.doubleValue, 0.0, 100.0);
         }
     }
-    state.trace_.WriteLazyFmt(TracePrefix::Telemetry,
+    state.trace_.WriteFmt(TracePrefix::Telemetry,
         "cpu_load status=%ld value=%.2f",
         static_cast<long>(loadStatus),
         state.snapshot_.cpu.loadPercent);

@@ -38,7 +38,7 @@ CounterArrayTotals ReadCounterArrayTotals(RealTelemetryCollectorState& state, PD
     auto* items = reinterpret_cast<PDH_FMT_COUNTERVALUE_ITEM_W*>(state.gpu_.counterArrayBuffer.data());
     status = PdhGetFormattedCounterArrayW(counter, PDH_FMT_DOUBLE, &bufferSize, &itemCount, items);
     if (status != ERROR_SUCCESS) {
-        state.trace_.WriteLazyFmt(TracePrefix::Telemetry,
+        state.trace_.WriteFmt(TracePrefix::Telemetry,
             "pdh_array_fetch status=%ld count=%lu",
             static_cast<long>(status),
             static_cast<unsigned long>(itemCount));
@@ -56,7 +56,7 @@ CounterArrayTotals ReadCounterArrayTotals(RealTelemetryCollectorState& state, PD
         }
     }
 
-    state.trace_.WriteLazyFmt(TracePrefix::Telemetry,
+    state.trace_.WriteFmt(TracePrefix::Telemetry,
         "pdh_array_done status=%ld count=%lu total=value=%.2f total3d=value=%.2f",
         static_cast<long>(status),
         static_cast<unsigned long>(itemCount),
@@ -227,7 +227,7 @@ void UpdateGpuMetrics(RealTelemetryCollectorState& state) {
         hasVendorLoad = sample.loadPercent.has_value();
         hasVendorVram = sample.usedVramGb.has_value();
         ApplyGpuVendorSample(state, sample);
-        state.trace_.WriteLazyFmt(TracePrefix::Telemetry,
+        state.trace_.WriteFmt(TracePrefix::Telemetry,
             "gpu_vendor_sample provider=%s available=%s diagnostics=\"%s\"",
             state.gpu_.providerName.c_str(),
             Trace::BoolText(state.gpu_.providerAvailable),
@@ -236,12 +236,12 @@ void UpdateGpuMetrics(RealTelemetryCollectorState& state) {
 
     if (!hasVendorLoad && state.gpu_.query != nullptr) {
         const PDH_STATUS collectStatus = PdhCollectQueryData(state.gpu_.query);
-        state.trace_.WriteLazyFmt(TracePrefix::Telemetry, "gpu_collect status=%ld", static_cast<long>(collectStatus));
+        state.trace_.WriteFmt(TracePrefix::Telemetry, "gpu_collect status=%ld", static_cast<long>(collectStatus));
         const CounterArrayTotals loadTotals = ReadCounterArrayTotals(state, state.gpu_.loadCounter);
         const double load3d = loadTotals.total3d;
         const double loadAll = loadTotals.total;
         state.snapshot_.gpu.loadPercent = ClampFinite(load3d > 0.0 ? load3d : loadAll, 0.0, 100.0);
-        state.trace_.WriteLazyFmt(TracePrefix::Telemetry,
+        state.trace_.WriteFmt(TracePrefix::Telemetry,
             "gpu_load load3d=value=%.2f loadAll=value=%.2f selected=value=%.2f",
             load3d,
             loadAll,
@@ -252,11 +252,11 @@ void UpdateGpuMetrics(RealTelemetryCollectorState& state) {
 
     if (!hasVendorVram && state.gpu_.memoryQuery != nullptr) {
         const PDH_STATUS collectStatus = PdhCollectQueryData(state.gpu_.memoryQuery);
-        state.trace_.WriteLazyFmt(
+        state.trace_.WriteFmt(
             TracePrefix::Telemetry, "gpu_memory_collect status=%ld", static_cast<long>(collectStatus));
         const double bytes = SumCounterArray(state, state.gpu_.dedicatedCounter);
         state.snapshot_.gpu.vram.usedGb = FiniteNonNegativeOr(bytes / (1024.0 * 1024.0 * 1024.0));
-        state.trace_.WriteLazyFmt(TracePrefix::Telemetry,
+        state.trace_.WriteFmt(TracePrefix::Telemetry,
             "gpu_memory bytes=value=%.0f used_gb=value=%.2f",
             bytes,
             state.snapshot_.gpu.vram.usedGb);

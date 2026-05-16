@@ -78,7 +78,7 @@ void RefreshDriveUsage(RealTelemetryCollectorState& state) {
         const UINT driveType = GetDriveTypeW(root.c_str());
         drive.driveType = driveType;
         if (!IsSelectableStorageDriveType(driveType)) {
-            state.trace_.WriteLazyFmt(
+            state.trace_.WriteFmt(
                 TracePrefix::Telemetry, "drive_skip label=%s type=%u", drive.label.c_str(), driveType);
             continue;
         }
@@ -87,7 +87,7 @@ void RefreshDriveUsage(RealTelemetryCollectorState& state) {
         ULARGE_INTEGER totalBytes{};
         const BOOL diskOk = GetDiskFreeSpaceExW(root.c_str(), &freeBytes, &totalBytes, nullptr);
         if (!diskOk || totalBytes.QuadPart == 0) {
-            state.trace_.WriteLazyFmt(TracePrefix::Telemetry,
+            state.trace_.WriteFmt(TracePrefix::Telemetry,
                 "drive_space label=%s ok=%s total_bytes=%llu",
                 drive.label.c_str(),
                 Trace::BoolText(diskOk != FALSE),
@@ -118,7 +118,7 @@ void RefreshDriveUsage(RealTelemetryCollectorState& state) {
                 drive.writeMbps = FiniteNonNegativeOr(value.doubleValue / (1024.0 * 1024.0));
             }
         }
-        state.trace_.WriteLazyFmt(TracePrefix::Telemetry,
+        state.trace_.WriteFmt(TracePrefix::Telemetry,
             "drive_space label=%s total_bytes=%llu free_bytes=%llu used_percent=value=%.1f free_gb=value=%.1f "
             "read_status=%ld write_status=%ld read_mbps=value=%.3f write_mbps=value=%.3f",
             drive.label.c_str(),
@@ -140,7 +140,7 @@ void UpdateStorageThroughput(RealTelemetryCollectorState& state, bool initialize
     }
 
     const PDH_STATUS collectStatus = PdhCollectQueryData(state.storage_.query);
-    state.trace_.WriteLazyFmt(TracePrefix::Telemetry, "storage_collect status=%ld", static_cast<long>(collectStatus));
+    state.trace_.WriteFmt(TracePrefix::Telemetry, "storage_collect status=%ld", static_cast<long>(collectStatus));
 
     PDH_FMT_COUNTERVALUE value{};
     PDH_STATUS readStatus = PDH_INVALID_DATA;
@@ -175,7 +175,7 @@ void UpdateStorageThroughput(RealTelemetryCollectorState& state, bool initialize
             state.snapshot_, RetainedHistoryKey::StorageWrite, state.snapshot_.storage.writeMbps);
     }
 
-    state.trace_.WriteLazyFmt(TracePrefix::Telemetry,
+    state.trace_.WriteFmt(TracePrefix::Telemetry,
         "storage_rates read_status=%ld write_status=%ld read_mbps=value=%.3f write_mbps=value=%.3f",
         static_cast<long>(readStatus),
         static_cast<long>(writeStatus),

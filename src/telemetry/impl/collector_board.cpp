@@ -155,7 +155,7 @@ void UpdateBoardMetrics(RealTelemetryCollectorState& state) {
             state.board_.provider->Initialize(state.settings_.board);
             ApplyBoardVendorSample(state, state.board_.provider->Sample());
         }
-        state.trace_.WriteLazyFmt(TracePrefix::Telemetry,
+        state.trace_.WriteFmt(TracePrefix::Telemetry,
             "board_vendor_sample provider=%s available=%s diagnostics=\"%s\"",
             state.board_.providerName.c_str(),
             Trace::BoolText(state.board_.providerAvailable),
