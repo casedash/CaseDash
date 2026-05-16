@@ -145,6 +145,7 @@ private:
     void ThreadMain();
     static DWORD WINAPI ThreadProc(void* context);
     void WriteTrace(std::string text) const;
+    void WriteTraceFmt(const char* format, ...) const;
     void SetLastError(std::string error);
     bool EventsReady() const;
 

@@ -485,15 +485,19 @@ bool DashboardController::ConfigureDisplay(DashboardShellHost& shell, const Disp
 bool DashboardController::SwitchLayout(
     DashboardShellHost& shell, const std::string& layoutName, bool diagnosticsEditLayout) {
     if (state_.diagnostics != nullptr) {
-        state_.diagnostics->WriteTraceMarker(TracePrefix::LayoutSwitch,
-            "begin current_layout=" + Trace::QuoteText(state_.config.display.layout) +
-                " requested_layout=" + Trace::QuoteText(layoutName));
+        const std::string currentLayoutText = Trace::QuoteText(state_.config.display.layout);
+        const std::string requestedLayoutText = Trace::QuoteText(layoutName);
+        state_.diagnostics->WriteTraceMarkerFmt(TracePrefix::LayoutSwitch,
+            "begin current_layout=%s requested_layout=%s",
+            currentLayoutText.c_str(),
+            requestedLayoutText.c_str());
     }
     const std::string previousLayoutName = state_.config.display.layout;
     if (!SelectLayout(state_.config, layoutName)) {
         if (state_.diagnostics != nullptr) {
-            state_.diagnostics->WriteTraceMarker(
-                TracePrefix::LayoutSwitch, "select_failed requested_layout=" + Trace::QuoteText(layoutName));
+            const std::string requestedLayoutText = Trace::QuoteText(layoutName);
+            state_.diagnostics->WriteTraceMarkerFmt(
+                TracePrefix::LayoutSwitch, "select_failed requested_layout=%s", requestedLayoutText.c_str());
         }
         return false;
     }
@@ -501,9 +505,12 @@ bool DashboardController::SwitchLayout(
     SyncRenderer(shell, state_.isEditingLayout || diagnosticsEditLayout);
     if (!shell.Renderer().LastError().empty()) {
         if (state_.diagnostics != nullptr) {
-            state_.diagnostics->WriteTraceMarker(TracePrefix::LayoutSwitch,
-                "sync_failed requested_layout=" + Trace::QuoteText(layoutName) +
-                    " renderer_error=" + Trace::QuoteText(shell.Renderer().LastError()));
+            const std::string requestedLayoutText = Trace::QuoteText(layoutName);
+            const std::string rendererErrorText = Trace::QuoteText(shell.Renderer().LastError());
+            state_.diagnostics->WriteTraceMarkerFmt(TracePrefix::LayoutSwitch,
+                "sync_failed requested_layout=%s renderer_error=%s",
+                requestedLayoutText.c_str(),
+                rendererErrorText.c_str());
         }
         // The active config has already resolved a valid layout; rollback by name avoids a full config snapshot.
         SelectLayout(state_.config, previousLayoutName);
@@ -516,8 +523,9 @@ bool DashboardController::SwitchLayout(
     shell.RedrawShellNow();
     RefreshLayoutEditSessionDirtyFlag();
     if (state_.diagnostics != nullptr) {
-        state_.diagnostics->WriteTraceMarker(
-            TracePrefix::LayoutSwitch, "done active_layout=" + Trace::QuoteText(state_.config.display.layout));
+        const std::string activeLayoutText = Trace::QuoteText(state_.config.display.layout);
+        state_.diagnostics->WriteTraceMarkerFmt(
+            TracePrefix::LayoutSwitch, "done active_layout=%s", activeLayoutText.c_str());
     }
     return true;
 }

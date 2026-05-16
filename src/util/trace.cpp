@@ -2,6 +2,7 @@
 
 #include <windows.h>
 
+#include <cstdarg>
 #include <cstdio>
 
 #include "util/lightweight_mutex.h"
@@ -16,12 +17,8 @@ LightweightMutex& TraceWriteLock() {
 
 void WriteTraceLine(std::FILE* output, const char* prefix, const char* text) {
     const LightweightMutexLock lock(TraceWriteLock());
-    std::string line = "[trace " + Trace::FormatTimestamp() + "] ";
-    line += prefix;
-    line += ":";
-    line += text;
-    line += "\n";
-    fwrite(line.data(), 1, line.size(), output);
+    const std::string timestamp = Trace::FormatTimestamp();
+    fprintf(output, "[trace %s] %s:%s\n", timestamp.c_str(), prefix, text);
     fflush(output);
 }
 
@@ -73,6 +70,37 @@ void Trace::Write(TracePrefix prefix, const char* text) const {
 
 void Trace::Write(TracePrefix prefix, const std::string& text) const {
     Write(prefix, text.c_str());
+}
+
+void Trace::WriteFmt(TracePrefix prefix, const char* format, ...) const {
+    va_list args;
+    va_start(args, format);
+    WriteVFmt(prefix, format, args);
+    va_end(args);
+}
+
+void Trace::WriteVFmt(TracePrefix prefix, const char* format, va_list args) const {
+    if (!Enabled(prefix)) {
+        return;
+    }
+
+    char buffer[512];
+    va_list measureArgs;
+    va_copy(measureArgs, args);
+    const int length = vsnprintf(buffer, sizeof(buffer), format, measureArgs);
+    va_end(measureArgs);
+    if (length < 0) {
+        return;
+    }
+    if (static_cast<std::size_t>(length) < sizeof(buffer)) {
+        WriteTraceLine(output_, PrefixName(prefix), buffer);
+        return;
+    }
+
+    std::string text(static_cast<std::size_t>(length) + 1, '\0');
+    vsnprintf(text.data(), text.size(), format, args);
+    text.resize(static_cast<std::size_t>(length));
+    WriteTraceLine(output_, PrefixName(prefix), text.c_str());
 }
 
 const char* Trace::PrefixName(TracePrefix prefix) {
@@ -231,5 +259,7 @@ void WriteRendererErrorTrace(Trace& trace, std::string_view stage, const std::st
     if (error.empty()) {
         return;
     }
-    trace.Write(TracePrefix::Renderer, "error stage=" + Trace::QuoteText(stage) + " detail=" + Trace::QuoteText(error));
+    const std::string stageText = Trace::QuoteText(stage);
+    const std::string detailText = Trace::QuoteText(error);
+    trace.WriteFmt(TracePrefix::Renderer, "error stage=%s detail=%s", stageText.c_str(), detailText.c_str());
 }

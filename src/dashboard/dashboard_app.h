@@ -89,6 +89,7 @@ private:
     void RedrawLayoutEditDragFrame();
     void RelayLayoutEditTooltipMouseMessage(UINT message, WPARAM wParam, LPARAM lParam);
     void TraceLayoutEditUiEvent(TracePrefix prefix, const char* event, const std::string& details = {}) const;
+    void TraceLayoutEditUiEventFmt(TracePrefix prefix, const char* event, const char* format, ...) const;
     std::string BuildLayoutEditUiTraceState() const;
     bool CreateTrayIcon();
     void RemoveTrayIcon();

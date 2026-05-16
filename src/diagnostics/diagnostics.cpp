@@ -3,6 +3,7 @@
 #include <cctype>
 #include <chrono>
 #include <cmath>
+#include <cstdarg>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -79,12 +80,24 @@ bool TryParseHoverPointValue(const std::string& text, DiagnosticsHoverPoint& poi
 
 void WriteResolvedColorTraceLine(
     DiagnosticsSession& diagnostics, std::string_view section, std::string_view name, const ColorConfig& color) {
-    std::string text = "resolved_color section=" + Trace::QuoteText(section) + " name=" + Trace::QuoteText(name) +
-                       " value=" + Trace::QuoteText(FormatRgbaColorText(color.ToRgba()));
+    const std::string sectionText = Trace::QuoteText(section);
+    const std::string nameText = Trace::QuoteText(name);
+    const std::string valueText = Trace::QuoteText(FormatRgbaColorText(color.ToRgba()));
     if (!color.expression.empty()) {
-        text += " expression=" + Trace::QuoteText(color.expression);
+        const std::string expressionText = Trace::QuoteText(color.expression);
+        diagnostics.WriteTraceMarkerFmt(TracePrefix::Diagnostics,
+            "resolved_color section=%s name=%s value=%s expression=%s",
+            sectionText.c_str(),
+            nameText.c_str(),
+            valueText.c_str(),
+            expressionText.c_str());
+    } else {
+        diagnostics.WriteTraceMarkerFmt(TracePrefix::Diagnostics,
+            "resolved_color section=%s name=%s value=%s",
+            sectionText.c_str(),
+            nameText.c_str(),
+            valueText.c_str());
     }
-    diagnostics.WriteTraceMarker(TracePrefix::Diagnostics, text);
 }
 
 void WriteResolvedColorTrace(DiagnosticsSession& diagnostics, const AppConfig& config) {
@@ -329,8 +342,10 @@ void WriteValidationFailureTrace(
     }
 
     Trace trace(traceFile);
-    trace.Write(TracePrefix::Diagnostics,
-        "validation_failed reason=" + Trace::QuoteText(reason) + " message=" + Trace::QuoteText(message));
+    const std::string reasonText = Trace::QuoteText(reason);
+    const std::string messageText = Trace::QuoteText(message);
+    trace.WriteFmt(
+        TracePrefix::Diagnostics, "validation_failed reason=%s message=%s", reasonText.c_str(), messageText.c_str());
     fclose(traceFile);
 }
 
@@ -628,6 +643,17 @@ void DiagnosticsSession::WriteTraceMarker(TracePrefix prefix, const std::string&
     trace_.Write(prefix, text);
 }
 
+void DiagnosticsSession::WriteTraceMarkerFmt(TracePrefix prefix, const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+    WriteTraceMarkerVFmt(prefix, format, args);
+    va_end(args);
+}
+
+void DiagnosticsSession::WriteTraceMarkerVFmt(TracePrefix prefix, const char* format, va_list args) {
+    trace_.WriteVFmt(prefix, format, args);
+}
+
 void DiagnosticsSession::ReportError(TracePrefix prefix, const std::string& traceText, std::string_view message) {
     WriteTraceMarker(prefix, traceText);
     if (ShouldShowDialogs()) {
@@ -715,8 +741,8 @@ bool DiagnosticsSession::WriteOutputs(const TelemetryDump& dump, const AppConfig
                 "size=" + std::to_string(options_.appIconSize));
         }
         const std::string pathText = appIconPath_.string();
-        WriteTraceMarker(TracePrefix::Diagnostics,
-            "app_icon_saved path=\"" + pathText + "\" size=" + std::to_string(options_.appIconSize));
+        WriteTraceMarkerFmt(
+            TracePrefix::Diagnostics, "app_icon_saved path=\"%s\" size=%d", pathText.c_str(), options_.appIconSize);
     }
 
     if (options_.saveConfig && !SaveConfig(saveConfigPath_, config, ConfigParseContext{TelemetryMetricCatalog()})) {
@@ -923,7 +949,7 @@ bool SaveDumpScreenshot(const FilePath& imagePath,
             return false;
         }
         overlayState.SetPreviewWidget(*widget);
-        trace.Write(TracePrefix::Diagnostics, "edit_layout_widget name=\"" + editLayoutWidgetName + "\"");
+        trace.WriteFmt(TracePrefix::Diagnostics, "edit_layout_widget name=\"%s\"", editLayoutWidgetName.c_str());
     }
     if (hasHoverPoint) {
         if (!renderer.PrimeLayoutEditDynamicRegions(snapshot, overlayState)) {
@@ -954,9 +980,8 @@ bool SaveDumpScreenshot(const FilePath& imagePath,
             }
             trace.Write(TracePrefix::Diagnostics, traceText);
         } else {
-            trace.Write(TracePrefix::Diagnostics,
-                "hover point=" + Trace::QuoteText(Trace::FormatPoint(hoverPoint.x, hoverPoint.y)) +
-                    " target=" + Trace::QuoteText("none"));
+            trace.WriteFmt(
+                TracePrefix::Diagnostics, "hover point=\"%d,%d\" target=\"none\"", hoverPoint.x, hoverPoint.y);
         }
     }
     const bool saved = renderer.SaveSnapshotPng(imagePath, snapshot, overlayState);
@@ -1001,8 +1026,8 @@ int RunDiagnosticsHeadlessMode(const DiagnosticsOptions& diagnosticsOptions) {
         return 1;
     }
 
-    diagnostics.WriteTraceMarker(
-        TracePrefix::Diagnostics, "headless_start scale=" + std::to_string(ResolveSavedScreenshotScale(config)));
+    diagnostics.WriteTraceMarkerFmt(
+        TracePrefix::Diagnostics, "headless_start scale=%.6f", ResolveSavedScreenshotScale(config));
     WriteResolvedColorTrace(diagnostics, config);
     diagnostics.WriteTraceMarker(TracePrefix::Diagnostics, "telemetry_initialize_begin");
 

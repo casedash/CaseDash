@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdarg>
 #include <cstdint>
 #include <cstdio>
 #include <optional>
@@ -50,6 +51,8 @@ public:
 
     void Write(TracePrefix prefix, const char* text) const;
     void Write(TracePrefix prefix, const std::string& text) const;
+    void WriteFmt(TracePrefix prefix, const char* format, ...) const;
+    void WriteVFmt(TracePrefix prefix, const char* format, va_list args) const;
 
     template <typename Builder> void WriteLazy(TracePrefix prefix, Builder&& builder) const {
         if (!Enabled(prefix)) {

@@ -190,6 +190,7 @@ private:
     void InvalidateMetricSourceCache();
     bool ShouldWriteRendererTrace() const;
     void WriteTrace(const std::string& text) const;
+    void WriteTraceFmt(const char* format, ...) const;
     bool SaveLayoutGuideSheetSurfacePng(const FilePath& imagePath, int width, int height, Renderer::DrawCallback draw);
     bool RenderLayoutGuideSheetSurfaceOffscreen(int width, int height, Renderer::DrawCallback draw);
     void BeginLayoutGuideSheetDynamicArtifacts(const DashboardOverlayState& overlayState);

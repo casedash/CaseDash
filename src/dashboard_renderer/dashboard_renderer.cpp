@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdarg>
 #include <cstdio>
 #include <limits>
 #include <memory>
@@ -1433,6 +1434,17 @@ void DashboardRenderer::WriteTrace(const std::string& text) const {
         return;
     }
     trace_.Write(TracePrefix::Renderer, text);
+}
+
+void DashboardRenderer::WriteTraceFmt(const char* format, ...) const {
+    if (!ShouldWriteRendererTrace()) {
+        return;
+    }
+
+    va_list args;
+    va_start(args, format);
+    trace_.WriteVFmt(TracePrefix::Renderer, format, args);
+    va_end(args);
 }
 
 int DashboardRenderer::WidgetExtentForAxis(const WidgetLayout& widget, LayoutGuideAxis axis) const {

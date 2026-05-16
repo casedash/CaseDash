@@ -8,11 +8,6 @@
 
 namespace {
 
-std::string FormatTraceRect(const RenderRect& rect) {
-    return "(" + std::to_string(rect.left) + "," + std::to_string(rect.top) + "," + std::to_string(rect.right) + "," +
-           std::to_string(rect.bottom) + ")";
-}
-
 std::string FormatNodePath(const std::vector<size_t>& nodePath) {
     if (nodePath.empty()) {
         return "root";
@@ -303,14 +298,22 @@ void WriteLayoutEditActiveRegionTrace(Trace& trace,
     const LayoutEditActiveRegions& regions,
     const DashboardOverlayState& overlayState) {
     for (const LayoutEditActiveRegion& region : regions) {
-        trace.Write(TracePrefix::Diagnostics,
-            "active_region box=" + FormatTraceRect(region.box) +
-                " visual_type=" + Trace::QuoteText(FormatActiveRegionVisualType(region.kind)) +
-                " path=" + Trace::QuoteText(FormatActiveRegionPath(config, region)) +
-                " detail=" + Trace::QuoteText(FormatActiveRegionDetail(config, region)));
+        const std::string visualType = Trace::QuoteText(FormatActiveRegionVisualType(region.kind));
+        const std::string path = Trace::QuoteText(FormatActiveRegionPath(config, region));
+        const std::string detail = Trace::QuoteText(FormatActiveRegionDetail(config, region));
+        trace.WriteFmt(TracePrefix::Diagnostics,
+            "active_region box=(%d,%d,%d,%d) visual_type=%s path=%s detail=%s",
+            region.box.left,
+            region.box.top,
+            region.box.right,
+            region.box.bottom,
+            visualType.c_str(),
+            path.c_str(),
+            detail.c_str());
     }
 
-    trace.Write(TracePrefix::Diagnostics,
-        "active_regions count=" + std::to_string(regions.Size()) +
-            " layout_edit=" + Trace::BoolText(overlayState.showLayoutEditGuides));
+    trace.WriteFmt(TracePrefix::Diagnostics,
+        "active_regions count=%zu layout_edit=%s",
+        regions.Size(),
+        Trace::BoolText(overlayState.showLayoutEditGuides));
 }

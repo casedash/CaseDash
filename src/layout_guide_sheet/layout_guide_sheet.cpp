@@ -8,6 +8,7 @@
 #include "layout_guide_sheet/impl/layout_guide_sheet_renderer.h"
 #include "layout_model/dashboard_overlay_state.h"
 #include "util/localization_catalog.h"
+#include "util/numeric_format.h"
 #include "util/trace.h"
 
 namespace {
@@ -76,14 +77,21 @@ void RecordRenderStats(const LayoutGuideSheetRenderStats& renderStats, LayoutGui
 }
 
 void WritePipelineStatsTrace(Trace& trace, const LayoutGuideSheetPipelineStats& stats) {
-    trace.Write(TracePrefix::Diagnostics,
-        "layout_guide_sheet stats selected_cards=" + std::to_string(stats.selectedCards) +
-            " callouts=" + std::to_string(stats.callouts) + " " +
-            Trace::FormatValueDouble("active_regions_ms", Milliseconds(stats.activeRegions)) + " " +
-            Trace::FormatValueDouble("sheet_plan_ms", Milliseconds(stats.plan)) + " " +
-            Trace::FormatValueDouble("sheet_measure_ms", Milliseconds(stats.measure)) + " " +
-            Trace::FormatValueDouble("sheet_place_ms", Milliseconds(stats.placement)) + " " +
-            Trace::FormatValueDouble("sheet_draw_ms", Milliseconds(stats.draw)));
+    const std::string activeRegionsText = FormatDoubleFixed(Milliseconds(stats.activeRegions), 3);
+    const std::string planText = FormatDoubleFixed(Milliseconds(stats.plan), 3);
+    const std::string measureText = FormatDoubleFixed(Milliseconds(stats.measure), 3);
+    const std::string placementText = FormatDoubleFixed(Milliseconds(stats.placement), 3);
+    const std::string drawText = FormatDoubleFixed(Milliseconds(stats.draw), 3);
+    trace.WriteFmt(TracePrefix::Diagnostics,
+        "layout_guide_sheet stats selected_cards=%zu callouts=%zu active_regions_ms=%s sheet_plan_ms=%s "
+        "sheet_measure_ms=%s sheet_place_ms=%s sheet_draw_ms=%s",
+        stats.selectedCards,
+        stats.callouts,
+        activeRegionsText.c_str(),
+        planText.c_str(),
+        measureText.c_str(),
+        placementText.c_str(),
+        drawText.c_str());
 }
 
 }  // namespace

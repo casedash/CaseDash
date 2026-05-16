@@ -579,7 +579,7 @@ void DashboardShellUi::ShowAboutDialog() const {
 void DashboardShellUi::BeginLayoutEditModalUi() {
     app_.TraceLayoutEditUiEvent(TracePrefix::LayoutEditModal,
         "begin_request",
-        "depth_before=" + Trace::QuoteText(std::to_string(app_.layoutEditModalUiDepth_)));
+        "depth_before=\"" + std::to_string(app_.layoutEditModalUiDepth_) + "\"");
     ++app_.layoutEditModalUiDepth_;
     if (app_.layoutEditModalUiDepth_ == 1 && app_.controller_.State().isEditingLayout) {
         app_.layoutEditController_.CancelInteraction();
@@ -589,7 +589,7 @@ void DashboardShellUi::BeginLayoutEditModalUi() {
     SetCursor(LoadCursorW(nullptr, IDC_ARROW));
     app_.TraceLayoutEditUiEvent(TracePrefix::LayoutEditModal,
         "begin_done",
-        "depth_after=" + Trace::QuoteText(std::to_string(app_.layoutEditModalUiDepth_)));
+        "depth_after=\"" + std::to_string(app_.layoutEditModalUiDepth_) + "\"");
 }
 
 void DashboardShellUi::EndLayoutEditModalUi() {
@@ -599,7 +599,7 @@ void DashboardShellUi::EndLayoutEditModalUi() {
     }
     app_.TraceLayoutEditUiEvent(TracePrefix::LayoutEditModal,
         "end_request",
-        "depth_before=" + Trace::QuoteText(std::to_string(app_.layoutEditModalUiDepth_)));
+        "depth_before=\"" + std::to_string(app_.layoutEditModalUiDepth_) + "\"");
     --app_.layoutEditModalUiDepth_;
     if (app_.layoutEditModalUiDepth_ == 0) {
         ReleaseCapture();
@@ -609,7 +609,7 @@ void DashboardShellUi::EndLayoutEditModalUi() {
     }
     app_.TraceLayoutEditUiEvent(TracePrefix::LayoutEditModal,
         "end_done",
-        "depth_after=" + Trace::QuoteText(std::to_string(app_.layoutEditModalUiDepth_)));
+        "depth_after=\"" + std::to_string(app_.layoutEditModalUiDepth_) + "\"");
 }
 
 HINSTANCE DashboardShellUi::DialogInstance() const {
@@ -924,32 +924,31 @@ void DashboardShellUi::ExecuteCommand(
                 const size_t index = selected - kCommandLayoutBase;
                 if (index < state.config.layout.layouts.size()) {
                     const std::string& layoutName = state.config.layout.layouts[index].name;
-                    app_.TraceLayoutEditUiEvent(
-                        TracePrefix::LayoutSwitch, "menu_command", "selected_layout=" + Trace::QuoteText(layoutName));
+                    const std::string selectedLayout = Trace::QuoteText(layoutName);
+                    app_.TraceLayoutEditUiEventFmt(
+                        TracePrefix::LayoutSwitch, "menu_command", "selected_layout=%s", selectedLayout.c_str());
                     const bool suppressTooltipRefresh = app_.controller_.State().isEditingLayout;
                     if (suppressTooltipRefresh) {
                         app_.SetLayoutEditTooltipRefreshSuppressed(true);
                         app_.layoutEditController_.HandleMouseLeave();
                         app_.HideLayoutEditTooltip();
-                        app_.TraceLayoutEditUiEvent(TracePrefix::LayoutSwitch,
-                            "menu_prepare",
-                            "tooltip_suppressed=" + Trace::QuoteText("true"));
+                        app_.TraceLayoutEditUiEvent(
+                            TracePrefix::LayoutSwitch, "menu_prepare", "tooltip_suppressed=\"true\"");
                     }
                     if (!app_.controller_.SwitchLayout(app_, layoutName, app_.diagnosticsOptions_.editLayout)) {
                         if (suppressTooltipRefresh) {
                             app_.SetLayoutEditTooltipRefreshSuppressed(false);
                         }
-                        app_.TraceLayoutEditUiEvent(TracePrefix::LayoutSwitch,
-                            "menu_failed",
-                            "selected_layout=" + Trace::QuoteText(layoutName));
+                        app_.TraceLayoutEditUiEventFmt(
+                            TracePrefix::LayoutSwitch, "menu_failed", "selected_layout=%s", selectedLayout.c_str());
                         MessageBoxUtf8(app_.hwnd_, "Failed to switch layout.", MB_ICONERROR);
                     } else {
                         RefreshLayoutEditDialog();
                         if (suppressTooltipRefresh) {
                             app_.SetLayoutEditTooltipRefreshSuppressed(false);
                         }
-                        app_.TraceLayoutEditUiEvent(
-                            TracePrefix::LayoutSwitch, "menu_done", "selected_layout=" + Trace::QuoteText(layoutName));
+                        app_.TraceLayoutEditUiEventFmt(
+                            TracePrefix::LayoutSwitch, "menu_done", "selected_layout=%s", selectedLayout.c_str());
                     }
                 }
                 break;

@@ -1,6 +1,7 @@
 #include "dashboard_renderer/impl/render_thread.h"
 
 #include <algorithm>
+#include <cstdarg>
 #include <string_view>
 #include <utility>
 
@@ -136,8 +137,10 @@ DashboardRenderThread::~DashboardRenderThread() {
 
 void DashboardRenderThread::Configure(HWND hwnd, bool threaded, bool immediatePresent) {
     if (threaded_ != threaded) {
-        WriteTrace("render_thread_shutdown_request reason=configure_threading_change old_threaded=" +
-                   std::string(BoolText(threaded_)) + " new_threaded=" + BoolText(threaded));
+        WriteTraceFmt(
+            "render_thread_shutdown_request reason=configure_threading_change old_threaded=%s new_threaded=%s",
+            BoolText(threaded_),
+            BoolText(threaded));
         Shutdown();
     }
 
@@ -211,8 +214,7 @@ void DashboardRenderThread::Shutdown() {
     if (syncRenderer_ != nullptr) {
         syncRenderer_->Shutdown();
     }
-    WriteTrace(
-        "animation_timeline_reset owner=sync reason=shutdown tracks=" + std::to_string(syncTimeline_.TrackCount()));
+    WriteTraceFmt("animation_timeline_reset owner=sync reason=shutdown tracks=%zu", syncTimeline_.TrackCount());
     syncTimeline_.Reset();
     if (syncFrame_.has_value()) {
         ReleaseFrameLayers(std::move(*syncFrame_));
@@ -331,8 +333,7 @@ void DashboardRenderThread::DrawFrameForCurrentTarget(
 }
 
 void DashboardRenderThread::ResetTimeline() {
-    WriteTrace("animation_timeline_reset owner=sync reason=explicit_request tracks=" +
-               std::to_string(syncTimeline_.TrackCount()));
+    WriteTraceFmt("animation_timeline_reset owner=sync reason=explicit_request tracks=%zu", syncTimeline_.TrackCount());
     syncTimeline_.Reset();
     activeAnimations_.store(false);
     if (threaded_) {
@@ -487,16 +488,20 @@ bool DashboardRenderThread::PresentFrame(Renderer& renderer,
         const std::size_t prunedCount = activeTimeline->EndFrame(retention);
         const std::size_t trackCountAfterEndFrame = activeTimeline->TrackCount();
         if (prunedCount > 0) {
-            WriteTrace("animation_timeline_prune retention=" + std::string(TrackRetentionText(retention)) + " pruned=" +
-                       std::to_string(prunedCount) + " before=" + std::to_string(trackCountBeforeEndFrame) +
-                       " after=" + std::to_string(trackCountAfterEndFrame) +
-                       " metric_version=" + std::to_string(frame.versions.metricVersion) +
-                       " previous_metric_version=" + std::to_string(presentedState.versions.metricVersion) +
-                       " had_previous_metric=" + BoolText(presentedState.hasMetricVersion) +
-                       " surface_version=" + std::to_string(frame.versions.surfaceVersion) +
-                       " snapshot_version=" + std::to_string(frame.versions.snapshotVersion) +
-                       " overlay_version=" + std::to_string(frame.versions.overlayVersion) +
-                       " animation_geometry_version=" + std::to_string(frame.versions.animationGeometryVersion));
+            WriteTraceFmt("animation_timeline_prune retention=%s pruned=%zu before=%zu after=%zu metric_version=%llu "
+                          "previous_metric_version=%llu had_previous_metric=%s surface_version=%llu "
+                          "snapshot_version=%llu overlay_version=%llu animation_geometry_version=%llu",
+                TrackRetentionText(retention),
+                prunedCount,
+                trackCountBeforeEndFrame,
+                trackCountAfterEndFrame,
+                static_cast<unsigned long long>(frame.versions.metricVersion),
+                static_cast<unsigned long long>(presentedState.versions.metricVersion),
+                BoolText(presentedState.hasMetricVersion),
+                static_cast<unsigned long long>(frame.versions.surfaceVersion),
+                static_cast<unsigned long long>(frame.versions.snapshotVersion),
+                static_cast<unsigned long long>(frame.versions.overlayVersion),
+                static_cast<unsigned long long>(frame.versions.animationGeometryVersion));
         }
         activeAnimations_.store(activeTimeline->HasActiveAnimations(now));
     } else {
@@ -745,8 +750,8 @@ void DashboardRenderThread::ThreadMain() {
                         shouldStop = true;
                     }
                     if (!shouldStop && resetTimelineRequested_) {
-                        WriteTrace("animation_timeline_reset owner=thread reason=explicit_request tracks=" +
-                                   std::to_string(timeline.TrackCount()));
+                        WriteTraceFmt("animation_timeline_reset owner=thread reason=explicit_request tracks=%zu",
+                            timeline.TrackCount());
                         timeline.Reset();
                         activeAnimations_.store(false);
                         resetTimelineRequested_ = false;
@@ -840,7 +845,7 @@ void DashboardRenderThread::ThreadMain() {
         ReleaseFrameLayers(std::move(*activeFrame));
         activeFrame.reset();
     }
-    WriteTrace("animation_timeline_reset owner=thread reason=shutdown tracks=" + std::to_string(timeline.TrackCount()));
+    WriteTraceFmt("animation_timeline_reset owner=thread reason=shutdown tracks=%zu", timeline.TrackCount());
     timeline.Reset();
     renderer->Shutdown();
 }
@@ -860,6 +865,18 @@ void DashboardRenderThread::WriteTrace(std::string text) const {
         return;
     }
     trace->Write(TracePrefix::Renderer, text);
+}
+
+void DashboardRenderThread::WriteTraceFmt(const char* format, ...) const {
+    const Trace* trace = trace_.load();
+    if (trace == nullptr || !trace->Enabled(TracePrefix::Renderer)) {
+        return;
+    }
+
+    va_list args;
+    va_start(args, format);
+    trace->WriteVFmt(TracePrefix::Renderer, format, args);
+    va_end(args);
 }
 
 void DashboardRenderThread::SetLastError(std::string error) {

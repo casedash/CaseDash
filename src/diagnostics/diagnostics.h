@@ -3,6 +3,7 @@
 #include <windows.h>
 
 #include <commdlg.h>
+#include <cstdarg>
 #include <cstdio>
 #include <memory>
 #include <optional>
@@ -53,6 +54,8 @@ public:
     bool ShouldShowDialogs() const;
     void WriteTraceMarker(TracePrefix prefix, const char* text);
     void WriteTraceMarker(TracePrefix prefix, const std::string& text);
+    void WriteTraceMarkerFmt(TracePrefix prefix, const char* format, ...);
+    void WriteTraceMarkerVFmt(TracePrefix prefix, const char* format, va_list args);
     bool WriteOutputs(const TelemetryDump& dump, const AppConfig& config);
 
 private:

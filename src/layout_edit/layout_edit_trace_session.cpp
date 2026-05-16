@@ -20,7 +20,7 @@ void LayoutEditTraceSession::Begin(Trace& trace, const char* kind, const std::st
     kind_ = kind;
     detail_ = detail;
     startedAt_ = std::chrono::steady_clock::now();
-    trace.Write(TracePrefix::LayoutEditDrag, "start kind=\"" + kind_ + "\" detail=\"" + detail_ + "\"");
+    trace.WriteFmt(TracePrefix::LayoutEditDrag, "start kind=\"%s\" detail=\"%s\"", kind_.c_str(), detail_.c_str());
 }
 
 void LayoutEditTraceSession::Record(LayoutEditHost::TracePhase phase, std::chrono::nanoseconds elapsed) {
