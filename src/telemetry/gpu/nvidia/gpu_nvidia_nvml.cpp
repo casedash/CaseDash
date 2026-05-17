@@ -212,14 +212,14 @@ std::string KnownNvmlName(const std::array<char, 128>& name) {
     return name[0] != '\0' ? Utf8FromAnsi(name.data()) : std::string();
 }
 
-bool NvmlPackedDeviceIdMatches(unsigned int pciDeviceId, const GpuVendorInfo& adapter) {
+bool NvmlPackedDeviceIdMatches(unsigned int pciDeviceId, const GpuAdapterInfo& adapter) {
     const unsigned int low = pciDeviceId & 0xffffu;
     const unsigned int high = (pciDeviceId >> 16) & 0xffffu;
     return (low == adapter.vendorId && high == adapter.deviceId) ||
            (low == adapter.deviceId && high == adapter.vendorId);
 }
 
-int NvidiaDeviceMatchRank(const GpuVendorInfo& adapter, const NvmlPciInfo* pci, const std::string& name) {
+int NvidiaDeviceMatchRank(const GpuAdapterInfo& adapter, const NvmlPciInfo* pci, const std::string& name) {
     if (pci != nullptr && adapter.hasPciAddress && pci->domain == adapter.pciDomain && pci->bus == adapter.pciBus &&
         pci->device == adapter.pciDevice) {
         return 5;
@@ -241,7 +241,7 @@ int NvidiaDeviceMatchRank(const GpuVendorInfo& adapter, const NvmlPciInfo* pci, 
 
 class NvidiaNvmlGpuTelemetryProvider final : public GpuVendorTelemetryProvider {
 public:
-    NvidiaNvmlGpuTelemetryProvider(Trace& trace, std::optional<GpuVendorInfo> adapter)
+    NvidiaNvmlGpuTelemetryProvider(Trace& trace, std::optional<GpuAdapterInfo> adapter)
         : trace_(trace), adapter_(std::move(adapter)) {}
 
     bool Initialize() override {
@@ -499,7 +499,7 @@ private:
     Trace& trace_;
     NvmlLibrary nvml_;
     NvmlDevice device_ = nullptr;
-    std::optional<GpuVendorInfo> adapter_;
+    std::optional<GpuAdapterInfo> adapter_;
     std::string gpuName_;
     std::string diagnostics_ = "NVML provider not initialized.";
     std::string fpsDiagnostics_ = "Presented FPS ETW provider not initialized.";
@@ -511,6 +511,6 @@ private:
 }  // namespace
 
 std::unique_ptr<GpuVendorTelemetryProvider> CreateNvidiaGpuTelemetryProvider(
-    Trace& trace, std::optional<GpuVendorInfo> adapter) {
+    Trace& trace, std::optional<GpuAdapterInfo> adapter) {
     return std::make_unique<NvidiaNvmlGpuTelemetryProvider>(trace, std::move(adapter));
 }

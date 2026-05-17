@@ -6,7 +6,7 @@
 namespace {
 
 struct KnownTestGpu {
-    GpuVendorInfo primaryGpu;
+    GpuVendorInfo gpu;
     GpuVendor expectedGpuVendor;
 };
 
@@ -20,6 +20,7 @@ const KnownTestGpu kKnownTestGpus[] = {
     {GpuVendorInfo{0x8086u, "Intel(R) UHD Graphics"}, GpuVendor::Intel},
     {GpuVendorInfo{0x10deu, "NVIDIA GeForce RTX 3080"}, GpuVendor::Nvidia},
     {GpuVendorInfo{0x10deu, "NVIDIA GeForce RTX 4070 Laptop GPU"}, GpuVendor::Nvidia},
+    {GpuVendorInfo{0x10deu, "NVIDIA GeForce GTX 1650 Ti with Max-Q Design"}, GpuVendor::Nvidia},
 };
 
 const KnownTestBoard kKnownTestBoards[] = {
@@ -32,7 +33,7 @@ const KnownTestBoard kKnownTestBoards[] = {
 
 TEST(HardwareVendorSelection, SelectsExpectedGpuProvidersForKnownTestMachines) {
     for (const KnownTestGpu& gpu : kKnownTestGpus) {
-        EXPECT_EQ(SelectGpuVendor(gpu.primaryGpu), gpu.expectedGpuVendor);
+        EXPECT_EQ(SelectGpuVendor(gpu.gpu), gpu.expectedGpuVendor) << gpu.gpu.adapterName;
     }
 }
 

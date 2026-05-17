@@ -33,11 +33,11 @@ public:
 };
 
 struct GpuAdapterSelection {
-    std::optional<GpuVendorInfo> selectedAdapter;
+    std::optional<GpuAdapterInfo> selectedAdapter;
     std::vector<GpuAdapterCandidate> candidates;
 };
 
 GpuAdapterSelection ResolveGpuAdapterSelection(Trace& trace, std::string_view preferredAdapterName);
-std::optional<GpuVendorInfo> ExtractPrimaryGpuVendorInfo(Trace& trace);
+std::optional<GpuAdapterInfo> ExtractPrimaryGpuAdapterInfo(Trace& trace);
 std::unique_ptr<GpuVendorTelemetryProvider> CreateGpuVendorTelemetryProvider(
-    Trace& trace, const std::optional<GpuVendorInfo>& adapter);
+    Trace& trace, const std::optional<GpuAdapterInfo>& adapter);

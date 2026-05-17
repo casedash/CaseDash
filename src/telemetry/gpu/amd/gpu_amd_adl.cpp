@@ -114,7 +114,7 @@ AdlxGpuIdentity ReadAdlxGpuIdentity(IADLXGPUPtr gpu) {
     return identity;
 }
 
-int AmdDeviceMatchRank(const GpuVendorInfo& adapter, const AdlxGpuIdentity& identity) {
+int AmdDeviceMatchRank(const GpuAdapterInfo& adapter, const AdlxGpuIdentity& identity) {
     if (identity.vendorId == adapter.vendorId && identity.deviceId == adapter.deviceId &&
         (adapter.subSysId == 0 || identity.subSysId == adapter.subSysId) &&
         (adapter.revision == 0 || identity.revision == adapter.revision)) {
@@ -137,7 +137,7 @@ int AmdDeviceMatchRank(const GpuVendorInfo& adapter, const AdlxGpuIdentity& iden
 
 class AmdAdlxGpuTelemetryProvider final : public GpuVendorTelemetryProvider {
 public:
-    AmdAdlxGpuTelemetryProvider(Trace& trace, std::optional<GpuVendorInfo> adapter)
+    AmdAdlxGpuTelemetryProvider(Trace& trace, std::optional<GpuAdapterInfo> adapter)
         : trace_(trace), adapter_(std::move(adapter)) {}
 
     ~AmdAdlxGpuTelemetryProvider() override {
@@ -490,7 +490,7 @@ private:
     IADLXPerformanceMonitoringServicesPtr performanceMonitoring_;
     IADLXGPUMetricsSupportPtr metricsSupport_;
     Trace& trace_;
-    std::optional<GpuVendorInfo> adapter_;
+    std::optional<GpuAdapterInfo> adapter_;
     std::string gpuName_;
     std::string diagnostics_ = "ADLX provider not initialized.";
     std::string fpsDiagnostics_ = "Presented FPS ETW provider not initialized.";
@@ -507,6 +507,6 @@ private:
 }  // namespace
 
 std::unique_ptr<GpuVendorTelemetryProvider> CreateAmdGpuTelemetryProvider(
-    Trace& trace, std::optional<GpuVendorInfo> adapter) {
+    Trace& trace, std::optional<GpuAdapterInfo> adapter) {
     return std::make_unique<AmdAdlxGpuTelemetryProvider>(trace, std::move(adapter));
 }

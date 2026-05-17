@@ -13,6 +13,9 @@ enum class GpuVendor {
 struct GpuVendorInfo {
     unsigned int vendorId = 0;
     std::string adapterName;
+};
+
+struct GpuAdapterInfo : GpuVendorInfo {
     unsigned int adapterIndex = 0;
     std::uint64_t dedicatedVideoMemoryBytes = 0;
     unsigned int deviceId = 0;

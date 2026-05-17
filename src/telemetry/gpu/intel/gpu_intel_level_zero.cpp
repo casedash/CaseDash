@@ -522,7 +522,7 @@ struct MemorySample {
 
 class IntelLevelZeroGpuTelemetryProvider final : public GpuVendorTelemetryProvider {
 public:
-    IntelLevelZeroGpuTelemetryProvider(Trace& trace, std::optional<GpuVendorInfo> adapter)
+    IntelLevelZeroGpuTelemetryProvider(Trace& trace, std::optional<GpuAdapterInfo> adapter)
         : trace_(trace), adapter_(std::move(adapter)) {}
 
     bool Initialize() override {
@@ -1031,9 +1031,9 @@ private:
     Trace& trace_;
     LevelZeroLibrary levelZero_;
     ZesDevice device_ = nullptr;
-    std::optional<GpuVendorInfo> adapter_;
+    std::optional<GpuAdapterInfo> adapter_;
     std::string sysmanGpuName_ = "Intel GPU";
-    std::string gpuName_ = "Intel GPU";
+    std::string gpuName_;
     std::string diagnostics_ = "Level Zero provider not initialized.";
     std::string fpsDiagnostics_ = "Presented FPS ETW provider not initialized.";
     std::vector<EngineProbe> engines_;
@@ -1056,6 +1056,6 @@ private:
 }  // namespace
 
 std::unique_ptr<GpuVendorTelemetryProvider> CreateIntelGpuTelemetryProvider(
-    Trace& trace, std::optional<GpuVendorInfo> adapter) {
+    Trace& trace, std::optional<GpuAdapterInfo> adapter) {
     return std::make_unique<IntelLevelZeroGpuTelemetryProvider>(trace, std::move(adapter));
 }

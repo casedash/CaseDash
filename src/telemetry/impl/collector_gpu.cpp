@@ -186,7 +186,7 @@ void ApplySelectedGpuAdapterInfo(RealTelemetryCollectorState& state) {
         return;
     }
 
-    const GpuVendorInfo& adapter = *state.gpu_.selectedAdapter;
+    const GpuAdapterInfo& adapter = *state.gpu_.selectedAdapter;
     state.snapshot_.gpu.name = adapter.adapterName.empty() ? "GPU" : adapter.adapterName;
     state.snapshot_.gpu.vram.totalGb =
         static_cast<double>(adapter.dedicatedVideoMemoryBytes) / (1024.0 * 1024.0 * 1024.0);
