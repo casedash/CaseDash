@@ -21,10 +21,6 @@ void WriteTelemetryTrace(const RealTelemetryCollectorState& state, const char* t
     state.trace_.Write(TracePrefix::Telemetry, text);
 }
 
-void WriteTelemetryTrace(const RealTelemetryCollectorState& state, const std::string& text) {
-    state.trace_.Write(TracePrefix::Telemetry, text);
-}
-
 struct CounterArrayTotals {
     double total = 0.0;
     double total3d = 0.0;
