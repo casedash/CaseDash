@@ -56,7 +56,7 @@ using D3DkmtCloseAdapterFn = NtStatus(WINAPI*)(const D3DkmtCloseAdapter*);
 
 class UnsupportedGpuTelemetryProvider final : public GpuVendorTelemetryProvider {
 public:
-    UnsupportedGpuTelemetryProvider(Trace& trace, std::optional<GpuVendorInfo> adapter)
+    UnsupportedGpuTelemetryProvider(Trace& trace, std::optional<GpuAdapterInfo> adapter)
         : trace_(trace), adapter_(std::move(adapter)) {}
 
     bool Initialize() override {
@@ -112,14 +112,14 @@ public:
 
 private:
     Trace& trace_;
-    std::optional<GpuVendorInfo> adapter_;
+    std::optional<GpuAdapterInfo> adapter_;
     GpuVendorTelemetrySample sample_;
     std::string fpsDiagnostics_ = "Presented FPS ETW provider not initialized.";
     std::unique_ptr<FpsTelemetryProvider> fpsProvider_;
 };
 
 std::unique_ptr<GpuVendorTelemetryProvider> CreateGpuVendorProviderForVendor(
-    Trace& trace, GpuVendor vendor, std::optional<GpuVendorInfo> adapter) {
+    Trace& trace, GpuVendor vendor, std::optional<GpuAdapterInfo> adapter) {
     if (vendor == GpuVendor::Nvidia) {
         return CreateNvidiaGpuTelemetryProvider(trace, adapter);
     }
@@ -147,7 +147,7 @@ double DedicatedVideoMemoryGb(std::uint64_t bytes) {
     return static_cast<double>(bytes) / (1024.0 * 1024.0 * 1024.0);
 }
 
-void PopulateAdapterPciAddress(GpuVendorInfo& info, LUID adapterLuid) {
+void PopulateAdapterPciAddress(GpuAdapterInfo& info, LUID adapterLuid) {
     HMODULE gdi = GetModuleHandleW(kGdi32LibraryName);
     if (gdi == nullptr) {
         gdi = LoadLibraryW(kGdi32LibraryName);
@@ -222,13 +222,14 @@ GpuAdapterSelection ResolveGpuAdapterSelection(Trace& trace, std::string_view pr
         const bool software = SUCCEEDED(descHr) && (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) != 0;
         const std::string adapterName = SUCCEEDED(descHr) ? Utf8FromWide(desc.Description) : std::string();
         if (SUCCEEDED(descHr) && !software) {
-            GpuVendorInfo info{desc.VendorId,
-                adapterName,
-                adapterIndex,
-                static_cast<std::uint64_t>(desc.DedicatedVideoMemory),
-                desc.DeviceId,
-                desc.SubSysId,
-                desc.Revision};
+            GpuAdapterInfo info;
+            info.vendorId = desc.VendorId;
+            info.adapterName = adapterName;
+            info.adapterIndex = adapterIndex;
+            info.dedicatedVideoMemoryBytes = static_cast<std::uint64_t>(desc.DedicatedVideoMemory);
+            info.deviceId = desc.DeviceId;
+            info.subSysId = desc.SubSysId;
+            info.revision = desc.Revision;
             PopulateAdapterPciAddress(info, desc.AdapterLuid);
             const GpuVendor vendor = SelectGpuVendor(info);
             const int matchRank = PreferredGpuAdapterMatchRank(adapterName, preferredAdapterName);
@@ -305,12 +306,12 @@ GpuAdapterSelection ResolveGpuAdapterSelection(Trace& trace, std::string_view pr
     return selection;
 }
 
-std::optional<GpuVendorInfo> ExtractPrimaryGpuVendorInfo(Trace& trace) {
+std::optional<GpuAdapterInfo> ExtractPrimaryGpuAdapterInfo(Trace& trace) {
     return ResolveGpuAdapterSelection(trace, {}).selectedAdapter;
 }
 
 std::unique_ptr<GpuVendorTelemetryProvider> CreateGpuVendorTelemetryProvider(
-    Trace& trace, const std::optional<GpuVendorInfo>& adapter) {
+    Trace& trace, const std::optional<GpuAdapterInfo>& adapter) {
     const GpuVendor vendor = adapter.has_value() ? SelectGpuVendor(*adapter) : GpuVendor::Unknown;
     trace.WriteFmt(TracePrefix::GpuVendor,
         RES_STR("create vendor=%s adapter=\"%s\""),
