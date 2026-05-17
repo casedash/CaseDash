@@ -201,11 +201,6 @@ using ZesDeviceEnumTemperatureSensorsFn = ZeResult(__cdecl*)(ZesDevice, std::uin
 using ZesTemperatureGetPropertiesFn = ZeResult(__cdecl*)(ZesTemperature, ZesTemperatureProperties*);
 using ZesTemperatureGetStateFn = ZeResult(__cdecl*)(ZesTemperature, double*);
 
-template <typename Function> bool LoadFunction(HMODULE module, const char* name, Function& function) {
-    function = reinterpret_cast<Function>(GetProcAddress(module, name));
-    return function != nullptr;
-}
-
 std::string ResultCodeString(ZeResult result) {
     switch (result) {
         case 0:
@@ -299,8 +294,7 @@ std::string FormatOptionalMetric(const char* label, std::optional<double> value,
     return value.has_value() ? Trace::FormatValueDouble(label, *value, precision) : FormatText("%s=N/A", label);
 }
 
-template <typename Handle, typename Enumerator>
-ZeResult EnumerateHandles(Enumerator&& enumerate, std::vector<Handle>& handles) {
+ZeResult EnumerateDriverHandles(ZesDriverGetFn enumerate, std::vector<ZesDriver>& handles) {
     handles.clear();
     std::uint32_t count = 0;
     ZeResult result = enumerate(&count, nullptr);
@@ -310,6 +304,26 @@ ZeResult EnumerateHandles(Enumerator&& enumerate, std::vector<Handle>& handles) 
 
     handles.resize(count);
     result = enumerate(&count, handles.data());
+    if (result != kZeResultSuccess) {
+        handles.clear();
+        return result;
+    }
+    if (count < handles.size()) {
+        handles.resize(count);
+    }
+    return result;
+}
+
+ZeResult EnumerateChildHandles(ZesDeviceGetFn enumerate, void* parent, std::vector<ZesDevice>& handles) {
+    handles.clear();
+    std::uint32_t count = 0;
+    ZeResult result = enumerate(parent, &count, nullptr);
+    if (result != kZeResultSuccess || count == 0) {
+        return result;
+    }
+
+    handles.resize(count);
+    result = enumerate(parent, &count, handles.data());
     if (result != kZeResultSuccess) {
         handles.clear();
         return result;
@@ -336,25 +350,29 @@ public:
         }
 
         bool loaded = true;
-        loaded = LoadFunction(module_, "zesInit", sysmanInit_) && loaded;
-        loaded = LoadFunction(module_, "zesDriverGet", driverGet_) && loaded;
-        loaded = LoadFunction(module_, "zesDeviceGet", deviceGet_) && loaded;
-        loaded = LoadFunction(module_, "zesDeviceGetProperties", deviceGetProperties_) && loaded;
-        loaded = LoadFunction(module_, "zesDeviceEnumEngineGroups", deviceEnumEngineGroups_) && loaded;
-        loaded = LoadFunction(module_, "zesEngineGetProperties", engineGetProperties_) && loaded;
-        loaded = LoadFunction(module_, "zesEngineGetActivity", engineGetActivity_) && loaded;
-        loaded = LoadFunction(module_, "zesDeviceEnumFans", deviceEnumFans_) && loaded;
-        loaded = LoadFunction(module_, "zesFanGetProperties", fanGetProperties_) && loaded;
-        loaded = LoadFunction(module_, "zesFanGetState", fanGetState_) && loaded;
-        loaded = LoadFunction(module_, "zesDeviceEnumFrequencyDomains", deviceEnumFrequencyDomains_) && loaded;
-        loaded = LoadFunction(module_, "zesFrequencyGetProperties", frequencyGetProperties_) && loaded;
-        loaded = LoadFunction(module_, "zesFrequencyGetState", frequencyGetState_) && loaded;
-        loaded = LoadFunction(module_, "zesDeviceEnumMemoryModules", deviceEnumMemoryModules_) && loaded;
-        loaded = LoadFunction(module_, "zesMemoryGetProperties", memoryGetProperties_) && loaded;
-        loaded = LoadFunction(module_, "zesMemoryGetState", memoryGetState_) && loaded;
-        loaded = LoadFunction(module_, "zesDeviceEnumTemperatureSensors", deviceEnumTemperatureSensors_) && loaded;
-        loaded = LoadFunction(module_, "zesTemperatureGetProperties", temperatureGetProperties_) && loaded;
-        loaded = LoadFunction(module_, "zesTemperatureGetState", temperatureGetState_) && loaded;
+#define CASEDASH_LOAD_REQUIRED(function, name)                                                                         \
+    function = reinterpret_cast<decltype(function)>(GetProcAddress(module_, name));                                    \
+    loaded = function != nullptr && loaded
+        CASEDASH_LOAD_REQUIRED(sysmanInit_, "zesInit");
+        CASEDASH_LOAD_REQUIRED(driverGet_, "zesDriverGet");
+        CASEDASH_LOAD_REQUIRED(deviceGet_, "zesDeviceGet");
+        CASEDASH_LOAD_REQUIRED(deviceGetProperties_, "zesDeviceGetProperties");
+        CASEDASH_LOAD_REQUIRED(deviceEnumEngineGroups_, "zesDeviceEnumEngineGroups");
+        CASEDASH_LOAD_REQUIRED(engineGetProperties_, "zesEngineGetProperties");
+        CASEDASH_LOAD_REQUIRED(engineGetActivity_, "zesEngineGetActivity");
+        CASEDASH_LOAD_REQUIRED(deviceEnumFans_, "zesDeviceEnumFans");
+        CASEDASH_LOAD_REQUIRED(fanGetProperties_, "zesFanGetProperties");
+        CASEDASH_LOAD_REQUIRED(fanGetState_, "zesFanGetState");
+        CASEDASH_LOAD_REQUIRED(deviceEnumFrequencyDomains_, "zesDeviceEnumFrequencyDomains");
+        CASEDASH_LOAD_REQUIRED(frequencyGetProperties_, "zesFrequencyGetProperties");
+        CASEDASH_LOAD_REQUIRED(frequencyGetState_, "zesFrequencyGetState");
+        CASEDASH_LOAD_REQUIRED(deviceEnumMemoryModules_, "zesDeviceEnumMemoryModules");
+        CASEDASH_LOAD_REQUIRED(memoryGetProperties_, "zesMemoryGetProperties");
+        CASEDASH_LOAD_REQUIRED(memoryGetState_, "zesMemoryGetState");
+        CASEDASH_LOAD_REQUIRED(deviceEnumTemperatureSensors_, "zesDeviceEnumTemperatureSensors");
+        CASEDASH_LOAD_REQUIRED(temperatureGetProperties_, "zesTemperatureGetProperties");
+        CASEDASH_LOAD_REQUIRED(temperatureGetState_, "zesTemperatureGetState");
+#undef CASEDASH_LOAD_REQUIRED
 
         if (!loaded) {
             diagnostics = "Level Zero loader is missing required Sysman entry points.";
@@ -368,13 +386,11 @@ public:
     }
 
     ZeResult Drivers(std::vector<ZesDriver>& drivers) const {
-        return EnumerateHandles<ZesDriver>(
-            [&](std::uint32_t* count, ZesDriver* values) { return driverGet_(count, values); }, drivers);
+        return EnumerateDriverHandles(driverGet_, drivers);
     }
 
     ZeResult Devices(ZesDriver driver, std::vector<ZesDevice>& devices) const {
-        return EnumerateHandles<ZesDevice>(
-            [&](std::uint32_t* count, ZesDevice* values) { return deviceGet_(driver, count, values); }, devices);
+        return EnumerateChildHandles(deviceGet_, driver, devices);
     }
 
     ZeResult DeviceProperties(ZesDevice device, ZesDeviceProperties& properties) const {
@@ -384,9 +400,7 @@ public:
     }
 
     ZeResult EngineGroups(ZesDevice device, std::vector<ZesEngine>& engines) const {
-        return EnumerateHandles<ZesEngine>(
-            [&](std::uint32_t* count, ZesEngine* values) { return deviceEnumEngineGroups_(device, count, values); },
-            engines);
+        return EnumerateChildHandles(deviceEnumEngineGroups_, device, engines);
     }
 
     ZeResult EngineProperties(ZesEngine engine, ZesEngineProperties& properties) const {
@@ -400,8 +414,7 @@ public:
     }
 
     ZeResult Fans(ZesDevice device, std::vector<ZesFan>& fans) const {
-        return EnumerateHandles<ZesFan>(
-            [&](std::uint32_t* count, ZesFan* values) { return deviceEnumFans_(device, count, values); }, fans);
+        return EnumerateChildHandles(deviceEnumFans_, device, fans);
     }
 
     ZeResult FanProperties(ZesFan fan, ZesFanProperties& properties) const {
@@ -415,11 +428,7 @@ public:
     }
 
     ZeResult FrequencyDomains(ZesDevice device, std::vector<ZesFrequency>& frequencies) const {
-        return EnumerateHandles<ZesFrequency>(
-            [&](std::uint32_t* count, ZesFrequency* values) {
-                return deviceEnumFrequencyDomains_(device, count, values);
-            },
-            frequencies);
+        return EnumerateChildHandles(deviceEnumFrequencyDomains_, device, frequencies);
     }
 
     ZeResult FrequencyProperties(ZesFrequency frequency, ZesFrequencyProperties& properties) const {
@@ -435,9 +444,7 @@ public:
     }
 
     ZeResult MemoryModules(ZesDevice device, std::vector<ZesMemory>& memoryModules) const {
-        return EnumerateHandles<ZesMemory>(
-            [&](std::uint32_t* count, ZesMemory* values) { return deviceEnumMemoryModules_(device, count, values); },
-            memoryModules);
+        return EnumerateChildHandles(deviceEnumMemoryModules_, device, memoryModules);
     }
 
     ZeResult MemoryProperties(ZesMemory memory, ZesMemoryProperties& properties) const {
@@ -453,11 +460,7 @@ public:
     }
 
     ZeResult TemperatureSensors(ZesDevice device, std::vector<ZesTemperature>& temperatures) const {
-        return EnumerateHandles<ZesTemperature>(
-            [&](std::uint32_t* count, ZesTemperature* values) {
-                return deviceEnumTemperatureSensors_(device, count, values);
-            },
-            temperatures);
+        return EnumerateChildHandles(deviceEnumTemperatureSensors_, device, temperatures);
     }
 
     ZeResult TemperatureProperties(ZesTemperature temperature, ZesTemperatureProperties& properties) const {
@@ -499,24 +502,17 @@ struct EngineProbe {
     std::optional<ZesEngineStats> previous;
 };
 
-struct FanProbe {
-    ZesFan handle = nullptr;
-    bool rpmSupported = false;
+enum class MetricProbeKind : unsigned char {
+    Fan,
+    Frequency,
+    Memory,
+    Temperature,
 };
 
-struct FrequencyProbe {
-    ZesFrequency handle = nullptr;
-    int type = kZesFrequencyDomainGpu;
-};
-
-struct MemoryProbe {
-    ZesMemory handle = nullptr;
-    bool deviceLocal = false;
-};
-
-struct TemperatureProbe {
-    ZesTemperature handle = nullptr;
+struct MetricProbe {
+    void* handle = nullptr;
     int type = kZesTemperatureGlobal;
+    MetricProbeKind kind = MetricProbeKind::Temperature;
 };
 
 struct MemorySample {
@@ -557,9 +553,9 @@ public:
             sysmanGpuName_.c_str(),
             gpuName_.c_str(),
             engines_.size(),
-            temperatures_.size(),
-            frequencies_.size(),
-            memoryModules_.size(),
+            temperatureProbeCount_,
+            frequencyProbeCount_,
+            memoryProbeCount_,
             deviceMemoryModuleCount_,
             Trace::BoolText(HasFanSpeedRpm()));
 
@@ -609,7 +605,7 @@ public:
         trace_.WriteFmt(TracePrefix::IntelLevelZero,
             "get_temperature %s sensors=%zu",
             FormatOptionalMetric("value", temperatureC, 1).c_str(),
-            temperatures_.size());
+            temperatureProbeCount_);
         if (temperatureC.has_value()) {
             sample.temperatureC = *temperatureC;
             hasAnyMetric = true;
@@ -619,7 +615,7 @@ public:
         trace_.WriteFmt(TracePrefix::IntelLevelZero,
             "get_clock %s domains=%zu",
             FormatOptionalMetric("value", clockMhz, 1).c_str(),
-            frequencies_.size());
+            frequencyProbeCount_);
         if (clockMhz.has_value()) {
             sample.coreClockMhz = *clockMhz;
             hasAnyMetric = true;
@@ -644,7 +640,7 @@ public:
         trace_.WriteFmt(TracePrefix::IntelLevelZero,
             "get_fan_rpm %s fans=%zu",
             FormatOptionalMetric("value", fanRpm, 0).c_str(),
-            fans_.size());
+            fanProbeCount_);
         if (fanRpm.has_value()) {
             sample.fanRpm = *fanRpm;
             hasAnyMetric = true;
@@ -798,7 +794,8 @@ private:
             ZesFanProperties properties;
             if (levelZero_.FanProperties(fan, properties) == kZeResultSuccess) {
                 const bool rpmSupported = (properties.supportedUnits & (1u << kZesFanSpeedUnitsRpm)) != 0;
-                fans_.push_back(FanProbe{fan, rpmSupported});
+                metricProbes_.push_back(MetricProbe{fan, rpmSupported ? 1 : 0, MetricProbeKind::Fan});
+                ++fanProbeCount_;
             }
         }
 
@@ -807,7 +804,8 @@ private:
         for (ZesFrequency frequency : frequencyHandles) {
             ZesFrequencyProperties properties;
             if (levelZero_.FrequencyProperties(frequency, properties) == kZeResultSuccess) {
-                frequencies_.push_back(FrequencyProbe{frequency, properties.type});
+                metricProbes_.push_back(MetricProbe{frequency, properties.type, MetricProbeKind::Frequency});
+                ++frequencyProbeCount_;
             }
         }
 
@@ -820,7 +818,8 @@ private:
                 if (deviceLocal) {
                     ++deviceMemoryModuleCount_;
                 }
-                memoryModules_.push_back(MemoryProbe{memory, deviceLocal});
+                metricProbes_.push_back(MetricProbe{memory, deviceLocal ? 1 : 0, MetricProbeKind::Memory});
+                ++memoryProbeCount_;
             }
         }
 
@@ -829,7 +828,8 @@ private:
         for (ZesTemperature temperature : temperatureHandles) {
             ZesTemperatureProperties properties;
             if (levelZero_.TemperatureProperties(temperature, properties) == kZeResultSuccess) {
-                temperatures_.push_back(TemperatureProbe{temperature, properties.type});
+                metricProbes_.push_back(MetricProbe{temperature, properties.type, MetricProbeKind::Temperature});
+                ++temperatureProbeCount_;
             }
         }
 
@@ -838,13 +838,13 @@ private:
             "memory_modules=%zu result=\"%s\" temperature_sensors=%zu result=\"%s\"",
             engines_.size(),
             ResultCodeString(engineEnumResult_).c_str(),
-            fans_.size(),
+            fanProbeCount_,
             ResultCodeString(fanEnumResult_).c_str(),
-            frequencies_.size(),
+            frequencyProbeCount_,
             ResultCodeString(frequencyEnumResult_).c_str(),
-            memoryModules_.size(),
+            memoryProbeCount_,
             ResultCodeString(memoryEnumResult_).c_str(),
-            temperatures_.size(),
+            temperatureProbeCount_,
             ResultCodeString(temperatureEnumResult_).c_str());
     }
 
@@ -858,17 +858,20 @@ private:
     }
 
     bool HasFanSpeedRpm() const {
-        return std::any_of(fans_.begin(), fans_.end(), [](const FanProbe& fan) { return fan.rpmSupported; });
+        for (const MetricProbe& probe : metricProbes_) {
+            if (probe.kind == MetricProbeKind::Fan && probe.type != 0) {
+                return true;
+            }
+        }
+        return false;
     }
 
     std::optional<double> QueryLoadPercent() {
-        struct EngineLoad {
-            int type = kZesEngineGroupAll;
-            double value = 0.0;
-        };
-
-        std::vector<EngineLoad> loads;
-        loads.reserve(engines_.size());
+        std::optional<double> all;
+        std::optional<double> render;
+        std::optional<double> renderCompute;
+        std::optional<double> compute;
+        std::optional<double> maxLoad;
         for (EngineProbe& engine : engines_) {
             ZesEngineStats stats{};
             if (levelZero_.EngineActivity(engine.handle, stats) != kZeResultSuccess) {
@@ -880,41 +883,50 @@ private:
                 const double activeDelta = static_cast<double>(stats.activeTime - engine.previous->activeTime);
                 const double timeDelta = static_cast<double>(stats.timestamp - engine.previous->timestamp);
                 if (timeDelta > 0.0) {
-                    loads.push_back(EngineLoad{engine.type, std::clamp((activeDelta * 100.0) / timeDelta, 0.0, 100.0)});
+                    const double value = std::clamp((activeDelta * 100.0) / timeDelta, 0.0, 100.0);
+                    if (!maxLoad.has_value() || value > *maxLoad) {
+                        maxLoad = value;
+                    }
+                    switch (engine.type) {
+                        case kZesEngineGroupAll:
+                            if (!all.has_value()) {
+                                all = value;
+                            }
+                            break;
+                        case kZesEngineGroupRenderAll:
+                            if (!render.has_value()) {
+                                render = value;
+                            }
+                            break;
+                        case kZesEngineGroupRenderComputeAll:
+                            if (!renderCompute.has_value()) {
+                                renderCompute = value;
+                            }
+                            break;
+                        case kZesEngineGroupComputeAll:
+                            if (!compute.has_value()) {
+                                compute = value;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
                 }
             }
             engine.previous = stats;
         }
 
-        if (loads.empty()) {
-            return std::nullopt;
+        if (all.has_value()) {
+            return all;
         }
-
-        const auto findByType = [&](int type) -> std::optional<double> {
-            for (const EngineLoad& load : loads) {
-                if (load.type == type) {
-                    return load.value;
-                }
-            }
-            return std::nullopt;
-        };
-
-        if (std::optional<double> value = findByType(kZesEngineGroupAll); value.has_value()) {
-            return value;
+        if (render.has_value()) {
+            return render;
         }
-        if (std::optional<double> value = findByType(kZesEngineGroupRenderAll); value.has_value()) {
-            return value;
+        if (renderCompute.has_value()) {
+            return renderCompute;
         }
-        if (std::optional<double> value = findByType(kZesEngineGroupRenderComputeAll); value.has_value()) {
-            return value;
-        }
-        if (std::optional<double> value = findByType(kZesEngineGroupComputeAll); value.has_value()) {
-            return value;
-        }
-
-        double maxLoad = 0.0;
-        for (const EngineLoad& load : loads) {
-            maxLoad = std::max(maxLoad, load.value);
+        if (compute.has_value()) {
+            return compute;
         }
         return maxLoad;
     }
@@ -922,7 +934,10 @@ private:
     std::optional<double> QueryTemperatureC() const {
         std::optional<double> preferred;
         std::optional<double> fallback;
-        for (const TemperatureProbe& temperature : temperatures_) {
+        for (const MetricProbe& temperature : metricProbes_) {
+            if (temperature.kind != MetricProbeKind::Temperature) {
+                continue;
+            }
             double value = 0.0;
             if (levelZero_.TemperatureState(temperature.handle, value) != kZeResultSuccess || !IsKnownMetric(value)) {
                 continue;
@@ -939,7 +954,10 @@ private:
     std::optional<double> QueryClockMhz() const {
         std::optional<double> preferred;
         std::optional<double> fallback;
-        for (const FrequencyProbe& frequency : frequencies_) {
+        for (const MetricProbe& frequency : metricProbes_) {
+            if (frequency.kind != MetricProbeKind::Frequency) {
+                continue;
+            }
             ZesFrequencyState state;
             if (levelZero_.FrequencyState(frequency.handle, state) != kZeResultSuccess) {
                 continue;
@@ -967,8 +985,8 @@ private:
     std::optional<MemorySample> QueryMemory() const {
         std::uint64_t totalBytes = 0;
         std::uint64_t usedBytes = 0;
-        for (const MemoryProbe& memory : memoryModules_) {
-            if (!memory.deviceLocal) {
+        for (const MetricProbe& memory : metricProbes_) {
+            if (memory.kind != MetricProbeKind::Memory || memory.type == 0) {
                 continue;
             }
 
@@ -996,8 +1014,8 @@ private:
     }
 
     std::optional<double> QueryFanRpm() const {
-        for (const FanProbe& fan : fans_) {
-            if (!fan.rpmSupported) {
+        for (const MetricProbe& fan : metricProbes_) {
+            if (fan.kind != MetricProbeKind::Fan || fan.type == 0) {
                 continue;
             }
             std::int32_t speed = -1;
@@ -1017,11 +1035,13 @@ private:
     std::string diagnostics_ = "Level Zero provider not initialized.";
     std::string fpsDiagnostics_ = "Presented FPS ETW provider not initialized.";
     std::vector<EngineProbe> engines_;
-    std::vector<FanProbe> fans_;
-    std::vector<FrequencyProbe> frequencies_;
-    std::vector<MemoryProbe> memoryModules_;
-    std::vector<TemperatureProbe> temperatures_;
+    // Size: one tiny tagged vector avoids four separate Sysman probe-vector instantiations.
+    std::vector<MetricProbe> metricProbes_;
     std::unique_ptr<FpsTelemetryProvider> fpsProvider_;
+    size_t fanProbeCount_ = 0;
+    size_t frequencyProbeCount_ = 0;
+    size_t memoryProbeCount_ = 0;
+    size_t temperatureProbeCount_ = 0;
     size_t deviceMemoryModuleCount_ = 0;
     ZeResult engineEnumResult_ = kZeResultSuccess;
     ZeResult fanEnumResult_ = kZeResultSuccess;

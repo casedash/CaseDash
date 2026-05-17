@@ -72,11 +72,6 @@ using NvmlDeviceGetMemoryInfoFn = NvmlReturn (*)(NvmlDevice, NvmlMemory*);
 using NvmlDeviceGetFanSpeedRpmFn = NvmlReturn (*)(NvmlDevice, NvmlFanSpeedInfo*);
 using NvmlDeviceGetPciInfoFn = NvmlReturn (*)(NvmlDevice, NvmlPciInfo*);
 
-template <typename Function> bool LoadFunction(HMODULE module, const char* name, Function& function) {
-    function = reinterpret_cast<Function>(GetProcAddress(module, name));
-    return function != nullptr;
-}
-
 class NvmlLibrary {
 public:
     ~NvmlLibrary() {
@@ -99,24 +94,31 @@ public:
         }
 
         bool loaded = true;
-        loaded = LoadFunction(module_, "nvmlInit_v2", init_) && loaded;
-        loaded = LoadFunction(module_, "nvmlShutdown", shutdown_) && loaded;
-        loaded = LoadFunction(module_, "nvmlErrorString", errorString_) && loaded;
-        loaded = LoadFunction(module_, "nvmlDeviceGetCount_v2", deviceGetCount_) && loaded;
-        loaded = LoadFunction(module_, "nvmlDeviceGetHandleByIndex_v2", deviceGetHandleByIndex_) && loaded;
-        loaded = LoadFunction(module_, "nvmlDeviceGetName", deviceGetName_) && loaded;
-        loaded = LoadFunction(module_, "nvmlDeviceGetUtilizationRates", deviceGetUtilizationRates_) && loaded;
-        loaded = LoadFunction(module_, "nvmlDeviceGetTemperature", deviceGetTemperature_) && loaded;
-        loaded = LoadFunction(module_, "nvmlDeviceGetClockInfo", deviceGetClockInfo_) && loaded;
-        loaded = LoadFunction(module_, "nvmlDeviceGetMemoryInfo", deviceGetMemoryInfo_) && loaded;
-        LoadFunction(module_, "nvmlDeviceGetFanSpeedRPM", deviceGetFanSpeedRpm_);
-        LoadFunction(module_, "nvmlDeviceGetPciInfo_v3", deviceGetPciInfo_);
+#define CASEDASH_LOAD_REQUIRED(function, name)                                                                         \
+    function = reinterpret_cast<decltype(function)>(GetProcAddress(module_, name));                                    \
+    loaded = function != nullptr && loaded
+#define CASEDASH_LOAD_OPTIONAL(function, name)                                                                         \
+    function = reinterpret_cast<decltype(function)>(GetProcAddress(module_, name))
+        CASEDASH_LOAD_REQUIRED(init_, "nvmlInit_v2");
+        CASEDASH_LOAD_REQUIRED(shutdown_, "nvmlShutdown");
+        CASEDASH_LOAD_REQUIRED(errorString_, "nvmlErrorString");
+        CASEDASH_LOAD_REQUIRED(deviceGetCount_, "nvmlDeviceGetCount_v2");
+        CASEDASH_LOAD_REQUIRED(deviceGetHandleByIndex_, "nvmlDeviceGetHandleByIndex_v2");
+        CASEDASH_LOAD_REQUIRED(deviceGetName_, "nvmlDeviceGetName");
+        CASEDASH_LOAD_REQUIRED(deviceGetUtilizationRates_, "nvmlDeviceGetUtilizationRates");
+        CASEDASH_LOAD_REQUIRED(deviceGetTemperature_, "nvmlDeviceGetTemperature");
+        CASEDASH_LOAD_REQUIRED(deviceGetClockInfo_, "nvmlDeviceGetClockInfo");
+        CASEDASH_LOAD_REQUIRED(deviceGetMemoryInfo_, "nvmlDeviceGetMemoryInfo");
+        CASEDASH_LOAD_OPTIONAL(deviceGetFanSpeedRpm_, "nvmlDeviceGetFanSpeedRPM");
+        CASEDASH_LOAD_OPTIONAL(deviceGetPciInfo_, "nvmlDeviceGetPciInfo_v3");
         if (deviceGetPciInfo_ == nullptr) {
-            LoadFunction(module_, "nvmlDeviceGetPciInfo_v2", deviceGetPciInfo_);
+            CASEDASH_LOAD_OPTIONAL(deviceGetPciInfo_, "nvmlDeviceGetPciInfo_v2");
         }
         if (deviceGetPciInfo_ == nullptr) {
-            LoadFunction(module_, "nvmlDeviceGetPciInfo", deviceGetPciInfo_);
+            CASEDASH_LOAD_OPTIONAL(deviceGetPciInfo_, "nvmlDeviceGetPciInfo");
         }
+#undef CASEDASH_LOAD_OPTIONAL
+#undef CASEDASH_LOAD_REQUIRED
 
         if (!loaded) {
             diagnostics = "NVML library is missing required entry points.";
