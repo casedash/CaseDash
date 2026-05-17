@@ -12,6 +12,7 @@
 - Embedded resource loading and generated text-atlas resource string hash-id lookup.
 - Localization catalog access.
 - Numeric safety helpers, DPI scale conversion, and domain-neutral numeric text formatting.
+- Shared sprintf-style text formatting through `FormatText`, `AssignFormat`, and `AppendFormat`, including `ResourceStringId` overloads for resource-backed format strings.
 - High-precision timer and trace-scoped timing aggregation helpers for low-overhead runtime profiling.
 - Lightweight mutex locking for shared runtime state that needs a small platform-backed guard without exposing the native primitive in package APIs.
 - Win32 HRESULT text formatting in the narrow Win32 formatting module.

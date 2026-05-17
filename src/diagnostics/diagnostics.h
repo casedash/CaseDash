@@ -55,6 +55,7 @@ public:
     void WriteTraceMarker(TracePrefix prefix, const char* text);
     void WriteTraceMarker(TracePrefix prefix, ResourceStringId text);
     void WriteTraceMarker(TracePrefix prefix, const std::string& text);
+    void WriteTraceMarkerWithDetail(TracePrefix prefix, ResourceStringId text, std::string_view detail);
     void WriteTraceMarkerFmt(TracePrefix prefix, const char* format, ...);
     void WriteTraceMarkerFmt(TracePrefix prefix, ResourceStringId format, ...);
     void WriteTraceMarkerVFmt(TracePrefix prefix, const char* format, va_list args);

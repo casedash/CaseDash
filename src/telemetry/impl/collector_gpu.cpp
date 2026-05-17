@@ -17,10 +17,6 @@ namespace {
 
 constexpr wchar_t kGpuEngine3dMarker[] = L"engtype_3D";  // PDH GPU engine instance names are UTF-16.
 
-void WriteTelemetryTrace(const RealTelemetryCollectorState& state, const char* text) {
-    state.trace_.Write(TracePrefix::Telemetry, text);
-}
-
 struct CounterArrayTotals {
     double total = 0.0;
     double total3d = 0.0;
@@ -182,7 +178,7 @@ void ApplySelectedGpuAdapterInfo(RealTelemetryCollectorState& state) {
                                        ? "GPU"
                                        : state.settings_.selection.preferredGpuAdapterName;
         state.snapshot_.gpu.vram.totalGb = 0.0;
-        WriteTelemetryTrace(state, "gpu_adapter_selected none");
+        state.trace_.Write(TracePrefix::Telemetry, RES_STR("gpu_adapter_selected none"));
         return;
     }
 

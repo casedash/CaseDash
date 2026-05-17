@@ -263,11 +263,8 @@ bool DashboardController::InitializeSession(DashboardShellHost& shell, const Dia
         state_.config, diagnosticsOptions, shell.TraceLog(), &shell, &telemetryError);
     if (state_.telemetry == nullptr) {
         if (state_.diagnostics != nullptr) {
-            std::string traceText = "telemetry_initialize_failed";
-            if (!telemetryError.empty()) {
-                AppendFormat(traceText, " detail=\"%s\"", telemetryError.c_str());
-            }
-            state_.diagnostics->WriteTraceMarker(TracePrefix::Diagnostics, traceText);
+            state_.diagnostics->WriteTraceMarkerWithDetail(
+                TracePrefix::Diagnostics, RES_STR("telemetry_initialize_failed"), telemetryError);
         }
         state_.lastError = FormatTelemetryInitializeError(telemetryError);
         return false;

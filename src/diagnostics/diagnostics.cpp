@@ -246,6 +246,41 @@ private:
     DashboardOverlayState& overlayState_;
 };
 
+void WriteSaveErrorTrace(DiagnosticsSession& diagnostics,
+    ResourceStringId traceEvent,
+    const std::string& pathText,
+    std::string_view detail,
+    std::string_view traceSuffix) {
+    const char* eventText = ResourceStringText(traceEvent);
+    if (traceSuffix.empty() && detail.empty()) {
+        diagnostics.WriteTraceMarkerFmt(
+            TracePrefix::Diagnostics, RES_STR("%s path=\"%s\""), eventText, pathText.c_str());
+    } else if (traceSuffix.empty()) {
+        diagnostics.WriteTraceMarkerFmt(TracePrefix::Diagnostics,
+            RES_STR("%s path=\"%s\" detail=\"%.*s\""),
+            eventText,
+            pathText.c_str(),
+            static_cast<int>(detail.size()),
+            detail.data());
+    } else if (detail.empty()) {
+        diagnostics.WriteTraceMarkerFmt(TracePrefix::Diagnostics,
+            RES_STR("%s path=\"%s\" %.*s"),
+            eventText,
+            pathText.c_str(),
+            static_cast<int>(traceSuffix.size()),
+            traceSuffix.data());
+    } else {
+        diagnostics.WriteTraceMarkerFmt(TracePrefix::Diagnostics,
+            RES_STR("%s path=\"%s\" %.*s detail=\"%.*s\""),
+            eventText,
+            pathText.c_str(),
+            static_cast<int>(traceSuffix.size()),
+            traceSuffix.data(),
+            static_cast<int>(detail.size()),
+            detail.data());
+    }
+}
+
 }  // namespace
 
 std::optional<double> TryParseScaleValue(const std::string& text) {
@@ -650,6 +685,19 @@ void DiagnosticsSession::WriteTraceMarker(TracePrefix prefix, const std::string&
     trace_.Write(prefix, text);
 }
 
+void DiagnosticsSession::WriteTraceMarkerWithDetail(
+    TracePrefix prefix, ResourceStringId text, std::string_view detail) {
+    if (detail.empty()) {
+        WriteTraceMarker(prefix, text);
+        return;
+    }
+    WriteTraceMarkerFmt(prefix,
+        RES_STR("%s detail=\"%.*s\""),
+        ResourceStringText(text),
+        static_cast<int>(detail.size()),
+        detail.data());
+}
+
 void DiagnosticsSession::WriteTraceMarkerFmt(TracePrefix prefix, const char* format, ...) {
     va_list args;
     va_start(args, format);
@@ -686,14 +734,10 @@ bool DiagnosticsSession::ReportSaveError(ResourceStringId traceEvent,
     std::string_view traceSuffix) {
     const std::string pathText = path.string();
     const std::string message = FormatText("Failed to %s:\n%s", messageAction, pathText.c_str());
-    std::string traceText = FormatText("%s path=\"%s\"", ResourceStringText(traceEvent), pathText.c_str());
-    if (!traceSuffix.empty()) {
-        AppendFormat(traceText, " %.*s", static_cast<int>(traceSuffix.size()), traceSuffix.data());
+    WriteSaveErrorTrace(*this, traceEvent, pathText, detail, traceSuffix);
+    if (ShouldShowDialogs()) {
+        MessageBoxUtf8(message, MB_ICONERROR);
     }
-    if (!detail.empty()) {
-        AppendFormat(traceText, " detail=\"%.*s\"", static_cast<int>(detail.size()), detail.data());
-    }
-    ReportError(TracePrefix::Diagnostics, traceText, message);
     return false;
 }
 
@@ -751,7 +795,7 @@ bool DiagnosticsSession::WriteOutputs(const TelemetryDump& dump, const AppConfig
                 "save app icon",
                 appIconPath_,
                 appIconError,
-                FormatText("size=%d", options_.appIconSize));
+                FormatText(RES_STR("size=%d"), options_.appIconSize));
         }
         const std::string pathText = appIconPath_.string();
         WriteTraceMarkerFmt(TracePrefix::Diagnostics,
@@ -775,7 +819,7 @@ void DiagnosticsSession::ShowFileOpenError(const char* label, const FilePath& pa
     const std::string pathText = path.string();
     const std::string message = FormatText("Failed to open %s:\n%s", label, pathText.c_str());
     ReportError(TracePrefix::Diagnostics,
-        FormatText("file_open_failed label=\"%s\" path=\"%s\"", label, pathText.c_str()),
+        FormatText(RES_STR("file_open_failed label=\"%s\" path=\"%s\""), label, pathText.c_str()),
         message);
 }
 
@@ -841,10 +885,11 @@ int RunElevatedSaveConfigMode(const FilePath& sourcePath, const FilePath& target
 }
 
 std::string FormatTelemetryInitializeError(std::string_view errorText) {
-    return errorText.empty() ? "Failed to initialize telemetry collector."
-                             : FormatText("Failed to initialize telemetry collector.\n\n%.*s",
-                                   static_cast<int>(errorText.size()),
-                                   errorText.data());
+    std::string message = ResourceStringText(RES_STR("Failed to initialize telemetry collector."));
+    if (!errorText.empty()) {
+        AppendFormat(message, "\n\n%.*s", static_cast<int>(errorText.size()), errorText.data());
+    }
+    return message;
 }
 
 std::unique_ptr<TelemetryRuntime> InitializeTelemetryRuntimeInstance(const AppConfig& runtimeConfig,
@@ -904,11 +949,8 @@ bool ReloadTelemetryCollectorFromDisk(const FilePath& configPath,
             *errorText = reloadError;
         }
         if (diagnostics != nullptr) {
-            std::string traceText = "reload_config_failed";
-            if (!reloadError.empty()) {
-                AppendFormat(traceText, " detail=\"%s\"", reloadError.c_str());
-            }
-            diagnostics->WriteTraceMarker(TracePrefix::Diagnostics, traceText);
+            diagnostics->WriteTraceMarkerWithDetail(
+                TracePrefix::Diagnostics, RES_STR("reload_config_failed"), reloadError);
         }
         return false;
     }
@@ -949,18 +991,18 @@ bool SaveDumpScreenshot(const FilePath& imagePath,
         if (errorText != nullptr) {
             *errorText = error;
         }
-        WriteRendererErrorTrace(trace, "screenshot_initialize", error);
+        WriteRendererErrorTrace(trace, RES_STR("screenshot_initialize"), error);
         return false;
     }
     if (!editLayoutWidgetName.empty()) {
         const auto widget = renderer.FindFirstLayoutEditPreviewWidget(editLayoutWidgetName);
         if (!widget.has_value()) {
             const std::string error =
-                FormatText("edit_layout_widget_not_found name=\"%s\"", editLayoutWidgetName.c_str());
+                FormatText(RES_STR("edit_layout_widget_not_found name=\"%s\""), editLayoutWidgetName.c_str());
             if (errorText != nullptr) {
                 *errorText = error;
             }
-            WriteRendererErrorTrace(trace, "screenshot_edit_layout_widget", error);
+            WriteRendererErrorTrace(trace, RES_STR("screenshot_edit_layout_widget"), error);
             return false;
         }
         overlayState.SetPreviewWidget(*widget);
@@ -973,7 +1015,7 @@ bool SaveDumpScreenshot(const FilePath& imagePath,
             if (errorText != nullptr) {
                 *errorText = error;
             }
-            WriteRendererErrorTrace(trace, "screenshot_hover_regions", error);
+            WriteRendererErrorTrace(trace, RES_STR("screenshot_hover_regions"), error);
             return false;
         }
 
@@ -1013,7 +1055,7 @@ bool SaveDumpScreenshot(const FilePath& imagePath,
         if (errorText != nullptr) {
             *errorText = error;
         }
-        WriteRendererErrorTrace(trace, "screenshot_save", error);
+        WriteRendererErrorTrace(trace, RES_STR("screenshot_save"), error);
     }
     if (saved) {
         WriteLayoutEditActiveRegionTrace(
@@ -1058,11 +1100,8 @@ int RunDiagnosticsHeadlessMode(const DiagnosticsOptions& diagnosticsOptions) {
     std::unique_ptr<TelemetryRuntime> telemetry =
         InitializeTelemetryRuntimeInstance(config, diagnosticsOptions, trace, nullptr, &telemetryError);
     if (telemetry == nullptr) {
-        std::string traceText = "telemetry_initialize_failed";
-        if (!telemetryError.empty()) {
-            AppendFormat(traceText, " detail=\"%s\"", telemetryError.c_str());
-        }
-        diagnostics.WriteTraceMarker(TracePrefix::Diagnostics, traceText);
+        diagnostics.WriteTraceMarkerWithDetail(
+            TracePrefix::Diagnostics, RES_STR("telemetry_initialize_failed"), telemetryError);
         if (diagnostics.ShouldShowDialogs()) {
             MessageBoxUtf8(FormatTelemetryInitializeError(telemetryError), MB_ICONERROR);
         }
