@@ -77,7 +77,10 @@ std::optional<FilePath> FindInstalledSivDirectory() {
 
 class GigabyteSivCapture final : public GigabyteSivCaptureSink {
 public:
-    explicit GigabyteSivCapture(Trace& trace) : trace_(trace) {}
+    explicit GigabyteSivCapture(Trace& trace) : trace_(trace) {
+        snapshot_.fans.reserve(4);
+        snapshot_.temperatures.reserve(4);
+    }
 
     void AddFanReading(const wchar_t* title, double rpm) override {
         snapshot_.fans.push_back(BoardSensorReading{Utf8FromNullableWide(title), rpm});
@@ -207,17 +210,12 @@ public:
         sample.providerName = "Gigabyte";
         sample.requestedFanNames = settings_.requestedFanNames;
         sample.requestedTemperatureNames = settings_.requestedTemperatureNames;
-        sample.availableFanNames = availableFanNames_;
-        sample.availableTemperatureNames = availableTemperatureNames_;
         sample.boardManufacturer = boardManufacturer_;
         sample.boardProduct = boardProduct_;
         sample.driverLibrary = loadedLibrary_;
-        sample.temperatures = temperatureMetricTemplate_;
-        sample.fans = fanMetricTemplate_;
-        sample.available = HasAvailableMetricValue(sample.temperatures) || HasAvailableMetricValue(sample.fans);
-        sample.diagnostics = FormatText("%s%s", diagnostics_.c_str(), requestedDiagnosticsSuffix_.c_str());
 
         if (!initialized_ || !sivDirectory_.has_value()) {
+            PopulateUnavailableSample(sample);
             return sample;
         }
 
@@ -227,7 +225,7 @@ public:
         GigabyteSivSnapshot snapshot = captured ? capture.FinishSuccess() : capture.FinishFailure();
         if (!captured) {
             diagnostics_ = snapshot.diagnostics;
-            sample.diagnostics = FormatText("%s%s", diagnostics_.c_str(), requestedDiagnosticsSuffix_.c_str());
+            PopulateUnavailableSample(sample);
             return sample;
         }
 
@@ -260,6 +258,15 @@ private:
 
     Trace& trace() {
         return trace_;
+    }
+
+    void PopulateUnavailableSample(BoardVendorTelemetrySample& sample) const {
+        sample.availableFanNames = availableFanNames_;
+        sample.availableTemperatureNames = availableTemperatureNames_;
+        sample.temperatures = temperatureMetricTemplate_;
+        sample.fans = fanMetricTemplate_;
+        sample.available = HasAvailableMetricValue(sample.temperatures) || HasAvailableMetricValue(sample.fans);
+        sample.diagnostics = FormatText("%s%s", diagnostics_.c_str(), requestedDiagnosticsSuffix_.c_str());
     }
 
     Trace& trace_;
