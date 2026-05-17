@@ -220,6 +220,7 @@ add_executable(CaseDash WIN32
     src/telemetry/board/board_vendor_selection.cpp
     src/telemetry/board/asus/board_asus_armoury_crate.cpp
     src/telemetry/board/gigabyte/board_gigabyte_siv.cpp
+    src/telemetry/board/lenovo/board_lenovo_vantage.cpp
     src/telemetry/board/msi/board_msi_center.cpp
     src/telemetry/metrics.cpp
     src/layout_model/dashboard_overlay_state.cpp
@@ -327,6 +328,7 @@ set(casedash_release_speed_sources
     src/telemetry/board/board_vendor_selection.cpp
     src/telemetry/board/asus/board_asus_armoury_crate.cpp
     src/telemetry/board/gigabyte/board_gigabyte_siv.cpp
+    src/telemetry/board/lenovo/board_lenovo_vantage.cpp
     src/telemetry/board/msi/board_msi_center.cpp
     src/telemetry/fps_provider.cpp
     src/telemetry/fps/impl/gpu_raw_counter_map.cpp
@@ -402,12 +404,21 @@ add_library(CaseDashMsi OBJECT
     src/telemetry/board/msi/board_msi_center_bridge.cpp
 )
 
+add_library(CaseDashLenovo OBJECT
+    src/telemetry/board/lenovo/board_lenovo_vantage_bridge.cpp
+)
+
 set_target_properties(CaseDashGigabyte PROPERTIES
     COMMON_LANGUAGE_RUNTIME ""
     VS_DOTNET_TARGET_FRAMEWORK_VERSION "v4.0"
 )
 
 set_target_properties(CaseDashMsi PROPERTIES
+    COMMON_LANGUAGE_RUNTIME ""
+    VS_DOTNET_TARGET_FRAMEWORK_VERSION "v4.0"
+)
+
+set_target_properties(CaseDashLenovo PROPERTIES
     COMMON_LANGUAGE_RUNTIME ""
     VS_DOTNET_TARGET_FRAMEWORK_VERSION "v4.0"
 )
@@ -422,6 +433,11 @@ target_include_directories(CaseDashMsi PRIVATE
     "${CMAKE_SOURCE_DIR}/resources"
 )
 
+target_include_directories(CaseDashLenovo PRIVATE
+    "${CMAKE_SOURCE_DIR}/src"
+    "${CMAKE_SOURCE_DIR}/resources"
+)
+
 target_compile_definitions(CaseDashGigabyte PRIVATE
     UNICODE
     _UNICODE
@@ -431,6 +447,14 @@ target_compile_definitions(CaseDashGigabyte PRIVATE
 )
 
 target_compile_definitions(CaseDashMsi PRIVATE
+    UNICODE
+    _UNICODE
+    NOMINMAX
+    WIN32_LEAN_AND_MEAN
+    _HAS_EXCEPTIONS=0
+)
+
+target_compile_definitions(CaseDashLenovo PRIVATE
     UNICODE
     _UNICODE
     NOMINMAX
@@ -456,8 +480,18 @@ target_compile_options(CaseDashMsi PRIVATE
     /Zi
 )
 
+target_compile_options(CaseDashLenovo PRIVATE
+    /clr
+    /W4
+    /permissive-
+    /w14505
+    /we4505
+    /Zi
+)
+
 target_sources(CaseDash PRIVATE
     $<TARGET_OBJECTS:CaseDashGigabyte>
+    $<TARGET_OBJECTS:CaseDashLenovo>
     $<TARGET_OBJECTS:CaseDashMsi>
 )
 
@@ -520,6 +554,7 @@ target_link_libraries(CaseDash PRIVATE
     comctl32
     ws2_32
     ole32
+    oleaut32
     advapi32
     dbghelp
     wtsapi32
@@ -783,6 +818,7 @@ add_executable(CaseDashBenchmarks
     src/telemetry/board/board_vendor_selection.cpp
     src/telemetry/board/asus/board_asus_armoury_crate.cpp
     src/telemetry/board/gigabyte/board_gigabyte_siv.cpp
+    src/telemetry/board/lenovo/board_lenovo_vantage.cpp
     src/telemetry/board/msi/board_msi_center.cpp
     src/layout_model/layout_edit_active_region.cpp
     src/layout_model/layout_edit_helpers.cpp
@@ -858,6 +894,7 @@ add_executable(CaseDashBenchmarks
 )
 target_sources(CaseDashBenchmarks PRIVATE
     $<TARGET_OBJECTS:CaseDashGigabyte>
+    $<TARGET_OBJECTS:CaseDashLenovo>
     $<TARGET_OBJECTS:CaseDashMsi>
 )
 
@@ -921,6 +958,7 @@ target_link_libraries(CaseDashBenchmarks PRIVATE
     dxgi
     ws2_32
     ole32
+    oleaut32
     advapi32
     ${MSCOREE_LIB}
 )

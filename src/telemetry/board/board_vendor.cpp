@@ -4,6 +4,7 @@
 
 #include "telemetry/board/asus/board_asus_armoury_crate.h"
 #include "telemetry/board/gigabyte/board_gigabyte_siv.h"
+#include "telemetry/board/lenovo/board_lenovo_vantage.h"
 #include "telemetry/board/msi/board_msi_center.h"
 #include "telemetry/impl/system_info_support.h"
 #include "util/trace.h"
@@ -54,6 +55,9 @@ std::unique_ptr<BoardVendorTelemetryProvider> CreateBoardProviderForVendor(
     }
     if (vendor == BoardVendor::Gigabyte) {
         return CreateGigabyteBoardTelemetryProvider(trace, std::move(info));
+    }
+    if (vendor == BoardVendor::Lenovo) {
+        return CreateLenovoBoardTelemetryProvider(trace, std::move(info));
     }
 
     return std::make_unique<UnsupportedBoardTelemetryProvider>(trace, std::move(info));

@@ -12,7 +12,7 @@
 - GPU telemetry resolves the configured GPU adapter name against non-software DXGI adapters, maps the selected adapter identity through the pure GPU vendor-selection module, and creates one matching provider. Empty configuration selects the first candidate; changing the adapter at runtime shuts down the current provider and creates a provider for the new adapter.
 - Board telemetry extracts baseboard registry strings, maps them through the pure board vendor-selection module, and creates one matching provider.
 - Presented-FPS collection asks `CashDashService` over `\\.\pipe\CashDashService` first, then falls back to local ETW collection when the service is absent or unreachable.
-- The FPS pipe protocol uses a generic request envelope with a stable request id and request name. The current FPS query is `PresentedFpsSample` / `presented_fps_sample`.
+- The service pipe protocol uses a generic request envelope with a stable request id and request name. The current service queries are `PresentedFpsSample` / `presented_fps_sample` and `BoardSensorsSample` / `board_sensors_sample`.
 - The metric catalog adapts snapshots and metric definitions into widget-facing metric values, histories, drive rows, and formatted text.
 - Fake-runtime support serves either the built-in synthetic snapshot or a reloadable dump-backed snapshot. The built-in synthetic source has a static mode for deterministic one-shot diagnostics and a live mode for the UI and benchmark harnesses; live synthetic throughput seeds and advances through `RetainedHistoryStore` so fake charts use the same four-sample smoothing and compact-history updates as real telemetry.
 - Board telemetry keeps discovered provider sensor-name lists cached alongside live samples so layout-edit binding pickers stay populated across transient sample gaps.
@@ -30,4 +30,4 @@
 - It publishes runtime contracts such as `TelemetryRuntime`, `SystemSnapshot`, provider samples, and metric resolution for higher packages.
 - It does not depend on renderer, widget, dashboard, diagnostics, display, layout-edit, or main.
 - Provider .NET assembly reflection stays in CLR-enabled bridge translation units; native provider state stays out of CLR metadata.
-- Native vendor providers keep provider-specific setup and method translation inside the provider module, including contracts such as ASUS ATKACPI `DSTS` device calls and vendor SDK bridges, then publish normal board-provider samples to the collector.
+- Native vendor providers keep provider-specific setup and method translation inside the provider module, including contracts such as ASUS ATKACPI `DSTS` device calls, Lenovo Hardware Scan LdeApi calls, and vendor SDK bridges, then publish normal board-provider samples to the collector. Slow direct provider fallbacks own their own refresh cadence and cached sample state so telemetry startup does not wait on vendor diagnostics scans.

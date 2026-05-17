@@ -9,6 +9,8 @@
 #include <vector>
 #include <winsvc.h>
 
+#include "telemetry/board/board_vendor.h"
+#include "telemetry/board/lenovo/board_lenovo_vantage.h"
 #include "telemetry/fps_provider.h"
 #include "telemetry/fps_service_protocol.h"
 #include "util/command_line.h"
@@ -287,7 +289,7 @@ bool ConnectPipeOrStop(HANDLE pipe, HANDLE stopEvent) {
     return waitResult == WAIT_OBJECT_0 + 1;
 }
 
-void ServePipeClient(HANDLE pipe, FpsTelemetryProvider& fpsProvider) {
+void ServePipeClient(HANDLE pipe, FpsTelemetryProvider* fpsProvider, Trace& trace) {
     std::vector<char> request;
     request.reserve(kPipeRequestBytes);
     std::optional<CashDashServiceRequest> serviceRequest;
@@ -315,8 +317,19 @@ void ServePipeClient(HANDLE pipe, FpsTelemetryProvider& fpsProvider) {
 
     std::vector<char> response;
     switch (serviceRequest->id) {
-        case CashDashServiceRequestId::PresentedFpsSample:
-            response = SerializeFpsServiceSample(fpsProvider.Sample());
+        case CashDashServiceRequestId::PresentedFpsSample: {
+            FpsTelemetrySample sample;
+            if (fpsProvider != nullptr) {
+                sample = fpsProvider->Sample();
+            } else {
+                sample.diagnostics = "FPS service provider is unavailable.";
+            }
+            response = SerializeFpsServiceSample(sample);
+            break;
+        }
+        case CashDashServiceRequestId::BoardSensorsSample:
+            response = SerializeBoardSensorsServiceSample(
+                CaptureLenovoHardwareScanServiceSample(trace, ExtractBoardVendorInfo()));
             break;
     }
     if (response.empty()) {
@@ -343,9 +356,7 @@ void RunPipeServer(HANDLE stopEvent) {
         }
 
         if (ConnectPipeOrStop(pipe.Get(), stopEvent)) {
-            if (fpsProvider != nullptr) {
-                ServePipeClient(pipe.Get(), *fpsProvider);
-            }
+            ServePipeClient(pipe.Get(), fpsProvider.get(), trace);
             DisconnectNamedPipe(pipe.Get());
         }
     }

@@ -12,6 +12,7 @@ See also: [docs/specifications.md](specifications.md) for general product behavi
 - [ASUS](#asus) - board CPU temperature and fan telemetry through Armoury Crate or ASUS System Control Interface ATKACPI.
 - [MSI](#msi) - board temperature and fan telemetry through MSI Center SDK.
 - [Gigabyte](#gigabyte) - board temperature and fan telemetry through Gigabyte SIV.
+- [Lenovo](#lenovo) - board temperature and fan telemetry through Lenovo Vantage Hardware Scan.
 
 ## Provider Model
 
@@ -26,7 +27,8 @@ See also: [docs/specifications.md](specifications.md) for general product behavi
 - Board telemetry selects the supported hardware provider from the baseboard manufacturer.
 - Trace output can include `gpu_vendor:*` and `board_vendor:*` selection details, provider-specific diagnostics, and unsupported-provider fallback markers.
 - Layout metric references are the source of truth for requested logical board metrics. The `[board]` mapping connects logical names to provider-specific sensor names.
-- Empty CPU, GPU, and system board bindings use first-use auto-detection from the active provider's sensor names; otherwise, bound board metrics resolve when the mapped sensor exists. The GPU board fan binding is requested by `gpu.fan` as a fallback source and does not need to appear as a `board.fan.gpu` widget metric. The CPU board temperature binding is requested by `gpu.temp` as the Intel fallback source.
+- Empty CPU, GPU, and system board bindings use first-use auto-detection from the active provider's sensor names; the system binding also accepts motherboard or board sensor names. Otherwise, bound board metrics resolve when the mapped sensor exists. The GPU board fan binding is requested by `gpu.fan` as a fallback source and does not need to appear as a `board.fan.gpu` widget metric. The CPU board temperature binding is requested by `gpu.temp` as the Intel fallback source.
+- The CaseDash service IPC exposes `presented_fps_sample` for FPS and `board_sensors_sample` for board providers that need LocalSystem access to hardware interfaces.
 
 ## Adding Hardware Support
 
@@ -135,3 +137,20 @@ Troubleshooting:
 1. Install Gigabyte SIV.
 2. Run the matching trace plus dump validation flow from [docs/diagnostics.md](diagnostics.md).
 3. Inspect the dump for `board.*` values and the trace for `gigabyte_siv:*` diagnostics.
+
+## Lenovo
+
+- Supported hardware family: Lenovo board telemetry on systems with the Lenovo Vantage Hardware Scan addin installed under `ProgramData\Lenovo\Vantage\Addins\LenovoHardwareScanAddin`.
+- Runtime dependency: Lenovo Vantage Hardware Scan and its LdeApi diagnostics modules, including `LdeApi.Client.dll`, `LdeApi.Server.exe`, and the Lenovo diagnostics driver components installed by Lenovo platform software.
+- Metrics include requested Hardware Scan temperature telemetry from the storage, CPU, fan, motherboard, video-card, and battery modules plus fan telemetry when Lenovo's fan module reports devices with sane non-zero RPM. CaseDash names those readings as `Disk Temperature`, `CPU Temperature`, `Motherboard Temperature`, `GPU Temperature`, `Battery Temperature`, and provider-supplied fan names.
+- The unelevated dashboard asks `CashDashService` for `board_sensors_sample` first so the LocalSystem service can run the Lenovo diagnostics addin with the same privilege boundary Lenovo uses for hardware access. When the service is absent or unreachable, the provider refreshes the same Hardware Scan LdeApi path in the dashboard process in the background, reuses the last successful direct sample, and keeps startup responsive while a slow direct scan is running.
+- Lenovo Vantage's UI reaches the same diagnostics stack through the trusted `SystemManagement.HardwareScan.General` private RPC contract with the `DoExecutionThermalTool` command. CaseDash does not depend on that private trusted Vantage RPC endpoint or the older firmware interface for board telemetry.
+- Trace output can include `lenovo_hardware_scan:*` provider details, `module_load_result` summaries for requested Lenovo modules, `direct_snapshot_refresh_started` markers for background direct scans, and `unsupported_board` fallback markers. A fan module summary with `FAN:NoDevices` means Lenovo's native addin reported no fan RPM devices for that board state.
+
+Troubleshooting:
+
+1. Install or update Lenovo Vantage, Lenovo System Interface Foundation, and Lenovo platform drivers for the machine.
+2. Confirm Lenovo Vantage Hardware Scan is installed and can show thermal telemetry from a normal user session.
+3. Enable `Start with Windows` once from CaseDash when no-elevation Hardware Scan access is required; that installs and starts `CashDashService`.
+4. Run the matching trace plus dump validation flow from [docs/diagnostics.md](diagnostics.md).
+5. Inspect the dump for `board.*` values and the trace for `lenovo_hardware_scan:*` diagnostics.

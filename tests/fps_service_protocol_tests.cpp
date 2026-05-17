@@ -28,6 +28,18 @@ TEST(FpsServiceProtocol, ParsesGenericRequestEnvelope) {
     EXPECT_EQ(parsedRequest.name, "presented_fps_sample");
 }
 
+TEST(FpsServiceProtocol, ParsesBoardSensorRequestEnvelope) {
+    const std::vector<char> request = BuildBoardSensorsServiceRequest();
+
+    std::string diagnostics;
+    const std::optional<CashDashServiceRequest> parsed =
+        ParseCashDashServiceRequest(request.data(), request.size(), diagnostics);
+
+    ASSERT_TRUE(parsed.has_value()) << diagnostics;
+    EXPECT_EQ(parsed->id, CashDashServiceRequestId::BoardSensorsSample);
+    EXPECT_EQ(parsed->name, "board_sensors_sample");
+}
+
 TEST(FpsServiceProtocol, RejectsRequestNameMismatch) {
     std::vector<char> request = BuildCashDashServiceRequest(CashDashServiceRequestId::PresentedFpsSample);
     request.back() = 'x';
@@ -79,6 +91,45 @@ TEST(FpsServiceProtocol, RoundTripsPermissionRequiredSample) {
     EXPECT_FALSE(parsedSample.fps.has_value());
     EXPECT_TRUE(parsedSample.permissionRequired);
     EXPECT_EQ(parsedSample.diagnostics, "access denied");
+}
+
+TEST(FpsServiceProtocol, RoundTripsBoardSensorSample) {
+    BoardVendorTelemetrySample sample;
+    sample.available = true;
+    sample.providerName = "Lenovo";
+    sample.boardManufacturer = "LENOVO";
+    sample.boardProduct = "LNVNB161216";
+    sample.driverLibrary = "Lenovo Hardware Scan LdeApi";
+    sample.diagnostics = "service active";
+    sample.requestedFanNames = {"cpu"};
+    sample.requestedTemperatureNames = {"cpu"};
+    sample.availableFanNames = {"CPU Fan"};
+    sample.availableTemperatureNames = {"CPU Temperature"};
+    sample.fans = {NamedScalarMetric{"CPU Fan", ScalarMetric{2100.0, ScalarMetricUnit::Rpm}}};
+    sample.temperatures = {NamedScalarMetric{"CPU Temperature", ScalarMetric{52.0, ScalarMetricUnit::Celsius}}};
+
+    const std::vector<char> response = SerializeBoardSensorsServiceSample(sample);
+    std::string diagnostics;
+    const std::optional<BoardVendorTelemetrySample> parsed =
+        ParseBoardSensorsServiceResponse(response.data(), response.size(), diagnostics);
+
+    ASSERT_TRUE(parsed.has_value()) << diagnostics;
+    EXPECT_TRUE(parsed->available);
+    EXPECT_EQ(parsed->providerName, "Lenovo");
+    EXPECT_EQ(parsed->boardManufacturer, "LENOVO");
+    EXPECT_EQ(parsed->boardProduct, "LNVNB161216");
+    EXPECT_EQ(parsed->driverLibrary, "Lenovo Hardware Scan LdeApi");
+    EXPECT_EQ(parsed->diagnostics, "service active");
+    ASSERT_EQ(parsed->fans.size(), 1u);
+    EXPECT_EQ(parsed->fans[0].name, "CPU Fan");
+    ASSERT_TRUE(parsed->fans[0].metric.value.has_value());
+    EXPECT_DOUBLE_EQ(*parsed->fans[0].metric.value, 2100.0);
+    EXPECT_EQ(parsed->fans[0].metric.unit, ScalarMetricUnit::Rpm);
+    ASSERT_EQ(parsed->temperatures.size(), 1u);
+    EXPECT_EQ(parsed->temperatures[0].name, "CPU Temperature");
+    ASSERT_TRUE(parsed->temperatures[0].metric.value.has_value());
+    EXPECT_DOUBLE_EQ(*parsed->temperatures[0].metric.value, 52.0);
+    EXPECT_EQ(parsed->temperatures[0].metric.unit, ScalarMetricUnit::Celsius);
 }
 
 TEST(FpsServiceProtocol, RejectsMalformedResponse) {
