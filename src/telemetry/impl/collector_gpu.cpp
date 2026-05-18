@@ -12,6 +12,7 @@
 #include "telemetry/impl/collector_state.h"
 #include "telemetry/impl/collector_support.h"
 #include "util/numeric_safety.h"
+#include "util/resource_strings.h"
 
 namespace {
 
@@ -75,7 +76,8 @@ double SumCounterArray(RealTelemetryCollectorState& state, PDH_HCOUNTER counter)
 
 void ApplyGpuVendorSample(RealTelemetryCollectorState& state, const GpuVendorTelemetrySample& sample) {
     state.gpu_.providerName = sample.providerName.empty() ? "None" : sample.providerName;
-    state.gpu_.providerDiagnostics = sample.diagnostics.empty() ? "(none)" : sample.diagnostics;
+    state.gpu_.providerDiagnostics =
+        sample.diagnostics.empty() ? ResourceStringText(RES_STR("(none)")) : sample.diagnostics;
     state.gpu_.providerAvailable = sample.available;
 
     if (sample.name.has_value() && !sample.name->empty()) {
@@ -168,7 +170,7 @@ void ApplyIntelCpuTemperatureFallback(RealTelemetryCollectorState& state) {
 
 void ResetGpuProviderState(RealTelemetryCollectorState& state) {
     state.gpu_.providerName = "None";
-    state.gpu_.providerDiagnostics = "Provider not initialized.";
+    state.gpu_.providerDiagnostics = ResourceStringText(RES_STR("Provider not initialized."));
     state.gpu_.providerAvailable = false;
 }
 
@@ -225,8 +227,9 @@ void InitializeGpuVendorProvider(RealTelemetryCollectorState& state) {
     } else {
         const GpuVendorTelemetrySample sample = state.gpu_.provider->Sample();
         state.gpu_.providerName = sample.providerName.empty() ? "GPU vendor" : sample.providerName;
-        state.gpu_.providerDiagnostics =
-            sample.diagnostics.empty() ? "Provider initialization failed." : sample.diagnostics;
+        state.gpu_.providerDiagnostics = sample.diagnostics.empty()
+                                             ? ResourceStringText(RES_STR("Provider initialization failed."))
+                                             : sample.diagnostics;
         state.trace_.WriteFmt(TracePrefix::Telemetry,
             RES_STR("gpu_provider_initialize_failed provider=%s diagnostics=\"%s\""),
             state.gpu_.providerName.c_str(),

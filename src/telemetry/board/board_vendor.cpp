@@ -6,7 +6,7 @@
 #include "telemetry/board/gigabyte/board_gigabyte_siv.h"
 #include "telemetry/board/msi/board_msi_center.h"
 #include "telemetry/impl/system_info_support.h"
-#include "util/localization_catalog.h"
+#include "util/resource_strings.h"
 #include "util/trace.h"
 
 namespace {
@@ -27,7 +27,8 @@ public:
         sample_.temperatures =
             CreateRequestedBoardMetrics(settings.requestedTemperatureNames, ScalarMetricUnit::Celsius);
         sample_.available = false;
-        sample_.diagnostics = FindLocalizedText(RES_STR("telemetry.board.unsupported_provider"));
+        sample_.diagnostics =
+            ResourceStringText(RES_STR("No supported board telemetry provider matches the baseboard manufacturer."));
         trace_.WriteFmt(TracePrefix::UnsupportedBoard,
             RES_STR("initialize manufacturer=\"%s\" product=\"%s\""),
             info_.manufacturer.c_str(),

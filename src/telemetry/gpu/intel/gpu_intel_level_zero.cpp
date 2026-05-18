@@ -14,7 +14,7 @@
 
 #include "telemetry/fps/fps_service_client_provider.h"
 #include "telemetry/gpu/gpu_vendor.h"
-#include "util/localization_catalog.h"
+#include "util/resource_strings.h"
 #include "util/strings.h"
 #include "util/text_format.h"
 #include "util/trace.h"
@@ -346,7 +346,7 @@ public:
     bool Load(std::string& diagnostics) {
         module_ = LoadLibraryW(kLevelZeroLibraryName);
         if (module_ == nullptr) {
-            diagnostics = "Level Zero loader not found.";
+            diagnostics = ResourceStringText(RES_STR("Level Zero loader not found."));
             return false;
         }
 
@@ -376,7 +376,7 @@ public:
 #undef CASEDASH_LOAD_REQUIRED
 
         if (!loaded) {
-            diagnostics = "Level Zero loader is missing required Sysman entry points.";
+            diagnostics = ResourceStringText(RES_STR("Level Zero loader is missing required Sysman entry points."));
             return false;
         }
         return true;
@@ -538,8 +538,8 @@ public:
         trace_.WriteFmt(
             TracePrefix::IntelLevelZero, RES_STR("sysman_init result=\"%s\""), ResultCodeString(initResult).c_str());
         if (initResult != kZeResultSuccess) {
-            diagnostics_ = FormatText(FindLocalizedText(RES_STR("telemetry.gpu.intel.sysman_init_failed")),
-                ResultCodeString(initResult).c_str());
+            diagnostics_ = FormatText(
+                RES_STR("Level Zero Sysman initialization failed: %s"), ResultCodeString(initResult).c_str());
             return false;
         }
 
@@ -550,7 +550,9 @@ public:
         EnumerateMetricHandles();
         CaptureEngineBaselines();
 
-        diagnostics_ = FormatText(FindLocalizedText(RES_STR("telemetry.gpu.intel.support_summary")),
+        diagnostics_ = FormatText(RES_STR("Level Zero GPU=%s display_name=%s engine_groups=%zu temperature_sensors=%zu "
+                                          "frequency_domains=%zu memory_modules=%zu device_memory_modules=%zu "
+                                          "fan_rpm_supported=%s native_fps_supported=no"),
             sysmanGpuName_.c_str(),
             gpuName_.c_str(),
             engines_.size(),
@@ -562,12 +564,12 @@ public:
 
         fpsProvider_ = CreatePresentedFpsProvider(trace_);
         if (fpsProvider_ != nullptr && fpsProvider_->Initialize()) {
-            fpsDiagnostics_ = FindLocalizedText(RES_STR("telemetry.fps.etw.active"));
+            fpsDiagnostics_ = ResourceStringText(RES_STR("Presented FPS ETW provider active."));
         } else {
             const FpsTelemetrySample fpsSample =
                 fpsProvider_ != nullptr ? fpsProvider_->Sample() : FpsTelemetrySample{};
             fpsDiagnostics_ = fpsSample.diagnostics.empty()
-                                  ? FindLocalizedText(RES_STR("telemetry.fps.etw.unavailable"))
+                                  ? ResourceStringText(RES_STR("Presented FPS ETW provider unavailable."))
                                   : fpsSample.diagnostics;
         }
 
@@ -666,7 +668,7 @@ public:
         }
 
         sample.available = hasAnyMetric;
-        AppendFormat(sample.diagnostics, " fps=%s", fpsDiagnostics_.c_str());
+        AppendFormat(sample.diagnostics, RES_STR(" fps=%s"), fpsDiagnostics_.c_str());
         trace_.WriteFmt(TracePrefix::IntelLevelZero,
             RES_STR("sample_done available=%s diagnostics=\"%s\""),
             Trace::BoolText(sample.available),
@@ -683,8 +685,8 @@ private:
             ResultCodeString(driverResult).c_str(),
             drivers.size());
         if (driverResult != kZeResultSuccess || drivers.empty()) {
-            diagnostics_ = FormatText(
-                FindLocalizedText(RES_STR("telemetry.gpu.intel.no_drivers")), ResultCodeString(driverResult).c_str());
+            diagnostics_ =
+                FormatText(RES_STR("Level Zero Sysman found no drivers: %s"), ResultCodeString(driverResult).c_str());
             return false;
         }
 
@@ -749,7 +751,7 @@ private:
             return true;
         }
 
-        diagnostics_ = "Level Zero Sysman found no Intel GPU devices.";
+        diagnostics_ = ResourceStringText(RES_STR("Level Zero Sysman found no Intel GPU devices."));
         return false;
     }
 
@@ -1035,8 +1037,8 @@ private:
     std::optional<GpuAdapterInfo> adapter_;
     std::string sysmanGpuName_ = "Intel GPU";
     std::string gpuName_;
-    std::string diagnostics_ = "Level Zero provider not initialized.";
-    std::string fpsDiagnostics_ = "Presented FPS ETW provider not initialized.";
+    std::string diagnostics_ = ResourceStringText(RES_STR("Level Zero provider not initialized."));
+    std::string fpsDiagnostics_ = ResourceStringText(RES_STR("Presented FPS ETW provider not initialized."));
     std::vector<EngineProbe> engines_;
     // Size: one tiny tagged vector avoids four separate Sysman probe-vector instantiations.
     std::vector<MetricProbe> metricProbes_;
