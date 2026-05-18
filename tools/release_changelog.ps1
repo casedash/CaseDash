@@ -20,11 +20,18 @@ function Normalize-Lines {
     return (($Text -replace "`r`n", "`n") -replace "`r", "`n").TrimStart([char]0xFEFF)
 }
 
+function Split-Lines {
+    param([string]$Text)
+
+    # PowerShell 7 treats negative max-substring counts as right-to-left splitting.
+    return @($Text -split "`n", 0)
+}
+
 function Get-TopChunk {
     param([string]$Text)
 
     $normalized = Normalize-Lines -Text $Text
-    $lines = @($normalized -split "`n", -1)
+    $lines = Split-Lines -Text $normalized
     $separatorIndex = -1
     for ($index = 0; $index -lt $lines.Count; ++$index) {
         if ($lines[$index].Trim() -eq '---') {
@@ -60,7 +67,7 @@ function Get-TopChunk {
 function Get-FirstNonEmptyLine {
     param([string]$Text)
 
-    foreach ($line in @($Text -split "`n")) {
+    foreach ($line in (Split-Lines -Text $Text)) {
         $trimmed = $line.Trim()
         if ($trimmed -ne '') {
             return $trimmed
@@ -75,7 +82,7 @@ function Get-ChunkBody {
         [string]$ExpectedHeader
     )
 
-    $lines = @($Chunk -split "`n", -1)
+    $lines = Split-Lines -Text $Chunk
     $headerIndex = -1
     for ($index = 0; $index -lt $lines.Count; ++$index) {
         if ($lines[$index].Trim() -eq '') {
@@ -103,7 +110,7 @@ function Assert-HasReleaseBullets {
         [string]$Context
     )
 
-    foreach ($line in @($Body -split "`n")) {
+    foreach ($line in (Split-Lines -Text $Body)) {
         if ($line.TrimStart().StartsWith('- ')) {
             return
         }
@@ -118,7 +125,7 @@ function Assert-SingleReleaseBody {
         [string]$Context
     )
 
-    foreach ($line in @($Body -split "`n")) {
+    foreach ($line in (Split-Lines -Text $Body)) {
         $trimmed = $line.Trim()
         if ($trimmed -eq '---') {
             throw "$Context must contain only one release chunk, but it still contains a '---' separator. Check docs\changelog.md separator placement."
