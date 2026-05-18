@@ -796,8 +796,15 @@ public:
 
     bool Initialize(const BoardTelemetrySettings& settings) override {
         if (pendingDirectSnapshot_.valid()) {
-            cachedDirectSnapshot_ = pendingDirectSnapshot_.get();
-            hasCachedDirectSnapshot_ = cachedDirectSnapshot_.success;
+            if (pendingDirectSnapshot_.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+                cachedDirectSnapshot_ = pendingDirectSnapshot_.get();
+                hasCachedDirectSnapshot_ = cachedDirectSnapshot_.success;
+                trace_.WriteFmt(TracePrefix::LenovoHardwareScan,
+                    RES_STR("direct_snapshot_ready_during_initialize available=%d"),
+                    cachedDirectSnapshot_.success ? 1 : 0);
+            } else {
+                trace_.Write(TracePrefix::LenovoHardwareScan, RES_STR("direct_snapshot_pending_during_initialize"));
+            }
         }
 
         settings_ = settings;
