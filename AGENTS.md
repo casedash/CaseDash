@@ -13,7 +13,8 @@ Use the following maintained references and keep them in sync before finishing w
 - `docs/build.md` - project environment, setup, build commands, validation entrypoints, and tooling constraints.
 - `docs/release.md` and `docs/changelog.md` - release procedure, changelog format, and published release notes.
 - `docs/web.md` - public website behavior, section contract, content, build flow, and generated-asset contracts.
-- `docs/profile_benchmark.md` - benchmark workflow, baselines, hotspots, tested hypotheses, and experiment results.
+- `docs/profile_benchmark.md` - benchmark workflow, shared optimization journal, tested hypotheses, and experiment results.
+- `docs/performance/*.md` - machine-specific benchmark ranges, current bottlenecks, and further research directions.
 
 Keep a single source of truth for terminology, examples, format descriptions, and configuration-language references. Document requirements briefly in the owning spec using present-tense steady-state language. Do not number section headings; use descriptive non-numbered headings so docs stay easier to reorder and maintain.
 

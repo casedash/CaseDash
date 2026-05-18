@@ -1,6 +1,6 @@
 # Size Optimization Log
 
-This document owns executable-size assumptions, constraints, map workflow notes, and size experiment history. Keep benchmark timing details in [docs/profile_benchmark.md](profile_benchmark.md).
+This document owns executable-size assumptions, constraints, map workflow notes, and size experiment history. Keep benchmark workflow and shared performance research in [docs/profile_benchmark.md](profile_benchmark.md), and keep machine-specific timing ranges under `docs/performance/`.
 
 ## Constraints
 
@@ -28,7 +28,7 @@ This document owns executable-size assumptions, constraints, map workflow notes,
 - Use the manual GitHub `Size Map Artifacts` workflow when the Windows runner's executable or linker map is needed for comparison with a local build; it uploads the app executable, full map, summary, and metadata.
 - For ad hoc map inspection, run `python tools\analyze_link_map.py build\CaseDash.map --top 25`.
 - For local-versus-remote symbol comparison, run `python tools\compare_link_maps.py build\CaseDash.map path\to\other\CaseDash.map --top 10`; deltas are reported as first map minus second map.
-- When a size change can affect hot code, build benchmarks with `build.cmd Release /benchmarks` and use [docs/profile_benchmark.md](profile_benchmark.md) for timing validation.
+- When a size change can affect hot code, build benchmarks with `build.cmd Release /benchmarks`, use [docs/profile_benchmark.md](profile_benchmark.md) for benchmark workflow, and compare timing against the matching machine file under `docs/performance/`.
 
 ## Source Policy Guardrails
 

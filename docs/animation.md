@@ -1,7 +1,7 @@
 # Dashboard Animation
 
 This document owns live-dashboard animation behavior and the architecture that supports it.
-See also: [specifications.md](specifications.md) for user-visible dashboard behavior, [layout_edit.md](layout_edit.md) for layout-edit interaction, [diagnostics.md](diagnostics.md) for trace and export behavior, [profile_benchmark.md](profile_benchmark.md) for benchmark workflow and baselines, and [architecture.md](architecture.md) for package boundaries.
+See also: [specifications.md](specifications.md) for user-visible dashboard behavior, [layout_edit.md](layout_edit.md) for layout-edit interaction, [diagnostics.md](diagnostics.md) for trace and export behavior, [profile_benchmark.md](profile_benchmark.md) for benchmark workflow and [performance](performance/) for machine-specific baselines, and [architecture.md](architecture.md) for package boundaries.
 
 ## Purpose
 
@@ -279,4 +279,4 @@ Animation code follows the maintained package boundaries documented under [archi
 
 Animation changes use the standard project validation entrypoints from [docs/build.md](build.md).
 
-Changes that affect live animation, layer construction, dirty composition, or frame handoff also build benchmarks with `build.cmd /benchmarks` and compare relevant benchmark output against [profile_benchmark.md](profile_benchmark.md).
+Changes that affect live animation, layer construction, dirty composition, or frame handoff also build benchmarks with `build.cmd /benchmarks` and compare relevant benchmark output against the matching file under [performance](performance/).
