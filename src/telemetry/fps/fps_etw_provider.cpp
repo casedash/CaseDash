@@ -17,6 +17,7 @@
 #include "telemetry/fps/impl/gpu_raw_counter_map.h"
 #include "telemetry/impl/collector_support.h"
 #include "util/lightweight_mutex.h"
+#include "util/localization_catalog.h"
 #include "util/text_format.h"
 #include "util/trace.h"
 #include "util/utf8.h"
@@ -188,7 +189,8 @@ public:
         }
         if (status != ERROR_SUCCESS) {
             permissionRequired_ = IsPermissionDenied(status);
-            diagnostics_ = FormatText("Failed to start FPS ETW session: %s", FormatWin32Error(status).c_str());
+            diagnostics_ = FormatText(
+                FindLocalizedText(RES_STR("telemetry.fps.etw.start_failed")), FormatWin32Error(status).c_str());
             return false;
         }
 
@@ -212,7 +214,7 @@ public:
         if (!dxgiEnabled_ && !d3d9Enabled_ && !dxgkrnlEnabled_) {
             permissionRequired_ =
                 IsPermissionDenied(dxgiStatus) || IsPermissionDenied(d3d9Status) || IsPermissionDenied(dxgkrnlStatus);
-            diagnostics_ = FormatText("Failed to enable FPS ETW providers: dxgi=%s d3d9=%s dxgkrnl=%s",
+            diagnostics_ = FormatText(FindLocalizedText(RES_STR("telemetry.fps.etw.enable_failed")),
                 FormatWin32Error(dxgiStatus).c_str(),
                 FormatWin32Error(d3d9Status).c_str(),
                 FormatWin32Error(dxgkrnlStatus).c_str());
@@ -228,20 +230,21 @@ public:
         traceLog.Context = this;
         traceHandle_ = OpenTraceW(&traceLog);
         if (traceHandle_ == INVALID_PROCESSTRACE_HANDLE) {
-            diagnostics_ = FormatText("Failed to open FPS ETW trace: %s", FormatWin32Error(GetLastError()).c_str());
+            diagnostics_ = FormatText(
+                FindLocalizedText(RES_STR("telemetry.fps.etw.open_failed")), FormatWin32Error(GetLastError()).c_str());
             StopLocked();
             return false;
         }
 
         processingThread_ = CreateThread(nullptr, 0, &PresentedFpsEtwProvider::ProcessTraceThread, this, 0, nullptr);
         if (processingThread_ == nullptr) {
-            diagnostics_ =
-                FormatText("Failed to create FPS ETW processing thread: %s", FormatWin32Error(GetLastError()).c_str());
+            diagnostics_ = FormatText(FindLocalizedText(RES_STR("telemetry.fps.etw.thread_failed")),
+                FormatWin32Error(GetLastError()).c_str());
             StopLocked();
             return false;
         }
 
-        diagnostics_ = "Presented FPS ETW provider active.";
+        diagnostics_ = FindLocalizedText(RES_STR("telemetry.fps.etw.active"));
         permissionRequired_ = false;
         initialized_ = true;
         trace_.WriteFmt(TracePrefix::FpsEtw,

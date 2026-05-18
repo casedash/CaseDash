@@ -14,6 +14,7 @@
 
 #include "telemetry/fps/fps_service_client_provider.h"
 #include "telemetry/gpu/gpu_vendor.h"
+#include "util/localization_catalog.h"
 #include "util/strings.h"
 #include "util/text_format.h"
 #include "util/trace.h"
@@ -537,8 +538,8 @@ public:
         trace_.WriteFmt(
             TracePrefix::IntelLevelZero, RES_STR("sysman_init result=\"%s\""), ResultCodeString(initResult).c_str());
         if (initResult != kZeResultSuccess) {
-            diagnostics_ =
-                FormatText("Level Zero Sysman initialization failed: %s", ResultCodeString(initResult).c_str());
+            diagnostics_ = FormatText(FindLocalizedText(RES_STR("telemetry.gpu.intel.sysman_init_failed")),
+                ResultCodeString(initResult).c_str());
             return false;
         }
 
@@ -549,9 +550,7 @@ public:
         EnumerateMetricHandles();
         CaptureEngineBaselines();
 
-        diagnostics_ = FormatText("Level Zero GPU=%s display_name=%s engine_groups=%zu temperature_sensors=%zu "
-                                  "frequency_domains=%zu memory_modules=%zu device_memory_modules=%zu "
-                                  "fan_rpm_supported=%s native_fps_supported=no",
+        diagnostics_ = FormatText(FindLocalizedText(RES_STR("telemetry.gpu.intel.support_summary")),
             sysmanGpuName_.c_str(),
             gpuName_.c_str(),
             engines_.size(),
@@ -563,12 +562,13 @@ public:
 
         fpsProvider_ = CreatePresentedFpsProvider(trace_);
         if (fpsProvider_ != nullptr && fpsProvider_->Initialize()) {
-            fpsDiagnostics_ = "Presented FPS ETW provider active.";
+            fpsDiagnostics_ = FindLocalizedText(RES_STR("telemetry.fps.etw.active"));
         } else {
             const FpsTelemetrySample fpsSample =
                 fpsProvider_ != nullptr ? fpsProvider_->Sample() : FpsTelemetrySample{};
-            fpsDiagnostics_ =
-                fpsSample.diagnostics.empty() ? "Presented FPS ETW provider unavailable." : fpsSample.diagnostics;
+            fpsDiagnostics_ = fpsSample.diagnostics.empty()
+                                  ? FindLocalizedText(RES_STR("telemetry.fps.etw.unavailable"))
+                                  : fpsSample.diagnostics;
         }
 
         initialized_ = true;
@@ -683,7 +683,8 @@ private:
             ResultCodeString(driverResult).c_str(),
             drivers.size());
         if (driverResult != kZeResultSuccess || drivers.empty()) {
-            diagnostics_ = FormatText("Level Zero Sysman found no drivers: %s", ResultCodeString(driverResult).c_str());
+            diagnostics_ = FormatText(
+                FindLocalizedText(RES_STR("telemetry.gpu.intel.no_drivers")), ResultCodeString(driverResult).c_str());
             return false;
         }
 

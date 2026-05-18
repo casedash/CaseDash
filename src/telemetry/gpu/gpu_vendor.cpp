@@ -15,6 +15,7 @@
 #include "telemetry/gpu/gpu_vendor_selection.h"
 #include "telemetry/gpu/intel/gpu_intel_level_zero.h"
 #include "telemetry/gpu/nvidia/gpu_nvidia_nvml.h"
+#include "util/localization_catalog.h"
 #include "util/strings.h"
 #include "util/text_format.h"
 #include "util/trace.h"
@@ -62,15 +63,16 @@ public:
     bool Initialize() override {
         sample_.providerName = "Unsupported GPU";
         sample_.available = false;
-        sample_.diagnostics = "No supported GPU telemetry provider matches the selected adapter vendor.";
+        sample_.diagnostics = FindLocalizedText(RES_STR("telemetry.gpu.unsupported_provider"));
         fpsProvider_ = CreatePresentedFpsProvider(trace_);
         if (fpsProvider_ != nullptr && fpsProvider_->Initialize()) {
-            fpsDiagnostics_ = "Presented FPS ETW provider active.";
+            fpsDiagnostics_ = FindLocalizedText(RES_STR("telemetry.fps.etw.active"));
         } else {
             const FpsTelemetrySample fpsSample =
                 fpsProvider_ != nullptr ? fpsProvider_->Sample() : FpsTelemetrySample{};
-            fpsDiagnostics_ =
-                fpsSample.diagnostics.empty() ? "Presented FPS ETW provider unavailable." : fpsSample.diagnostics;
+            fpsDiagnostics_ = fpsSample.diagnostics.empty()
+                                  ? FindLocalizedText(RES_STR("telemetry.fps.etw.unavailable"))
+                                  : fpsSample.diagnostics;
         }
 
         const std::string adapterName = adapter_.has_value() ? adapter_->adapterName : std::string();

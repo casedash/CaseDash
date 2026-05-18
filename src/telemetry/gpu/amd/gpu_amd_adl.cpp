@@ -12,6 +12,7 @@
 
 #include "telemetry/fps/fps_service_client_provider.h"
 #include "telemetry/gpu/gpu_vendor.h"
+#include "util/localization_catalog.h"
 #include "util/strings.h"
 #include "util/text_format.h"
 #include "util/trace.h"
@@ -34,8 +35,7 @@ void SetSupportDiagnostics(std::string& diagnostics,
     adlx_bool vramSupported,
     ADLX_RESULT vramResult) {
     AssignFormat(diagnostics,
-        "ADLX GPU=%s usage_supported=%s(%d) temp_supported=%s(%d) clock_supported=%s(%d) fan_supported=%s(%d) "
-        "vram_supported=%s(%d)",
+        FindLocalizedText(RES_STR("telemetry.gpu.amd.support_summary")),
         gpuName.c_str(),
         usageSupported ? "yes" : "no",
         static_cast<int>(usageResult),
@@ -161,7 +161,8 @@ public:
                 static_cast<int>(result));
         }
         if (ADLX_FAILED(result) || helper_.GetSystemServices() == nullptr) {
-            diagnostics_ = FormatText("ADLX initialization failed: init=%d", static_cast<int>(result));
+            diagnostics_ =
+                FormatText(FindLocalizedText(RES_STR("telemetry.gpu.amd.init_failed")), static_cast<int>(result));
             trace().WriteFmt(TracePrefix::AmdAdlx, RES_STR("initialize_failed %s"), diagnostics_.c_str());
             return false;
         }
@@ -173,8 +174,8 @@ public:
             static_cast<int>(result),
             Trace::BoolText(performanceMonitoring_ != nullptr));
         if (ADLX_FAILED(result) || !performanceMonitoring_) {
-            diagnostics_ =
-                FormatText("Failed to get ADLX performance monitoring services: perf=%d", static_cast<int>(result));
+            diagnostics_ = FormatText(FindLocalizedText(RES_STR("telemetry.gpu.amd.performance_monitoring_failed")),
+                static_cast<int>(result));
             trace().WriteFmt(
                 TracePrefix::AmdAdlx, RES_STR("get_performance_monitoring_failed %s"), diagnostics_.c_str());
             return false;
@@ -188,7 +189,8 @@ public:
             static_cast<int>(result),
             Trace::BoolText(gpus != nullptr));
         if (ADLX_FAILED(result) || !gpus || gpus->Empty()) {
-            diagnostics_ = FormatText("Failed to get AMD GPU list: gpus=%d", static_cast<int>(result));
+            diagnostics_ =
+                FormatText(FindLocalizedText(RES_STR("telemetry.gpu.amd.gpu_list_failed")), static_cast<int>(result));
             trace().WriteFmt(TracePrefix::AmdAdlx, RES_STR("get_gpus_failed %s"), diagnostics_.c_str());
             return false;
         }
@@ -218,8 +220,8 @@ public:
             static_cast<int>(result),
             Trace::BoolText(metricsSupport_ != nullptr));
         if (ADLX_FAILED(result) || !metricsSupport_) {
-            diagnostics_ =
-                FormatText("Failed to query supported AMD GPU metrics: support=%d", static_cast<int>(result));
+            diagnostics_ = FormatText(
+                FindLocalizedText(RES_STR("telemetry.gpu.amd.metrics_support_failed")), static_cast<int>(result));
             trace().WriteFmt(TracePrefix::AmdAdlx, RES_STR("get_supported_metrics_failed %s"), diagnostics_.c_str());
             return false;
         }
@@ -254,12 +256,13 @@ public:
             vramResult);
         fpsProvider_ = CreatePresentedFpsProvider(trace_);
         if (fpsProvider_ != nullptr && fpsProvider_->Initialize()) {
-            fpsDiagnostics_ = "Presented FPS ETW provider active.";
+            fpsDiagnostics_ = FindLocalizedText(RES_STR("telemetry.fps.etw.active"));
         } else {
             const FpsTelemetrySample fpsSample =
                 fpsProvider_ != nullptr ? fpsProvider_->Sample() : FpsTelemetrySample{};
-            fpsDiagnostics_ =
-                fpsSample.diagnostics.empty() ? "Presented FPS ETW provider unavailable." : fpsSample.diagnostics;
+            fpsDiagnostics_ = fpsSample.diagnostics.empty()
+                                  ? FindLocalizedText(RES_STR("telemetry.fps.etw.unavailable"))
+                                  : fpsSample.diagnostics;
         }
         initialized_ = true;
         trace().WriteFmt(TracePrefix::AmdAdlx,
@@ -453,7 +456,8 @@ private:
             gpuName_.c_str(),
             adapter_.has_value() ? adapter_->adapterName.c_str() : "");
         if (!gpu_) {
-            diagnostics_ = FormatText("Failed to open selected AMD GPU: gpu=%d", static_cast<int>(bestResult));
+            diagnostics_ = FormatText(
+                FindLocalizedText(RES_STR("telemetry.gpu.amd.selected_gpu_failed")), static_cast<int>(bestResult));
             trace().WriteFmt(TracePrefix::AmdAdlx, RES_STR("get_gpu_failed %s"), diagnostics_.c_str());
             return false;
         }

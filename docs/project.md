@@ -62,7 +62,7 @@ See also: [docs/build.md](build.md) for setup and commands, [docs/layout.md](lay
 - Keep project filesystem operations on `src/util/file_path.*` helpers instead of `std::filesystem`; paths are stored as UTF-8 and widened only at filesystem API calls. `lint.cmd` enforces this source-policy rule for maintained source and test files.
 - Keep native app and benchmark targets built without native C++ exception handling; the C++/CLI bridge owns the managed exception boundary separately.
 - Keep native app, test, and benchmark targets compiled with `_USE_STD_VECTOR_ALGORITHMS=0` so MSVC's vectorized STL algorithm dispatch tables stay out of the single-file binaries.
-- Keep `resources/localization.ini` as the embedded key-value catalog for localizable runtime strings.
+- Keep `resources/localization.ini` as the embedded key-value catalog for localizable runtime strings. Static source lookups can use `RES_STR("localization.key")` ids, but user-visible English copy belongs in the localization catalog rather than directly in the generated `RES_STR` string catalog.
 - Keep one full-fidelity widget draw path for normal repaints and layout-edit drag repaints.
 - When a private module needs shared mutable collector data across multiple `.cpp` files, expose that state through a dedicated state type plus module-owned free functions.
 

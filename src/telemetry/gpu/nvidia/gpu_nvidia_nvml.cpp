@@ -10,6 +10,7 @@
 
 #include "telemetry/fps/fps_service_client_provider.h"
 #include "telemetry/gpu/gpu_vendor.h"
+#include "util/localization_catalog.h"
 #include "util/strings.h"
 #include "util/text_format.h"
 #include "util/trace.h"
@@ -254,7 +255,8 @@ public:
         NvmlReturn result = nvml_.Initialize();
         trace_.WriteFmt(TracePrefix::NvidiaNvml, RES_STR("init_done result=\"%s\""), nvml_.ResultText(result).c_str());
         if (result != kNvmlSuccess) {
-            diagnostics_ = FormatText("NVML initialization failed: %s", nvml_.ResultText(result).c_str());
+            diagnostics_ = FormatText(
+                FindLocalizedText(RES_STR("telemetry.gpu.nvidia.init_failed")), nvml_.ResultText(result).c_str());
             return false;
         }
 
@@ -265,7 +267,8 @@ public:
             nvml_.ResultText(result).c_str(),
             deviceCount);
         if (result != kNvmlSuccess || deviceCount == 0) {
-            diagnostics_ = FormatText("NVML found no NVIDIA GPUs: count=%s", nvml_.ResultText(result).c_str());
+            diagnostics_ = FormatText(
+                FindLocalizedText(RES_STR("telemetry.gpu.nvidia.no_gpus")), nvml_.ResultText(result).c_str());
             return false;
         }
 
@@ -287,17 +290,18 @@ public:
             totalVramGb_ = static_cast<double>(memory.total) / (1024.0 * 1024.0 * 1024.0);
         }
 
-        diagnostics_ = FormatText("NVML GPU=%s fan_rpm_supported=%s native_fps_supported=no",
+        diagnostics_ = FormatText(FindLocalizedText(RES_STR("telemetry.gpu.nvidia.support_summary")),
             gpuName_.c_str(),
             HasFanSpeedRpm() ? "yes" : "no");
         fpsProvider_ = CreatePresentedFpsProvider(trace_);
         if (fpsProvider_ != nullptr && fpsProvider_->Initialize()) {
-            fpsDiagnostics_ = "Presented FPS ETW provider active.";
+            fpsDiagnostics_ = FindLocalizedText(RES_STR("telemetry.fps.etw.active"));
         } else {
             const FpsTelemetrySample fpsSample =
                 fpsProvider_ != nullptr ? fpsProvider_->Sample() : FpsTelemetrySample{};
-            fpsDiagnostics_ =
-                fpsSample.diagnostics.empty() ? "Presented FPS ETW provider unavailable." : fpsSample.diagnostics;
+            fpsDiagnostics_ = fpsSample.diagnostics.empty()
+                                  ? FindLocalizedText(RES_STR("telemetry.fps.etw.unavailable"))
+                                  : fpsSample.diagnostics;
         }
         initialized_ = true;
         trace_.WriteFmt(TracePrefix::NvidiaNvml,
@@ -483,8 +487,8 @@ private:
             gpuName_.c_str(),
             adapter_.has_value() ? adapter_->adapterName.c_str() : "");
         if (device_ == nullptr) {
-            diagnostics_ =
-                FormatText("NVML failed to open selected NVIDIA GPU: device=%s", nvml_.ResultText(bestResult).c_str());
+            diagnostics_ = FormatText(FindLocalizedText(RES_STR("telemetry.gpu.nvidia.selected_device_failed")),
+                nvml_.ResultText(bestResult).c_str());
             return false;
         }
         return true;

@@ -25,8 +25,10 @@
 #include "telemetry/metrics.h"
 #include "telemetry/telemetry.h"
 #include "util/command_line.h"
+#include "util/localization_catalog.h"
 #include "util/message_box.h"
 #include "util/paths.h"
+#include "util/resource_strings.h"
 #include "util/scale.h"
 #include "util/strings.h"
 #include "util/text_format.h"
@@ -885,7 +887,7 @@ int RunElevatedSaveConfigMode(const FilePath& sourcePath, const FilePath& target
 }
 
 std::string FormatTelemetryInitializeError(std::string_view errorText) {
-    std::string message = ResourceStringText(RES_STR("Failed to initialize telemetry collector."));
+    std::string message = FindLocalizedText(RES_STR("diagnostics.message.telemetry_initialize_failed"));
     if (!errorText.empty()) {
         AppendFormat(message, "\n\n%.*s", static_cast<int>(errorText.size()), errorText.data());
     }
