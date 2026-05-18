@@ -21,6 +21,7 @@
 #include "telemetry/board/lenovo/board_lenovo_vantage_bridge.h"
 #include "telemetry/fps_service_protocol.h"
 #include "telemetry/impl/system_info_support.h"
+#include "util/elevated_process.h"
 #include "util/file_path.h"
 #include "util/strings.h"
 #include "util/text_format.h"
@@ -532,6 +533,14 @@ std::vector<NamedScalarMetric> CreateRawMetrics(
     return metrics;
 }
 
+void MarkMissingMetricsPermissionRequired(std::vector<NamedScalarMetric>& metrics) {
+    for (NamedScalarMetric& metric : metrics) {
+        if (!metric.metric.value.has_value()) {
+            metric.metric.issue = ScalarMetricIssue::PermissionRequired;
+        }
+    }
+}
+
 bool HasLogicalName(const std::vector<std::string>& names, const char* value) {
     return std::any_of(
         names.begin(), names.end(), [value](const std::string& name) { return EqualsInsensitive(name, value); });
@@ -856,6 +865,10 @@ public:
             }
             return sample;
         }
+        if (ServicePermissionRequired()) {
+            ApplyServicePermissionRequiredSample(sample, serviceDiagnostics, serviceSnapshotRunning);
+            return sample;
+        }
 
         std::string directDiagnostics;
         CompletePendingDirectSnapshot(directDiagnostics);
@@ -940,6 +953,42 @@ private:
         sample.diagnostics = FormatText("%s%s", diagnostics_.c_str(), requestedDiagnosticsSuffix_.c_str());
     }
 
+    bool ServicePermissionRequired() const {
+        return !processElevated_ && !serviceUsable_;
+    }
+
+    void ApplyServicePermissionRequiredSample(
+        BoardVendorTelemetrySample& sample, const std::string& serviceDiagnostics, bool serviceSnapshotRunning) {
+        std::string gameZoneDiagnostics;
+        LenovoHardwareScanSnapshot gameZoneSnapshot;
+        if (serviceSnapshotRunning) {
+            gameZoneDiagnostics = "Lenovo GameZone WMI fan query is waiting for service sample.";
+        } else {
+            gameZoneSnapshot = CaptureGameZoneFanSnapshot(gameZoneDiagnostics);
+        }
+
+        diagnostics_ = FormatText("Lenovo Hardware Scan requires administrator privileges without CashDashService. "
+                                  "service=\"%s\"",
+            serviceDiagnostics.c_str());
+        AppendDiagnosticsSuffix(diagnostics_, "gamezone_fans", gameZoneDiagnostics);
+
+        sample.temperatures = temperatureMetricTemplate_;
+        sample.fans = fanMetricTemplate_;
+        ResetBoardMetricValues(sample.temperatures);
+        ResetBoardMetricValues(sample.fans);
+        MarkMissingMetricsPermissionRequired(sample.temperatures);
+
+        if (gameZoneSnapshot.success && HasAvailableFanReading(gameZoneSnapshot)) {
+            availableFanNames_ = ExtractBoardSensorNames(gameZoneSnapshot.fans);
+            sample.availableFanNames = availableFanNames_;
+            ApplyBoardSensorReadingsToMetrics(gameZoneSnapshot.fans, requestedFanIndexBySourceName_, sample.fans);
+        }
+        MarkMissingMetricsPermissionRequired(sample.fans);
+
+        sample.available = HasAvailableMetricValue(sample.temperatures) || HasAvailableMetricValue(sample.fans);
+        sample.diagnostics = FormatText("%s%s", diagnostics_.c_str(), requestedDiagnosticsSuffix_.c_str());
+    }
+
     bool IsServiceSnapshotRunning() {
         std::lock_guard lock(serviceSnapshotState_->mutex);
         return serviceSnapshotState_->running;
@@ -974,6 +1023,12 @@ private:
         if (!hasResponse) {
             serviceUsable_ = false;
             serviceRetrySample_ = 0;
+            cachedServiceSnapshot_ = {};
+            hasCachedServiceSnapshot_ = false;
+            if (!processElevated_) {
+                cachedDirectSnapshot_ = {};
+                hasCachedDirectSnapshot_ = false;
+            }
             trace_.WriteFmt(TracePrefix::LenovoHardwareScan,
                 RES_STR("service_sample_failed diagnostics=\"%s\""),
                 diagnostics.c_str());
@@ -1163,6 +1218,7 @@ private:
     bool wantsGameZoneFans_ = false;
     bool hasCachedServiceSnapshot_ = false;
     bool hasCachedDirectSnapshot_ = false;
+    bool processElevated_ = IsCurrentProcessElevated();
     bool initialized_ = false;
 };
 

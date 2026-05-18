@@ -11,6 +11,19 @@ constexpr wchar_t kRunAsVerb[] = L"runas";  // ShellExecuteExW requires a UTF-16
 
 }  // namespace
 
+bool IsCurrentProcessElevated() {
+    HANDLE token = nullptr;
+    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &token)) {
+        return false;
+    }
+
+    TOKEN_ELEVATION elevation{};
+    DWORD returnedLength = 0;
+    const BOOL ok = GetTokenInformation(token, TokenElevation, &elevation, sizeof(elevation), &returnedLength);
+    CloseHandle(token);
+    return ok && elevation.TokenIsElevated != 0;
+}
+
 bool RunElevatedSelfAndWait(
     HWND owner, std::string_view parameters, const FilePath& workingDirectory, int showCommand, DWORD* exitCode) {
     if (exitCode != nullptr) {
