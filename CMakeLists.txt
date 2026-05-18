@@ -555,6 +555,7 @@ target_link_libraries(CaseDash PRIVATE
     ws2_32
     ole32
     oleaut32
+    wbemuuid
     advapi32
     dbghelp
     wtsapi32
@@ -959,6 +960,7 @@ target_link_libraries(CaseDashBenchmarks PRIVATE
     ws2_32
     ole32
     oleaut32
+    wbemuuid
     advapi32
     ${MSCOREE_LIB}
 )
