@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 
@@ -28,6 +29,9 @@ struct LayoutEditConfigFieldMetadata {
 struct LayoutEditParameterInfo {
     LayoutEditParameter parameter = LayoutEditParameter::MetricListLabelWidth;
 };
+
+// Implemented by generated file build/cmake/generated/layout_model/layout_edit_parameter_metadata.generated.cpp.
+std::span<const LayoutEditConfigFieldMetadata> LayoutEditConfigFieldMetadataDescriptors();
 
 LayoutEditParameterInfo GetLayoutEditParameterInfo(LayoutEditParameter parameter);
 const LayoutEditConfigFieldMetadata& GetLayoutEditConfigFieldMetadata(LayoutEditParameter parameter);

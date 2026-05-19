@@ -2,7 +2,6 @@
 
 #include <cstddef>
 
-#include "layout_model/layout_edit_parameter_metadata.generated.h"
 #include "util/text_format.h"
 
 namespace {
@@ -24,14 +23,6 @@ std::string HumanizeSnakeCase(std::string_view value) {
     return text;
 }
 
-const LayoutEditConfigFieldMetadata* ParameterFields() {
-    return configmeta::LayoutEditConfigFieldMetadataTable();
-}
-
-size_t ParameterInfoCount() {
-    return static_cast<size_t>(configmeta::LayoutEditConfigFieldMetadataCount());
-}
-
 }  // namespace
 
 LayoutEditParameterInfo GetLayoutEditParameterInfo(LayoutEditParameter parameter) {
@@ -39,7 +30,7 @@ LayoutEditParameterInfo GetLayoutEditParameterInfo(LayoutEditParameter parameter
 }
 
 const LayoutEditConfigFieldMetadata& GetLayoutEditConfigFieldMetadata(LayoutEditParameter parameter) {
-    return ParameterFields()[static_cast<size_t>(parameter)];
+    return LayoutEditConfigFieldMetadataDescriptors()[static_cast<size_t>(parameter)];
 }
 
 bool IsFontLayoutEditParameter(LayoutEditParameter parameter) {
@@ -57,9 +48,10 @@ std::string GetLayoutEditParameterDisplayName(LayoutEditParameter parameter) {
 
 std::optional<LayoutEditParameter> FindLayoutEditParameterByConfigField(
     std::string_view sectionName, std::string_view parameterName) {
-    for (size_t i = 0; i < ParameterInfoCount(); ++i) {
+    const auto fields = LayoutEditConfigFieldMetadataDescriptors();
+    for (size_t i = 0; i < fields.size(); ++i) {
         const auto parameter = static_cast<LayoutEditParameter>(i);
-        const auto& field = GetLayoutEditConfigFieldMetadata(parameter);
+        const auto& field = fields[i];
         if (std::string_view(field.sectionName) == sectionName &&
             std::string_view(field.parameterName) == parameterName) {
             return parameter;

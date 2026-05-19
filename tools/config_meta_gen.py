@@ -496,26 +496,6 @@ def generate_header(structs: list[StructDesc]) -> str:
     return "\n".join(lines)
 
 
-def generate_layout_edit_header() -> str:
-    return "\n".join(
-        [
-            "#pragma once",
-            "",
-            "#include <cstdint>",
-            "",
-            "struct LayoutEditConfigFieldMetadata;",
-            "",
-            "namespace configmeta {",
-            "",
-            "const LayoutEditConfigFieldMetadata* LayoutEditConfigFieldMetadataTable();",
-            "std::uint32_t LayoutEditConfigFieldMetadataCount();",
-            "",
-            "}  // namespace configmeta",
-            "",
-        ]
-    )
-
-
 def generate_runtime_field_array(struct: StructDesc) -> str:
     array_name = f"k{struct.name}Fields"
     lines = [f"constexpr RuntimeConfigFieldDescriptor {array_name}[] = {{"]
@@ -762,11 +742,11 @@ def generate_layout_edit_cpp(
     structs: list[StructDesc], paths: dict[str, list[str]], active_parameters: list[tuple[str, str, str]]
 ) -> str:
     lines = [
-        '#include "layout_model/layout_edit_parameter_metadata.generated.h"',
         '#include "layout_model/layout_edit_parameter_metadata.h"',
         "",
         "#include <cstddef>",
         "#include <cstdint>",
+        "#include <span>",
         "",
         "namespace {",
         "",
@@ -777,18 +757,9 @@ def generate_layout_edit_cpp(
         "",
         "}  // namespace",
         "",
-        "namespace configmeta {",
-        "",
-        "const LayoutEditConfigFieldMetadata* LayoutEditConfigFieldMetadataTable() {",
+        "std::span<const LayoutEditConfigFieldMetadata> LayoutEditConfigFieldMetadataDescriptors() {",
         "    return kLayoutEditConfigFieldMetadata;",
         "}",
-        "",
-        "std::uint32_t LayoutEditConfigFieldMetadataCount() {",
-        "    return static_cast<std::uint32_t>(",
-        "        sizeof(kLayoutEditConfigFieldMetadata) / sizeof(kLayoutEditConfigFieldMetadata[0]));",
-        "}",
-        "",
-        "}  // namespace configmeta",
         "",
     ]
     return "\n".join(lines)
@@ -877,7 +848,6 @@ def main() -> int:
     parser.add_argument("--output-header", required=True, type=Path)
     parser.add_argument("--output-cpp", required=True, type=Path)
     parser.add_argument("--output-json", required=True, type=Path)
-    parser.add_argument("--output-layout-edit-header", required=True, type=Path)
     parser.add_argument("--output-layout-edit-cpp", required=True, type=Path)
     args = parser.parse_args()
 
@@ -890,12 +860,10 @@ def main() -> int:
         paths = build_owner_paths(structs)
         header = generate_header(structs)
         cpp = generate_cpp(structs, paths)
-        layout_edit_header = generate_layout_edit_header()
         layout_edit_cpp = generate_layout_edit_cpp(structs, paths, ACTIVE_PARAMETERS)
         manifest = json.dumps(build_manifest(structs, paths), indent=2) + "\n"
         write_if_changed(args.output_header, header)
         write_if_changed(args.output_cpp, cpp)
-        write_if_changed(args.output_layout_edit_header, layout_edit_header)
         write_if_changed(args.output_layout_edit_cpp, layout_edit_cpp)
         write_if_changed(args.output_json, manifest)
     except ConfigMetaError as error:

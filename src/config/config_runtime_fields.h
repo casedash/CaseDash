@@ -76,6 +76,7 @@ std::string FormatLayoutExpression(const LayoutNodeConfig& node);
 void DecodeRuntimeConfigField(const RuntimeConfigFieldDescriptor& field, void* owner, const std::string& value);
 std::string EncodeRuntimeConfigField(const RuntimeConfigFieldDescriptor& field, const void* owner);
 bool RuntimeConfigFieldEquals(const RuntimeConfigFieldDescriptor& field, const void* owner, const void* compareOwner);
+// Implemented by generated file build/cmake/generated/config/config_meta.generated.cpp.
 std::span<const RuntimeConfigSectionDescriptor> RuntimeConfigSectionDescriptors();
 std::span<const RuntimeConfigFieldDescriptor> RuntimeConfigFields(const RuntimeConfigSectionDescriptor& section);
 const RuntimeConfigSectionDescriptor* FindRuntimeConfigSection(std::string_view sectionName);

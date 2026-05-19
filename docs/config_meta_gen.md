@@ -13,7 +13,6 @@ The generator writes these files under `build/cmake/generated/`:
 - `config/config_def.h`
 - `config/config_meta.generated.cpp`
 - `config/config_meta.generated.json`
-- `layout_model/layout_edit_parameter_metadata.generated.h`
 - `layout_model/layout_edit_parameter_metadata.generated.cpp`
 
 Generated C++ is compiled into the app, tests, and benchmarks. The JSON manifest records sections, dynamic sections, custom codecs, editable fields, and layout-edit parameter mappings for review and tooling. The generator writes outputs only when content changes, which keeps rebuilds focused.
@@ -117,7 +116,7 @@ The generator emits layout-edit config-field metadata separately from the runtim
 
 `tools/config_meta_gen.py` keeps the active layout-edit field list in `ACTIVE_PARAMETERS`. Each entry names a `LayoutEditParameter` enum value, a static-section owner type, and a descriptor field. The generated table follows that list order, and the generated `.cpp` contains a `static_assert` that its row count matches `LayoutEditParameter::Count`. `src/widget/layout_edit_parameter_id.h` remains the authoritative enum and hit-test priority contract, so the enum order and `ACTIVE_PARAMETERS` order stay aligned.
 
-Generated layout-edit rows include section name, persisted field key, value format, runtime value kind, clamp policy, and root offset. Layout edit reads the table through:
+Generated layout-edit rows include section name, persisted field key, value format, runtime value kind, clamp policy, and root offset. The generated `.cpp` implements the span accessor declared by `src/layout_model/layout_edit_parameter_metadata.h`. Layout edit reads the table through:
 
 - `GetLayoutEditParameterInfo`
 - `GetLayoutEditConfigFieldMetadata`

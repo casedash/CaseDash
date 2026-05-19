@@ -117,13 +117,11 @@ set(CASEDASH_CONFIG_META_DIR "${CASEDASH_GENERATED_DIR}/config")
 set(CASEDASH_CONFIG_DEF_HEADER "${CASEDASH_CONFIG_META_DIR}/config_def.h")
 set(CASEDASH_CONFIG_META_CPP "${CASEDASH_CONFIG_META_DIR}/config_meta.generated.cpp")
 set(CASEDASH_CONFIG_META_JSON "${CASEDASH_CONFIG_META_DIR}/config_meta.generated.json")
-set(CASEDASH_LAYOUT_EDIT_META_HEADER "${CASEDASH_GENERATED_DIR}/layout_model/layout_edit_parameter_metadata.generated.h")
 set(CASEDASH_LAYOUT_EDIT_META_CPP "${CASEDASH_GENERATED_DIR}/layout_model/layout_edit_parameter_metadata.generated.cpp")
 add_custom_command(
     OUTPUT
         "${CASEDASH_CONFIG_DEF_HEADER}"
         "${CASEDASH_CONFIG_META_CPP}"
-        "${CASEDASH_LAYOUT_EDIT_META_HEADER}"
         "${CASEDASH_LAYOUT_EDIT_META_CPP}"
         "${CASEDASH_CONFIG_META_JSON}"
     COMMAND
@@ -133,7 +131,6 @@ add_custom_command(
         --resource-config "${CMAKE_SOURCE_DIR}/resources/config.ini"
         --output-header "${CASEDASH_CONFIG_DEF_HEADER}"
         --output-cpp "${CASEDASH_CONFIG_META_CPP}"
-        --output-layout-edit-header "${CASEDASH_LAYOUT_EDIT_META_HEADER}"
         --output-layout-edit-cpp "${CASEDASH_LAYOUT_EDIT_META_CPP}"
         --output-json "${CASEDASH_CONFIG_META_JSON}"
     DEPENDS
@@ -145,7 +142,6 @@ add_custom_command(
 add_custom_target(CaseDashGeneratedConfigMeta DEPENDS
     "${CASEDASH_CONFIG_DEF_HEADER}"
     "${CASEDASH_CONFIG_META_CPP}"
-    "${CASEDASH_LAYOUT_EDIT_META_HEADER}"
     "${CASEDASH_LAYOUT_EDIT_META_CPP}"
     "${CASEDASH_CONFIG_META_JSON}"
 )
