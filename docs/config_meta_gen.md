@@ -35,7 +35,7 @@ CMake generates:
 
 - `build/cmake/generated/config/config_meta.generated.h`
 - `build/cmake/generated/config/config_meta.generated.cpp`
-- an optional `build/cmake/generated/config/config_meta.generated.json` manifest for generator tests and review diffs
+- `build/cmake/generated/config/config_meta.generated.json` manifest for generator tests and review diffs
 
 The generated header is included by `src/config/config.h`. The generated `.cpp` is compiled into `CaseDash`, `CaseDashTests`, and `CaseDashBenchmarks`.
 
@@ -47,10 +47,39 @@ Generated metadata should use plain runtime tables and small generated typed hel
 
 The descriptor uses ordinary struct and field declarations plus `// config_meta:` directives. The parser is intentionally line-oriented and fail-fast; it is not a general C++ parser.
 
-Static section types use a descriptor marker but do not name their section explicitly. The section name is derived from the type name by fixed generator rules, such as stripping `Config`, `SectionConfig`, or `WidgetConfig` suffixes and converting the remaining name to snake case. If an existing type name cannot express the shipped section name cleanly, the source type should be renamed rather than annotated.
+The grammar is deliberately small:
+
+```text
+descriptor        := (blank | comment | include | namespace_alias | struct_decl)*
+include           := "#include" quoted_path
+namespace_alias   := "namespace" identifier "=" qualified_identifier ";"
+struct_decl       := struct_directive? "struct" type_name "{" field_decl* "};"
+struct_directive  := "// config_meta:" struct_kind
+struct_kind       := "static" section_name
+                   | "dynamic_section" section_pattern "key=" identifier
+                   | "custom_section" section_name "codec=" codec_name
+                   | "container"
+                   | "root"
+field_decl        := field_type identifier ";" field_directive?
+field_type        := qualified_identifier | "std::vector<" qualified_identifier ">"
+field_directive   := "// config_meta:" field_attr+
+field_attr        := "runtime_only" | "policy=" policy_name
+policy_name       := "none" | "positive_int" | "non_negative_int" | "font_size" | "degrees"
+section_pattern   := "[" literal_prefix "$" identifier "]"
+section_name      := "[" literal "]"
+qualified_identifier := identifier ("::" identifier)*
+type_name         := identifier
+codec_name        := identifier
+```
+
+The generator accepts `#include` lines and namespace aliases only so `src/config/config_desc.h` can stay readable beside the real source headers. It does not expand includes, evaluate aliases, parse templates beyond recognized field type text, or evaluate arbitrary C++ expressions. A struct directive applies to the next struct declaration. A field directive applies only to the field on the same line. Directives on unsupported lines are generator errors.
+
+Static section types list their shipped config section name in the descriptor marker. The listed section name must match `resources/config.ini`.
+
+Field keys are derived by converting the member name from lower camel case to snake case. The snake-case conversion inserts a word break before an uppercase letter that follows a lowercase letter or digit, and before the last uppercase letter in an acronym when the next character is lowercase; the result is lowercased. The generator does not support field-key overrides. `resources/config.ini` is the naming authority for shipped sections and keys. When generated names do not match that file, the source and descriptor names must change to match the config language; the generator should fail rather than encode an exception.
 
 ```cpp
-// config_meta: static
+// config_meta: static [fonts]
 struct FontsConfig {
     UiFontConfig title;
     UiFontConfig big;
@@ -78,7 +107,53 @@ struct ThemeConfig {
 };
 ```
 
-Every declared field is a config metadata field by default. Use `// config_meta: runtime_only` only for fields that have no config key, save behavior, parser behavior, or editor behavior.
+Custom sections describe hand-authored section codecs. They participate in the root binding order but do not generate fixed field tables.
+
+```cpp
+// config_meta: custom_section [board] codec=board
+struct BoardConfig {
+};
+
+// config_meta: custom_section [metrics] codec=metrics
+struct MetricsSectionConfig {
+};
+```
+
+The generator maps `codec=board` to `BoardSectionCodec` and `codec=metrics` to `MetricsSectionCodec`. Unknown codec names are generator errors.
+
+Every declared field is a config metadata field and an editable field by default. Use `// config_meta: runtime_only` only for fields that have no config key, save behavior, parser behavior, or editor behavior.
+
+Non-default clamping policy is field metadata. The default policy is derived from the field type so previously non-editable fields can become editable without per-field annotations:
+
+| Field type | Default value format | Default policy |
+|---|---|---|
+| `int` | `Integer` | `positive_int` |
+| `double` | `FloatingPoint` | `none` |
+| `std::string` | `String` | `none` |
+| `std::vector<std::string>` | `String` | `none` |
+| `LogicalPointConfig` | `String` | `none` |
+| `LogicalSizeConfig` | `String` | `none` |
+| `ColorConfig` | `ColorHex` | `none` |
+| `UiFontConfig` | `FontSpec` | `font_size` |
+| `LayoutNodeConfig` | `String` | `none` |
+
+Use `policy=` only when a field needs behavior different from its type default. The generated parser and layout-edit setters apply the same policy table.
+
+```cpp
+// config_meta: static [dashboard]
+struct DashboardSectionConfig {
+    int outerMargin; // config_meta: policy=non_negative_int
+    int rowGap; // config_meta: policy=non_negative_int
+    int columnGap; // config_meta: policy=non_negative_int
+};
+
+// config_meta: static [gauge]
+struct GaugeWidgetConfig {
+    int outerPadding; // config_meta: policy=non_negative_int
+    double sweepDegrees; // config_meta: policy=degrees
+    double segmentGapDegrees; // config_meta: policy=degrees
+};
+```
 
 Container directives describe ownership rather than config keys:
 
@@ -122,7 +197,7 @@ struct AppConfig {
 
 Section membership follows from field type. A field whose type has a static section descriptor is a static section, a `std::vector<T>` whose item type has a dynamic section descriptor is a dynamic section collection, a custom-codec type is a custom section, and a container or root type is a recursive binding. Root fields need no section annotations.
 
-Field keys are derived only by converting the member name from lower camel case to snake case. The generator should not support field-key overrides. Current source should be renamed where needed so the member name matches the config key:
+Current source should be renamed where needed so generated names match `resources/config.ini`:
 
 | Current member | Config key | Planned member |
 |---|---|---|
@@ -132,7 +207,9 @@ Field keys are derived only by converting the member name from lower camel case 
 
 The current runtime-only `LayoutConfig::cardsLayout` member needs an implementation audit before it is generated. Production code reads `layout.structure.cardsLayout`; only the difference check and tests mention `LayoutConfig::cardsLayout` directly. The codegen migration should either remove that member or give it a clear runtime-only purpose before preserving it.
 
-Type names should also preserve section spelling through the generator's fixed type-to-section rules. If the current `UiFontSetConfig` name cannot derive `[fonts]` without a special case, rename it to a section-shaped type such as `FontsConfig` during the migration.
+Type names should stay section-shaped and readable even though static section spelling comes from the directive. During the migration, rename confusing type names such as `UiFontSetConfig` to section-shaped names such as `FontsConfig`.
+
+Generator tests should compare the manifest against `resources/config.ini` for shipped static section order, static keys, dynamic section prefixes, dynamic keys from representative sections, and custom section names. The comparison should explicitly exclude custom section dynamic keys such as `[board]` sensor bindings and `[metrics]` metric ids because those keys are codec-owned.
 
 ## Generated Runtime Metadata
 
@@ -145,7 +222,8 @@ The generator emits these runtime descriptor shapes:
 - color field spans for `ColorConfig` fields in `[theme.<name>]`, `[colors]`, and `[layout_guide_sheet]`
 - editable field metadata for every generated config field
 - stable active-region priority metadata for fields that are used by layout-edit hit testing
-- dynamic field metadata for active named layout, active theme, card, metrics, and other dynamic-section editors
+- dynamic field metadata for active named layout, active theme, card, and other dynamic-section editors
+- custom editable adapters for codec-owned sections such as `[metrics]`
 
 Parser and writer dispatch should become table-driven from a flattened `AppConfig` section descriptor list. That removes the current recursive template binding walk while preserving the same section order:
 
@@ -161,26 +239,46 @@ Dynamic section helpers may be generated as small typed functions in `config_met
 
 The descriptor does not mark individual fields as editable. Every generated config field is editable unless it is explicitly marked `runtime_only`.
 
-For each static-section field, the generator emits:
+The generator emits one editable-field table for all generated fields. Each entry has:
 
-- section name and parameter name
-- root offset from `AppConfig`
+- stable field id
+- section name or dynamic section prefix
+- parameter name
+- address kind: root field, dynamic item field, or custom adapter field
 - runtime value kind
 - layout-edit value format
 - clamp policy
+- active-region parameter id when the field has a widget hit target
+- deterministic tree order from generated section order and field order
+
+For each static-section field, the generator also emits:
+
+- root offset from `AppConfig`
 
 For each dynamic-section field, the generator emits:
 
-- dynamic section prefix
-- item key field
+- dynamic section descriptor id
+- key member name and key member offset
 - field offset from the dynamic item
-- runtime value kind
-- layout-edit value format
-- clamp policy
+- generated typed callbacks to find and ensure the vector item
+
+Dynamic editable fields are resolved through explicit edit scopes:
+
+- `ActiveTheme` resolves `[theme.<name>]` from `config.display.theme`. Missing themes do not create editor leaves.
+- `ActiveNamedLayout` resolves `[layout.<name>]` from `config.display.layout`. Layout-structure editors continue to edit the resolved `layout.structure` mirror and the matching named layout together.
+- `CardById` resolves `[card.<id>]` from the card id stored in the tree leaf focus key.
+- `ItemKey` resolves a dynamic section item from the key stored in the tree leaf focus key.
+- `Custom` routes through a hand-authored adapter.
+
+Mutable dynamic access must be explicit about creation. Parser dispatch uses ensure semantics because a config section creates or updates the keyed vector item. Layout-edit preview and apply paths use find semantics for existing leaves unless a specific editor workflow creates a new item.
+
+Codec-owned sections are not forced into fake field tables. `[metrics]` remains a custom editable adapter keyed by metric id and validated through `ConfigMetricCatalog`; `[board]` remains a custom codec for sensor binding save/load behavior. Custom adapters can expose layout-edit leaves, value formats, and preview/apply functions, but they do not claim generated field offsets.
 
 `LayoutEditParameter` identifiers are generated from fixed rules instead of per-field annotations. Existing active-region parameters must keep their current relative priority because hit testing uses priority order. Newly editable fields that are not active-region targets can be appended in deterministic config order unless a later UI change gives them interactive hit regions.
 
 Theme token colors should use generated dynamic field metadata rather than a hard-coded list in `layout_edit_tree.cpp` and `layout_edit_dialog/impl/editors.cpp`. They are ordinary editable fields in the active `[theme.<name>]` item, not a separately annotated theme-token list.
+
+Layout-node editing remains path-based because `LayoutNodeConfig` values contain a tree. Generated field metadata identifies the owning `cards` or `layout` config field, while existing layout-node edit keys continue to carry child paths, gap anchors, card ids, and weight-edit context.
 
 ## Implementation Plan
 
@@ -192,6 +290,7 @@ Create hand-authored config support headers so generated code can include only s
 - Keep config behavior functions in `src/config/config.h` and `src/config/config.cpp`.
 - Move policy and value-kind enums that still belong to runtime dispatch out of `config_schema.h` and into a small non-template header.
 - Leave existing macros in place during this preparation step so behavior and tests still pass.
+- Keep schema structs hand-authored during this phase. Generated headers may declare metadata tables and accessors that reference those structs, but they must not define duplicate structs.
 
 ### Add The Generator Skeleton
 
@@ -199,11 +298,11 @@ Add `tools/config_meta_gen.py` and `src/config/config_desc.h`.
 
 The first generator version should:
 
-- parse static section, dynamic section, container, root, field, policy, custom codec, and runtime-only directives
+- parse the descriptor grammar defined above, including static section, dynamic section, custom section, container, root, policy, and runtime-only directives
 - treat every non-runtime field as a generated config field and editable field
-- validate duplicate section names, duplicate keys, missing dynamic key fields, unknown policy names, unsupported field types, and any field name whose derived snake-case key does not match the intended config key
+- validate duplicate section names, duplicate keys, missing dynamic key fields, unknown policy names, unsupported field types, malformed directives, misplaced directives, and names that do not match `resources/config.ini`
 - write outputs only when content changes
-- emit a JSON manifest that can be asserted in tests without compiling generated C++
+- emit a JSON manifest with generated sections, keys, dynamic prefixes, policies, value kinds, value formats, custom codecs, and edit scopes
 
 Add CMake custom command inputs and outputs under `build/cmake/generated/config/`, and add a `CaseDashGeneratedConfigMeta` target. Make `CaseDash`, `CaseDashTests`, and `CaseDashBenchmarks` depend on it.
 
@@ -213,8 +312,9 @@ Keep the current structs and macro reflection temporarily, but switch `config_ru
 
 This phase proves:
 
-- field key spelling matches `resources/config.ini`
+- section and field spelling matches `resources/config.ini` without overrides
 - offsets match the current structs
+- default and explicit policies match the descriptor contract
 - parser and writer behavior stay unchanged
 - color resolver can scan generated color field tables
 - generated editable metadata covers fields that the current editor does not expose without adding duplicate descriptor tables
@@ -245,17 +345,17 @@ Run parser and writer tests after this step before touching the config structs.
 
 ### Move Schema Structs To Generated Code
 
-Once the generated tables drive behavior, move schema-owned structs from `src/config/config.h` into `config_meta.generated.h`.
+Once the generated tables drive behavior, move schema-owned structs from `src/config/config.h` into `config_meta.generated.h`. Ownership changes one struct family at a time: a struct is either hand-authored or generated, never both. Each handoff removes the hand-authored definition before the generated header defines the same type.
 
 Do this in small commits or patches:
 
 - generate `DisplayConfig`, `GpuConfig`, `NetworkConfig`, `StorageConfig`, `ThemeConfig`, `FontsConfig`, style/widget config sections, `LayoutSectionConfig`, `LayoutCardConfig`, `LayoutConfig`, and `AppConfig`
 - keep custom value and custom section payload types hand-authored
-- rename fields whose member names do not match derived config keys
+- rename fields and types whose derived names do not match `resources/config.ini`
 - update all source and tests for `small`, `cardBorder`, and `LayoutSectionConfig::cards`
 - delete `CONFIG_VALUE`, `CONFIG_EDITABLE_VALUE`, `CONFIG_SECTION`, `CONFIG_DYNAMIC_SECTION`, root binding macros, and reflected binding macros after no call sites remain
 
-The generated structs should stay default-initialized and must not introduce C++ fallback defaults that duplicate `resources/config.ini`.
+During the transition, `src/config/config.h` includes the generated header after the value types and custom section payloads are available. The generated header supplies declarations and accessors for hand-authored structs until the final ownership handoff, then supplies the schema struct definitions. The generated structs should stay default-initialized and must not introduce C++ fallback defaults that duplicate `resources/config.ini`.
 
 ### Generate Editable Metadata
 
@@ -265,12 +365,12 @@ Implementation details:
 
 - replace `CASEDASH_LAYOUT_EDIT_PARAMETER_ITEMS` with a generated enum declaration and generated metadata table
 - preserve current enum order as hit priority
-- generate `GetLayoutEditParameterInfo`, `GetLayoutEditConfigFieldMetadata`, `FindLayoutEditParameterByConfigField`, tooltip descriptor data, and generic editable-field lookup data from the same metadata table
+- generate `GetLayoutEditParameterInfo`, `GetLayoutEditConfigFieldMetadata`, `FindLayoutEditParameterByConfigField`, tooltip descriptor data, dynamic editable-field lookup data, and custom editable adapter routing from the same metadata source
 - update `layout_edit_parameter_edit.cpp` to use generated root offsets exactly as it does today
 - replace manual color-role switches in dashboard and dialog code with metadata-based color field lookup where practical
-- replace hard-coded theme token lists with generated dynamic field metadata for `ThemeConfig`
+- replace hard-coded theme token lists with generated `ActiveTheme` dynamic field metadata for `ThemeConfig`
 
-Tests should continue to verify metadata names, root-offset application, dynamic-field application, color field access, font field access, display names, and enum/table order.
+Tests should continue to verify metadata names, root-offset application, dynamic-field find and apply behavior, custom metric adapter behavior, color field access, font field access, display names, and enum/table order.
 
 ### Clean Up The Old Reflection Layer
 
