@@ -713,7 +713,7 @@ bool DashboardShellUi::ApplyFontFamilyPreview(const std::string& family) {
     return app_.controller_.ApplyLayoutEditFontFamily(app_, family);
 }
 
-bool DashboardShellUi::ApplyFontSetPreview(const UiFontSetConfig& fonts) {
+bool DashboardShellUi::ApplyFontSetPreview(const FontsConfig& fonts) {
     return app_.controller_.ApplyLayoutEditFontSet(app_, fonts);
 }
 

@@ -109,7 +109,7 @@ AppConfig MakeBaseConfig() {
         MetricDefinitionConfig{"gpu.temp", MetricDisplayStyle::Scalar, false, 100.0, "C", "Temp"},
         MetricDefinitionConfig{"drive.free", MetricDisplayStyle::SizeAuto, true, 0.0, "GB|TB", "Free"},
     };
-    config.layout.structure.cardsLayout =
+    config.layout.structure.cards =
         MakeContainerNode("columns", {MakeDashboardCardNode("alpha"), MakeDashboardCardNode("beta")});
     config.layout.cards.push_back(
         MakeCard("alpha", MakeContainerNode("columns", {MakeWidgetNode("gauge"), MakeWidgetNode("metric_list")})));
@@ -210,7 +210,7 @@ TEST(LayoutEditTree, IncludesOnlyTheActiveLayoutSection) {
 TEST(LayoutEditTree, ShowsActiveLayoutSectionEvenWithoutEditableChildren) {
     AppConfig config = MakeBaseConfig();
     config.display.layout = "empty";
-    config.layout.structure.cardsLayout = {};
+    config.layout.structure.cards = {};
 
     const LayoutEditTreeModel model = BuildLayoutEditTreeModel(config, ReadTemplateText());
 
@@ -222,7 +222,7 @@ TEST(LayoutEditTree, ShowsActiveLayoutSectionEvenWithoutEditableChildren) {
 TEST(LayoutEditTree, IncludesOnlyReachableCardsInEncounterOrderAndSkipsCycles) {
     AppConfig config;
     config.display.layout = "primary";
-    config.layout.structure.cardsLayout =
+    config.layout.structure.cards =
         MakeContainerNode("columns", {MakeDashboardCardNode("alpha"), MakeDashboardCardNode("gamma")});
     config.layout.cards.push_back(
         MakeCard("alpha", MakeContainerNode("columns", {MakeCardRefNode("beta"), MakeWidgetNode("metric_list")})));
@@ -260,7 +260,7 @@ TEST(LayoutEditTree, IncludesOnlyReachableCardsInEncounterOrderAndSkipsCycles) {
 TEST(LayoutEditTree, BuildsLayoutAndCardSubtreesFromNestedContainers) {
     AppConfig config;
     config.display.layout = "primary";
-    config.layout.structure.cardsLayout = MakeContainerNode("rows",
+    config.layout.structure.cards = MakeContainerNode("rows",
         {MakeContainerNode("columns", {MakeDashboardCardNode("alpha"), MakeDashboardCardNode("beta")}),
             MakeDashboardCardNode("gamma")});
     config.layout.cards.push_back(MakeCard("alpha",
@@ -358,7 +358,7 @@ TEST(LayoutEditTree, WeightLabelsAndFocusLookupResolveParameterAndWeightLeaves) 
 TEST(LayoutEditTree, IncludesDateTimeFormatLeavesForClockWidgets) {
     AppConfig config;
     config.display.layout = "primary";
-    config.layout.structure.cardsLayout = MakeDashboardCardNode("time");
+    config.layout.structure.cards = MakeDashboardCardNode("time");
     config.layout.cards.push_back(
         MakeCard("time", MakeContainerNode("rows", {MakeWidgetNode("clock_time"), MakeWidgetNode("clock_date")})));
 
@@ -393,7 +393,7 @@ TEST(LayoutEditTree, ShowsReachableCardSectionsForRuntimeStyleDashboardCardNodes
 TEST(LayoutEditTree, CollapsesSingleChildContainerPathsInCardTrees) {
     AppConfig config;
     config.display.layout = "primary";
-    config.layout.structure.cardsLayout = MakeContainerNode("columns", {MakeDashboardCardNode("gpu")});
+    config.layout.structure.cards = MakeContainerNode("columns", {MakeDashboardCardNode("gpu")});
     config.layout.cards.push_back(MakeCard("gpu",
         MakeContainerNode(
             "rows", {MakeContainerNode("columns", {MakeWidgetNode("gauge"), MakeWidgetNode("metric_list")})})));

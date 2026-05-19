@@ -113,9 +113,48 @@ add_custom_target(CaseDashGeneratedResources DEPENDS
     "${CASEDASH_RESOURCE_STRING_HEADER}"
 )
 
+set(CASEDASH_CONFIG_META_DIR "${CASEDASH_GENERATED_DIR}/config")
+set(CASEDASH_CONFIG_META_HEADER "${CASEDASH_CONFIG_META_DIR}/config_meta.generated.h")
+set(CASEDASH_CONFIG_META_CPP "${CASEDASH_CONFIG_META_DIR}/config_meta.generated.cpp")
+set(CASEDASH_CONFIG_META_JSON "${CASEDASH_CONFIG_META_DIR}/config_meta.generated.json")
+set(CASEDASH_LAYOUT_EDIT_META_HEADER "${CASEDASH_GENERATED_DIR}/layout_model/layout_edit_parameter_metadata.generated.h")
+set(CASEDASH_LAYOUT_EDIT_META_CPP "${CASEDASH_GENERATED_DIR}/layout_model/layout_edit_parameter_metadata.generated.cpp")
+add_custom_command(
+    OUTPUT
+        "${CASEDASH_CONFIG_META_HEADER}"
+        "${CASEDASH_CONFIG_META_CPP}"
+        "${CASEDASH_LAYOUT_EDIT_META_HEADER}"
+        "${CASEDASH_LAYOUT_EDIT_META_CPP}"
+        "${CASEDASH_CONFIG_META_JSON}"
+    COMMAND
+        "${Python3_EXECUTABLE}"
+        "${CMAKE_SOURCE_DIR}/tools/config_meta_gen.py"
+        --descriptor "${CMAKE_SOURCE_DIR}/src/config/config_desc.h"
+        --resource-config "${CMAKE_SOURCE_DIR}/resources/config.ini"
+        --output-header "${CASEDASH_CONFIG_META_HEADER}"
+        --output-cpp "${CASEDASH_CONFIG_META_CPP}"
+        --output-layout-edit-header "${CASEDASH_LAYOUT_EDIT_META_HEADER}"
+        --output-layout-edit-cpp "${CASEDASH_LAYOUT_EDIT_META_CPP}"
+        --output-json "${CASEDASH_CONFIG_META_JSON}"
+    DEPENDS
+        "${CMAKE_SOURCE_DIR}/tools/config_meta_gen.py"
+        "${CMAKE_SOURCE_DIR}/src/config/config_desc.h"
+        "${CMAKE_SOURCE_DIR}/resources/config.ini"
+    VERBATIM
+)
+add_custom_target(CaseDashGeneratedConfigMeta DEPENDS
+    "${CASEDASH_CONFIG_META_HEADER}"
+    "${CASEDASH_CONFIG_META_CPP}"
+    "${CASEDASH_LAYOUT_EDIT_META_HEADER}"
+    "${CASEDASH_LAYOUT_EDIT_META_CPP}"
+    "${CASEDASH_CONFIG_META_JSON}"
+)
+
 add_executable(CaseDash WIN32
     resources/CaseDash.rc
     ${CASEDASH_COMPRESSED_RESOURCE_RC}
+    ${CASEDASH_CONFIG_META_CPP}
+    ${CASEDASH_LAYOUT_EDIT_META_CPP}
     ${CASEDASH_VERSION_RC}
     src/main/main.cpp
     src/diagnostics/diagnostics.cpp
@@ -467,7 +506,7 @@ target_include_directories(CaseDash PRIVATE
     "${CMAKE_SOURCE_DIR}/src/vendor/adlx"
     "${CASEDASH_GENERATED_DIR}"
 )
-add_dependencies(CaseDash CaseDashGeneratedResources)
+add_dependencies(CaseDash CaseDashGeneratedResources CaseDashGeneratedConfigMeta)
 
 target_compile_definitions(CaseDash PRIVATE
     UNICODE
@@ -555,6 +594,8 @@ endif()
 find_package(GTest CONFIG REQUIRED)
 
 add_executable(CaseDashTests
+    ${CASEDASH_CONFIG_META_CPP}
+    ${CASEDASH_LAYOUT_EDIT_META_CPP}
     tests/app_icon_renderer_tests.cpp
     tests/enum_string_tests.cpp
     tests/metrics_tests.cpp
@@ -574,6 +615,7 @@ add_executable(CaseDashTests
     tests/layout_edit_tooltip_tests.cpp
     tests/layout_guide_sheet_planner_tests.cpp
     tests/localization_catalog_tests.cpp
+    tests/config_meta_tests.cpp
     tests/config_parser_tests.cpp
     tests/config_resolution_tests.cpp
     tests/config_writer_tests.cpp
@@ -686,7 +728,7 @@ target_include_directories(CaseDashTests PRIVATE
     "${CMAKE_SOURCE_DIR}/resources"
     "${CASEDASH_GENERATED_DIR}"
 )
-add_dependencies(CaseDashTests CaseDashGeneratedResources)
+add_dependencies(CaseDashTests CaseDashGeneratedResources CaseDashGeneratedConfigMeta)
 target_compile_definitions(CaseDashTests PRIVATE
     UNICODE
     _UNICODE
@@ -736,6 +778,8 @@ add_test(NAME CaseDashTests COMMAND CaseDashTests)
 add_executable(CaseDashBenchmarks
     resources/CaseDash.rc
     ${CASEDASH_COMPRESSED_RESOURCE_RC}
+    ${CASEDASH_CONFIG_META_CPP}
+    ${CASEDASH_LAYOUT_EDIT_META_CPP}
     ${CASEDASH_BENCHMARKS_VERSION_RC}
     tests/benchmarks.cpp
     src/util/strings.cpp
@@ -878,7 +922,7 @@ target_include_directories(CaseDashBenchmarks PRIVATE
     "${CMAKE_SOURCE_DIR}/src/vendor/adlx"
     "${CASEDASH_GENERATED_DIR}"
 )
-add_dependencies(CaseDashBenchmarks CaseDashGeneratedResources)
+add_dependencies(CaseDashBenchmarks CaseDashGeneratedResources CaseDashGeneratedConfigMeta)
 target_compile_definitions(CaseDashBenchmarks PRIVATE
     UNICODE
     _UNICODE

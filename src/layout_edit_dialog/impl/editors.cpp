@@ -420,7 +420,7 @@ void PopulateDateTimeFormatCombo(HWND hwnd, const LayoutNodeFieldEditKey& key, s
     SendMessageW(combo, CB_SETMINVISIBLE, 8, 0);
 }
 
-std::array<const UiFontConfig*, 9> FontSetValues(const UiFontSetConfig& fonts) {
+std::array<const UiFontConfig*, 9> FontSetValues(const FontsConfig& fonts) {
     return {
         &fonts.title,
         &fonts.big,
@@ -434,7 +434,7 @@ std::array<const UiFontConfig*, 9> FontSetValues(const UiFontSetConfig& fonts) {
     };
 }
 
-std::string CommonFontFamilyText(const UiFontSetConfig& fonts) {
+std::string CommonFontFamilyText(const FontsConfig& fonts) {
     const auto fontValues = FontSetValues(fonts);
     if (fontValues.empty() || fontValues.front() == nullptr) {
         return {};
