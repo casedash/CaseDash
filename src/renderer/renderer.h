@@ -8,7 +8,7 @@
 #include <string_view>
 #include <vector>
 
-#include "config/config.h"
+#include "config/config_def.h"
 #include "renderer/render_types.h"
 #include "util/file_path.h"
 #include "util/function_ref.h"
@@ -32,7 +32,7 @@ struct TextLayoutResult {
 struct RendererStyle {
     ColorsConfig colors;
     LayoutGuideSheetConfig layoutGuideSheet;
-    UiFontSetConfig fonts;
+    FontsConfig fonts;
     std::vector<std::string> iconNames;
     double scale = 1.0;
 };
