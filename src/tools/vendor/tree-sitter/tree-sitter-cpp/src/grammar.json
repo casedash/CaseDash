@@ -18291,7 +18291,7 @@
           "type": "ALIAS",
           "content": {
             "type": "SYMBOL",
-            "name": "_namespace_alias_macro"
+            "name": "_qualified_identifier_prefix_macro"
           },
           "named": true,
           "value": "identifier"
@@ -18302,7 +18302,7 @@
         }
       ]
     },
-    "_namespace_alias_macro": {
+    "_qualified_identifier_prefix_macro": {
       "type": "TOKEN",
       "content": {
         "type": "PREC",

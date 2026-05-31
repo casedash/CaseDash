@@ -39,7 +39,7 @@ MACRO_CATEGORY_ORDER = (
     "statement_exception_call_macro",
     "statement_argument_call_macro",
     "name_macro_call",
-    "namespace_alias_macro",
+    "qualified_identifier_prefix_macro",
     "namespace_boundary",
     "type_specifier_macro_call",
 )
@@ -58,7 +58,7 @@ FORMAT_CATEGORY_KEYS = {
     "statement_exception_call_macro": "StatementExceptionCallMacros",
     "statement_argument_call_macro": "StatementArgumentCallMacros",
     "name_macro_call": "NameMacroCalls",
-    "namespace_alias_macro": "NamespaceAliasMacros",
+    "qualified_identifier_prefix_macro": "QualifiedIdentifierPrefixMacros",
     "namespace_boundary": "NamespaceBoundaries",
     "type_specifier_macro_call": "TypeSpecifierMacroCalls",
 }
