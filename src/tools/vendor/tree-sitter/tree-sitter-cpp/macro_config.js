@@ -8,21 +8,21 @@ module.exports = {
       "WINAPI",
       // tools/tests/format/.cpp-format-userver
     ],
-    raw_macro_function_prefix: [
+    raw_macro_function_definition: [
       // .cpp-format
       // tools/tests/format/.cpp-format-userver
-      "IMPL_UTEST",
-      "TYPED_UTEST",
-      "INSTANTIATE_UTEST",
-      "UTEST",
-      "UPROTO",
-      "LOG",
-      "RET",
-      "UASSERT",
-      "UEXPECT",
-      "UINVARIANT",
-      "USERVER",
-      "UTILS",
+      "IMPL_UTEST*",
+      "TYPED_UTEST*",
+      "INSTANTIATE_UTEST*",
+      "UTEST*",
+      "UPROTO*",
+      "LOG*",
+      "RET*",
+      "UASSERT*",
+      "UEXPECT*",
+      "UINVARIANT*",
+      "USERVER*",
+      "UTILS*",
     ],
     function_prefix: [
       // .cpp-format
@@ -33,12 +33,8 @@ module.exports = {
       "USERVER_IMPL_DISABLE_ASAN",
       "USERVER_IMPL_ALWAYS_INLINE_SIMD",
       "USERVER_IMPL_PROTECT_DWCAS_ATTR",
-    ],
-    function_prefix_prefix: [
-      // .cpp-format
-      // tools/tests/format/.cpp-format-userver
-      "ATTRIBUTE",
-      "FORMAT_USERVER",
+      "ATTRIBUTE*",
+      "FORMAT_USERVER*",
     ],
     macro_function_definition: [
       // .cpp-format
@@ -48,6 +44,7 @@ module.exports = {
       "TYPED_TEST",
       "TYPED_TEST_P",
       "MATCHER",
+      "MATCHER_P*",
       // tools/tests/format/.cpp-format-userver
       "TYPED_UTEST_P_MT",
       "TYPED_UTEST_MT",
@@ -60,11 +57,6 @@ module.exports = {
       "UTEST_P",
       "UTEST",
     ],
-    macro_function_definition_prefix: [
-      // .cpp-format
-      "MATCHER_P",
-      // tools/tests/format/.cpp-format-userver
-    ],
     macro_function_definition_with_trailing_parameters: [
       // .cpp-format
       "BENCHMARK_DEFINE_F",
@@ -76,9 +68,9 @@ module.exports = {
       "BENCHMARK_TEMPLATE",
       // tools/tests/format/.cpp-format-userver
     ],
-    top_level_chained_call_statement_prefix: [
+    top_level_chained_call_statement: [
       // .cpp-format
-      "BENCHMARK",
+      "BENCHMARK*",
       // tools/tests/format/.cpp-format-userver
     ],
     method_declaration_macro: [
@@ -127,10 +119,10 @@ module.exports = {
       "CURL_8_13_NAMESPACE",
       "CURL_SSLVERSION_NAMESPACE",
     ],
-    namespace_boundary_prefix: [
+    namespace_boundary: [
       // .cpp-format
       // tools/tests/format/.cpp-format-userver
-      "USERVER",
+      "USERVER*",
     ],
     type_specifier_macro_call: [
       // .cpp-format

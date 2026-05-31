@@ -27,14 +27,12 @@ TREE_SITTER_CLI_SHA512 = (
 )
 MACRO_CATEGORY_ORDER = (
     "calling_convention",
-    "raw_macro_function_prefix",
+    "raw_macro_function_definition",
     "function_prefix",
-    "function_prefix_prefix",
     "macro_function_definition",
-    "macro_function_definition_prefix",
     "macro_function_definition_with_trailing_parameters",
     "call_expression_with_type_arguments_macro",
-    "top_level_chained_call_statement_prefix",
+    "top_level_chained_call_statement",
     "method_declaration_macro",
     "call_statement_name",
     "preprocessor_streaming_statement_macro",
@@ -42,20 +40,18 @@ MACRO_CATEGORY_ORDER = (
     "statement_argument_call_macro",
     "name_macro_call",
     "namespace_alias_macro",
-    "namespace_boundary_prefix",
+    "namespace_boundary",
     "type_specifier_macro_call",
 )
 REQUIRED_MACRO_CATEGORIES = ("calling_convention",)
 FORMAT_CATEGORY_KEYS = {
     "calling_convention": "CallingConvention",
-    "raw_macro_function_prefix": "RawMacroFunctionPrefixes",
+    "raw_macro_function_definition": "RawMacroFunctionDefinitions",
     "function_prefix": "FunctionPrefixes",
-    "function_prefix_prefix": "FunctionPrefixPrefixes",
     "macro_function_definition": "MacroFunctionDefinitions",
-    "macro_function_definition_prefix": "MacroFunctionDefinitionPrefixes",
     "macro_function_definition_with_trailing_parameters": "MacroFunctionDefinitionsWithTrailingParameters",
     "call_expression_with_type_arguments_macro": "CallExpressionWithTypeArgumentsMacros",
-    "top_level_chained_call_statement_prefix": "TopLevelChainedCallStatementPrefixes",
+    "top_level_chained_call_statement": "TopLevelChainedCallStatements",
     "method_declaration_macro": "MethodDeclarationMacros",
     "call_statement_name": "CallStatementNames",
     "preprocessor_streaming_statement_macro": "PreprocessorStreamingStatementMacros",
@@ -63,10 +59,10 @@ FORMAT_CATEGORY_KEYS = {
     "statement_argument_call_macro": "StatementArgumentCallMacros",
     "name_macro_call": "NameMacroCalls",
     "namespace_alias_macro": "NamespaceAliasMacros",
-    "namespace_boundary_prefix": "NamespaceBoundaryPrefixes",
+    "namespace_boundary": "NamespaceBoundaries",
     "type_specifier_macro_call": "TypeSpecifierMacroCalls",
 }
-MACRO_NAME_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+MACRO_CATEGORY_ENTRY_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*\*?$")
 
 
 def fail(message: str) -> None:
@@ -126,8 +122,11 @@ def clean_macro_category_names(config_path: Path, config_key: str, names: list[s
     seen = set()
     clean_names: list[str] = []
     for name in names:
-        if not MACRO_NAME_PATTERN.match(name):
-            fail(f"{config_path} MacroCategories.{config_key} entry is not a C/C++ macro name: {name!r}")
+        if not MACRO_CATEGORY_ENTRY_PATTERN.match(name):
+            fail(
+                f"{config_path} MacroCategories.{config_key} entry must be a C/C++ macro name "
+                f"or a trailing-* macro prefix: {name!r}"
+            )
         if name in seen:
             fail(f"{config_path} MacroCategories.{config_key} entry is duplicated: {name}")
         seen.add(name)

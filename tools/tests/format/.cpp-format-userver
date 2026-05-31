@@ -16,19 +16,19 @@ MacroCategories:
     - WINAPI
   StatementLikeParameters:
     - X
-  RawMacroFunctionPrefixes:
-    - IMPL_UTEST
-    - TYPED_UTEST
-    - INSTANTIATE_UTEST
-    - UTEST
-    - UPROTO
-    - LOG
-    - RET
-    - UASSERT
-    - UEXPECT
-    - UINVARIANT
-    - USERVER
-    - UTILS
+  RawMacroFunctionDefinitions:
+    - IMPL_UTEST*
+    - TYPED_UTEST*
+    - INSTANTIATE_UTEST*
+    - UTEST*
+    - UPROTO*
+    - LOG*
+    - RET*
+    - UASSERT*
+    - UEXPECT*
+    - UINVARIANT*
+    - USERVER*
+    - UTILS*
   FunctionPrefixes:
     - USERVER_IMPL_NODEBUG
     - USERVER_IMPL_NODEBUG_INLINE_FUNC
@@ -36,9 +36,8 @@ MacroCategories:
     - USERVER_IMPL_DISABLE_ASAN
     - USERVER_IMPL_ALWAYS_INLINE_SIMD
     - USERVER_IMPL_PROTECT_DWCAS_ATTR
-  FunctionPrefixPrefixes:
-    - ATTRIBUTE
-    - FORMAT_USERVER
+    - ATTRIBUTE*
+    - FORMAT_USERVER*
   MacroFunctionDefinitions:
     - TYPED_UTEST_P_MT
     - TYPED_UTEST_MT
@@ -52,8 +51,8 @@ MacroCategories:
     - UTEST
   CallStatementNames:
     - SetHttpProxy
-  NamespaceBoundaryPrefixes:
-    - USERVER
+  NamespaceBoundaries:
+    - USERVER*
   StatementExceptionCallMacros:
     - UEXPECT_THROW
     - UEXPECT_THROW_MSG

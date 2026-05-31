@@ -30,14 +30,12 @@ function regexUnion(parts) {
   return presentParts.length === 0 ? '(?!)' : `(?:${presentParts.join('|')})`;
 }
 
-function macroNamePattern(category) {
+function macroCategoryPattern(category) {
   const names = macroCategoryNames(category);
-  return names.length === 0 ? '' : regexUnion(names.map(escapeRegex));
-}
-
-function macroPrefixPattern(category) {
-  const pattern = macroNamePattern(category);
-  return pattern ? `${pattern}[A-Za-z0-9_]*` : '';
+  const patterns = names.map(name => (
+    name.endsWith('*') ? `${escapeRegex(name.slice(0, -1))}[A-Za-z0-9_]*` : escapeRegex(name)
+  ));
+  return names.length === 0 ? '' : regexUnion(patterns);
 }
 
 const PREC = Object.assign(C.PREC, {
@@ -79,54 +77,52 @@ const ASSIGNMENT_OPERATORS = [
 ];
 
 const CONDITIONAL_MACRO_FUNCTION_PATTERN = regexUnion([
-  macroNamePattern('macro_function_definition'),
+  macroCategoryPattern('macro_function_definition'),
 ]);
 const MACRO_FUNCTION_DEFINITION_PATTERN = regexUnion([
-  macroNamePattern('macro_function_definition'),
-  macroPrefixPattern('macro_function_definition_prefix'),
+  macroCategoryPattern('macro_function_definition'),
 ]);
-const RAW_MACRO_FUNCTION_PREFIX_PATTERN = regexUnion([
-  macroPrefixPattern('raw_macro_function_prefix'),
+const RAW_MACRO_FUNCTION_DEFINITION_PATTERN = regexUnion([
+  macroCategoryPattern('raw_macro_function_definition'),
 ]);
 const FUNCTION_PREFIX_MACRO_PATTERN = regexUnion([
-  macroNamePattern('function_prefix'),
-  macroPrefixPattern('function_prefix_prefix'),
+  macroCategoryPattern('function_prefix'),
 ]);
 const STATEMENT_ARGUMENT_CALL_MACRO_PATTERN = regexUnion([
-  macroNamePattern('statement_argument_call_macro'),
+  macroCategoryPattern('statement_argument_call_macro'),
 ]);
 const STATEMENT_EXCEPTION_CALL_MACRO_PATTERN = regexUnion([
-  macroNamePattern('statement_exception_call_macro'),
+  macroCategoryPattern('statement_exception_call_macro'),
 ]);
 const NAME_MACRO_CALL_PATTERN = regexUnion([
-  macroNamePattern('name_macro_call'),
+  macroCategoryPattern('name_macro_call'),
 ]);
 const NAMESPACE_ALIAS_MACRO_PATTERN = regexUnion([
-  macroNamePattern('namespace_alias_macro'),
+  macroCategoryPattern('namespace_alias_macro'),
 ]);
 const NAMESPACE_BOUNDARY_PATTERN = regexUnion([
-  macroPrefixPattern('namespace_boundary_prefix'),
+  macroCategoryPattern('namespace_boundary'),
 ]);
 const MACRO_FUNCTION_DEFINITION_WITH_TRAILING_PARAMETERS_PATTERN = regexUnion([
-  macroNamePattern('macro_function_definition_with_trailing_parameters'),
+  macroCategoryPattern('macro_function_definition_with_trailing_parameters'),
 ]);
 const CALL_EXPRESSION_WITH_TYPE_ARGUMENTS_MACRO_PATTERN = regexUnion([
-  macroNamePattern('call_expression_with_type_arguments_macro'),
+  macroCategoryPattern('call_expression_with_type_arguments_macro'),
 ]);
-const TOP_LEVEL_CHAINED_CALL_STATEMENT_PREFIX_PATTERN = regexUnion([
-  macroPrefixPattern('top_level_chained_call_statement_prefix'),
+const TOP_LEVEL_CHAINED_CALL_STATEMENT_PATTERN = regexUnion([
+  macroCategoryPattern('top_level_chained_call_statement'),
 ]);
 const METHOD_DECLARATION_MACRO_PATTERN = regexUnion([
-  macroNamePattern('method_declaration_macro'),
+  macroCategoryPattern('method_declaration_macro'),
 ]);
 const CALL_STATEMENT_NAME_PATTERN = regexUnion([
-  macroNamePattern('call_statement_name'),
+  macroCategoryPattern('call_statement_name'),
 ]);
 const PREPROCESSOR_STREAMING_STATEMENT_MACRO_PATTERN = regexUnion([
-  macroNamePattern('preprocessor_streaming_statement_macro'),
+  macroCategoryPattern('preprocessor_streaming_statement_macro'),
 ]);
 const TYPE_SPECIFIER_MACRO_CALL_PATTERN = regexUnion([
-  macroNamePattern('type_specifier_macro_call'),
+  macroCategoryPattern('type_specifier_macro_call'),
 ]);
 
 module.exports = grammar(C, {
@@ -342,7 +338,7 @@ module.exports = grammar(C, {
 
     raw_macro_function_definition: _ => token(prec(
       2,
-      new RegExp(String.raw`#[ \t]*define[ \t]+${RAW_MACRO_FUNCTION_PREFIX_PATTERN}\([^\n]*\)(?:[^\n]*\\\r?\n)*[^\n]*`),
+      new RegExp(String.raw`#[ \t]*define[ \t]+${RAW_MACRO_FUNCTION_DEFINITION_PATTERN}\([^\n]*\)(?:[^\n]*\\\r?\n)*[^\n]*`),
     )),
 
     raw_macro_definition: _ => token(prec(
@@ -403,7 +399,7 @@ module.exports = grammar(C, {
 
     top_level_chained_call_statement: _ => token(prec(
       1,
-      new RegExp(`${TOP_LEVEL_CHAINED_CALL_STATEMENT_PREFIX_PATTERN}\\([^()\\n;]*\\)(?:[ \\t]+[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+)?(?:[ \\t]*->[^\\n;]*)*(?:\\r?\\n[ \\t]*->[^\\n;]*)*;`),
+      new RegExp(`${TOP_LEVEL_CHAINED_CALL_STATEMENT_PATTERN}\\([^()\\n;]*\\)(?:[ \\t]+[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+)?(?:[ \\t]*->[^\\n;]*)*(?:\\r?\\n[ \\t]*->[^\\n;]*)*;`),
     )),
 
     top_level_operator_macro_call: _ => token(prec(1, /[A-Z][A-Z0-9_]*\((?:==|!=|<=|>=|<=>|<|>)\)/)),
