@@ -274,7 +274,7 @@ int total = first + second + BuildValue(
 - Stream-shift chains split before `<<` or `>>`.
 - A stream-shift chain may split once between the receiver and a compact shifted tail.
 - If the compact shifted tail does not fit, each continued shift segment starts a continuation line.
-- Stream configuration methods listed in `.cpp-format` bind to the following shifted value; no `<<` or `>>` break is taken between a configured manipulator run and that value.
+- Configured stream methods bind to the following shifted value; no `<<` or `>>` break is taken between a configured manipulator run and that value.
 - Adjacent string literals are an implicit concatenation chain.
 - When a call argument string sequence stays split, the first literal uses expression indentation and later fragments use one additional indent.
 - When a forced multi-line string-fragment sequence is the direct initializer in an assignment or declaration, the assignment breaks first and all fragments align at the assignment continuation indentation.
@@ -564,9 +564,9 @@ Macro continuation backslashes, spaces before continuation backslashes, and cont
 
 Macro replacement lists that form declaration fragments are recursively formatted before continuation backslashes are added.
 
-Function-like macro parameters listed in `.cpp-format` `MacroCategories.StatementLikeParameters` are emitted one invocation per continuation line.
+Configured statement-like macro parameters are emitted one invocation per continuation line.
 
-Tree-sitter name recognition is generated from `.cpp-format` and `tools/tests/format/.cpp-format-userver`. `MacroCategories.CallingConvention` feeds calling-convention tokens. The parser-only categories are named by grammar role: `RawMacroFunctionPrefixes`, `FunctionPrefixes`, `FunctionPrefixPrefixes`, `MacroFunctionDefinitions`, `MacroFunctionDefinitionPrefixes`, `MacroFunctionDefinitionsWithTrailingParameters`, `CallExpressionWithTypeArgumentsMacros`, `TopLevelChainedCallStatementPrefixes`, `MethodDeclarationMacros`, `CallStatementNames`, `PreprocessorStreamingStatementMacros`, `StatementExceptionCallMacros`, `StatementArgumentCallMacros`, `NameMacroCalls`, `NamespaceAliasMacros`, `NamespaceBoundaryPrefixes`, and `TypeSpecifierMacroCalls`.
+Macro category roles and parser regeneration ownership are described in [Formatter Configuration](#formatter-configuration).
 
 ```cpp
 #define CASEDASH_METRIC_DISPLAY_STYLE_ITEMS(X) \
@@ -577,22 +577,15 @@ Tree-sitter name recognition is generated from `.cpp-format` and `tools/tests/fo
 
 ## Include Sorting
 
-Include sorting is enabled when the active `.cpp-format` contains `IncludeCategories`. Sorting may move `#include` lines within sortable include blocks. It does not add includes, remove includes, rewrite include spelling, or move comments.
+Include sorting is enabled when include groups are configured. Sorting may move `#include` lines within sortable include blocks. It does not add includes, remove includes, rewrite include spelling, or move comments.
 
-When `IncludeCategories` is absent, include sorting is disabled. Include directives are normalized and emitted in source order, and blank-separated include blocks are preserved.
+When include groups are absent, include sorting is disabled. Include directives are normalized and emitted in source order, and blank-separated include blocks are preserved.
 
-Opening include blocks follow the same include-run formatting path for `#pragma once` headers and `#ifndef`/`#define` guarded headers, so `IncludeCategories` controls sorting or preservation for both forms.
+Opening include blocks follow the same include-run formatting path for `#pragma once` headers and `#ifndef`/`#define` guarded headers, so configured include groups control sorting or preservation for both forms.
 
 Comments inside an include area bound the sortable include run around them.
 
-Include blocks are regrouped, sorted case-insensitively inside each group, and separated by one empty line between groups. Group definitions live in `.cpp-format`. Group order:
-
-- main quoted include for the current source file
-- Windows socket headers
-- `<windows.h>`
-- other angle-bracket system includes
-- quoted vendored includes
-- other quoted project includes
+Include blocks are regrouped by configured group priority, sorted case-insensitively inside each group, and separated by one empty line between groups.
 
 ```cpp
 #include "package/source_file.h"
@@ -614,7 +607,7 @@ Include blocks are regrouped, sorted case-insensitively inside each group, and s
 
 The formatter preserves source token order except for:
 
-- include sorting when `IncludeCategories` is configured
+- include sorting when include groups are configured
 - trailing-comma normalization
 - control-brace normalization
 - safe adjacent ordinary string-literal concatenation
@@ -631,9 +624,7 @@ Token spelling is preserved even when the parser grammar treats multiple spellin
 - `CaseDashTools.exe format` owns clang-format-like stdin, direct file arguments, newline file lists passed with `--files <path>` or `--files=<path>`, `-i`, `--dry-run`, `--style=file`, `--style=<path>`, `--style=file:<path>`, `--concurrency <n>` handling, parsing, parse-error rejection, checking, fixing, ignore-file filtering, and stdout rendering. Interactive file runs show completed file count and elapsed time while work is active, and final summaries report completed files and elapsed time.
 - `src\tools\format.cpp` owns formatter command orchestration; the internal `src\tools\impl\format_*` formatter modules own the parser setup, model definitions, tree-sitter model builder helpers, preprocessor model helpers, and pretty printer.
 - `CaseDashTools.exe format_model_dump` owns ad hoc formatter model debugging. It takes one source file path and writes YAML to stdout with each `SyntaxNode` represented by `kind`, plus `text` only when node text is non-empty and `children` only when child nodes exist; text values up to 60 bytes are YAML-quoted, and longer text values are emitted as their byte length.
-- `.cpp-format` owns only the formatter inputs that are intentionally configurable: `ColumnLimit`, `IndentWidth`, `TabWidth`, `IncludeCategories`, `MainIncludeChar`, `IncludeIsMainRegex`, `MacroCategories`, and `StreamShift`.
-- `tools/tests/format/.cpp-format-userver` mirrors the userver formatter fixture style inputs and owns userver-specific parser macro names used by grammar regeneration.
-- `.cpp-format-ignore` owns simple literal formatter exclusions. Entries are directory names, file names, or slash-separated relative paths. Glob patterns and negation are not supported.
+- `.cpp-format`, `tools/tests/format/.cpp-format-userver`, and `.cpp-format-ignore` own the formatter configuration data described in [Formatter Configuration](#formatter-configuration).
 - `src\tools\vendor\tree-sitter\` owns vendored tree-sitter grammar inputs and generated parser sources.
 - `tools\regenerate_tree_sitter_grammar.py` owns parser regeneration.
 
@@ -647,4 +638,245 @@ python tools\regenerate_tree_sitter_grammar.py
 
 The regeneration tool writes `macro_config.js` from `.cpp-format` and `tools/tests/format/.cpp-format-userver`, runs the pinned tree-sitter CLI, and updates generated files under `src\tools\vendor\tree-sitter\tree-sitter-cpp\src\`. Pass `--tree-sitter-cli <path>` to use an existing CLI. Otherwise it downloads the pinned Windows CLI under `build\`.
 
-Configuration is intentionally narrow and does not expose style policy knobs. Brace behavior, wrapping behavior, spacing, alignment behavior, and other layout ideology are fixed in formatter source.
+## Formatter Configuration
+
+Configuration is intentionally narrow and does not expose style policy knobs. Brace behavior, wrapping behavior, spacing, alignment behavior, and other layout decisions are fixed in formatter source.
+
+`CaseDashTools.exe format --style=file` searches upward from each formatted file for `.cpp-format`. `--style=<path>` and `--style=file:<path>` use the provided config path instead. Formatting file paths are still checked against the nearest `.cpp-format-ignore` found by walking upward from each formatted file.
+
+The `.cpp-format` file uses the formatter's YAML-like subset: blank lines, `---`, `...`, and comments are ignored; comments start with `#` outside single or double quotes; scalars may be unquoted, single quoted, or double quoted; lists use indented `- value` entries. Unknown keys are ignored by the native formatter and are not consumed by parser regeneration.
+
+Supported top-level keys:
+
+- `ColumnLimit`: integer target column for formatter-owned wrapping. The default is `120`.
+- `IndentWidth`: integer spaces per indentation level. The default is `4`.
+- `TabWidth`: integer tab display width. The default is `4`.
+- `IncludeCategories`: optional ordered list of include groups. Each entry requires `Regex`, and may set `Priority`; priorities sort ascending and default to list order. Regexes match the normalized include target with delimiters, such as `'<vector>'` or `'"util/path.h"'`.
+- `MainIncludeChar`: `Quote` makes the main include detection consider quoted includes.
+- `IncludeIsMainRegex`: regex suffix appended to the current source file stem for main-include detection. The default is `(Test)?$`, so `widget.cpp` treats `"widget.h"` and `"widgetTest.h"` as main include candidates.
+- `MacroCategories`: macro and macro-like parser roles. Runtime formatting reads `StatementLikeParameters`; parser roles are consumed by grammar regeneration.
+- `StreamShift`: stream insertion/extraction configuration.
+
+Example:
+
+```yaml
+---
+ColumnLimit: 120
+IndentWidth: 4
+TabWidth: 4
+
+IncludeCategories:
+  - Regex: '^<.*>$'
+    Priority: 1
+  - Regex: '^".*"$'
+    Priority: 2
+MainIncludeChar: Quote
+IncludeIsMainRegex: '(Test)?$'
+
+MacroCategories:
+  CallingConvention:
+    - CALLBACK
+  StatementLikeParameters:
+    - X
+
+StreamShift:
+  ConfigurationMethods:
+    - std::boolalpha
+    - std::setw
+```
+
+### StreamShift
+
+`StreamShift.ConfigurationMethods` lists manipulators that bind to the following shifted value. The formatter keeps the configured manipulator run and its value together instead of choosing a break between them.
+
+```cpp
+stream << std::boolalpha << enabled << std::setw(8) << value;
+```
+
+### .cpp-format-ignore
+
+`.cpp-format-ignore` is a plain line-based ignore file. Blank lines and comments are ignored with the same comment stripping as `.cpp-format`; backslashes are normalized to slashes; repeated leading `./` and trailing slashes are removed; matching is case-insensitive.
+
+An entry without `/` matches any path component below the ignore file directory. An entry with `/` matches that relative path or any child path below it. Glob patterns and negation are not supported.
+
+Example:
+
+```text
+src/vendor
+src/tools/vendor
+tools/tests
+```
+
+`src/vendor` ignores every formatted file under that relative directory, while `vendor` would ignore any directory or file component named `vendor`.
+
+### Macro Categories
+
+`MacroCategories.StatementLikeParameters` is read from the active `.cpp-format` at formatting time. The remaining categories below are parser inputs: `tools\regenerate_tree_sitter_grammar.py` reads `.cpp-format` and `tools/tests/format/.cpp-format-userver`, writes `src\tools\vendor\tree-sitter\tree-sitter-cpp\macro_config.js`, and bakes the configured names into the generated parser. After changing parser macro categories, regenerate the parser and rebuild tools.
+
+Parser category entries must be C/C++ identifiers. Categories whose names end in `Prefixes` match the configured identifier as a prefix followed by letters, digits, or underscores; other parser categories match exact identifiers.
+
+#### CallingConvention
+
+`CallingConvention` names tokens that behave like calling-convention modifiers in function declarations. This lets Win32-style declarations keep the modifier in the declaration grammar instead of treating it as an ordinary identifier.
+
+```cpp
+LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
+```
+
+#### StatementLikeParameters
+
+`StatementLikeParameters` names function-like macro parameters whose invocations inside a macro replacement list are statement-like items. The formatter emits one invocation per continuation line.
+
+```cpp
+#define CASEDASH_METRIC_DISPLAY_STYLE_ITEMS(X) \
+    X(Scalar, "scalar") \
+    X(Percent, "percent")
+```
+
+#### RawMacroFunctionPrefixes
+
+`RawMacroFunctionPrefixes` matches `#define` function-like macro names that should be parsed as one raw preprocessor function definition. Use it for macro families whose replacement lists are implementation DSLs rather than normal C++ fragments.
+
+```cpp
+#define UTEST_F(test_suite_name, test_name) IMPL_UTEST_TEST_F(test_suite_name, test_name, 1, false)
+```
+
+#### FunctionPrefixes
+
+`FunctionPrefixes` names exact macro identifiers that act as declaration modifiers before a function, constructor, or related declaration header.
+
+```cpp
+USERVER_IMPL_NODEBUG_INLINE_FUNC static Value DoSerialize(const T& value);
+```
+
+#### FunctionPrefixPrefixes
+
+`FunctionPrefixPrefixes` names macro identifier prefixes for declaration modifiers. This covers families such as `ATTRIBUTE_*` without listing every concrete attribute macro.
+
+```cpp
+ATTRIBUTE_NO_SANITIZE_UNDEFINED std::size_t LeastGreaterEqualIndex(const BoundsBlock& block, float value);
+```
+
+#### MacroFunctionDefinitions
+
+`MacroFunctionDefinitions` names macro invocations that form a function-definition-like construct: macro name, argument list, and compound statement body.
+
+```cpp
+TEST(ConfigParser, ParsesMetricsSectionEntries) {
+    ExpectMetricsSection();
+}
+```
+
+#### MacroFunctionDefinitionPrefixes
+
+`MacroFunctionDefinitionPrefixes` names prefixes for function-definition-like macro families. This covers numbered variants where the suffix changes the argument count.
+
+```cpp
+MATCHER_P(BsonMatcher, expected, "Bson matcher") {
+    return ExplainBsonMatch(arg, expected, result_listener);
+}
+```
+
+#### MacroFunctionDefinitionsWithTrailingParameters
+
+`MacroFunctionDefinitionsWithTrailingParameters` names macro function definitions that have a macro argument list followed by a C++ parameter list before the body.
+
+```cpp
+BENCHMARK_DEFINE_F(FormatterBenchmark, Inline)(benchmark::State& state) {
+    UseBenchmarkState(state);
+}
+```
+
+#### CallExpressionWithTypeArgumentsMacros
+
+`CallExpressionWithTypeArgumentsMacros` names call-expression macros whose argument list may contain type descriptors as well as expressions.
+
+```cpp
+BENCHMARK_TEMPLATE(FormatterBenchmark, std::string)->Range(1, 8);
+```
+
+#### TopLevelChainedCallStatementPrefixes
+
+`TopLevelChainedCallStatementPrefixes` names prefixes for top-level macro call statements that may have a chained `->` tail. The parser treats the whole statement as one free token.
+
+```cpp
+BENCHMARK_CAPTURE(FormatterBenchmark, Mode, kValue)->Arg(2)->Arg(4);
+```
+
+#### MethodDeclarationMacros
+
+`MethodDeclarationMacros` names field-declaration macros that carry a return type, method name, parameter list, and qualifier list.
+
+```cpp
+MOCK_METHOD(void, SetValue, (std::string_view key, std::string&& value), (override));
+```
+
+#### CallStatementNames
+
+`CallStatementNames` names ordinary-looking helper calls that must parse as complete statements in contexts where C++ declaration ambiguity would otherwise win.
+
+```cpp
+SetHttpProxy(target, channel_args, factory.GetAuthType(), proxy_address);
+```
+
+#### PreprocessorStreamingStatementMacros
+
+`PreprocessorStreamingStatementMacros` names zero-argument macros selected by preprocessor branches and followed by a stream insertion tail. The parser keeps the selected branch and trailing `<<` chain as one preprocessor statement.
+
+```cpp
+#ifndef FORMAT_USERVER_ARCADIA
+GTEST_SKIP()
+#endif
+    << "disabled for this environment";
+```
+
+#### StatementExceptionCallMacros
+
+`StatementExceptionCallMacros` names assertion-style calls whose first argument can be a statement or declaration fragment and whose next argument is an exception type.
+
+```cpp
+UEXPECT_THROW(auto future = Client().SayHello(request), std::runtime_error);
+```
+
+#### StatementArgumentCallMacros
+
+`StatementArgumentCallMacros` names assertion-style calls whose argument can be a statement or declaration fragment but has no exception-type argument.
+
+```cpp
+UEXPECT_NO_THROW(const auto stream = Client().ReadMany(request));
+```
+
+#### NameMacroCalls
+
+`NameMacroCalls` names macro calls that take an identifier-like name and may appear where a normal expression statement would not parse cleanly.
+
+```cpp
+RET_NAME(kNullValue)
+```
+
+#### NamespaceAliasMacros
+
+`NamespaceAliasMacros` names macros that expand to an optional namespace qualifier before an identifier. The parser treats the macro plus following identifier as a qualified identifier shape.
+
+```cpp
+kOptional = CURL_FORMAT_USERVER_NAMESPACE kOptionalValue,
+```
+
+#### NamespaceBoundaryPrefixes
+
+`NamespaceBoundaryPrefixes` names prefixes for namespace boundary macros with `_NAMESPACE_BEGIN` and `_NAMESPACE_END` suffixes. The parser accepts those boundary markers as top-level namespace items.
+
+```cpp
+USERVER_NAMESPACE_BEGIN
+namespace utils {
+}  // namespace utils
+USERVER_NAMESPACE_END
+```
+
+#### TypeSpecifierMacroCalls
+
+`TypeSpecifierMacroCalls` names macro calls that act as type specifiers.
+
+```cpp
+using CertStack = STACK_OF(X509);
+```
