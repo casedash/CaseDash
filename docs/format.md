@@ -713,7 +713,7 @@ tools/tests
 
 `MacroCategories.StatementLikeParameters` is read from the active `.cpp-format` at formatting time. The remaining categories below are parser inputs: `tools\regenerate_tree_sitter_grammar.py` reads `.cpp-format` and `tools/tests/format/.cpp-format-userver`, writes `src\tools\vendor\tree-sitter\tree-sitter-cpp\macro_config.js`, and bakes the configured names into the generated parser. After changing parser macro categories, regenerate the parser and rebuild tools.
 
-Parser category entries must be C/C++ identifiers. Categories whose names end in `Prefixes` match the configured identifier as a prefix followed by letters, digits, or underscores; other parser categories match exact identifiers.
+Parser category entries must be C/C++ identifiers. Add a trailing `*` to an entry when the grammar role applies to every identifier with that prefix, such as `ATTRIBUTE*`; no other glob syntax is supported.
 
 #### CallingConvention
 
@@ -733,9 +733,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lpara
     X(Percent, "percent")
 ```
 
-#### RawMacroFunctionPrefixes
+#### RawMacroFunctionDefinitions
 
-`RawMacroFunctionPrefixes` matches `#define` function-like macro names that should be parsed as one raw preprocessor function definition. Use it for macro families whose replacement lists are implementation DSLs rather than normal C++ fragments.
+`RawMacroFunctionDefinitions` names `#define` function-like macro identifiers that should be parsed as one raw preprocessor function definition. Use trailing `*` entries for macro families whose replacement lists are implementation DSLs rather than normal C++ fragments.
 
 ```cpp
 #define UTEST_F(test_suite_name, test_name) IMPL_UTEST_TEST_F(test_suite_name, test_name, 1, false)
@@ -743,15 +743,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lpara
 
 #### FunctionPrefixes
 
-`FunctionPrefixes` names exact macro identifiers that act as declaration modifiers before a function, constructor, or related declaration header.
+`FunctionPrefixes` names macro identifiers that act as declaration modifiers before a function, constructor, or related declaration header. Use trailing `*` entries for attribute families such as userver's `ATTRIBUTE_*` macros.
 
 ```cpp
 USERVER_IMPL_NODEBUG_INLINE_FUNC static Value DoSerialize(const T& value);
 ```
-
-#### FunctionPrefixPrefixes
-
-`FunctionPrefixPrefixes` names macro identifier prefixes for declaration modifiers. This covers families such as `ATTRIBUTE_*` without listing every concrete attribute macro.
 
 ```cpp
 ATTRIBUTE_NO_SANITIZE_UNDEFINED std::size_t LeastGreaterEqualIndex(const BoundsBlock& block, float value);
@@ -759,17 +755,13 @@ ATTRIBUTE_NO_SANITIZE_UNDEFINED std::size_t LeastGreaterEqualIndex(const BoundsB
 
 #### MacroFunctionDefinitions
 
-`MacroFunctionDefinitions` names macro invocations that form a function-definition-like construct: macro name, argument list, and compound statement body.
+`MacroFunctionDefinitions` names macro invocations that form a function-definition-like construct: macro name, argument list, and compound statement body. Use trailing `*` entries for numbered variants such as GoogleTest matcher macros.
 
 ```cpp
 TEST(ConfigParser, ParsesMetricsSectionEntries) {
     ExpectMetricsSection();
 }
 ```
-
-#### MacroFunctionDefinitionPrefixes
-
-`MacroFunctionDefinitionPrefixes` names prefixes for function-definition-like macro families. This covers numbered variants where the suffix changes the argument count.
 
 ```cpp
 MATCHER_P(BsonMatcher, expected, "Bson matcher") {
@@ -795,9 +787,9 @@ BENCHMARK_DEFINE_F(FormatterBenchmark, Inline)(benchmark::State& state) {
 BENCHMARK_TEMPLATE(FormatterBenchmark, std::string)->Range(1, 8);
 ```
 
-#### TopLevelChainedCallStatementPrefixes
+#### TopLevelChainedCallStatements
 
-`TopLevelChainedCallStatementPrefixes` names prefixes for top-level macro call statements that may have a chained `->` tail. The parser treats the whole statement as one free token.
+`TopLevelChainedCallStatements` names top-level macro call statements that may have a chained `->` tail. Use a trailing `*` entry when a family such as benchmark registration macros shares one prefix. The parser treats the whole statement as one free token.
 
 ```cpp
 BENCHMARK_CAPTURE(FormatterBenchmark, Mode, kValue)->Arg(2)->Arg(4);
@@ -862,9 +854,9 @@ RET_NAME(kNullValue)
 kOptional = CURL_FORMAT_USERVER_NAMESPACE kOptionalValue,
 ```
 
-#### NamespaceBoundaryPrefixes
+#### NamespaceBoundaries
 
-`NamespaceBoundaryPrefixes` names prefixes for namespace boundary macros with `_NAMESPACE_BEGIN` and `_NAMESPACE_END` suffixes. The parser accepts those boundary markers as top-level namespace items.
+`NamespaceBoundaries` names namespace boundary macro bases used with `_NAMESPACE_BEGIN` and `_NAMESPACE_END` suffixes. Use trailing `*` entries for project namespace-marker families. The parser accepts those boundary markers as top-level namespace items.
 
 ```cpp
 USERVER_NAMESPACE_BEGIN

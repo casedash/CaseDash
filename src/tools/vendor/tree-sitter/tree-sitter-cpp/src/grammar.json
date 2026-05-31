@@ -12097,7 +12097,7 @@
         "value": 2,
         "content": {
           "type": "PATTERN",
-          "value": "#[ \\t]*define[ \\t]+(?:(?:IMPL_UTEST|TYPED_UTEST|INSTANTIATE_UTEST|UTEST|UPROTO|LOG|RET|UASSERT|UEXPECT|UINVARIANT|USERVER|UTILS)[A-Za-z0-9_]*)\\([^\\n]*\\)(?:[^\\n]*\\\\\\r?\\n)*[^\\n]*"
+          "value": "#[ \\t]*define[ \\t]+(?:(?:IMPL_UTEST[A-Za-z0-9_]*|TYPED_UTEST[A-Za-z0-9_]*|INSTANTIATE_UTEST[A-Za-z0-9_]*|UTEST[A-Za-z0-9_]*|UPROTO[A-Za-z0-9_]*|LOG[A-Za-z0-9_]*|RET[A-Za-z0-9_]*|UASSERT[A-Za-z0-9_]*|UEXPECT[A-Za-z0-9_]*|UINVARIANT[A-Za-z0-9_]*|USERVER[A-Za-z0-9_]*|UTILS[A-Za-z0-9_]*))\\([^\\n]*\\)(?:[^\\n]*\\\\\\r?\\n)*[^\\n]*"
         }
       }
     },
@@ -12251,7 +12251,7 @@
         "value": 1,
         "content": {
           "type": "PATTERN",
-          "value": "(?:(?:USERVER)[A-Za-z0-9_]*)_NAMESPACE_(?:BEGIN|END)"
+          "value": "(?:(?:USERVER[A-Za-z0-9_]*))_NAMESPACE_(?:BEGIN|END)"
         }
       }
     },
@@ -12357,7 +12357,7 @@
         "value": 1,
         "content": {
           "type": "PATTERN",
-          "value": "(?:(?:BENCHMARK)[A-Za-z0-9_]*)\\([^()\\n;]*\\)(?:[ \\t]+[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+)?(?:[ \\t]*->[^\\n;]*)*(?:\\r?\\n[ \\t]*->[^\\n;]*)*;"
+          "value": "(?:(?:BENCHMARK[A-Za-z0-9_]*))\\([^()\\n;]*\\)(?:[ \\t]+[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+)?(?:[ \\t]*->[^\\n;]*)*(?:\\r?\\n[ \\t]*->[^\\n;]*)*;"
         }
       }
     },
@@ -12436,7 +12436,7 @@
         "value": 1,
         "content": {
           "type": "PATTERN",
-          "value": "#[ \\t]*if[^\\n]*\\r?\\n(?:[ \\t]*\\/\\/[^\\n]*\\r?\\n)*[ \\t]*(?:(?:TEST|TEST_F|TEST_P|TYPED_TEST|TYPED_TEST_P|MATCHER|TYPED_UTEST_P_MT|TYPED_UTEST_MT|TYPED_UTEST_P|UTEST_F_MT|UTEST_P_MT|UTEST_MT|UTEST_DEATH|UTEST_F|UTEST_P|UTEST))[^\\n]*\\{[^\\n]*\\r?\\n#[ \\t]*else[^\\n]*\\r?\\n(?:[ \\t]*\\/\\/[^\\n]*\\r?\\n)*[ \\t]*(?:(?:TEST|TEST_F|TEST_P|TYPED_TEST|TYPED_TEST_P|MATCHER|TYPED_UTEST_P_MT|TYPED_UTEST_MT|TYPED_UTEST_P|UTEST_F_MT|UTEST_P_MT|UTEST_MT|UTEST_DEATH|UTEST_F|UTEST_P|UTEST))[^\\n]*\\{[^\\n]*\\r?\\n#[ \\t]*endif"
+          "value": "#[ \\t]*if[^\\n]*\\r?\\n(?:[ \\t]*\\/\\/[^\\n]*\\r?\\n)*[ \\t]*(?:(?:TEST|TEST_F|TEST_P|TYPED_TEST|TYPED_TEST_P|MATCHER|MATCHER_P[A-Za-z0-9_]*|TYPED_UTEST_P_MT|TYPED_UTEST_MT|TYPED_UTEST_P|UTEST_F_MT|UTEST_P_MT|UTEST_MT|UTEST_DEATH|UTEST_F|UTEST_P|UTEST))[^\\n]*\\{[^\\n]*\\r?\\n#[ \\t]*else[^\\n]*\\r?\\n(?:[ \\t]*\\/\\/[^\\n]*\\r?\\n)*[ \\t]*(?:(?:TEST|TEST_F|TEST_P|TYPED_TEST|TYPED_TEST_P|MATCHER|MATCHER_P[A-Za-z0-9_]*|TYPED_UTEST_P_MT|TYPED_UTEST_MT|TYPED_UTEST_P|UTEST_F_MT|UTEST_P_MT|UTEST_MT|UTEST_DEATH|UTEST_F|UTEST_P|UTEST))[^\\n]*\\{[^\\n]*\\r?\\n#[ \\t]*endif"
         }
       }
     },
@@ -12447,7 +12447,7 @@
         "value": 1,
         "content": {
           "type": "PATTERN",
-          "value": "(?:(?:TEST|TEST_F|TEST_P|TYPED_TEST|TYPED_TEST_P|MATCHER|TYPED_UTEST_P_MT|TYPED_UTEST_MT|TYPED_UTEST_P|UTEST_F_MT|UTEST_P_MT|UTEST_MT|UTEST_DEATH|UTEST_F|UTEST_P|UTEST)|(?:MATCHER_P)[A-Za-z0-9_]*)"
+          "value": "(?:(?:TEST|TEST_F|TEST_P|TYPED_TEST|TYPED_TEST_P|MATCHER|MATCHER_P[A-Za-z0-9_]*|TYPED_UTEST_P_MT|TYPED_UTEST_MT|TYPED_UTEST_P|UTEST_F_MT|UTEST_P_MT|UTEST_MT|UTEST_DEATH|UTEST_F|UTEST_P|UTEST))"
         }
       }
     },
@@ -13087,7 +13087,7 @@
         "value": 1,
         "content": {
           "type": "PATTERN",
-          "value": "(?:(?:USERVER_IMPL_NODEBUG|USERVER_IMPL_NODEBUG_INLINE_FUNC|USERVER_IMPL_FORCE_INLINE|USERVER_IMPL_DISABLE_ASAN|USERVER_IMPL_ALWAYS_INLINE_SIMD|USERVER_IMPL_PROTECT_DWCAS_ATTR)|(?:ATTRIBUTE|FORMAT_USERVER)[A-Za-z0-9_]*)"
+          "value": "(?:(?:USERVER_IMPL_NODEBUG|USERVER_IMPL_NODEBUG_INLINE_FUNC|USERVER_IMPL_FORCE_INLINE|USERVER_IMPL_DISABLE_ASAN|USERVER_IMPL_ALWAYS_INLINE_SIMD|USERVER_IMPL_PROTECT_DWCAS_ATTR|ATTRIBUTE[A-Za-z0-9_]*|FORMAT_USERVER[A-Za-z0-9_]*))"
         }
       }
     },
