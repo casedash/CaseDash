@@ -1217,18 +1217,16 @@ module.exports = grammar(C, {
     template_argument_list: $ => seq(
       '<',
       choice(
-        commaSep(choice(
-          prec.dynamic(3, $.type_descriptor),
-          prec.dynamic(2, alias($.type_parameter_pack_expansion, $.parameter_pack_expansion)),
-          prec.dynamic(1, $._template_argument_expression),
-        )),
-        seq($.preproc_template_argument_fragment, commaSep(choice(
-          prec.dynamic(3, $.type_descriptor),
-          prec.dynamic(2, alias($.type_parameter_pack_expansion, $.parameter_pack_expansion)),
-          prec.dynamic(1, $._template_argument_expression),
-        ))),
+        commaSep($._template_argument_list_item),
+        seq($.preproc_template_argument_fragment, commaSep($._template_argument_list_item)),
       ),
       alias(token(prec(1, '>')), '>'),
+    ),
+
+    _template_argument_list_item: $ => choice(
+      prec.dynamic(3, $.type_descriptor),
+      prec.dynamic(2, alias($.type_parameter_pack_expansion, $.parameter_pack_expansion)),
+      $._template_argument_expression,
     ),
 
     preproc_template_argument_fragment: _ => token(prec(
@@ -2006,8 +2004,26 @@ module.exports = grammar(C, {
       )),
     ),
 
-    binary_expression: ($, original) => {
+    binary_expression: $ => {
       const table = [
+        ['+', PREC.ADD],
+        ['-', PREC.ADD],
+        ['*', PREC.MULTIPLY],
+        ['/', PREC.MULTIPLY],
+        ['%', PREC.MULTIPLY],
+        ['||', PREC.LOGICAL_OR, true],
+        ['&&', PREC.LOGICAL_AND, true],
+        ['|', PREC.INCLUSIVE_OR],
+        ['^', PREC.EXCLUSIVE_OR],
+        ['&', PREC.BITWISE_AND],
+        ['==', PREC.EQUAL],
+        ['!=', PREC.EQUAL],
+        ['>', PREC.RELATIONAL, true],
+        ['>=', PREC.RELATIONAL, true],
+        ['<=', PREC.RELATIONAL, true],
+        ['<', PREC.RELATIONAL, true],
+        ['<<', PREC.SHIFT],
+        ['>>', PREC.SHIFT],
         ['<=>', PREC.THREE_WAY],
         ['or', PREC.LOGICAL_OR],
         ['and', PREC.LOGICAL_AND],
@@ -2018,7 +2034,6 @@ module.exports = grammar(C, {
       ];
 
       return choice(
-        original,
         prec.left(PREC.INCLUSIVE_OR, seq(
           field('left', $.expression),
           field('operator', '|'),
@@ -2038,13 +2053,16 @@ module.exports = grammar(C, {
           field('operator', '&&'),
           $.preproc_logical_tail_expression_fragment,
         )),
-        ...table.map(([operator, precedence]) => {
-          return prec.left(precedence, seq(
+        ...table.map(([operator, precedence, preferBinary]) => {
+          const rule = prec.left(precedence, seq(
             field('left', $.expression),
             // @ts-ignore
             field('operator', operator),
             field('right', $.expression),
           ));
+          // Prefer real binary expressions over template-id recovery for
+          // relational/logical chains such as "value < min || value > max".
+          return preferBinary ? prec.dynamic(1, rule) : rule;
         }));
     },
 

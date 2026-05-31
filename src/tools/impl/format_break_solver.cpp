@@ -562,6 +562,28 @@ private:
         return best;
     }
 
+    NodeResult SolveNodeWithSuffix(
+        const FormatBreakNode& node,
+        const FormatBreakToken* suffix,
+        int column,
+        int indentLevel,
+        bool lineHasText
+    ) {
+        NodeResult best;
+        for (NodeResult candidate : SolveAlternatives(node, column, indentLevel, lineHasText)) {
+            if (!candidate.valid) {
+                continue;
+            }
+            if (suffix != nullptr && FormatBreakTokenKind(*suffix) == PrintTokenKind::Known) {
+                candidate = AddToken(candidate, *suffix);
+            }
+            if (Better(candidate, best)) {
+                best = candidate;
+            }
+        }
+        return best;
+    }
+
     bool Better(const NodeResult& candidate, const NodeResult& incumbent) const {
         if (!candidate.valid) {
             return false;
@@ -1617,16 +1639,31 @@ private:
         if (node.operands.empty()) {
             return result;
         }
-        NodeResult first =
-            Solve(*node.operands.front(), result.endColumn, result.endIndentLevel, result.endLineHasText);
+        const FormatBreakToken* firstSuffix = node.operators.empty() ? nullptr : &node.operators.front();
+        NodeResult first = SolveNodeWithSuffix(
+            *node.operands.front(),
+            firstSuffix,
+            result.endColumn,
+            result.endIndentLevel,
+            result.endLineHasText
+        );
+        if (!first.valid) {
+            return {};
+        }
         Merge(result, first);
         for (size_t index = 0; index < node.operators.size(); ++index) {
-            result = AddToken(result, node.operators[index]);
             NodeResult normal = AddBreak(result, continuationIndent, node.structuralDepth);
             const bool splitTrailingBodyHeaderAtParentIndent =
                 node.splitTrailingBodyHeaderAtParentIndent && index + 1 == node.operands.size() - 1;
-            NodeResult operand =
-                Solve(*node.operands[index + 1], normal.endColumn, normal.endIndentLevel, normal.endLineHasText);
+            const FormatBreakToken* nextSuffix = index + 1 < node.operators.size() ?
+                &node.operators[index + 1] : nullptr;
+            NodeResult operand = SolveNodeWithSuffix(
+                *node.operands[index + 1],
+                nextSuffix,
+                normal.endColumn,
+                normal.endIndentLevel,
+                normal.endLineHasText
+            );
             if (splitTrailingBodyHeaderAtParentIndent) {
                 NodeResult parentIndentOperand = SolveTrailingBodyHeaderSplitAtParentIndent(
                     *node.operands[index + 1],
@@ -1634,6 +1671,9 @@ private:
                     normal.endIndentLevel,
                     normal.endLineHasText
                 );
+                if (nextSuffix != nullptr && parentIndentOperand.valid) {
+                    parentIndentOperand = AddToken(parentIndentOperand, *nextSuffix);
+                }
                 if (
                     (operand.extraLines > 0 || ContainsNonSingleStatementBodyHeader(*node.operands[index + 1])) &&
                     parentIndentOperand.valid
@@ -1648,6 +1688,9 @@ private:
             NodeResult attached;
             if (CanAttachSplitOpenAfterOperator(node.operators[index], *node.operands[index + 1])) {
                 attached = SolveDelimitedSplitAttachedOpen(*node.operands[index + 1], result, continuationIndent);
+                if (nextSuffix != nullptr && attached.valid) {
+                    attached = AddToken(attached, *nextSuffix);
+                }
             }
             result = Better(attached, normal) ? attached : normal;
         }

@@ -1258,6 +1258,32 @@ void LongForCondition(){
 for(int rowIndex=0;rowIndex<layoutState_.visibleRows&&rowIndex<static_cast<int>(layoutState_.rowBarRects.size())&&rowIndex<static_cast<int>(layoutState_.rowBarAnchorRects.size());++rowIndex){Use(rowIndex);}
 }
 
+bool ReviewLogNumericLimits(long value){
+return value<(std::numeric_limits<int>::min)()||value>(std::numeric_limits<int>::max)();
+}
+
+bool ReviewLogLayoutMove(int fromIndex,int toIndex,LayoutNodeConfig* node){
+return fromIndex<0||toIndex<0||fromIndex>=static_cast<int>(node->children.size())||toIndex>=static_cast<int>(node->children.size());
+}
+
+bool ReviewLogChoiceFor(int nodeId,const FormatBreakSolution& solution){
+if(nodeId<0||static_cast<size_t>(nodeId)>=solution.choices.size()){return false;}
+return true;
+}
+
+void ReviewLogJsonDigit(){
+while(position_<text_.size()&&text_[position_]>='0'&&text_[position_]<='9'){++position_;}
+}
+
+void ReviewLogMetricDrag(){
+if(draggedIndex<0||draggedIndex>=static_cast<int>(metricRefs_.size())||draggedIndex>=static_cast<int>(layoutState_.rowRects.size())){return;}
+}
+
+std::optional<BoardVendorTelemetrySample> ReviewLogBoardSensorsResponse(){
+if(!ReadString(cursor,remaining,payloadHeader.boardManufacturerBytes,sample.boardManufacturer)||!ReadStringVector(cursor,remaining,payloadHeader.requestedTemperatureCount,sample.requestedTemperatureNames)||!ReadStringVector(cursor,remaining,payloadHeader.availableTemperatureCount,sample.availableTemperatureNames)||remaining!=0){return std::nullopt;}
+return sample;
+}
+
 void ControlFlowVariety(int * values,int count){
 if(count>0){values[0]+=1;}else values[0]=0;
 if(count==0)values[0]=0;else if(count==1)values[0]=1;else{if(count==2){values[0]=2;}}
