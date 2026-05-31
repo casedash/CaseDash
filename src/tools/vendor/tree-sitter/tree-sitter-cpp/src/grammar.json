@@ -148,7 +148,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "macro_namespace_boundary"
+          "name": "top_level_item_macro"
         },
         {
           "type": "SYMBOL",
@@ -360,7 +360,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "macro_namespace_boundary"
+          "name": "top_level_item_macro"
         },
         {
           "type": "SYMBOL",
@@ -12244,14 +12244,14 @@
         }
       }
     },
-    "macro_namespace_boundary": {
+    "top_level_item_macro": {
       "type": "TOKEN",
       "content": {
         "type": "PREC",
         "value": 1,
         "content": {
           "type": "PATTERN",
-          "value": "(?:(?:USERVER[A-Za-z0-9_]*))_NAMESPACE_(?:BEGIN|END)"
+          "value": "(?:(?:USERVER_NAMESPACE_BEGIN|USERVER_NAMESPACE_END))"
         }
       }
     },

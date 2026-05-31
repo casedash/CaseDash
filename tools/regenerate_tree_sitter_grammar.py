@@ -40,7 +40,7 @@ MACRO_CATEGORY_ORDER = (
     "statement_argument_call_macro",
     "name_macro_call",
     "qualified_identifier_prefix_macro",
-    "namespace_boundary",
+    "top_level_item_macro",
     "type_specifier_macro_call",
 )
 REQUIRED_MACRO_CATEGORIES = ("calling_convention",)
@@ -59,7 +59,7 @@ FORMAT_CATEGORY_KEYS = {
     "statement_argument_call_macro": "StatementArgumentCallMacros",
     "name_macro_call": "NameMacroCalls",
     "qualified_identifier_prefix_macro": "QualifiedIdentifierPrefixMacros",
-    "namespace_boundary": "NamespaceBoundaries",
+    "top_level_item_macro": "TopLevelItemMacros",
     "type_specifier_macro_call": "TypeSpecifierMacroCalls",
 }
 MACRO_CATEGORY_ENTRY_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*\*?$")

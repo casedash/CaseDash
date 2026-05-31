@@ -863,9 +863,9 @@ enum class NetrcOption {
 };
 ```
 
-#### NamespaceBoundaries
+#### TopLevelItemMacros
 
-`NamespaceBoundaries` names namespace boundary macro bases used with `_NAMESPACE_BEGIN` and `_NAMESPACE_END` suffixes. Use trailing `*` entries for project namespace-marker families. The parser accepts those boundary markers as top-level namespace items.
+`TopLevelItemMacros` names complete macro identifiers that can stand as declaration-level items at file, namespace, or block scope. This covers paired namespace-marker macros without baking their project-specific names or suffixes into the grammar.
 
 ```cpp
 USERVER_NAMESPACE_BEGIN

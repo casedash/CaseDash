@@ -51,8 +51,9 @@ MacroCategories:
     - UTEST
   CallStatementNames:
     - SetHttpProxy
-  NamespaceBoundaries:
-    - USERVER*
+  TopLevelItemMacros:
+    - USERVER_NAMESPACE_BEGIN
+    - USERVER_NAMESPACE_END
   StatementExceptionCallMacros:
     - UEXPECT_THROW
     - UEXPECT_THROW_MSG
