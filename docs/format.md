@@ -846,12 +846,21 @@ UEXPECT_NO_THROW(const auto stream = Client().ReadMany(request));
 RET_NAME(kNullValue)
 ```
 
-#### NamespaceAliasMacros
+#### QualifiedIdentifierPrefixMacros
 
-`NamespaceAliasMacros` names macros that expand to an optional namespace qualifier before an identifier. The parser treats the macro plus following identifier as a qualified identifier shape.
+`QualifiedIdentifierPrefixMacros` names macros that can appear before an identifier where the expression grammar expects a qualified-identifier-like name. This covers namespace-selection macros that expand to an optional namespace qualifier.
 
 ```cpp
-kOptional = CURL_FORMAT_USERVER_NAMESPACE kOptionalValue,
+#if LIBCURL_VERSION_NUM >= 0x080d00
+#define CURL_8_13_NAMESPACE native::
+#else
+#define CURL_8_13_NAMESPACE
+#endif
+
+enum class NetrcOption {
+    optional = CURL_8_13_NAMESPACE CURL_NETRC_OPTIONAL,
+    required = CURL_8_13_NAMESPACE CURL_NETRC_REQUIRED,
+};
 ```
 
 #### NamespaceBoundaries

@@ -97,8 +97,8 @@ const STATEMENT_EXCEPTION_CALL_MACRO_PATTERN = regexUnion([
 const NAME_MACRO_CALL_PATTERN = regexUnion([
   macroCategoryPattern('name_macro_call'),
 ]);
-const NAMESPACE_ALIAS_MACRO_PATTERN = regexUnion([
-  macroCategoryPattern('namespace_alias_macro'),
+const QUALIFIED_IDENTIFIER_PREFIX_MACRO_PATTERN = regexUnion([
+  macroCategoryPattern('qualified_identifier_prefix_macro'),
 ]);
 const NAMESPACE_BOUNDARY_PATTERN = regexUnion([
   macroCategoryPattern('namespace_boundary'),
@@ -1724,11 +1724,11 @@ module.exports = grammar(C, {
     _statement_argument_call_macro_identifier: _ => token(prec(1, new RegExp(STATEMENT_ARGUMENT_CALL_MACRO_PATTERN))),
 
     macro_qualified_identifier: $ => seq(
-      alias($._namespace_alias_macro, $.identifier),
+      alias($._qualified_identifier_prefix_macro, $.identifier),
       $.identifier,
     ),
 
-    _namespace_alias_macro: _ => token(prec(1, new RegExp(NAMESPACE_ALIAS_MACRO_PATTERN))),
+    _qualified_identifier_prefix_macro: _ => token(prec(1, new RegExp(QUALIFIED_IDENTIFIER_PREFIX_MACRO_PATTERN))),
 
     call_expression_with_type_arguments: $ => prec(PREC.CALL, seq(
       field('function', alias($._call_expression_with_type_arguments_macro_identifier, $.identifier)),

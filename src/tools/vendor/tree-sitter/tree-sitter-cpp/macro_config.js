@@ -112,7 +112,7 @@ module.exports = {
       // tools/tests/format/.cpp-format-userver
       "RET_NAME",
     ],
-    namespace_alias_macro: [
+    qualified_identifier_prefix_macro: [
       // .cpp-format
       // tools/tests/format/.cpp-format-userver
       "CURL_FORMAT_USERVER_NAMESPACE",

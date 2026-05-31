@@ -63,7 +63,7 @@ MacroCategories:
     - UASSERT_NO_THROW
   NameMacroCalls:
     - RET_NAME
-  NamespaceAliasMacros:
+  QualifiedIdentifierPrefixMacros:
     - CURL_FORMAT_USERVER_NAMESPACE
     - CURL_8_13_NAMESPACE
     - CURL_SSLVERSION_NAMESPACE
