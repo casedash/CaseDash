@@ -68,6 +68,14 @@ bool IsFunctionSuffixMacro(const PrintToken& token) {
     return token.syntaxKind == SyntaxNodeKind::FunctionSuffixMacro;
 }
 
+bool IsTemplateArgumentExpressionOperator(const PrintToken& token) {
+    return token.kind == PrintTokenKind::Known &&
+        token.parentKind == SyntaxNodeKind::TemplateArgumentList &&
+        SyntaxNodeKindHasClass(token.syntaxKind, TokenClass::BinaryOperator) &&
+        token.syntaxKind != SyntaxNodeKind::Less &&
+        token.syntaxKind != SyntaxNodeKind::Greater;
+}
+
 bool HasCallModifierBeforeDeclaratorBinding(const PrintToken& token) {
     const SyntaxNode* declarator = ParentNode(token);
     const SyntaxNode* parenthesized = GrandParentNode(token);
@@ -192,6 +200,9 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         previous->kind == PrintTokenKind::Known ? previous->syntaxKind : SyntaxNodeKind::Unknown;
     const SyntaxNodeKind cur = current.kind == PrintTokenKind::Known ? current.syntaxKind : SyntaxNodeKind::Unknown;
 
+    if (IsTemplateArgumentExpressionOperator(*previous) || IsTemplateArgumentExpressionOperator(current)) {
+        return true;
+    }
     if ((cur == SyntaxNodeKind::Arrow && current.parentKind == SyntaxNodeKind::TrailingReturnType) || (
         prev == SyntaxNodeKind::Arrow && previous->parentKind == SyntaxNodeKind::TrailingReturnType
     )) {
