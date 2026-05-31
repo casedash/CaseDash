@@ -208,15 +208,15 @@
         "named": true
       },
       {
-        "type": "benchmark_template_expression",
-        "named": true
-      },
-      {
         "type": "binary_expression",
         "named": true
       },
       {
         "type": "call_expression",
+        "named": true
+      },
+      {
+        "type": "call_expression_with_type_arguments",
         "named": true
       },
       {
@@ -288,15 +288,15 @@
         "named": true
       },
       {
-        "type": "macro_no_throw_call",
-        "named": true
-      },
-      {
         "type": "macro_qualified_identifier",
         "named": true
       },
       {
-        "type": "macro_statement_call",
+        "type": "macro_statement_argument_call",
+        "named": true
+      },
+      {
+        "type": "macro_statement_exception_call",
         "named": true
       },
       {
@@ -410,10 +410,6 @@
         "named": true
       },
       {
-        "type": "capitalized_call_statement",
-        "named": true
-      },
-      {
         "type": "case_statement",
         "named": true
       },
@@ -463,6 +459,10 @@
       },
       {
         "type": "labeled_statement",
+        "named": true
+      },
+      {
+        "type": "named_call_statement",
         "named": true
       },
       {
@@ -540,10 +540,6 @@
         "named": true
       },
       {
-        "type": "openssl_stack_type",
-        "named": true
-      },
-      {
         "type": "placeholder_type_specifier",
         "named": true
       },
@@ -569,6 +565,10 @@
       },
       {
         "type": "type_identifier",
+        "named": true
+      },
+      {
+        "type": "type_specifier_macro_call",
         "named": true
       },
       {
@@ -1229,78 +1229,6 @@
     }
   },
   {
-    "type": "benchmark_macro_function_definition",
-    "named": true,
-    "fields": {
-      "arguments": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "argument_list",
-            "named": true
-          }
-        ]
-      },
-      "body": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "compound_statement",
-            "named": true
-          }
-        ]
-      },
-      "declarator": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "parameter_list",
-            "named": true
-          }
-        ]
-      },
-      "function": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
-    "type": "benchmark_template_expression",
-    "named": true,
-    "fields": {
-      "arguments": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "argument_list",
-            "named": true
-          }
-        ]
-      },
-      "function": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
     "type": "binary_expression",
     "named": true,
     "fields": {
@@ -1525,12 +1453,7 @@
     }
   },
   {
-    "type": "calling_convention_macro",
-    "named": true,
-    "fields": {}
-  },
-  {
-    "type": "capitalized_call_statement",
+    "type": "call_expression_with_type_arguments",
     "named": true,
     "fields": {
       "arguments": {
@@ -1554,6 +1477,11 @@
         ]
       }
     }
+  },
+  {
+    "type": "calling_convention_macro",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "case_statement",
@@ -1580,10 +1508,6 @@
         },
         {
           "type": "break_statement",
-          "named": true
-        },
-        {
-          "type": "capitalized_call_statement",
           "named": true
         },
         {
@@ -1636,6 +1560,10 @@
         },
         {
           "type": "labeled_statement",
+          "named": true
+        },
+        {
+          "type": "named_call_statement",
           "named": true
         },
         {
@@ -2000,10 +1928,6 @@
           "named": true
         },
         {
-          "type": "benchmark_macro_function_definition",
-          "named": true
-        },
-        {
           "type": "concept_definition",
           "named": true
         },
@@ -2045,6 +1969,10 @@
         },
         {
           "type": "macro_function_definition",
+          "named": true
+        },
+        {
+          "type": "macro_function_definition_with_trailing_parameters",
           "named": true
         },
         {
@@ -2148,7 +2076,7 @@
           "named": true
         },
         {
-          "type": "top_level_macro_call_statement",
+          "type": "top_level_chained_call_statement",
           "named": true
         },
         {
@@ -2669,10 +2597,6 @@
           "named": true
         },
         {
-          "type": "benchmark_macro_function_definition",
-          "named": true
-        },
-        {
           "type": "concept_definition",
           "named": true
         },
@@ -2714,6 +2638,10 @@
         },
         {
           "type": "macro_function_definition",
+          "named": true
+        },
+        {
+          "type": "macro_function_definition_with_trailing_parameters",
           "named": true
         },
         {
@@ -2817,7 +2745,7 @@
           "named": true
         },
         {
-          "type": "top_level_macro_call_statement",
+          "type": "top_level_chained_call_statement",
           "named": true
         },
         {
@@ -3362,7 +3290,7 @@
           "named": true
         },
         {
-          "type": "mock_method_declaration",
+          "type": "macro_method_declaration",
           "named": true
         },
         {
@@ -5038,6 +4966,52 @@
     }
   },
   {
+    "type": "macro_function_definition_with_trailing_parameters",
+    "named": true,
+    "fields": {
+      "arguments": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "argument_list",
+            "named": true
+          }
+        ]
+      },
+      "body": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "compound_statement",
+            "named": true
+          }
+        ]
+      },
+      "declarator": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "parameter_list",
+            "named": true
+          }
+        ]
+      },
+      "function": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "macro_initialized_field_declaration",
     "named": true,
     "fields": {
@@ -5108,23 +5082,9 @@
     }
   },
   {
-    "type": "macro_no_throw_call",
+    "type": "macro_method_declaration",
     "named": true,
     "fields": {
-      "argument": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "compound_statement",
-            "named": true
-          },
-          {
-            "type": "expression",
-            "named": true
-          }
-        ]
-      },
       "function": {
         "multiple": false,
         "required": true,
@@ -5134,22 +5094,105 @@
             "named": true
           }
         ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "parameters": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "macro_method_parameter_list",
+            "named": true
+          }
+        ]
+      },
+      "qualifiers": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "macro_method_qualifier_list",
+            "named": true
+          }
+        ]
+      },
+      "return_type": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "attribute_declaration",
+            "named": true
+          },
+          {
+            "type": "attribute_specifier",
+            "named": true
+          },
+          {
+            "type": "function_prefix_macro",
+            "named": true
+          },
+          {
+            "type": "ms_declspec_modifier",
+            "named": true
+          },
+          {
+            "type": "storage_class_specifier",
+            "named": true
+          },
+          {
+            "type": "type_qualifier",
+            "named": true
+          },
+          {
+            "type": "type_specifier",
+            "named": true
+          },
+          {
+            "type": "virtual",
+            "named": false
+          }
+        ]
+      },
+      "type": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "type_specifier",
+            "named": true
+          }
+        ]
       }
-    },
+    }
+  },
+  {
+    "type": "macro_method_qualifier_list",
+    "named": true,
+    "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": false,
       "types": [
         {
-          "type": "macro_argument_declaration_fragment",
+          "type": "identifier",
           "named": true
         },
         {
-          "type": "macro_plain_declaration_fragment",
+          "type": "type_qualifier",
           "named": true
         },
         {
-          "type": "macro_typed_declaration_fragment",
+          "type": "virtual_specifier",
           "named": true
         }
       ]
@@ -5222,7 +5265,55 @@
     }
   },
   {
-    "type": "macro_statement_call",
+    "type": "macro_statement_argument_call",
+    "named": true,
+    "fields": {
+      "argument": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "compound_statement",
+            "named": true
+          },
+          {
+            "type": "expression",
+            "named": true
+          }
+        ]
+      },
+      "function": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "macro_argument_declaration_fragment",
+          "named": true
+        },
+        {
+          "type": "macro_plain_declaration_fragment",
+          "named": true
+        },
+        {
+          "type": "macro_typed_declaration_fragment",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "macro_statement_exception_call",
     "named": true,
     "fields": {
       "argument": {
@@ -5341,123 +5432,6 @@
           }
         ]
       }
-    }
-  },
-  {
-    "type": "mock_method_declaration",
-    "named": true,
-    "fields": {
-      "function": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      },
-      "name": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      },
-      "parameters": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "mock_method_parameter_list",
-            "named": true
-          }
-        ]
-      },
-      "qualifiers": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "mock_method_qualifier_list",
-            "named": true
-          }
-        ]
-      },
-      "return_type": {
-        "multiple": true,
-        "required": true,
-        "types": [
-          {
-            "type": "attribute_declaration",
-            "named": true
-          },
-          {
-            "type": "attribute_specifier",
-            "named": true
-          },
-          {
-            "type": "function_prefix_macro",
-            "named": true
-          },
-          {
-            "type": "ms_declspec_modifier",
-            "named": true
-          },
-          {
-            "type": "storage_class_specifier",
-            "named": true
-          },
-          {
-            "type": "type_qualifier",
-            "named": true
-          },
-          {
-            "type": "type_specifier",
-            "named": true
-          },
-          {
-            "type": "virtual",
-            "named": false
-          }
-        ]
-      },
-      "type": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "type_specifier",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
-    "type": "mock_method_qualifier_list",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "identifier",
-          "named": true
-        },
-        {
-          "type": "type_qualifier",
-          "named": true
-        },
-        {
-          "type": "virtual_specifier",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -6399,10 +6373,6 @@
           "named": true
         },
         {
-          "type": "benchmark_macro_function_definition",
-          "named": true
-        },
-        {
           "type": "concept_definition",
           "named": true
         },
@@ -6467,15 +6437,19 @@
           "named": true
         },
         {
+          "type": "macro_function_definition_with_trailing_parameters",
+          "named": true
+        },
+        {
           "type": "macro_initialized_field_declaration",
           "named": true
         },
         {
-          "type": "macro_namespace_boundary",
+          "type": "macro_method_declaration",
           "named": true
         },
         {
-          "type": "mock_method_declaration",
+          "type": "macro_namespace_boundary",
           "named": true
         },
         {
@@ -6575,7 +6549,7 @@
           "named": true
         },
         {
-          "type": "top_level_macro_call_statement",
+          "type": "top_level_chained_call_statement",
           "named": true
         },
         {
@@ -6651,10 +6625,6 @@
           "named": true
         },
         {
-          "type": "benchmark_macro_function_definition",
-          "named": true
-        },
-        {
           "type": "concept_definition",
           "named": true
         },
@@ -6719,15 +6689,19 @@
           "named": true
         },
         {
+          "type": "macro_function_definition_with_trailing_parameters",
+          "named": true
+        },
+        {
           "type": "macro_initialized_field_declaration",
           "named": true
         },
         {
-          "type": "macro_namespace_boundary",
+          "type": "macro_method_declaration",
           "named": true
         },
         {
-          "type": "mock_method_declaration",
+          "type": "macro_namespace_boundary",
           "named": true
         },
         {
@@ -6827,7 +6801,7 @@
           "named": true
         },
         {
-          "type": "top_level_macro_call_statement",
+          "type": "top_level_chained_call_statement",
           "named": true
         },
         {
@@ -6874,10 +6848,6 @@
           "named": true
         },
         {
-          "type": "benchmark_macro_function_definition",
-          "named": true
-        },
-        {
           "type": "concept_definition",
           "named": true
         },
@@ -6942,15 +6912,19 @@
           "named": true
         },
         {
+          "type": "macro_function_definition_with_trailing_parameters",
+          "named": true
+        },
+        {
           "type": "macro_initialized_field_declaration",
           "named": true
         },
         {
-          "type": "macro_namespace_boundary",
+          "type": "macro_method_declaration",
           "named": true
         },
         {
-          "type": "mock_method_declaration",
+          "type": "macro_namespace_boundary",
           "named": true
         },
         {
@@ -7050,7 +7024,7 @@
           "named": true
         },
         {
-          "type": "top_level_macro_call_statement",
+          "type": "top_level_chained_call_statement",
           "named": true
         },
         {
@@ -7206,10 +7180,6 @@
           "named": true
         },
         {
-          "type": "benchmark_macro_function_definition",
-          "named": true
-        },
-        {
           "type": "concept_definition",
           "named": true
         },
@@ -7274,15 +7244,19 @@
           "named": true
         },
         {
+          "type": "macro_function_definition_with_trailing_parameters",
+          "named": true
+        },
+        {
           "type": "macro_initialized_field_declaration",
           "named": true
         },
         {
-          "type": "macro_namespace_boundary",
+          "type": "macro_method_declaration",
           "named": true
         },
         {
-          "type": "mock_method_declaration",
+          "type": "macro_namespace_boundary",
           "named": true
         },
         {
@@ -7382,7 +7356,7 @@
           "named": true
         },
         {
-          "type": "top_level_macro_call_statement",
+          "type": "top_level_chained_call_statement",
           "named": true
         },
         {
@@ -7458,10 +7432,6 @@
           "named": true
         },
         {
-          "type": "benchmark_macro_function_definition",
-          "named": true
-        },
-        {
           "type": "concept_definition",
           "named": true
         },
@@ -7526,15 +7496,19 @@
           "named": true
         },
         {
+          "type": "macro_function_definition_with_trailing_parameters",
+          "named": true
+        },
+        {
           "type": "macro_initialized_field_declaration",
           "named": true
         },
         {
-          "type": "macro_namespace_boundary",
+          "type": "macro_method_declaration",
           "named": true
         },
         {
-          "type": "mock_method_declaration",
+          "type": "macro_namespace_boundary",
           "named": true
         },
         {
@@ -7634,7 +7608,7 @@
           "named": true
         },
         {
-          "type": "top_level_macro_call_statement",
+          "type": "top_level_chained_call_statement",
           "named": true
         },
         {
@@ -8628,10 +8602,6 @@
             "named": true
           },
           {
-            "type": "benchmark_template_expression",
-            "named": true
-          },
-          {
             "type": "bitand",
             "named": false
           },
@@ -8641,6 +8611,10 @@
           },
           {
             "type": "call_expression",
+            "named": true
+          },
+          {
+            "type": "call_expression_with_type_arguments",
             "named": true
           },
           {
@@ -8712,15 +8686,15 @@
             "named": true
           },
           {
-            "type": "macro_no_throw_call",
-            "named": true
-          },
-          {
             "type": "macro_qualified_identifier",
             "named": true
           },
           {
-            "type": "macro_statement_call",
+            "type": "macro_statement_argument_call",
+            "named": true
+          },
+          {
+            "type": "macro_statement_exception_call",
             "named": true
           },
           {
@@ -8976,10 +8950,6 @@
             "named": true
           },
           {
-            "type": "benchmark_template_expression",
-            "named": true
-          },
-          {
             "type": "bitand",
             "named": false
           },
@@ -8989,6 +8959,10 @@
           },
           {
             "type": "call_expression",
+            "named": true
+          },
+          {
+            "type": "call_expression_with_type_arguments",
             "named": true
           },
           {
@@ -9060,15 +9034,15 @@
             "named": true
           },
           {
-            "type": "macro_no_throw_call",
-            "named": true
-          },
-          {
             "type": "macro_qualified_identifier",
             "named": true
           },
           {
-            "type": "macro_statement_call",
+            "type": "macro_statement_argument_call",
+            "named": true
+          },
+          {
+            "type": "macro_statement_exception_call",
             "named": true
           },
           {
@@ -9203,11 +9177,11 @@
           "named": true
         },
         {
-          "type": "benchmark_template_expression",
+          "type": "call_expression",
           "named": true
         },
         {
-          "type": "call_expression",
+          "type": "call_expression_with_type_arguments",
           "named": true
         },
         {
@@ -9279,15 +9253,15 @@
           "named": true
         },
         {
-          "type": "macro_no_throw_call",
-          "named": true
-        },
-        {
           "type": "macro_qualified_identifier",
           "named": true
         },
         {
-          "type": "macro_statement_call",
+          "type": "macro_statement_argument_call",
+          "named": true
+        },
+        {
+          "type": "macro_statement_exception_call",
           "named": true
         },
         {
@@ -9752,10 +9726,6 @@
           "named": true
         },
         {
-          "type": "benchmark_macro_function_definition",
-          "named": true
-        },
-        {
           "type": "break_statement",
           "named": true
         },
@@ -9853,6 +9823,10 @@
         },
         {
           "type": "macro_function_definition",
+          "named": true
+        },
+        {
+          "type": "macro_function_definition_with_trailing_parameters",
           "named": true
         },
         {
@@ -9956,7 +9930,7 @@
           "named": true
         },
         {
-          "type": "top_level_macro_call_statement",
+          "type": "top_level_chained_call_statement",
           "named": true
         },
         {
@@ -11177,6 +11151,10 @@
     "named": true
   },
   {
+    "type": "macro_method_parameter_list",
+    "named": true
+  },
+  {
     "type": "macro_namespace_boundary",
     "named": true
   },
@@ -11197,10 +11175,6 @@
     "named": true
   },
   {
-    "type": "mock_method_parameter_list",
-    "named": true
-  },
-  {
     "type": "ms_restrict_modifier",
     "named": true
   },
@@ -11218,6 +11192,10 @@
   },
   {
     "type": "name_macro_call",
+    "named": true
+  },
+  {
+    "type": "named_call_statement",
     "named": true
   },
   {
@@ -11263,10 +11241,6 @@
   {
     "type": "offsetof",
     "named": false
-  },
-  {
-    "type": "openssl_stack_type",
-    "named": true
   },
   {
     "type": "operator",
@@ -11493,7 +11467,7 @@
     "named": false
   },
   {
-    "type": "top_level_macro_call_statement",
+    "type": "top_level_chained_call_statement",
     "named": true
   },
   {
@@ -11510,6 +11484,10 @@
   },
   {
     "type": "type_identifier",
+    "named": true
+  },
+  {
+    "type": "type_specifier_macro_call",
     "named": true
   },
   {

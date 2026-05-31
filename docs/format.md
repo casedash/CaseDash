@@ -566,7 +566,7 @@ Macro replacement lists that form declaration fragments are recursively formatte
 
 Function-like macro parameters listed in `.cpp-format` `MacroCategories.StatementLikeParameters` are emitted one invocation per continuation line.
 
-Tree-sitter macro recognition is generated from `.cpp-format` and `tools/tests/format/.cpp-format-userver`. `MacroCategories.CallingConvention` feeds calling-convention tokens. `RawMacroFunctionPrefixes`, `FunctionPrefixes`, `MacroFunctionDefinitions`, `NoThrowMacros`, `NameMacroCalls`, and `NamespaceAliasMacros` feed parser-only macro name categories for project-specific source shapes.
+Tree-sitter name recognition is generated from `.cpp-format` and `tools/tests/format/.cpp-format-userver`. `MacroCategories.CallingConvention` feeds calling-convention tokens. The parser-only categories are named by grammar role: `RawMacroFunctionPrefixes`, `FunctionPrefixes`, `FunctionPrefixPrefixes`, `MacroFunctionDefinitions`, `MacroFunctionDefinitionPrefixes`, `MacroFunctionDefinitionsWithTrailingParameters`, `CallExpressionWithTypeArgumentsMacros`, `TopLevelChainedCallStatementPrefixes`, `MethodDeclarationMacros`, `CallStatementNames`, `PreprocessorStreamingStatementMacros`, `StatementExceptionCallMacros`, `StatementArgumentCallMacros`, `NameMacroCalls`, `NamespaceAliasMacros`, `NamespaceBoundaryPrefixes`, and `TypeSpecifierMacroCalls`.
 
 ```cpp
 #define CASEDASH_METRIC_DISPLAY_STYLE_ITEMS(X) \

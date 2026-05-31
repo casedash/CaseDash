@@ -152,11 +152,11 @@
         },
         {
           "type": "SYMBOL",
-          "name": "benchmark_macro_function_definition"
+          "name": "macro_function_definition_with_trailing_parameters"
         },
         {
           "type": "SYMBOL",
-          "name": "top_level_macro_call_statement"
+          "name": "top_level_chained_call_statement"
         },
         {
           "type": "SYMBOL",
@@ -249,6 +249,10 @@
         {
           "type": "SYMBOL",
           "name": "preproc_define_namespace_if"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "named_call_statement"
         },
         {
           "type": "SYMBOL",
@@ -360,11 +364,11 @@
         },
         {
           "type": "SYMBOL",
-          "name": "benchmark_macro_function_definition"
+          "name": "macro_function_definition_with_trailing_parameters"
         },
         {
           "type": "SYMBOL",
-          "name": "top_level_macro_call_statement"
+          "name": "top_level_chained_call_statement"
         },
         {
           "type": "SYMBOL",
@@ -5336,7 +5340,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "openssl_stack_type"
+          "name": "type_specifier_macro_call"
         },
         {
           "type": "SYMBOL",
@@ -5992,7 +5996,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "mock_method_declaration"
+          "name": "macro_method_declaration"
         },
         {
           "type": "SYMBOL",
@@ -6640,6 +6644,10 @@
           "name": "preproc_selected_if_statement"
         },
         {
+          "type": "SYMBOL",
+          "name": "named_call_statement"
+        },
+        {
           "type": "CHOICE",
           "members": [
             {
@@ -6703,10 +6711,6 @@
               "name": "seh_leave_statement"
             }
           ]
-        },
-        {
-          "type": "SYMBOL",
-          "name": "capitalized_call_statement"
         },
         {
           "type": "SYMBOL",
@@ -7577,11 +7581,11 @@
         },
         {
           "type": "SYMBOL",
-          "name": "macro_statement_call"
+          "name": "macro_statement_exception_call"
         },
         {
           "type": "SYMBOL",
-          "name": "macro_no_throw_call"
+          "name": "macro_statement_argument_call"
         },
         {
           "type": "SYMBOL",
@@ -7610,7 +7614,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "benchmark_template_expression"
+          "name": "call_expression_with_type_arguments"
         },
         {
           "type": "SYMBOL",
@@ -12247,7 +12251,7 @@
         "value": 1,
         "content": {
           "type": "PATTERN",
-          "value": "[A-Z][A-Z0-9_]*_NAMESPACE_(BEGIN|END)"
+          "value": "(?:(?:USERVER)[A-Za-z0-9_]*)_NAMESPACE_(?:BEGIN|END)"
         }
       }
     },
@@ -12289,7 +12293,7 @@
         ]
       }
     },
-    "benchmark_macro_function_definition": {
+    "macro_function_definition_with_trailing_parameters": {
       "type": "PREC",
       "value": 1,
       "content": {
@@ -12302,7 +12306,7 @@
               "type": "ALIAS",
               "content": {
                 "type": "SYMBOL",
-                "name": "_benchmark_definition_macro"
+                "name": "_macro_function_definition_with_trailing_parameters_identifier"
               },
               "named": true,
               "value": "identifier"
@@ -12335,25 +12339,25 @@
         ]
       }
     },
-    "_benchmark_definition_macro": {
+    "_macro_function_definition_with_trailing_parameters_identifier": {
       "type": "TOKEN",
       "content": {
         "type": "PREC",
         "value": 1,
         "content": {
           "type": "PATTERN",
-          "value": "BENCHMARK_DEFINE(?:_TEMPLATE)?_F"
+          "value": "(?:(?:BENCHMARK_DEFINE_F|BENCHMARK_DEFINE_TEMPLATE_F))"
         }
       }
     },
-    "top_level_macro_call_statement": {
+    "top_level_chained_call_statement": {
       "type": "TOKEN",
       "content": {
         "type": "PREC",
         "value": 1,
         "content": {
           "type": "PATTERN",
-          "value": "BENCHMARK[A-Z0-9_]*\\([^()\\n;]*\\)(?:[ \\t]+[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+)?(?:[ \\t]*->[^\\n;]*)*(?:\\r?\\n[ \\t]*->[^\\n;]*)*;"
+          "value": "(?:(?:BENCHMARK)[A-Za-z0-9_]*)\\([^()\\n;]*\\)(?:[ \\t]+[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+)?(?:[ \\t]*->[^\\n;]*)*(?:\\r?\\n[ \\t]*->[^\\n;]*)*;"
         }
       }
     },
@@ -12432,7 +12436,7 @@
         "value": 1,
         "content": {
           "type": "PATTERN",
-          "value": "#[ \\t]*if[^\\n]*\\r?\\n(?:[ \\t]*\\/\\/[^\\n]*\\r?\\n)*[ \\t]*(?:(?:TYPED_TEST_P|TYPED_TEST|TEST_F|TEST_P|TEST)|(?:TYPED_UTEST_P_MT|TYPED_UTEST_MT|TYPED_UTEST_P|UTEST_F_MT|UTEST_P_MT|UTEST_MT|UTEST_DEATH|UTEST_F|UTEST_P|UTEST))[^\\n]*\\{[^\\n]*\\r?\\n#[ \\t]*else[^\\n]*\\r?\\n(?:[ \\t]*\\/\\/[^\\n]*\\r?\\n)*[ \\t]*(?:(?:TYPED_TEST_P|TYPED_TEST|TEST_F|TEST_P|TEST)|(?:TYPED_UTEST_P_MT|TYPED_UTEST_MT|TYPED_UTEST_P|UTEST_F_MT|UTEST_P_MT|UTEST_MT|UTEST_DEATH|UTEST_F|UTEST_P|UTEST))[^\\n]*\\{[^\\n]*\\r?\\n#[ \\t]*endif"
+          "value": "#[ \\t]*if[^\\n]*\\r?\\n(?:[ \\t]*\\/\\/[^\\n]*\\r?\\n)*[ \\t]*(?:(?:TEST|TEST_F|TEST_P|TYPED_TEST|TYPED_TEST_P|MATCHER|TYPED_UTEST_P_MT|TYPED_UTEST_MT|TYPED_UTEST_P|UTEST_F_MT|UTEST_P_MT|UTEST_MT|UTEST_DEATH|UTEST_F|UTEST_P|UTEST))[^\\n]*\\{[^\\n]*\\r?\\n#[ \\t]*else[^\\n]*\\r?\\n(?:[ \\t]*\\/\\/[^\\n]*\\r?\\n)*[ \\t]*(?:(?:TEST|TEST_F|TEST_P|TYPED_TEST|TYPED_TEST_P|MATCHER|TYPED_UTEST_P_MT|TYPED_UTEST_MT|TYPED_UTEST_P|UTEST_F_MT|UTEST_P_MT|UTEST_MT|UTEST_DEATH|UTEST_F|UTEST_P|UTEST))[^\\n]*\\{[^\\n]*\\r?\\n#[ \\t]*endif"
         }
       }
     },
@@ -12443,7 +12447,7 @@
         "value": 1,
         "content": {
           "type": "PATTERN",
-          "value": "(?:(?:TYPED_TEST_P|TYPED_TEST|TEST_F|TEST_P|TEST|MATCHER_P[0-9]*|MATCHER)|(?:TYPED_UTEST_P_MT|TYPED_UTEST_MT|TYPED_UTEST_P|UTEST_F_MT|UTEST_P_MT|UTEST_MT|UTEST_DEATH|UTEST_F|UTEST_P|UTEST))"
+          "value": "(?:(?:TEST|TEST_F|TEST_P|TYPED_TEST|TYPED_TEST_P|MATCHER|TYPED_UTEST_P_MT|TYPED_UTEST_MT|TYPED_UTEST_P|UTEST_F_MT|UTEST_P_MT|UTEST_MT|UTEST_DEATH|UTEST_F|UTEST_P|UTEST)|(?:MATCHER_P)[A-Za-z0-9_]*)"
         }
       }
     },
@@ -12867,14 +12871,14 @@
         }
       }
     },
-    "openssl_stack_type": {
+    "type_specifier_macro_call": {
       "type": "TOKEN",
       "content": {
         "type": "PREC",
         "value": 1,
         "content": {
           "type": "PATTERN",
-          "value": "STACK_OF\\([A-Za-z_]\\w*\\)"
+          "value": "(?:(?:STACK_OF))\\([A-Za-z_]\\w*\\)"
         }
       }
     },
@@ -13083,7 +13087,7 @@
         "value": 1,
         "content": {
           "type": "PATTERN",
-          "value": "(?:[A-Z][A-Z0-9_]*_(?:FUNC|ATTR|SIMD)|ATTRIBUTE_[A-Z0-9_]+|(?:USERVER_IMPL_NODEBUG|USERVER_IMPL_FORCE_INLINE|USERVER_IMPL_DISABLE_ASAN))"
+          "value": "(?:(?:USERVER_IMPL_NODEBUG|USERVER_IMPL_NODEBUG_INLINE_FUNC|USERVER_IMPL_FORCE_INLINE|USERVER_IMPL_DISABLE_ASAN|USERVER_IMPL_ALWAYS_INLINE_SIMD|USERVER_IMPL_PROTECT_DWCAS_ATTR)|(?:ATTRIBUTE|FORMAT_USERVER)[A-Za-z0-9_]*)"
         }
       }
     },
@@ -14337,7 +14341,7 @@
         }
       }
     },
-    "mock_method_declaration": {
+    "macro_method_declaration": {
       "type": "SEQ",
       "members": [
         {
@@ -14346,8 +14350,8 @@
           "content": {
             "type": "ALIAS",
             "content": {
-              "type": "STRING",
-              "value": "MOCK_METHOD"
+              "type": "SYMBOL",
+              "name": "_method_declaration_macro_identifier"
             },
             "named": true,
             "value": "identifier"
@@ -14386,7 +14390,7 @@
           "name": "parameters",
           "content": {
             "type": "SYMBOL",
-            "name": "mock_method_parameter_list"
+            "name": "macro_method_parameter_list"
           }
         },
         {
@@ -14398,7 +14402,7 @@
           "name": "qualifiers",
           "content": {
             "type": "SYMBOL",
-            "name": "mock_method_qualifier_list"
+            "name": "macro_method_qualifier_list"
           }
         },
         {
@@ -14411,7 +14415,18 @@
         }
       ]
     },
-    "mock_method_parameter_list": {
+    "_method_declaration_macro_identifier": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 1,
+        "content": {
+          "type": "PATTERN",
+          "value": "(?:(?:MOCK_METHOD))"
+        }
+      }
+    },
+    "macro_method_parameter_list": {
       "type": "TOKEN",
       "content": {
         "type": "PREC",
@@ -14422,7 +14437,7 @@
         }
       }
     },
-    "mock_method_qualifier_list": {
+    "macro_method_qualifier_list": {
       "type": "SEQ",
       "members": [
         {
@@ -17181,38 +17196,15 @@
         }
       ]
     },
-    "capitalized_call_statement": {
-      "type": "PREC",
-      "value": 1,
+    "named_call_statement": {
+      "type": "TOKEN",
       "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "FIELD",
-            "name": "function",
-            "content": {
-              "type": "ALIAS",
-              "content": {
-                "type": "STRING",
-                "value": "SetHttpProxy"
-              },
-              "named": true,
-              "value": "identifier"
-            }
-          },
-          {
-            "type": "FIELD",
-            "name": "arguments",
-            "content": {
-              "type": "SYMBOL",
-              "name": "argument_list"
-            }
-          },
-          {
-            "type": "STRING",
-            "value": ";"
-          }
-        ]
+        "type": "PREC",
+        "value": 1,
+        "content": {
+          "type": "PATTERN",
+          "value": "(?:(?:SetHttpProxy))\\([^\\r\\n;]*\\);"
+        }
       }
     },
     "preproc_streaming_statement": {
@@ -17222,7 +17214,7 @@
         "value": 1,
         "content": {
           "type": "PATTERN",
-          "value": "#[ \\t]*(?:if|ifdef|ifndef)[^\\n]*\\r?\\n(?:[ \\t]*(?:(?:\\/\\/[^\\n]*)?)\\r?\\n)*[ \\t]*(?:GTEST_SKIP|FAIL)\\(\\)[ \\t]*(?:\\/\\/[^\\n]*)?\\r?\\n(?:#[ \\t]*else[^\\n]*\\r?\\n(?:[ \\t]*(?:(?:\\/\\/[^\\n]*)?)\\r?\\n)*[ \\t]*(?:GTEST_SKIP|FAIL)\\(\\)[ \\t]*(?:\\/\\/[^\\n]*)?\\r?\\n)?#[ \\t]*endif[ \\t]*(?:\\r?\\n[ \\t]*)?<<[^\\n;]*(?:\\r?\\n[ \\t]*<<[^\\n;]*)*;"
+          "value": "#[ \\t]*(?:if|ifdef|ifndef)[^\\n]*\\r?\\n(?:[ \\t]*(?:(?:\\/\\/[^\\n]*)?)\\r?\\n)*[ \\t]*(?:(?:GTEST_SKIP|FAIL))\\(\\)[ \\t]*(?:\\/\\/[^\\n]*)?\\r?\\n(?:#[ \\t]*else[^\\n]*\\r?\\n(?:[ \\t]*(?:(?:\\/\\/[^\\n]*)?)\\r?\\n)*[ \\t]*(?:(?:GTEST_SKIP|FAIL))\\(\\)[ \\t]*(?:\\/\\/[^\\n]*)?\\r?\\n)?#[ \\t]*endif[ \\t]*(?:\\r?\\n[ \\t]*)?<<[^\\n;]*(?:\\r?\\n[ \\t]*<<[^\\n;]*)*;"
         }
       }
     },
@@ -17800,7 +17792,7 @@
         }
       }
     },
-    "macro_statement_call": {
+    "macro_statement_exception_call": {
       "type": "PREC",
       "value": 15,
       "content": {
@@ -17813,7 +17805,7 @@
               "type": "ALIAS",
               "content": {
                 "type": "SYMBOL",
-                "name": "_throw_macro_identifier"
+                "name": "_statement_exception_call_macro_identifier"
               },
               "named": true,
               "value": "identifier"
@@ -18151,14 +18143,14 @@
         ]
       }
     },
-    "_throw_macro_identifier": {
+    "_statement_exception_call_macro_identifier": {
       "type": "TOKEN",
       "content": {
         "type": "PREC",
         "value": 1,
         "content": {
           "type": "PATTERN",
-          "value": "(?:U?EXPECT_THROW(?:_MSG)?|ASSERT_THROW)"
+          "value": "(?:(?:EXPECT_THROW|EXPECT_THROW_MSG|ASSERT_THROW|UEXPECT_THROW|UEXPECT_THROW_MSG|UASSERT_THROW|UASSERT_THROW_MSG))"
         }
       }
     },
@@ -18179,7 +18171,7 @@
         }
       ]
     },
-    "macro_no_throw_call": {
+    "macro_statement_argument_call": {
       "type": "PREC",
       "value": 15,
       "content": {
@@ -18192,7 +18184,7 @@
               "type": "ALIAS",
               "content": {
                 "type": "SYMBOL",
-                "name": "_no_throw_macro_identifier"
+                "name": "_statement_argument_call_macro_identifier"
               },
               "named": true,
               "value": "identifier"
@@ -18281,14 +18273,14 @@
         ]
       }
     },
-    "_no_throw_macro_identifier": {
+    "_statement_argument_call_macro_identifier": {
       "type": "TOKEN",
       "content": {
         "type": "PREC",
         "value": 1,
         "content": {
           "type": "PATTERN",
-          "value": "(?:EXPECT_NO_THROW|(?:UEXPECT_NO_THROW|UASSERT_NO_THROW))"
+          "value": "(?:(?:EXPECT_NO_THROW|UEXPECT_NO_THROW|UASSERT_NO_THROW))"
         }
       }
     },
@@ -18321,7 +18313,7 @@
         }
       }
     },
-    "benchmark_template_expression": {
+    "call_expression_with_type_arguments": {
       "type": "PREC",
       "value": 15,
       "content": {
@@ -18333,8 +18325,8 @@
             "content": {
               "type": "ALIAS",
               "content": {
-                "type": "STRING",
-                "value": "BENCHMARK_TEMPLATE"
+                "type": "SYMBOL",
+                "name": "_call_expression_with_type_arguments_macro_identifier"
               },
               "named": true,
               "value": "identifier"
@@ -18347,7 +18339,7 @@
               "type": "ALIAS",
               "content": {
                 "type": "SYMBOL",
-                "name": "benchmark_template_argument_list"
+                "name": "argument_list_with_type_arguments"
               },
               "named": true,
               "value": "argument_list"
@@ -18356,7 +18348,18 @@
         ]
       }
     },
-    "benchmark_template_argument_list": {
+    "_call_expression_with_type_arguments_macro_identifier": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 1,
+        "content": {
+          "type": "PATTERN",
+          "value": "(?:(?:BENCHMARK_TEMPLATE))"
+        }
+      }
+    },
+    "argument_list_with_type_arguments": {
       "type": "SEQ",
       "members": [
         {

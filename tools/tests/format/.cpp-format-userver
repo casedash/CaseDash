@@ -31,8 +31,14 @@ MacroCategories:
     - UTILS
   FunctionPrefixes:
     - USERVER_IMPL_NODEBUG
+    - USERVER_IMPL_NODEBUG_INLINE_FUNC
     - USERVER_IMPL_FORCE_INLINE
     - USERVER_IMPL_DISABLE_ASAN
+    - USERVER_IMPL_ALWAYS_INLINE_SIMD
+    - USERVER_IMPL_PROTECT_DWCAS_ATTR
+  FunctionPrefixPrefixes:
+    - ATTRIBUTE
+    - FORMAT_USERVER
   MacroFunctionDefinitions:
     - TYPED_UTEST_P_MT
     - TYPED_UTEST_MT
@@ -44,7 +50,16 @@ MacroCategories:
     - UTEST_F
     - UTEST_P
     - UTEST
-  NoThrowMacros:
+  CallStatementNames:
+    - SetHttpProxy
+  NamespaceBoundaryPrefixes:
+    - USERVER
+  StatementExceptionCallMacros:
+    - UEXPECT_THROW
+    - UEXPECT_THROW_MSG
+    - UASSERT_THROW
+    - UASSERT_THROW_MSG
+  StatementArgumentCallMacros:
     - UEXPECT_NO_THROW
     - UASSERT_NO_THROW
   NameMacroCalls:

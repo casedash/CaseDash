@@ -78,33 +78,55 @@ const ASSIGNMENT_OPERATORS = [
   'xor_eq',
 ];
 
-const GENERIC_MACRO_FUNCTION_DEFINITION_PATTERN =
-  /(?:TYPED_TEST_P|TYPED_TEST|TEST_F|TEST_P|TEST|MATCHER_P[0-9]*|MATCHER)/.source;
 const CONDITIONAL_MACRO_FUNCTION_PATTERN = regexUnion([
-  /(?:TYPED_TEST_P|TYPED_TEST|TEST_F|TEST_P|TEST)/.source,
   macroNamePattern('macro_function_definition'),
 ]);
 const MACRO_FUNCTION_DEFINITION_PATTERN = regexUnion([
-  GENERIC_MACRO_FUNCTION_DEFINITION_PATTERN,
   macroNamePattern('macro_function_definition'),
+  macroPrefixPattern('macro_function_definition_prefix'),
 ]);
 const RAW_MACRO_FUNCTION_PREFIX_PATTERN = regexUnion([
   macroPrefixPattern('raw_macro_function_prefix'),
 ]);
 const FUNCTION_PREFIX_MACRO_PATTERN = regexUnion([
-  /[A-Z][A-Z0-9_]*_(?:FUNC|ATTR|SIMD)/.source,
-  /ATTRIBUTE_[A-Z0-9_]+/.source,
   macroNamePattern('function_prefix'),
+  macroPrefixPattern('function_prefix_prefix'),
 ]);
-const NO_THROW_MACRO_PATTERN = regexUnion([
-  /EXPECT_NO_THROW/.source,
-  macroNamePattern('no_throw_macro'),
+const STATEMENT_ARGUMENT_CALL_MACRO_PATTERN = regexUnion([
+  macroNamePattern('statement_argument_call_macro'),
+]);
+const STATEMENT_EXCEPTION_CALL_MACRO_PATTERN = regexUnion([
+  macroNamePattern('statement_exception_call_macro'),
 ]);
 const NAME_MACRO_CALL_PATTERN = regexUnion([
   macroNamePattern('name_macro_call'),
 ]);
 const NAMESPACE_ALIAS_MACRO_PATTERN = regexUnion([
   macroNamePattern('namespace_alias_macro'),
+]);
+const NAMESPACE_BOUNDARY_PATTERN = regexUnion([
+  macroPrefixPattern('namespace_boundary_prefix'),
+]);
+const MACRO_FUNCTION_DEFINITION_WITH_TRAILING_PARAMETERS_PATTERN = regexUnion([
+  macroNamePattern('macro_function_definition_with_trailing_parameters'),
+]);
+const CALL_EXPRESSION_WITH_TYPE_ARGUMENTS_MACRO_PATTERN = regexUnion([
+  macroNamePattern('call_expression_with_type_arguments_macro'),
+]);
+const TOP_LEVEL_CHAINED_CALL_STATEMENT_PREFIX_PATTERN = regexUnion([
+  macroPrefixPattern('top_level_chained_call_statement_prefix'),
+]);
+const METHOD_DECLARATION_MACRO_PATTERN = regexUnion([
+  macroNamePattern('method_declaration_macro'),
+]);
+const CALL_STATEMENT_NAME_PATTERN = regexUnion([
+  macroNamePattern('call_statement_name'),
+]);
+const PREPROCESSOR_STREAMING_STATEMENT_MACRO_PATTERN = regexUnion([
+  macroNamePattern('preprocessor_streaming_statement_macro'),
+]);
+const TYPE_SPECIFIER_MACRO_CALL_PATTERN = regexUnion([
+  macroNamePattern('type_specifier_macro_call'),
 ]);
 
 module.exports = grammar(C, {
@@ -215,8 +237,8 @@ module.exports = grammar(C, {
       $.deduction_guide_declaration,
       $.alias_declaration,
       $.macro_namespace_boundary,
-      $.benchmark_macro_function_definition,
-      $.top_level_macro_call_statement,
+      $.macro_function_definition_with_trailing_parameters,
+      $.top_level_chained_call_statement,
       $.top_level_operator_macro_call,
       $.name_macro_call,
       $.static_assert_declaration,
@@ -238,6 +260,7 @@ module.exports = grammar(C, {
       $.preproc_nested_define_ifdef,
       $.preproc_define_elif_chain,
       $.preproc_define_namespace_if,
+      $.named_call_statement,
       ...original.members.filter((member) => member.content?.name != '_old_style_function_definition'),
       $.preproc_using,
       $.preproc_define_ifdef,
@@ -253,8 +276,8 @@ module.exports = grammar(C, {
       $.deduction_guide_declaration,
       $.alias_declaration,
       $.macro_namespace_boundary,
-      $.benchmark_macro_function_definition,
-      $.top_level_macro_call_statement,
+      $.macro_function_definition_with_trailing_parameters,
+      $.top_level_chained_call_statement,
       $.top_level_operator_macro_call,
       $.name_macro_call,
       $.static_assert_declaration,
@@ -296,7 +319,7 @@ module.exports = grammar(C, {
       $.primitive_type,
       $.locked_channel_proxy_type,
       $.map_proxy_type,
-      $.openssl_stack_type,
+      $.type_specifier_macro_call,
       $.template_type,
       $.dependent_type,
       $.placeholder_type_specifier,
@@ -355,7 +378,10 @@ module.exports = grammar(C, {
 
     macro_arrow_chain: _ => token(prec(1, /(?:->[A-Za-z_]\w*\([^()\n]*\))+/)),
 
-    macro_namespace_boundary: _ => token(prec(1, /[A-Z][A-Z0-9_]*_NAMESPACE_(BEGIN|END)/)),
+    macro_namespace_boundary: _ => token(prec(
+      1,
+      new RegExp(`${NAMESPACE_BOUNDARY_PATTERN}_NAMESPACE_(?:BEGIN|END)`),
+    )),
 
     macro_function_definition: $ => prec(1, seq(
       field('name', alias($._macro_function_definition_identifier, $.identifier)),
@@ -363,16 +389,22 @@ module.exports = grammar(C, {
       field('body', $.compound_statement),
     )),
 
-    benchmark_macro_function_definition: $ => prec(1, seq(
-      field('function', alias($._benchmark_definition_macro, $.identifier)),
+    macro_function_definition_with_trailing_parameters: $ => prec(1, seq(
+      field('function', alias($._macro_function_definition_with_trailing_parameters_identifier, $.identifier)),
       field('arguments', $.argument_list),
       field('declarator', $.parameter_list),
       field('body', $.compound_statement),
     )),
 
-    _benchmark_definition_macro: _ => token(prec(1, /BENCHMARK_DEFINE(?:_TEMPLATE)?_F/)),
+    _macro_function_definition_with_trailing_parameters_identifier: _ => token(prec(
+      1,
+      new RegExp(MACRO_FUNCTION_DEFINITION_WITH_TRAILING_PARAMETERS_PATTERN),
+    )),
 
-    top_level_macro_call_statement: _ => token(prec(1, /BENCHMARK[A-Z0-9_]*\([^()\n;]*\)(?:[ \t]+[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+)?(?:[ \t]*->[^\n;]*)*(?:\r?\n[ \t]*->[^\n;]*)*;/)),
+    top_level_chained_call_statement: _ => token(prec(
+      1,
+      new RegExp(`${TOP_LEVEL_CHAINED_CALL_STATEMENT_PREFIX_PATTERN}\\([^()\\n;]*\\)(?:[ \\t]+[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+)?(?:[ \\t]*->[^\\n;]*)*(?:\\r?\\n[ \\t]*->[^\\n;]*)*;`),
+    )),
 
     top_level_operator_macro_call: _ => token(prec(1, /[A-Z][A-Z0-9_]*\((?:==|!=|<=|>=|<=>|<|>)\)/)),
 
@@ -489,7 +521,7 @@ module.exports = grammar(C, {
 
     map_proxy_type: _ => token(prec(1, /MapProxy<[A-Za-z_]\w*>/)),
 
-    openssl_stack_type: _ => token(prec(1, /STACK_OF\([A-Za-z_]\w*\)/)),
+    type_specifier_macro_call: _ => token(prec(1, new RegExp(`${TYPE_SPECIFIER_MACRO_CALL_PATTERN}\\([A-Za-z_]\\w*\\)`))),
 
     // When used in a trailing return type, these specifiers can now occur immediately before
     // a compound statement. This introduces a shift/reduce conflict that needs to be resolved
@@ -845,7 +877,7 @@ module.exports = grammar(C, {
       $.deleted_operator_cast_declaration,
       $.attributed_friend_operator_declaration,
       $.using_operator_pack_declaration,
-      $.mock_method_declaration,
+      $.macro_method_declaration,
       $.macro_field_declaration,
       $.macro_initialized_field_declaration,
       $.template_declaration,
@@ -886,23 +918,25 @@ module.exports = grammar(C, {
 
     using_operator_pack_declaration: _ => token(prec(1, /using[ \t]+[A-Za-z_]\w*::operator\(\)\.\.\.;/)),
 
-    mock_method_declaration: $ => seq(
-      field('function', alias('MOCK_METHOD', $.identifier)),
+    macro_method_declaration: $ => seq(
+      field('function', alias($._method_declaration_macro_identifier, $.identifier)),
       '(',
       field('return_type', $._declaration_specifiers),
       ',',
       field('name', $.identifier),
       ',',
-      field('parameters', $.mock_method_parameter_list),
+      field('parameters', $.macro_method_parameter_list),
       ',',
-      field('qualifiers', $.mock_method_qualifier_list),
+      field('qualifiers', $.macro_method_qualifier_list),
       ')',
       ';',
     ),
 
-    mock_method_parameter_list: _ => token(prec(1, /\((?:[^()\r\n]|\r?\n[ \t]*|\([^()\r\n]*\))*\)/)),
+    _method_declaration_macro_identifier: _ => token(prec(1, new RegExp(METHOD_DECLARATION_MACRO_PATTERN))),
 
-    mock_method_qualifier_list: $ => seq(
+    macro_method_parameter_list: _ => token(prec(1, /\((?:[^()\r\n]|\r?\n[ \t]*|\([^()\r\n]*\))*\)/)),
+
+    macro_method_qualifier_list: $ => seq(
       '(',
       commaSep(choice(
         $.type_qualifier,
@@ -1397,8 +1431,8 @@ module.exports = grammar(C, {
       $.preproc_pipeline_tail_statement,
       $.preproc_selected_braced_if_else_statement,
       $.preproc_selected_if_statement,
+      $.named_call_statement,
       original,
-      $.capitalized_call_statement,
       $.co_return_statement,
       $.co_yield_statement,
       $.for_each_statement,
@@ -1413,15 +1447,14 @@ module.exports = grammar(C, {
       field('body', $.compound_statement),
     ),
 
-    capitalized_call_statement: $ => prec(1, seq(
-      field('function', alias('SetHttpProxy', $.identifier)),
-      field('arguments', $.argument_list),
-      ';',
+    named_call_statement: _ => token(prec(
+      1,
+      new RegExp(`${CALL_STATEMENT_NAME_PATTERN}\\([^\\r\\n;]*\\);`),
     )),
 
     preproc_streaming_statement: _ => token(prec(
       1,
-      /#[ \t]*(?:if|ifdef|ifndef)[^\n]*\r?\n(?:[ \t]*(?:(?:\/\/[^\n]*)?)\r?\n)*[ \t]*(?:GTEST_SKIP|FAIL)\(\)[ \t]*(?:\/\/[^\n]*)?\r?\n(?:#[ \t]*else[^\n]*\r?\n(?:[ \t]*(?:(?:\/\/[^\n]*)?)\r?\n)*[ \t]*(?:GTEST_SKIP|FAIL)\(\)[ \t]*(?:\/\/[^\n]*)?\r?\n)?#[ \t]*endif[ \t]*(?:\r?\n[ \t]*)?<<[^\n;]*(?:\r?\n[ \t]*<<[^\n;]*)*;/,
+      new RegExp(String.raw`#[ \t]*(?:if|ifdef|ifndef)[^\n]*\r?\n(?:[ \t]*(?:(?:\/\/[^\n]*)?)\r?\n)*[ \t]*${PREPROCESSOR_STREAMING_STATEMENT_MACRO_PATTERN}\(\)[ \t]*(?:\/\/[^\n]*)?\r?\n(?:#[ \t]*else[^\n]*\r?\n(?:[ \t]*(?:(?:\/\/[^\n]*)?)\r?\n)*[ \t]*${PREPROCESSOR_STREAMING_STATEMENT_MACRO_PATTERN}\(\)[ \t]*(?:\/\/[^\n]*)?\r?\n)?#[ \t]*endif[ \t]*(?:\r?\n[ \t]*)?<<[^\n;]*(?:\r?\n[ \t]*<<[^\n;]*)*;`),
     )),
 
     preproc_endif_fragment: _ => token(prec(1, /#[ \t]*endif/)),
@@ -1591,14 +1624,14 @@ module.exports = grammar(C, {
     _expression_not_binary: ($, original) => choice(
       $.preproc_initializer_expression,
       original,
-      $.macro_statement_call,
-      $.macro_no_throw_call,
+      $.macro_statement_exception_call,
+      $.macro_statement_argument_call,
       $.throw_expression,
       alias('ref', $.identifier),
       $.co_await_expression,
       $.requires_expression,
       $.requires_clause,
-      $.benchmark_template_expression,
+      $.call_expression_with_type_arguments,
       $.macro_qualified_identifier,
       $.suffixed_string_literal,
       $.template_function,
@@ -1620,8 +1653,8 @@ module.exports = grammar(C, {
       /#[ \t]*(?:if|ifdef|ifndef)[^\n]*\r?\n[ \t]*(?:true|false|[-+]?\d+|[A-Za-z_]\w*(?:::\w+)*(?:\([^\r\n]*\))?)[ \t]*,?[ \t]*(?:\/\/[^\n]*)?\r?\n(?:#[ \t]*else[^\n]*\r?\n[ \t]*(?:true|false|[-+]?\d+|[A-Za-z_]\w*(?:::\w+)*(?:\([^\r\n]*\))?)[ \t]*,?[ \t]*(?:\/\/[^\n]*)?\r?\n)?#[ \t]*endif(?:\r?\n#[ \t]*(?:if|ifdef|ifndef)[^\n]*\r?\n[ \t]*(?:true|false|[-+]?\d+|[A-Za-z_]\w*(?:::\w+)*(?:\([^\r\n]*\))?)[ \t]*,?[ \t]*(?:\/\/[^\n]*)?\r?\n(?:#[ \t]*else[^\n]*\r?\n[ \t]*(?:true|false|[-+]?\d+|[A-Za-z_]\w*(?:::\w+)*(?:\([^\r\n]*\))?)[ \t]*,?[ \t]*(?:\/\/[^\n]*)?\r?\n)?#[ \t]*endif)*/,
     )),
 
-    macro_statement_call: $ => prec(PREC.CALL, seq(
-      field('function', alias($._throw_macro_identifier, $.identifier)),
+    macro_statement_exception_call: $ => prec(PREC.CALL, seq(
+      field('function', alias($._statement_exception_call_macro_identifier, $.identifier)),
       '(',
       choice(
         seq(
@@ -1668,7 +1701,10 @@ module.exports = grammar(C, {
       ')',
     )),
 
-    _throw_macro_identifier: _ => token(prec(1, /(?:U?EXPECT_THROW(?:_MSG)?|ASSERT_THROW)/)),
+    _statement_exception_call_macro_identifier: _ => token(prec(
+      1,
+      new RegExp(STATEMENT_EXCEPTION_CALL_MACRO_PATTERN),
+    )),
 
     macro_exception_type: $ => choice(
       $.dependent_type,
@@ -1676,8 +1712,8 @@ module.exports = grammar(C, {
       $.identifier,
     ),
 
-    macro_no_throw_call: $ => prec(PREC.CALL, seq(
-      field('function', alias($._no_throw_macro_identifier, $.identifier)),
+    macro_statement_argument_call: $ => prec(PREC.CALL, seq(
+      field('function', alias($._statement_argument_call_macro_identifier, $.identifier)),
       '(',
       choice(
         seq($.macro_argument_declaration_fragment, field('argument', $.expression)),
@@ -1689,7 +1725,7 @@ module.exports = grammar(C, {
       ')',
     )),
 
-    _no_throw_macro_identifier: _ => token(prec(1, new RegExp(NO_THROW_MACRO_PATTERN))),
+    _statement_argument_call_macro_identifier: _ => token(prec(1, new RegExp(STATEMENT_ARGUMENT_CALL_MACRO_PATTERN))),
 
     macro_qualified_identifier: $ => seq(
       alias($._namespace_alias_macro, $.identifier),
@@ -1698,12 +1734,17 @@ module.exports = grammar(C, {
 
     _namespace_alias_macro: _ => token(prec(1, new RegExp(NAMESPACE_ALIAS_MACRO_PATTERN))),
 
-    benchmark_template_expression: $ => prec(PREC.CALL, seq(
-      field('function', alias('BENCHMARK_TEMPLATE', $.identifier)),
-      field('arguments', alias($.benchmark_template_argument_list, $.argument_list)),
+    call_expression_with_type_arguments: $ => prec(PREC.CALL, seq(
+      field('function', alias($._call_expression_with_type_arguments_macro_identifier, $.identifier)),
+      field('arguments', alias($.argument_list_with_type_arguments, $.argument_list)),
     )),
 
-    benchmark_template_argument_list: $ => seq(
+    _call_expression_with_type_arguments_macro_identifier: _ => token(prec(
+      1,
+      new RegExp(CALL_EXPRESSION_WITH_TYPE_ARGUMENTS_MACRO_PATTERN),
+    )),
+
+    argument_list_with_type_arguments: $ => seq(
       '(',
       commaSep1(choice($.expression, $.type_descriptor)),
       ')',
