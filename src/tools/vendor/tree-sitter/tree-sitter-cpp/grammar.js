@@ -100,8 +100,8 @@ const NAME_MACRO_CALL_PATTERN = regexUnion([
 const QUALIFIED_IDENTIFIER_PREFIX_MACRO_PATTERN = regexUnion([
   macroCategoryPattern('qualified_identifier_prefix_macro'),
 ]);
-const NAMESPACE_BOUNDARY_PATTERN = regexUnion([
-  macroCategoryPattern('namespace_boundary'),
+const TOP_LEVEL_ITEM_MACRO_PATTERN = regexUnion([
+  macroCategoryPattern('top_level_item_macro'),
 ]);
 const MACRO_FUNCTION_DEFINITION_WITH_TRAILING_PARAMETERS_PATTERN = regexUnion([
   macroCategoryPattern('macro_function_definition_with_trailing_parameters'),
@@ -232,7 +232,7 @@ module.exports = grammar(C, {
       $.function_pointer_alias_declaration,
       $.deduction_guide_declaration,
       $.alias_declaration,
-      $.macro_namespace_boundary,
+      $.top_level_item_macro,
       $.macro_function_definition_with_trailing_parameters,
       $.top_level_chained_call_statement,
       $.top_level_operator_macro_call,
@@ -271,7 +271,7 @@ module.exports = grammar(C, {
       $.function_pointer_alias_declaration,
       $.deduction_guide_declaration,
       $.alias_declaration,
-      $.macro_namespace_boundary,
+      $.top_level_item_macro,
       $.macro_function_definition_with_trailing_parameters,
       $.top_level_chained_call_statement,
       $.top_level_operator_macro_call,
@@ -374,9 +374,9 @@ module.exports = grammar(C, {
 
     macro_arrow_chain: _ => token(prec(1, /(?:->[A-Za-z_]\w*\([^()\n]*\))+/)),
 
-    macro_namespace_boundary: _ => token(prec(
+    top_level_item_macro: _ => token(prec(
       1,
-      new RegExp(`${NAMESPACE_BOUNDARY_PATTERN}_NAMESPACE_(?:BEGIN|END)`),
+      new RegExp(TOP_LEVEL_ITEM_MACRO_PATTERN),
     )),
 
     macro_function_definition: $ => prec(1, seq(

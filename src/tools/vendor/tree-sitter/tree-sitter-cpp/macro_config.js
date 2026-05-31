@@ -119,10 +119,11 @@ module.exports = {
       "CURL_8_13_NAMESPACE",
       "CURL_SSLVERSION_NAMESPACE",
     ],
-    namespace_boundary: [
+    top_level_item_macro: [
       // .cpp-format
       // tools/tests/format/.cpp-format-userver
-      "USERVER*",
+      "USERVER_NAMESPACE_BEGIN",
+      "USERVER_NAMESPACE_END",
     ],
     type_specifier_macro_call: [
       // .cpp-format

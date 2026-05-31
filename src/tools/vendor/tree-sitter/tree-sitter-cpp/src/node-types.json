@@ -1976,10 +1976,6 @@
           "named": true
         },
         {
-          "type": "macro_namespace_boundary",
-          "named": true
-        },
-        {
           "type": "name_macro_call",
           "named": true
         },
@@ -2077,6 +2073,10 @@
         },
         {
           "type": "top_level_chained_call_statement",
+          "named": true
+        },
+        {
+          "type": "top_level_item_macro",
           "named": true
         },
         {
@@ -2645,10 +2645,6 @@
           "named": true
         },
         {
-          "type": "macro_namespace_boundary",
-          "named": true
-        },
-        {
           "type": "name_macro_call",
           "named": true
         },
@@ -2746,6 +2742,10 @@
         },
         {
           "type": "top_level_chained_call_statement",
+          "named": true
+        },
+        {
+          "type": "top_level_item_macro",
           "named": true
         },
         {
@@ -6449,10 +6449,6 @@
           "named": true
         },
         {
-          "type": "macro_namespace_boundary",
-          "named": true
-        },
-        {
           "type": "name_macro_call",
           "named": true
         },
@@ -6550,6 +6546,10 @@
         },
         {
           "type": "top_level_chained_call_statement",
+          "named": true
+        },
+        {
+          "type": "top_level_item_macro",
           "named": true
         },
         {
@@ -6701,10 +6701,6 @@
           "named": true
         },
         {
-          "type": "macro_namespace_boundary",
-          "named": true
-        },
-        {
           "type": "name_macro_call",
           "named": true
         },
@@ -6802,6 +6798,10 @@
         },
         {
           "type": "top_level_chained_call_statement",
+          "named": true
+        },
+        {
+          "type": "top_level_item_macro",
           "named": true
         },
         {
@@ -6924,10 +6924,6 @@
           "named": true
         },
         {
-          "type": "macro_namespace_boundary",
-          "named": true
-        },
-        {
           "type": "name_macro_call",
           "named": true
         },
@@ -7025,6 +7021,10 @@
         },
         {
           "type": "top_level_chained_call_statement",
+          "named": true
+        },
+        {
+          "type": "top_level_item_macro",
           "named": true
         },
         {
@@ -7256,10 +7256,6 @@
           "named": true
         },
         {
-          "type": "macro_namespace_boundary",
-          "named": true
-        },
-        {
           "type": "name_macro_call",
           "named": true
         },
@@ -7357,6 +7353,10 @@
         },
         {
           "type": "top_level_chained_call_statement",
+          "named": true
+        },
+        {
+          "type": "top_level_item_macro",
           "named": true
         },
         {
@@ -7508,10 +7508,6 @@
           "named": true
         },
         {
-          "type": "macro_namespace_boundary",
-          "named": true
-        },
-        {
           "type": "name_macro_call",
           "named": true
         },
@@ -7609,6 +7605,10 @@
         },
         {
           "type": "top_level_chained_call_statement",
+          "named": true
+        },
+        {
+          "type": "top_level_item_macro",
           "named": true
         },
         {
@@ -9830,10 +9830,6 @@
           "named": true
         },
         {
-          "type": "macro_namespace_boundary",
-          "named": true
-        },
-        {
           "type": "name_macro_call",
           "named": true
         },
@@ -9931,6 +9927,10 @@
         },
         {
           "type": "top_level_chained_call_statement",
+          "named": true
+        },
+        {
+          "type": "top_level_item_macro",
           "named": true
         },
         {
@@ -11155,10 +11155,6 @@
     "named": true
   },
   {
-    "type": "macro_namespace_boundary",
-    "named": true
-  },
-  {
     "type": "macro_plain_declaration_fragment",
     "named": true
   },
@@ -11468,6 +11464,10 @@
   },
   {
     "type": "top_level_chained_call_statement",
+    "named": true
+  },
+  {
+    "type": "top_level_item_macro",
     "named": true
   },
   {
