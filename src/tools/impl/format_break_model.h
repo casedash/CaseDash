@@ -72,6 +72,7 @@ struct FormatBreakNode {
     bool flatSplitIndent = false;
     bool suppressCompactDelimiterPadding = false;
     bool functionSignatureHasBody = false;
+    bool functionSignaturePrefersOuterSplit = false;
     bool bodyHeaderSingleStatementBody = false;
     bool bodyHeaderSplitAtParentIndentWhenLineStarts = false;
     bool splitTrailingBodyHeaderAtParentIndent = false;

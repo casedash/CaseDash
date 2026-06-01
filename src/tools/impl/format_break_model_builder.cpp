@@ -91,7 +91,8 @@ bool IsAssignmentOperatorForNode(const FormatBreakToken& token) {
             printToken.parentKind == SyntaxNodeKind::AssignmentExpression ||
             printToken.parentKind == SyntaxNodeKind::InitDeclarator ||
             printToken.parentKind == SyntaxNodeKind::FieldDeclaration ||
-            printToken.parentKind == SyntaxNodeKind::AliasDeclaration
+            printToken.parentKind == SyntaxNodeKind::AliasDeclaration ||
+            printToken.parentKind == SyntaxNodeKind::FunctionPointerAliasDeclaration
         );
 }
 
@@ -586,6 +587,50 @@ private:
         sequence.children = StoreNodePointers(grouped);
     }
 
+    FormatBreakNode* BuildFunctionPointerAliasDeclaration(const SyntaxNode& node, int depth) {
+        std::optional<size_t> operatorIndex;
+        std::optional<size_t> declaratorIndex;
+        for (size_t index = 0; index < node.children.size(); ++index) {
+            const SyntaxNode* child = node.children[index];
+            if (child == nullptr) {
+                continue;
+            }
+            if (child->kind == SyntaxNodeKind::Equal) {
+                operatorIndex = index;
+                continue;
+            }
+            if (operatorIndex && child->kind == SyntaxNodeKind::LeftParen) {
+                declaratorIndex = index;
+                break;
+            }
+        }
+        if (!operatorIndex || !declaratorIndex || *declaratorIndex <= *operatorIndex + 1) {
+            return nullptr;
+        }
+        const std::optional<FormatBreakToken> op = TokenForNode(*node.children[*operatorIndex]);
+        if (!op || !IsAssignmentOperatorForNode(*op)) {
+            return nullptr;
+        }
+
+        FormatBreakNode* left = BuildSequenceFromChildren(node.children, 0, *operatorIndex, depth + 1);
+        FormatBreakNode* returnType =
+            BuildSequenceFromChildren(node.children, *operatorIndex + 1, *declaratorIndex, depth + 2);
+        FormatBreakNode* declarator =
+            BuildSequenceFromChildren(node.children, *declaratorIndex, node.children.size(), depth + 2);
+        if (left == nullptr || returnType == nullptr || declarator == nullptr) {
+            return nullptr;
+        }
+
+        auto signature = MakeNode(FormatBreakNodeKind::FunctionSignature, depth + 1);
+        signature->functionSignaturePrefersOuterSplit = true;
+        signature->children = StoreNodePointers({returnType, declarator});
+
+        auto chain = MakeNode(FormatBreakNodeKind::Chain, depth);
+        chain->operands = StoreNodePointers({left, signature});
+        chain->operators = StoreTokens({*op});
+        return chain;
+    }
+
     FormatBreakNode* BuildSyntaxNode(const SyntaxNode& node, int depth) {
         if (!ContainsSelected(node)) {
             return nullptr;
@@ -595,6 +640,11 @@ private:
         }
         if (!SyntaxNodeKindHasClass(node.kind, TokenClass::Tree)) {
             return nullptr;
+        }
+        if (node.kind == SyntaxNodeKind::FunctionPointerAliasDeclaration) {
+            if (auto alias = BuildFunctionPointerAliasDeclaration(node, depth)) {
+                return alias;
+            }
         }
         if (IsDeclarationNodeKind(node.kind)) {
             if (auto declaration = BuildDirectInitializedDeclaration(node, depth)) {

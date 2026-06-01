@@ -361,14 +361,13 @@ render(
 
 Do not split inside empty delimiter pairs, function-pointer declarator groups, parenthesized callees, compiler declaration prefix groups, `__declspec` groups, operator function names, or template-angle tokens that are not template argument lists.
 
-Function-pointer aliases keep a space between the return type and a compact `(*)` declarator. Long member-function pointer aliases may split after the opening declarator group to keep the return type and group opener together.
+Function-pointer aliases keep a space between the return type and a compact `(*)` declarator. Long aliases may break at that return-type/declarator space before breaking inside the function-pointer declarator group.
 
 ```cpp
 using AuthCheckerFactoryFactory = utils::UniqueRef<AuthCheckerFactoryBase> (*)(const components::ComponentContext&);
 
-using GenericPrepareUnaryCall = std::unique_ptr<grpc::ClientAsyncResponseReader<grpc::ByteBuffer>>(
-    grpc::GenericStub::*
-)(grpc::ClientContext*, const grpc::string&);
+using GenericPrepareUnaryCall = std::unique_ptr<grpc::ClientAsyncResponseReader<grpc::ByteBuffer>>
+    (grpc::GenericStub::*)(grpc::ClientContext*, const grpc::string&);
 ```
 
 Defaulted, deleted, and pure-virtual method markers stay with the declaration tail.
