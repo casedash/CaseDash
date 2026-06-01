@@ -54,6 +54,7 @@ BraceRole RoleForBraceParent(SyntaxNodeKind parentKind) {
         case SyntaxNodeKind::CompoundStatement:
         case SyntaxNodeKind::FieldDeclarationList:
         case SyntaxNodeKind::DeclarationList:
+        case SyntaxNodeKind::RequirementSeq:
             return BraceRole::Block;
         case SyntaxNodeKind::EnumeratorList:
             return BraceRole::Enum;
@@ -2167,6 +2168,10 @@ private:
                 if (
                     next->syntaxKind == SyntaxNodeKind::Semicolon ||
                     next->syntaxKind == SyntaxNodeKind::Comma ||
+                    (
+                        token.parentKind == SyntaxNodeKind::RequirementSeq &&
+                        SyntaxNodeKindHasClass(next->syntaxKind, TokenClass::BinaryOperator)
+                    ) ||
                     closesLambdaArgument ||
                     attachesToFollowingKeyword ||
                     closesDoWhile

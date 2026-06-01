@@ -262,6 +262,9 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     if (prev == SyntaxNodeKind::KeywordCase && current.parentKind == SyntaxNodeKind::CaseStatement) {
         return true;
     }
+    if (prev == SyntaxNodeKind::KeywordRequires && previous->parentKind == SyntaxNodeKind::NestedRequirement) {
+        return true;
+    }
     if (IsAccessKeyword(*previous) && IsWordLike(current)) {
         return true;
     }
@@ -308,7 +311,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         return false;
     }
     if (cur == SyntaxNodeKind::LeftBrace) {
-        if (current.parentKind == SyntaxNodeKind::RequiresExpression) {
+        if (current.parentKind == SyntaxNodeKind::RequirementSeq) {
             return true;
         }
         if (current.parentKind == SyntaxNodeKind::InitializerList) {

@@ -148,6 +148,7 @@ module.exports = grammar(C, {
     [$.type_specifier, $._declarator, $._type_declarator],
     [$.type_specifier, $.expression],
     [$.expression, $.class_specifier],
+    [$.expression, $._class_name],
     [$.type_specifier, $._class_name],
     [$.sized_type_specifier],
     [$.attributed_statement],
@@ -1858,7 +1859,11 @@ module.exports = grammar(C, {
 
     type_requirement: $ => seq('typename', $._class_name),
 
-    nested_requirement: _ => token(prec(1, /requires[^\n;]*(?:\r?\n[ \t]*\.[^\n;]*)?;/)),
+    nested_requirement: $ => prec(1, seq(
+      'requires',
+      field('constraint', $._requirement_clause_constraint),
+      ';',
+    )),
 
     compound_requirement: $ => seq(
       '{', $.expression, '}',
@@ -1896,6 +1901,7 @@ module.exports = grammar(C, {
       $.fold_expression,
       $.lambda_expression,
       $.requires_expression,
+      $.unary_expression,
 
       // Parenthesized expressions
       seq('(', $.expression, ')'),

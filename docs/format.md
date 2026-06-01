@@ -441,6 +441,15 @@ template <typename Callable>
 FunctionRef(Callable&& callable);
 ```
 
+Concept definitions use the same assignment spacing as variable templates. A `requires` expression body formats like a block: the opening brace stays on the concept line, requirements are indented one level, and the closing brace is followed by the concept semicolon.
+
+```cpp
+template <typename T>
+concept HasNonEmptyName = requires {
+    requires !std::string_view{T::kName}.empty();
+};
+```
+
 Constructor initializer lists use compact or split form. A long initializer list keeps `) :` on the header line, or `) noexcept :` when a trailing qualifier is present. Initializer count alone does not force the constructor parameter list to split. Non-empty bodies keep the opening body brace with the initializer list when the complete line fits; otherwise the brace moves to its own line after the initializer list. Empty bodies keep `{}` compact.
 
 ```cpp

@@ -94,6 +94,8 @@ enum class SyntaxNodeKind : std::uint16_t {
     TemplateDeclaration,
     RequiresClause,
     RequiresExpression,
+    RequirementSeq,
+    NestedRequirement,
     RefQualifier,
     LambdaExpression,
     LambdaCaptureSpecifier,
