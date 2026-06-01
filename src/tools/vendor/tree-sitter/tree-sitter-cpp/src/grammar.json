@@ -252,10 +252,6 @@
         },
         {
           "type": "SYMBOL",
-          "name": "named_call_statement"
-        },
-        {
-          "type": "SYMBOL",
           "name": "function_definition"
         },
         {
@@ -349,10 +345,6 @@
         {
           "type": "SYMBOL",
           "name": "function_pointer_alias_declaration"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "deduction_guide_declaration"
         },
         {
           "type": "SYMBOL",
@@ -3842,10 +3834,6 @@
         },
         {
           "type": "SYMBOL",
-          "name": "qualified_constructor_identifier"
-        },
-        {
-          "type": "SYMBOL",
           "name": "qualified_identifier"
         },
         {
@@ -5332,14 +5320,6 @@
         },
         {
           "type": "SYMBOL",
-          "name": "locked_channel_proxy_type"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "map_proxy_type"
-        },
-        {
-          "type": "SYMBOL",
           "name": "type_specifier_macro_call"
         },
         {
@@ -6633,7 +6613,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "preproc_pipeline_tail_statement"
+          "name": "preproc_guarded_assignment_statement"
         },
         {
           "type": "SYMBOL",
@@ -6642,10 +6622,6 @@
         {
           "type": "SYMBOL",
           "name": "preproc_selected_if_statement"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "named_call_statement"
         },
         {
           "type": "CHOICE",
@@ -12346,7 +12322,7 @@
         "value": 1,
         "content": {
           "type": "PATTERN",
-          "value": "(?:(?:BENCHMARK_DEFINE_F|BENCHMARK_DEFINE_TEMPLATE_F))"
+          "value": "(?:(?:BENCHMARK_DEFINE_F|BENCHMARK_DEFINE_TEMPLATE_F|BENCHMARK_F))"
         }
       }
     },
@@ -12357,7 +12333,7 @@
         "value": 1,
         "content": {
           "type": "PATTERN",
-          "value": "(?:(?:BENCHMARK[A-Za-z0-9_]*))\\([^()\\n;]*\\)(?:[ \\t]+[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+)?(?:[ \\t]*->[^\\n;]*)*(?:\\r?\\n[ \\t]*->[^\\n;]*)*;"
+          "value": "(?:(?:BENCHMARK[A-Za-z0-9_]*|INSTANTIATE[A-Za-z0-9_]*|REGISTER_TYPED[A-Za-z0-9_]*|TYPED[A-Za-z0-9_]*|USERVER_DEFINE_STRUCT_SUBSET[A-Za-z0-9_]*))\\((?:[^()]|\\((?:[^()]|\\((?:[^()]|\\((?:[^()]|\\((?:[^()])*\\))*\\))*\\))*\\))*\\)(?:[ \\t]+[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+)?(?:[ \\t]*->[^\\n;]*)*(?:\\r?\\n[ \\t]*->[^\\n;]*)*;"
         }
       }
     },
@@ -12379,7 +12355,7 @@
         "value": 1,
         "content": {
           "type": "PATTERN",
-          "value": "(?:(?:RET_NAME))\\([A-Za-z_]\\w*\\);?"
+          "value": "(?:(?:RET_NAME|TYPED_TEST_SUITE_P|TYPED_UTEST_SUITE_P))\\([A-Za-z_]\\w*\\);?"
         }
       }
     },
@@ -12436,7 +12412,7 @@
         "value": 1,
         "content": {
           "type": "PATTERN",
-          "value": "#[ \\t]*if[^\\n]*\\r?\\n(?:[ \\t]*\\/\\/[^\\n]*\\r?\\n)*[ \\t]*(?:(?:TEST|TEST_F|TEST_P|TYPED_TEST|TYPED_TEST_P|MATCHER|MATCHER_P[A-Za-z0-9_]*|TYPED_UTEST_P_MT|TYPED_UTEST_MT|TYPED_UTEST_P|UTEST_F_MT|UTEST_P_MT|UTEST_MT|UTEST_DEATH|UTEST_F|UTEST_P|UTEST))[^\\n]*\\{[^\\n]*\\r?\\n#[ \\t]*else[^\\n]*\\r?\\n(?:[ \\t]*\\/\\/[^\\n]*\\r?\\n)*[ \\t]*(?:(?:TEST|TEST_F|TEST_P|TYPED_TEST|TYPED_TEST_P|MATCHER|MATCHER_P[A-Za-z0-9_]*|TYPED_UTEST_P_MT|TYPED_UTEST_MT|TYPED_UTEST_P|UTEST_F_MT|UTEST_P_MT|UTEST_MT|UTEST_DEATH|UTEST_F|UTEST_P|UTEST))[^\\n]*\\{[^\\n]*\\r?\\n#[ \\t]*endif"
+          "value": "#[ \\t]*if[^\\n]*\\r?\\n(?:[ \\t]*\\/\\/[^\\n]*\\r?\\n)*[ \\t]*(?:(?:TEST|TEST_F|TEST_P|TYPED_TEST|TYPED_TEST_P|MATCHER|MATCHER_P[A-Za-z0-9_]*|UTEST_F_DEATH|TYPED_UTEST|TYPED_UTEST_P_MT|TYPED_UTEST_MT|TYPED_UTEST_P|UTEST_F_MT|UTEST_P_MT|UTEST_MT|UTEST_DEATH|UTEST_F|UTEST_P|UTEST))[^\\n]*\\{[^\\n]*\\r?\\n#[ \\t]*else[^\\n]*\\r?\\n(?:[ \\t]*\\/\\/[^\\n]*\\r?\\n)*[ \\t]*(?:(?:TEST|TEST_F|TEST_P|TYPED_TEST|TYPED_TEST_P|MATCHER|MATCHER_P[A-Za-z0-9_]*|UTEST_F_DEATH|TYPED_UTEST|TYPED_UTEST_P_MT|TYPED_UTEST_MT|TYPED_UTEST_P|UTEST_F_MT|UTEST_P_MT|UTEST_MT|UTEST_DEATH|UTEST_F|UTEST_P|UTEST))[^\\n]*\\{[^\\n]*\\r?\\n#[ \\t]*endif"
         }
       }
     },
@@ -12447,7 +12423,7 @@
         "value": 1,
         "content": {
           "type": "PATTERN",
-          "value": "(?:(?:TEST|TEST_F|TEST_P|TYPED_TEST|TYPED_TEST_P|MATCHER|MATCHER_P[A-Za-z0-9_]*|TYPED_UTEST_P_MT|TYPED_UTEST_MT|TYPED_UTEST_P|UTEST_F_MT|UTEST_P_MT|UTEST_MT|UTEST_DEATH|UTEST_F|UTEST_P|UTEST))"
+          "value": "(?:(?:TEST|TEST_F|TEST_P|TYPED_TEST|TYPED_TEST_P|MATCHER|MATCHER_P[A-Za-z0-9_]*|UTEST_F_DEATH|TYPED_UTEST|TYPED_UTEST_P_MT|TYPED_UTEST_MT|TYPED_UTEST_P|UTEST_F_MT|UTEST_P_MT|UTEST_MT|UTEST_DEATH|UTEST_F|UTEST_P|UTEST))"
         }
       }
     },
@@ -12846,28 +12822,6 @@
         "content": {
           "type": "PATTERN",
           "value": "#[ \\t]*(?:ifdef|ifndef)[^\\n]*\\r?\\n\\}\\r?\\n#[ \\t]*endif"
-        }
-      }
-    },
-    "locked_channel_proxy_type": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 1,
-        "content": {
-          "type": "PATTERN",
-          "value": "LockedChannelProxy<[A-Za-z_:][A-Za-z0-9_:]*>"
-        }
-      }
-    },
-    "map_proxy_type": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 1,
-        "content": {
-          "type": "PATTERN",
-          "value": "MapProxy<[A-Za-z_]\\w*>"
         }
       }
     },
@@ -16704,11 +16658,31 @@
             "name": "body",
             "content": {
               "type": "SYMBOL",
-              "name": "declaration_list"
+              "name": "namespace_declaration_list"
             }
           }
         ]
       }
+    },
+    "namespace_declaration_list": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "{"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_top_level_item"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "}"
+        }
+      ]
     },
     "namespace_alias_definition": {
       "type": "SEQ",
@@ -17007,13 +16981,8 @@
             "type": "FIELD",
             "name": "name",
             "content": {
-              "type": "ALIAS",
-              "content": {
-                "type": "SYMBOL",
-                "name": "_deduction_guide_identifier"
-              },
-              "named": true,
-              "value": "identifier"
+              "type": "SYMBOL",
+              "name": "identifier"
             }
           },
           {
@@ -17037,17 +17006,6 @@
             "value": ";"
           }
         ]
-      }
-    },
-    "_deduction_guide_identifier": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 1,
-        "content": {
-          "type": "PATTERN",
-          "value": "[A-Z][A-Za-z0-9_]*Proxy"
-        }
       }
     },
     "deleted_operator_declaration": {
@@ -17196,17 +17154,6 @@
         }
       ]
     },
-    "named_call_statement": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 1,
-        "content": {
-          "type": "PATTERN",
-          "value": "(?:(?:SetHttpProxy))\\([^\\r\\n;]*\\);"
-        }
-      }
-    },
     "preproc_streaming_statement": {
       "type": "TOKEN",
       "content": {
@@ -17229,14 +17176,14 @@
         }
       }
     },
-    "preproc_pipeline_tail_statement": {
+    "preproc_guarded_assignment_statement": {
       "type": "TOKEN",
       "content": {
         "type": "PREC",
         "value": 1,
         "content": {
           "type": "PATTERN",
-          "value": "#[ \\t]*if[^\\n]*\\r?\\n(?:[^\\n]*\\r?\\n){1,8}#[ \\t]*endif[ \\t]*\\r?\\n[ \\t]*handle[ \\t]*=[^\\n;]*;"
+          "value": "#[ \\t]*if[^\\n]*\\r?\\n(?:[^\\n]*\\r?\\n){1,8}#[ \\t]*endif[ \\t]*\\r?\\n[ \\t]*[A-Za-z_]\\w*[ \\t]*=[^\\n;]*;"
         }
       }
     },
@@ -20840,7 +20787,7 @@
         "value": 1,
         "content": {
           "type": "PATTERN",
-          "value": "crypto::[A-Za-z_:<>]+[ \\t]+[A-Za-z_]\\w*(?:[^\\n;]|\\r?\\n[ \\t]*)*;\\r?\\n"
+          "value": "(?:const[ \\t]+)?(?:[A-Za-z_]\\w*::)+[A-Za-z_][A-Za-z0-9_:<>]*[ \\t]+[A-Za-z_]\\w*(?:[^,();\\n]|\\r?\\n[ \\t]*|\\((?:[^();]|\\r?\\n[ \\t]*|\\([^();]*\\))*\\))*;\\r?\\n"
         }
       }
     },
@@ -20968,17 +20915,6 @@
           "name": "template_type"
         }
       ]
-    },
-    "qualified_constructor_identifier": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 1,
-        "content": {
-          "type": "PATTERN",
-          "value": "(?:PostgresChaosProxy::(?:~?PostgresChaosProxy)|CDriverPoolImpl::(?:~?CDriverPoolImpl))"
-        }
-      }
     },
     "_scope_resolution": {
       "type": "PREC",
