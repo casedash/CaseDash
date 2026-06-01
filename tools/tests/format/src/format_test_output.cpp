@@ -26,6 +26,9 @@
     X(Alpha, "alpha") \
     X(Beta, "beta") \
     X(Gamma, "gamma")
+#define FORMAT_FIXTURE_ENUM_ITEMS(X) \
+    X(First, "first") \
+    X(Second, "second")
 #define ENUM_STRING_DECLARE(EnumType, ItemsMacro) \
     enum class EnumType { \
         ItemsMacro(ENUM_STRING_DECLARE_ENUMERATOR) \
@@ -35,6 +38,11 @@
         static constexpr auto names = std::to_array<std::string_view>({ItemsMacro(ENUM_STRING_DECLARE_NAME)}); \
         static_assert(enum_string_detail::ValidateCanonicalNames(names)); \
     }
+
+ENUM_STRING_DECLARE(FormatFixtureEnum, FORMAT_FIXTURE_ENUM_ITEMS);
+
+#undef FORMAT_FIXTURE_ENUM_ITEMS
+
 #define FORMAT_FIXTURE_TEMP_MACRO(value) (value)
 
 #undef FORMAT_FIXTURE_TEMP_MACRO

@@ -109,8 +109,8 @@ const MACRO_FUNCTION_DEFINITION_WITH_TRAILING_PARAMETERS_PATTERN = regexUnion([
 const CALL_EXPRESSION_WITH_TYPE_ARGUMENTS_MACRO_PATTERN = regexUnion([
   macroCategoryPattern('call_expression_with_type_arguments_macro'),
 ]);
-const TOP_LEVEL_CHAINED_CALL_STATEMENT_PATTERN = regexUnion([
-  macroCategoryPattern('top_level_chained_call_statement'),
+const TOP_LEVEL_CALL_STATEMENT_PATTERN = regexUnion([
+  macroCategoryPattern('top_level_call_statement'),
 ]);
 const TOP_LEVEL_CALL_ARGUMENT_ATOM_PATTERN = String.raw`[^()]`;
 const TOP_LEVEL_CALL_ARGUMENTS_DEPTH_1_PATTERN =
@@ -242,7 +242,7 @@ module.exports = grammar(C, {
       $.alias_declaration,
       $.top_level_item_macro,
       $.macro_function_definition_with_trailing_parameters,
-      $.top_level_chained_call_statement,
+      $.top_level_call_statement,
       $.top_level_operator_macro_call,
       $.name_macro_call,
       $.static_assert_declaration,
@@ -279,7 +279,7 @@ module.exports = grammar(C, {
       $.alias_declaration,
       $.top_level_item_macro,
       $.macro_function_definition_with_trailing_parameters,
-      $.top_level_chained_call_statement,
+      $.top_level_call_statement,
       $.top_level_operator_macro_call,
       $.name_macro_call,
       $.static_assert_declaration,
@@ -401,9 +401,9 @@ module.exports = grammar(C, {
       new RegExp(MACRO_FUNCTION_DEFINITION_WITH_TRAILING_PARAMETERS_PATTERN),
     )),
 
-    top_level_chained_call_statement: _ => token(prec(
+    top_level_call_statement: _ => token(prec(
       1,
-      new RegExp(`${TOP_LEVEL_CHAINED_CALL_STATEMENT_PATTERN}${TOP_LEVEL_CALL_ARGUMENTS_PATTERN}(?:[ \\t]+[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+)?(?:[ \\t]*->[^\\n;]*)*(?:\\r?\\n[ \\t]*->[^\\n;]*)*;`),
+      new RegExp(`${TOP_LEVEL_CALL_STATEMENT_PATTERN}${TOP_LEVEL_CALL_ARGUMENTS_PATTERN}(?:[ \\t]+[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+)?(?:[ \\t]*->[^\\n;]*)*(?:\\r?\\n[ \\t]*->[^\\n;]*)*;`),
     )),
 
     top_level_operator_macro_call: _ => token(prec(1, /[A-Z][A-Z0-9_]*\((?:==|!=|<=|>=|<=>|<|>)\)/)),

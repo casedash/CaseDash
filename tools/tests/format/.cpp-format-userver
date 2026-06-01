@@ -53,7 +53,7 @@ MacroCategories:
     - UTEST
   MacroFunctionDefinitionsWithTrailingParameters:
     - BENCHMARK_F
-  TopLevelChainedCallStatements:
+  TopLevelCallStatements:
     - INSTANTIATE*
     - REGISTER_TYPED*
     - TYPED*

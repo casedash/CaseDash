@@ -2048,7 +2048,7 @@
           "named": true
         },
         {
-          "type": "top_level_chained_call_statement",
+          "type": "top_level_call_statement",
           "named": true
         },
         {
@@ -2713,7 +2713,7 @@
           "named": true
         },
         {
-          "type": "top_level_chained_call_statement",
+          "type": "top_level_call_statement",
           "named": true
         },
         {
@@ -5730,7 +5730,7 @@
           "named": true
         },
         {
-          "type": "top_level_chained_call_statement",
+          "type": "top_level_call_statement",
           "named": true
         },
         {
@@ -6764,7 +6764,7 @@
           "named": true
         },
         {
-          "type": "top_level_chained_call_statement",
+          "type": "top_level_call_statement",
           "named": true
         },
         {
@@ -7012,7 +7012,7 @@
           "named": true
         },
         {
-          "type": "top_level_chained_call_statement",
+          "type": "top_level_call_statement",
           "named": true
         },
         {
@@ -7231,7 +7231,7 @@
           "named": true
         },
         {
-          "type": "top_level_chained_call_statement",
+          "type": "top_level_call_statement",
           "named": true
         },
         {
@@ -7559,7 +7559,7 @@
           "named": true
         },
         {
-          "type": "top_level_chained_call_statement",
+          "type": "top_level_call_statement",
           "named": true
         },
         {
@@ -7807,7 +7807,7 @@
           "named": true
         },
         {
-          "type": "top_level_chained_call_statement",
+          "type": "top_level_call_statement",
           "named": true
         },
         {
@@ -10129,7 +10129,7 @@
           "named": true
         },
         {
-          "type": "top_level_chained_call_statement",
+          "type": "top_level_call_statement",
           "named": true
         },
         {
@@ -11650,7 +11650,7 @@
     "named": false
   },
   {
-    "type": "top_level_chained_call_statement",
+    "type": "top_level_call_statement",
     "named": true
   },
   {

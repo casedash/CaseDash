@@ -806,12 +806,16 @@ BENCHMARK_F(PgConnection, BoolRoundtrip)(benchmark::State& state) {
 BENCHMARK_TEMPLATE(FormatterBenchmark, std::string)->Range(1, 8);
 ```
 
-#### TopLevelChainedCallStatements
+#### TopLevelCallStatements
 
-`TopLevelChainedCallStatements` names top-level macro call statements that may have a chained `->` tail. Use a trailing `*` entry when a family such as benchmark registration macros shares one prefix. The parser treats the whole statement as one free token.
+`TopLevelCallStatements` names top-level macro call statements that do not parse as ordinary C++ declarations or expressions. Calls may also have a chained `->` tail. Use a trailing `*` entry when a family such as benchmark registration macros shares one prefix. The parser treats the whole statement as one free token.
 
 ```cpp
 BENCHMARK_CAPTURE(FormatterBenchmark, Mode, kValue)->Arg(2)->Arg(4);
+```
+
+```cpp
+ENUM_STRING_DECLARE(MetricDisplayStyle, CASEDASH_METRIC_DISPLAY_STYLE_ITEMS);
 ```
 
 ```cpp
