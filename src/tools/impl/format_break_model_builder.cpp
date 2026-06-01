@@ -684,6 +684,11 @@ private:
                 return list;
             }
         }
+        if (node.kind == SyntaxNodeKind::MacroStatementSequence) {
+            if (auto sequence = BuildStatementSequence(node, depth)) {
+                return sequence;
+            }
+        }
         return BuildSequenceFromChildren(node.children, 0, node.children.size(), depth);
     }
 
@@ -1236,6 +1241,36 @@ private:
             AppendListItem(*list, BuildSequenceFromPointers(itemChildren, depth + 1), blankLineBefore);
         }
         return list->items.empty() ? nullptr : list;
+    }
+
+    FormatBreakNode* BuildStatementSequence(const SyntaxNode& node, int depth) {
+        auto sequence = MakeNode(FormatBreakNodeKind::StatementSequence, depth);
+        sequence->forceSplit = true;
+
+        ConstSyntaxChildList itemChildren;
+        for (const SyntaxNode* child : node.children) {
+            if (child == nullptr || !ContainsSelected(*child)) {
+                continue;
+            }
+            const std::optional<FormatBreakToken> token = TokenForNode(*child);
+            if (
+                token &&
+                FormatBreakTokenKind(*token) == PrintTokenKind::Known &&
+                FormatBreakTokenSyntaxKind(*token) == SyntaxNodeKind::Semicolon
+            ) {
+                if (!itemChildren.empty()) {
+                    AppendListItem(*sequence, BuildSequenceFromPointers(itemChildren, depth + 1), false);
+                    itemChildren.clear();
+                }
+                AttachSeparatorToPreviousItem(*sequence, *token);
+                continue;
+            }
+            itemChildren.push_back(child);
+        }
+        if (!itemChildren.empty()) {
+            AppendListItem(*sequence, BuildSequenceFromPointers(itemChildren, depth + 1), false);
+        }
+        return sequence->items.empty() ? nullptr : sequence;
     }
 
     std::optional<std::pair<size_t, FormatBreakDelimiterKind>> FindDirectClose(

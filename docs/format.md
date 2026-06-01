@@ -870,15 +870,19 @@ GTEST_SKIP()
 
 #### StatementExceptionCallMacros
 
-`StatementExceptionCallMacros` names assertion-style calls whose first argument can be a statement or declaration fragment and whose next argument is an exception type.
+`StatementExceptionCallMacros` names assertion-style calls whose first argument is parsed as a statement without its trailing semicolon and whose next argument is an exception type. The statement argument uses normal statement formatting inside the macro call, while the surrounding macro parentheses and comma-separated arguments keep the usual call-wrapping discipline. A statement sequence keeps semicolons between inner statements; the final statement omits the semicolon before the exception argument.
 
 ```cpp
-UEXPECT_THROW(auto future = Client().SayHello(request), std::runtime_error);
+UEXPECT_THROW(
+    [[maybe_unused]] const auto bytes_read =
+        source.ReadSome(kVeryLongBufferNameForFormatterFixture, kVeryLongDeadlineNameForFormatterFixture),
+    IoTimeout
+);
 ```
 
 #### StatementArgumentCallMacros
 
-`StatementArgumentCallMacros` names assertion-style calls whose argument can be a statement or declaration fragment but has no exception-type argument. When the argument is a compound statement, the closing brace stays attached to the macro call close.
+`StatementArgumentCallMacros` names assertion-style calls whose argument is parsed as a statement without its trailing semicolon and has no exception-type argument. When the argument is a compound statement, the closing brace stays attached to the macro call close.
 
 ```cpp
 UEXPECT_NO_THROW({

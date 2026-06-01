@@ -15,6 +15,7 @@ enum class FormatBreakNodeKind {
     Sequence,
     Delimited,
     PrefixList,
+    StatementSequence,
     FunctionSignature,
     BodyHeader,
     Chain,

@@ -165,10 +165,6 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::PreprocIf, "preproc_field_initializer_fragment", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_string_literal_fragment", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIfdef, "preproc_argument_fragment", kAtomicPreprocessorClasses),
-    Tree(SyntaxNodeKind::PreprocArg, "macro_argument_declaration_fragment", Bit(TokenClass::WholeNodeAsFreeToken)),
-    Tree(SyntaxNodeKind::PreprocArg, "macro_plain_declaration_fragment", Bit(TokenClass::WholeNodeAsFreeToken)),
-    Tree(SyntaxNodeKind::PreprocArg, "macro_statement_declaration_fragment", Bit(TokenClass::WholeNodeAsFreeToken)),
-    Tree(SyntaxNodeKind::PreprocArg, "macro_typed_declaration_fragment", Bit(TokenClass::WholeNodeAsFreeToken)),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_if_in_field_declaration_list"),
     Tree(SyntaxNodeKind::PreprocIfdef, "preproc_ifdef_in_field_declaration_list"),
     Tree(SyntaxNodeKind::PreprocElse, "preproc_else_in_field_declaration_list"),
@@ -232,6 +228,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::AttributeDeclaration, "attribute_declaration"),
     Tree(SyntaxNodeKind::Attribute, "attribute"),
     Tree(SyntaxNodeKind::AttributedStatement, "attributed_statement"),
+    Tree(SyntaxNodeKind::MacroStatementSequence, "macro_statement_sequence_argument"),
     Tree(SyntaxNodeKind::MsCallModifier, "ms_call_modifier", Bit(TokenClass::WholeNodeAsFreeToken)),
     Tree(SyntaxNodeKind::MsDeclspecModifier, "ms_declspec_modifier", Bit(TokenClass::WholeNodeAsFreeToken)),
     Tree(SyntaxNodeKind::FunctionSuffixMacro, "function_suffix_macro", Bit(TokenClass::WholeNodeAsFreeToken)),
@@ -820,6 +817,8 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "Attribute";
         case SyntaxNodeKind::AttributedStatement:
             return "AttributedStatement";
+        case SyntaxNodeKind::MacroStatementSequence:
+            return "MacroStatementSequence";
         case SyntaxNodeKind::MsCallModifier:
             return "MsCallModifier";
         case SyntaxNodeKind::MsDeclspecModifier:
