@@ -16,6 +16,8 @@ INPUT_FIXTURE = Path("src") / "format_test_input.cpp"
 OUTPUT_FIXTURE = Path("src") / "format_test_output.cpp"
 USERVER_INPUT_FIXTURE = Path("src") / "format_userver_input.cpp"
 USERVER_OUTPUT_FIXTURE = Path("src") / "format_userver_output.cpp"
+IFDEF_INPUT_FIXTURE = Path("src") / "format_ifdef_input.cpp"
+IFDEF_OUTPUT_FIXTURE = Path("src") / "format_ifdef_output.cpp"
 USERVER_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-userver"
 
 
@@ -91,6 +93,24 @@ class FormatCommandTests(unittest.TestCase):
     def test_userver_golden_input_parses_without_errors(self) -> None:
         with copied_fixtures(USERVER_INPUT_FIXTURE) as fixtures:
             result = native_format(f"--style={USERVER_FORMAT_CONFIG}", str(fixtures[USERVER_INPUT_FIXTURE]))
+
+        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+        self.assertNotIn("tree-sitter parse failed", result.stderr)
+
+    def test_ifdef_stdin_formats_to_expected_output(self) -> None:
+        result = native_format(
+            f"--style={USERVER_FORMAT_CONFIG}",
+            cwd=TEST_ROOT,
+            input_text=read_fixture(IFDEF_INPUT_FIXTURE),
+        )
+
+        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+        self.assertEqual(read_fixture(IFDEF_OUTPUT_FIXTURE), result.stdout)
+        self.assertRegex(result.stderr, r"Formatted stdin in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
+
+    def test_ifdef_golden_input_parses_without_errors(self) -> None:
+        with copied_fixtures(IFDEF_INPUT_FIXTURE) as fixtures:
+            result = native_format(f"--style={USERVER_FORMAT_CONFIG}", str(fixtures[IFDEF_INPUT_FIXTURE]))
 
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertNotIn("tree-sitter parse failed", result.stderr)
