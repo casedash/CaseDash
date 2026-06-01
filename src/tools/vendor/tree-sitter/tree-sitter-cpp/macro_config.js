@@ -46,6 +46,8 @@ module.exports = {
       "MATCHER",
       "MATCHER_P*",
       // tools/tests/format/.cpp-format-userver
+      "UTEST_F_DEATH",
+      "TYPED_UTEST",
       "TYPED_UTEST_P_MT",
       "TYPED_UTEST_MT",
       "TYPED_UTEST_P",
@@ -62,6 +64,7 @@ module.exports = {
       "BENCHMARK_DEFINE_F",
       "BENCHMARK_DEFINE_TEMPLATE_F",
       // tools/tests/format/.cpp-format-userver
+      "BENCHMARK_F",
     ],
     call_expression_with_type_arguments_macro: [
       // .cpp-format
@@ -72,16 +75,15 @@ module.exports = {
       // .cpp-format
       "BENCHMARK*",
       // tools/tests/format/.cpp-format-userver
+      "INSTANTIATE*",
+      "REGISTER_TYPED*",
+      "TYPED*",
+      "USERVER_DEFINE_STRUCT_SUBSET*",
     ],
     method_declaration_macro: [
       // .cpp-format
       "MOCK_METHOD",
       // tools/tests/format/.cpp-format-userver
-    ],
-    call_statement_name: [
-      // .cpp-format
-      // tools/tests/format/.cpp-format-userver
-      "SetHttpProxy",
     ],
     preprocessor_streaming_statement_macro: [
       // .cpp-format
@@ -111,6 +113,8 @@ module.exports = {
       // .cpp-format
       // tools/tests/format/.cpp-format-userver
       "RET_NAME",
+      "TYPED_TEST_SUITE_P",
+      "TYPED_UTEST_SUITE_P",
     ],
     qualified_identifier_prefix_macro: [
       // .cpp-format

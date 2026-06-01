@@ -176,10 +176,7 @@ TYPED_UTEST_MT(FormatterTypedFixture, KeepsDirectTypedThreads, 2) {
     RunDirectTypedThreadedTest<TypeParam>();
 }
 
-INSTANTIATE_UTEST_SUITE_P(
-    FormatterMacroFixture,
-    testing::Values(true)
-);
+INSTANTIATE_UTEST_SUITE_P(/* no prefix */, FormatterMacroFixture, testing::Values(true));
 
 BENCHMARK_TEMPLATE(FormatterBenchmark, std::string)->Range(1, 8);
 

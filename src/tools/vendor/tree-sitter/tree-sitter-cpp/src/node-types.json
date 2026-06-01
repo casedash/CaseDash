@@ -78,10 +78,6 @@
         "named": true
       },
       {
-        "type": "qualified_constructor_identifier",
-        "named": true
-      },
-      {
         "type": "qualified_identifier",
         "named": true
       },
@@ -462,11 +458,7 @@
         "named": true
       },
       {
-        "type": "named_call_statement",
-        "named": true
-      },
-      {
-        "type": "preproc_pipeline_tail_statement",
+        "type": "preproc_guarded_assignment_statement",
         "named": true
       },
       {
@@ -529,14 +521,6 @@
       },
       {
         "type": "enum_specifier",
-        "named": true
-      },
-      {
-        "type": "locked_channel_proxy_type",
-        "named": true
-      },
-      {
-        "type": "map_proxy_type",
         "named": true
       },
       {
@@ -1563,11 +1547,7 @@
           "named": true
         },
         {
-          "type": "named_call_statement",
-          "named": true
-        },
-        {
-          "type": "preproc_pipeline_tail_statement",
+          "type": "preproc_guarded_assignment_statement",
           "named": true
         },
         {
@@ -1945,10 +1925,6 @@
         },
         {
           "type": "declaration",
-          "named": true
-        },
-        {
-          "type": "deduction_guide_declaration",
           "named": true
         },
         {
@@ -2614,10 +2590,6 @@
         },
         {
           "type": "declaration",
-          "named": true
-        },
-        {
-          "type": "deduction_guide_declaration",
           "named": true
         },
         {
@@ -5542,6 +5514,257 @@
     }
   },
   {
+    "type": "namespace_declaration_list",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "alias_declaration",
+          "named": true
+        },
+        {
+          "type": "attributed_statement",
+          "named": true
+        },
+        {
+          "type": "break_statement",
+          "named": true
+        },
+        {
+          "type": "case_statement",
+          "named": true
+        },
+        {
+          "type": "co_return_statement",
+          "named": true
+        },
+        {
+          "type": "co_yield_statement",
+          "named": true
+        },
+        {
+          "type": "compound_statement",
+          "named": true
+        },
+        {
+          "type": "concept_definition",
+          "named": true
+        },
+        {
+          "type": "conditional_extern_c_close",
+          "named": true
+        },
+        {
+          "type": "conditional_extern_c_open",
+          "named": true
+        },
+        {
+          "type": "conditional_macro_function_definition",
+          "named": true
+        },
+        {
+          "type": "continue_statement",
+          "named": true
+        },
+        {
+          "type": "declaration",
+          "named": true
+        },
+        {
+          "type": "deduction_guide_declaration",
+          "named": true
+        },
+        {
+          "type": "deleted_operator_declaration",
+          "named": true
+        },
+        {
+          "type": "do_statement",
+          "named": true
+        },
+        {
+          "type": "expression_statement",
+          "named": true
+        },
+        {
+          "type": "for_each_statement",
+          "named": true
+        },
+        {
+          "type": "for_range_loop",
+          "named": true
+        },
+        {
+          "type": "for_statement",
+          "named": true
+        },
+        {
+          "type": "function_definition",
+          "named": true
+        },
+        {
+          "type": "function_pointer_alias_declaration",
+          "named": true
+        },
+        {
+          "type": "goto_statement",
+          "named": true
+        },
+        {
+          "type": "if_statement",
+          "named": true
+        },
+        {
+          "type": "labeled_statement",
+          "named": true
+        },
+        {
+          "type": "linkage_specification",
+          "named": true
+        },
+        {
+          "type": "macro_function_definition",
+          "named": true
+        },
+        {
+          "type": "macro_function_definition_with_trailing_parameters",
+          "named": true
+        },
+        {
+          "type": "name_macro_call",
+          "named": true
+        },
+        {
+          "type": "namespace_alias_definition",
+          "named": true
+        },
+        {
+          "type": "namespace_definition",
+          "named": true
+        },
+        {
+          "type": "preproc_call",
+          "named": true
+        },
+        {
+          "type": "preproc_def",
+          "named": true
+        },
+        {
+          "type": "preproc_define_elif_chain",
+          "named": true
+        },
+        {
+          "type": "preproc_define_ifdef",
+          "named": true
+        },
+        {
+          "type": "preproc_define_namespace_if",
+          "named": true
+        },
+        {
+          "type": "preproc_function_def",
+          "named": true
+        },
+        {
+          "type": "preproc_hashhash_function_def",
+          "named": true
+        },
+        {
+          "type": "preproc_if",
+          "named": true
+        },
+        {
+          "type": "preproc_ifdef",
+          "named": true
+        },
+        {
+          "type": "preproc_include",
+          "named": true
+        },
+        {
+          "type": "preproc_nested_define_ifdef",
+          "named": true
+        },
+        {
+          "type": "preproc_using",
+          "named": true
+        },
+        {
+          "type": "raw_macro_definition",
+          "named": true
+        },
+        {
+          "type": "raw_macro_function_definition",
+          "named": true
+        },
+        {
+          "type": "return_statement",
+          "named": true
+        },
+        {
+          "type": "standalone_attribute_preproc_if",
+          "named": true
+        },
+        {
+          "type": "static_assert_declaration",
+          "named": true
+        },
+        {
+          "type": "switch_statement",
+          "named": true
+        },
+        {
+          "type": "template_declaration",
+          "named": true
+        },
+        {
+          "type": "template_instantiation",
+          "named": true
+        },
+        {
+          "type": "throw_statement",
+          "named": true
+        },
+        {
+          "type": "top_level_chained_call_statement",
+          "named": true
+        },
+        {
+          "type": "top_level_item_macro",
+          "named": true
+        },
+        {
+          "type": "top_level_operator_macro_call",
+          "named": true
+        },
+        {
+          "type": "try_statement",
+          "named": true
+        },
+        {
+          "type": "type_definition",
+          "named": true
+        },
+        {
+          "type": "type_specifier",
+          "named": true
+        },
+        {
+          "type": "using_declaration",
+          "named": true
+        },
+        {
+          "type": "while_statement",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "namespace_definition",
     "named": true,
     "fields": {
@@ -5550,7 +5773,7 @@
         "required": true,
         "types": [
           {
-            "type": "declaration_list",
+            "type": "namespace_declaration_list",
             "named": true
           }
         ]
@@ -6393,10 +6616,6 @@
           "named": true
         },
         {
-          "type": "deduction_guide_declaration",
-          "named": true
-        },
-        {
           "type": "deleted_operator_cast_declaration",
           "named": true
         },
@@ -6645,10 +6864,6 @@
           "named": true
         },
         {
-          "type": "deduction_guide_declaration",
-          "named": true
-        },
-        {
           "type": "deleted_operator_cast_declaration",
           "named": true
         },
@@ -6865,10 +7080,6 @@
         },
         {
           "type": "declaration",
-          "named": true
-        },
-        {
-          "type": "deduction_guide_declaration",
           "named": true
         },
         {
@@ -7200,10 +7411,6 @@
           "named": true
         },
         {
-          "type": "deduction_guide_declaration",
-          "named": true
-        },
-        {
           "type": "deleted_operator_cast_declaration",
           "named": true
         },
@@ -7449,10 +7656,6 @@
         },
         {
           "type": "declaration",
-          "named": true
-        },
-        {
-          "type": "deduction_guide_declaration",
           "named": true
         },
         {
@@ -11127,10 +11330,6 @@
     "named": true
   },
   {
-    "type": "locked_channel_proxy_type",
-    "named": true
-  },
-  {
     "type": "long",
     "named": false
   },
@@ -11167,10 +11366,6 @@
     "named": true
   },
   {
-    "type": "map_proxy_type",
-    "named": true
-  },
-  {
     "type": "ms_restrict_modifier",
     "named": true
   },
@@ -11188,10 +11383,6 @@
   },
   {
     "type": "name_macro_call",
-    "named": true
-  },
-  {
-    "type": "named_call_statement",
     "named": true
   },
   {
@@ -11287,6 +11478,10 @@
     "named": true
   },
   {
+    "type": "preproc_guarded_assignment_statement",
+    "named": true
+  },
+  {
     "type": "preproc_hashhash_function_def",
     "named": true
   },
@@ -11304,10 +11499,6 @@
   },
   {
     "type": "preproc_nested_define_ifdef",
-    "named": true
-  },
-  {
-    "type": "preproc_pipeline_tail_statement",
     "named": true
   },
   {
@@ -11353,10 +11544,6 @@
   {
     "type": "public",
     "named": false
-  },
-  {
-    "type": "qualified_constructor_identifier",
-    "named": true
   },
   {
     "type": "raw_macro_definition",

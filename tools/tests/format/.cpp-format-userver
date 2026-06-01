@@ -39,6 +39,8 @@ MacroCategories:
     - ATTRIBUTE*
     - FORMAT_USERVER*
   MacroFunctionDefinitions:
+    - UTEST_F_DEATH
+    - TYPED_UTEST
     - TYPED_UTEST_P_MT
     - TYPED_UTEST_MT
     - TYPED_UTEST_P
@@ -49,8 +51,13 @@ MacroCategories:
     - UTEST_F
     - UTEST_P
     - UTEST
-  CallStatementNames:
-    - SetHttpProxy
+  MacroFunctionDefinitionsWithTrailingParameters:
+    - BENCHMARK_F
+  TopLevelChainedCallStatements:
+    - INSTANTIATE*
+    - REGISTER_TYPED*
+    - TYPED*
+    - USERVER_DEFINE_STRUCT_SUBSET*
   TopLevelItemMacros:
     - USERVER_NAMESPACE_BEGIN
     - USERVER_NAMESPACE_END
@@ -64,6 +71,8 @@ MacroCategories:
     - UASSERT_NO_THROW
   NameMacroCalls:
     - RET_NAME
+    - TYPED_TEST_SUITE_P
+    - TYPED_UTEST_SUITE_P
   QualifiedIdentifierPrefixMacros:
     - CURL_FORMAT_USERVER_NAMESPACE
     - CURL_8_13_NAMESPACE

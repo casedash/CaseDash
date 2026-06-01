@@ -112,11 +112,19 @@ const CALL_EXPRESSION_WITH_TYPE_ARGUMENTS_MACRO_PATTERN = regexUnion([
 const TOP_LEVEL_CHAINED_CALL_STATEMENT_PATTERN = regexUnion([
   macroCategoryPattern('top_level_chained_call_statement'),
 ]);
+const TOP_LEVEL_CALL_ARGUMENT_ATOM_PATTERN = String.raw`[^()]`;
+const TOP_LEVEL_CALL_ARGUMENTS_DEPTH_1_PATTERN =
+  String.raw`\((?:${TOP_LEVEL_CALL_ARGUMENT_ATOM_PATTERN})*\)`;
+const TOP_LEVEL_CALL_ARGUMENTS_DEPTH_2_PATTERN =
+  String.raw`\((?:${TOP_LEVEL_CALL_ARGUMENT_ATOM_PATTERN}|${TOP_LEVEL_CALL_ARGUMENTS_DEPTH_1_PATTERN})*\)`;
+const TOP_LEVEL_CALL_ARGUMENTS_DEPTH_3_PATTERN =
+  String.raw`\((?:${TOP_LEVEL_CALL_ARGUMENT_ATOM_PATTERN}|${TOP_LEVEL_CALL_ARGUMENTS_DEPTH_2_PATTERN})*\)`;
+const TOP_LEVEL_CALL_ARGUMENTS_DEPTH_4_PATTERN =
+  String.raw`\((?:${TOP_LEVEL_CALL_ARGUMENT_ATOM_PATTERN}|${TOP_LEVEL_CALL_ARGUMENTS_DEPTH_3_PATTERN})*\)`;
+const TOP_LEVEL_CALL_ARGUMENTS_PATTERN =
+  String.raw`\((?:${TOP_LEVEL_CALL_ARGUMENT_ATOM_PATTERN}|${TOP_LEVEL_CALL_ARGUMENTS_DEPTH_4_PATTERN})*\)`;
 const METHOD_DECLARATION_MACRO_PATTERN = regexUnion([
   macroCategoryPattern('method_declaration_macro'),
-]);
-const CALL_STATEMENT_NAME_PATTERN = regexUnion([
-  macroCategoryPattern('call_statement_name'),
 ]);
 const PREPROCESSOR_STREAMING_STATEMENT_MACRO_PATTERN = regexUnion([
   macroCategoryPattern('preprocessor_streaming_statement_macro'),
@@ -256,7 +264,6 @@ module.exports = grammar(C, {
       $.preproc_nested_define_ifdef,
       $.preproc_define_elif_chain,
       $.preproc_define_namespace_if,
-      $.named_call_statement,
       ...original.members.filter((member) => member.content?.name != '_old_style_function_definition'),
       $.preproc_using,
       $.preproc_define_ifdef,
@@ -269,7 +276,6 @@ module.exports = grammar(C, {
       $.namespace_alias_definition,
       $.using_declaration,
       $.function_pointer_alias_declaration,
-      $.deduction_guide_declaration,
       $.alias_declaration,
       $.top_level_item_macro,
       $.macro_function_definition_with_trailing_parameters,
@@ -313,8 +319,6 @@ module.exports = grammar(C, {
       $.class_specifier,
       $.sized_type_specifier,
       $.primitive_type,
-      $.locked_channel_proxy_type,
-      $.map_proxy_type,
       $.type_specifier_macro_call,
       $.template_type,
       $.dependent_type,
@@ -399,7 +403,7 @@ module.exports = grammar(C, {
 
     top_level_chained_call_statement: _ => token(prec(
       1,
-      new RegExp(`${TOP_LEVEL_CHAINED_CALL_STATEMENT_PATTERN}\\([^()\\n;]*\\)(?:[ \\t]+[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+)?(?:[ \\t]*->[^\\n;]*)*(?:\\r?\\n[ \\t]*->[^\\n;]*)*;`),
+      new RegExp(`${TOP_LEVEL_CHAINED_CALL_STATEMENT_PATTERN}${TOP_LEVEL_CALL_ARGUMENTS_PATTERN}(?:[ \\t]+[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+)?(?:[ \\t]*->[^\\n;]*)*(?:\\r?\\n[ \\t]*->[^\\n;]*)*;`),
     )),
 
     top_level_operator_macro_call: _ => token(prec(1, /[A-Z][A-Z0-9_]*\((?:==|!=|<=|>=|<=>|<|>)\)/)),
@@ -512,10 +516,6 @@ module.exports = grammar(C, {
     ),
 
     type_descriptor: (_, original) => prec.right(original),
-
-    locked_channel_proxy_type: _ => token(prec(1, /LockedChannelProxy<[A-Za-z_:][A-Za-z0-9_:]*>/)),
-
-    map_proxy_type: _ => token(prec(1, /MapProxy<[A-Za-z_]\w*>/)),
 
     type_specifier_macro_call: _ => token(prec(1, new RegExp(`${TYPE_SPECIFIER_MACRO_CALL_PATTERN}\\([A-Za-z_]\\w*\\)`))),
 
@@ -1063,7 +1063,6 @@ module.exports = grammar(C, {
       $.reference_declarator,
       $.handle_declarator,
       $.member_pointer_declarator,
-      $.qualified_constructor_identifier,
       $.qualified_identifier,
       $.template_function,
       $.operator_name,
@@ -1310,8 +1309,14 @@ module.exports = grammar(C, {
           $._namespace_identifier,
           $.nested_namespace_specifier,
         ))),
-      field('body', $.declaration_list),
+      field('body', $.namespace_declaration_list),
     )),
+
+    namespace_declaration_list: $ => seq(
+      '{',
+      repeat($._top_level_item),
+      '}',
+    ),
 
     namespace_alias_definition: $ => seq(
       'namespace',
@@ -1367,13 +1372,11 @@ module.exports = grammar(C, {
     )),
 
     deduction_guide_declaration: $ => prec(1, seq(
-      field('name', alias($._deduction_guide_identifier, $.identifier)),
+      field('name', $.identifier),
       field('parameters', $.parameter_list),
       field('return_type', $.trailing_return_type),
       ';',
     )),
-
-    _deduction_guide_identifier: _ => token(prec(1, /[A-Z][A-Za-z0-9_]*Proxy/)),
 
     deleted_operator_declaration: _ => token(prec(
       1,
@@ -1424,10 +1427,9 @@ module.exports = grammar(C, {
 
     _non_case_statement: ($, original) => choice(
       $.preproc_streaming_statement,
-      $.preproc_pipeline_tail_statement,
+      $.preproc_guarded_assignment_statement,
       $.preproc_selected_braced_if_else_statement,
       $.preproc_selected_if_statement,
-      $.named_call_statement,
       original,
       $.co_return_statement,
       $.co_yield_statement,
@@ -1443,11 +1445,6 @@ module.exports = grammar(C, {
       field('body', $.compound_statement),
     ),
 
-    named_call_statement: _ => token(prec(
-      1,
-      new RegExp(`${CALL_STATEMENT_NAME_PATTERN}\\([^\\r\\n;]*\\);`),
-    )),
-
     preproc_streaming_statement: _ => token(prec(
       1,
       new RegExp(String.raw`#[ \t]*(?:if|ifdef|ifndef)[^\n]*\r?\n(?:[ \t]*(?:(?:\/\/[^\n]*)?)\r?\n)*[ \t]*${PREPROCESSOR_STREAMING_STATEMENT_MACRO_PATTERN}\(\)[ \t]*(?:\/\/[^\n]*)?\r?\n(?:#[ \t]*else[^\n]*\r?\n(?:[ \t]*(?:(?:\/\/[^\n]*)?)\r?\n)*[ \t]*${PREPROCESSOR_STREAMING_STATEMENT_MACRO_PATTERN}\(\)[ \t]*(?:\/\/[^\n]*)?\r?\n)?#[ \t]*endif[ \t]*(?:\r?\n[ \t]*)?<<[^\n;]*(?:\r?\n[ \t]*<<[^\n;]*)*;`),
@@ -1455,9 +1452,9 @@ module.exports = grammar(C, {
 
     preproc_endif_fragment: _ => token(prec(1, /#[ \t]*endif/)),
 
-    preproc_pipeline_tail_statement: _ => token(prec(
+    preproc_guarded_assignment_statement: _ => token(prec(
       1,
-      /#[ \t]*if[^\n]*\r?\n(?:[^\n]*\r?\n){1,8}#[ \t]*endif[ \t]*\r?\n[ \t]*handle[ \t]*=[^\n;]*;/,
+      /#[ \t]*if[^\n]*\r?\n(?:[^\n]*\r?\n){1,8}#[ \t]*endif[ \t]*\r?\n[ \t]*[A-Za-z_]\w*[ \t]*=[^\n;]*;/,
     )),
 
     preproc_selected_if_statement: $ => prec.right(seq(
@@ -2138,7 +2135,10 @@ module.exports = grammar(C, {
       $.preproc_prefixed_expression,
     ),
 
-    macro_statement_declaration_fragment: _ => token(prec(1, /crypto::[A-Za-z_:<>]+[ \t]+[A-Za-z_]\w*(?:[^\n;]|\r?\n[ \t]*)*;\r?\n/)),
+    macro_statement_declaration_fragment: _ => token(prec(
+      1,
+      /(?:const[ \t]+)?(?:[A-Za-z_]\w*::)+[A-Za-z_][A-Za-z0-9_:<>]*[ \t]+[A-Za-z_]\w*(?:[^,();\n]|\r?\n[ \t]*|\((?:[^();]|\r?\n[ \t]*|\([^();]*\))*\))*;\r?\n/,
+    )),
 
     macro_argument_declaration_fragment: _ => token(prec(1, /\[\[maybe_unused\]\][ \t]+(?:const[ \t]+)?auto(?:[^\n=]|\r?\n[ \t]*)*=[ \t]*/)),
 
@@ -2173,11 +2173,6 @@ module.exports = grammar(C, {
     dependent_identifier: $ => seq('template', $.template_function),
     dependent_field_identifier: $ => seq('template', choice($.template_method, $._field_identifier)),
     dependent_type_identifier: $ => seq('template', $.template_type),
-
-    qualified_constructor_identifier: _ => token(prec(
-      1,
-      /(?:PostgresChaosProxy::(?:~?PostgresChaosProxy)|CDriverPoolImpl::(?:~?CDriverPoolImpl))/,
-    )),
 
     _scope_resolution: $ => prec(1, seq(
       field('scope', optional(choice(

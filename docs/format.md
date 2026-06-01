@@ -769,6 +769,19 @@ MATCHER_P(BsonMatcher, expected, "Bson matcher") {
 }
 ```
 
+```cpp
+UTEST_F_DEATH(SQLiteSavepointsDeathTest, UseAfterReleaseDeathTest) {
+    ExpectDeath();
+}
+```
+
+```cpp
+TYPED_UTEST(Future, Empty) {
+    engine::Future<TypeParam> future;
+    EXPECT_FALSE(future.valid());
+}
+```
+
 #### MacroFunctionDefinitionsWithTrailingParameters
 
 `MacroFunctionDefinitionsWithTrailingParameters` names macro function definitions that have a macro argument list followed by a C++ parameter list before the body.
@@ -776,6 +789,12 @@ MATCHER_P(BsonMatcher, expected, "Bson matcher") {
 ```cpp
 BENCHMARK_DEFINE_F(FormatterBenchmark, Inline)(benchmark::State& state) {
     UseBenchmarkState(state);
+}
+```
+
+```cpp
+BENCHMARK_F(PgConnection, BoolRoundtrip)(benchmark::State& state) {
+    RunStandalone(state);
 }
 ```
 
@@ -795,20 +814,25 @@ BENCHMARK_TEMPLATE(FormatterBenchmark, std::string)->Range(1, 8);
 BENCHMARK_CAPTURE(FormatterBenchmark, Mode, kValue)->Arg(2)->Arg(4);
 ```
 
+```cpp
+INSTANTIATE_UTEST_SUITE_P(/* no prefix */, FormatterMacroFixture, testing::Values(true));
+```
+
+```cpp
+REGISTER_TYPED_TEST_SUITE_P(FormatsGetAtPathValueBuilder, One, NonObjectElemOnPath);
+```
+
+```cpp
+USERVER_DEFINE_STRUCT_SUBSET(SmolDependencies, Dependencies, a, c, d);
+USERVER_DEFINE_STRUCT_SUBSET_REF(SmolDependenciesRef, Dependencies, a, c, d);
+```
+
 #### MethodDeclarationMacros
 
 `MethodDeclarationMacros` names field-declaration macros that carry a return type, method name, parameter list, and qualifier list.
 
 ```cpp
 MOCK_METHOD(void, SetValue, (std::string_view key, std::string&& value), (override));
-```
-
-#### CallStatementNames
-
-`CallStatementNames` names ordinary-looking helper calls that must parse as complete statements in contexts where C++ declaration ambiguity would otherwise win.
-
-```cpp
-SetHttpProxy(target, channel_args, factory.GetAuthType(), proxy_address);
 ```
 
 #### PreprocessorStreamingStatementMacros
@@ -844,6 +868,14 @@ UEXPECT_NO_THROW(const auto stream = Client().ReadMany(request));
 
 ```cpp
 RET_NAME(kNullValue)
+```
+
+```cpp
+TYPED_UTEST_SUITE_P(FormatterTypedFixture);
+```
+
+```cpp
+TYPED_TEST_SUITE_P(FormatterTypedFixture);
 ```
 
 #### QualifiedIdentifierPrefixMacros
