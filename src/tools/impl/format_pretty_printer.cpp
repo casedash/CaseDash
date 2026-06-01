@@ -554,6 +554,15 @@ private:
         return false;
     }
 
+    static bool SyntaxPathContainsKind(const PrintToken& token, SyntaxNodeKind kind) {
+        for (const SyntaxNode* cursor = token.node; cursor != nullptr; cursor = cursor->parent) {
+            if (cursor->kind == kind) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     static const SyntaxNode* DirectTokenChild(const SyntaxNode& node, SyntaxNodeKind known) {
         for (const SyntaxNode* child : node.children) {
             if (child && child->kind == known) {
@@ -572,11 +581,16 @@ private:
             return false;
         }
         const SyntaxNode* compound = token.node != nullptr ? token.node->parent : nullptr;
-        return compound != nullptr &&
-            compound->kind == SyntaxNodeKind::CompoundStatement &&
-            compound->parent != nullptr &&
-            next.node != nullptr &&
-            next.node->parent == compound->parent;
+        const SyntaxNode* closeParent = next.node != nullptr ? next.node->parent : nullptr;
+        if (compound == nullptr || compound->kind != SyntaxNodeKind::CompoundStatement || closeParent == nullptr) {
+            return false;
+        }
+        for (const SyntaxNode* cursor = compound->parent; cursor != nullptr; cursor = cursor->parent) {
+            if (cursor == closeParent) {
+                return true;
+            }
+        }
+        return false;
     }
 
     static bool IsOpeningDelimiterToken(SyntaxNodeKind kind) {
@@ -943,6 +957,7 @@ private:
                 token.inMacroValue ||
                 token.breakBeforeMacroValue ||
                 token.macroDefinition != nullptr ||
+                SyntaxPathContainsKind(token, SyntaxNodeKind::MacroStatementSequence) ||
                 (stringLike && previousStringLike) ||
                 token.parentKind == SyntaxNodeKind::FieldInitializerList ||
                 token.grandParentKind == SyntaxNodeKind::FieldInitializerList
@@ -1057,6 +1072,9 @@ private:
                 return;
             case FormatBreakNodeKind::PrefixList:
                 EmitPrefixListNode(node, solution, baseIndent);
+                return;
+            case FormatBreakNodeKind::StatementSequence:
+                EmitStatementSequenceNode(node, solution, baseIndent);
                 return;
             case FormatBreakNodeKind::FunctionSignature:
                 EmitFunctionSignatureNode(node, solution, baseIndent);
@@ -1284,6 +1302,23 @@ private:
             }
             if (index + 1 < node.items.size()) {
                 BreakListLine(baseIndent + 1, HasBlankLineBeforeItem(node, index + 1));
+            }
+        }
+    }
+
+    void EmitStatementSequenceNode(const FormatBreakNode& node, const FormatBreakSolution& solution, int baseIndent) {
+        const FormatBreakChoice choice = ChoiceFor(solution, node.id);
+        for (size_t index = 0; index < node.items.size(); ++index) {
+            const FormatBreakListItem& item = node.items[index];
+            if (choice == FormatBreakChoice::Split && index > 0) {
+                BreakListLine(baseIndent, HasBlankLineBeforeItem(node, index));
+            }
+            EmitBreakNode(*item.node, solution, baseIndent);
+            if (FormatBreakTokenKind(item.separator) == PrintTokenKind::Known) {
+                WriteBreakToken(item.separator);
+            }
+            if (HasTrailingComment(node, index)) {
+                WriteBreakToken(item.trailingComment);
             }
         }
     }

@@ -175,8 +175,11 @@ void DeclarationMacroArgument(Source& source) {
 }
 
 void SplitConstDeclarationMacroArgument(Source& source) {
-    EXPECT_THROW([[maybe_unused]] const auto
-bytes_read = source.ReadSome(kBuffer, kDeadline), IoTimeout);
+    EXPECT_THROW(
+        [[maybe_unused]] const auto bytes_read =
+            source.ReadSome(kVeryLongBufferNameForFormatterFixture, kVeryLongDeadlineNameForFormatterFixture),
+        IoTimeout
+    );
 }
 
 void ThrowExpressionMacroArgument() {
@@ -189,8 +192,11 @@ void PlainDeclarationMacroArgument() {
 }
 
 void StatementSequenceMacroArgument() {
-    UEXPECT_THROW(crypto::SslCtx context = MakeContext();
-static_cast<void>(UseContext(context)), IoException);
+    UEXPECT_THROW(
+        crypto::SslCtx context = MakeContext();
+        static_cast<void>(UseContext(context)),
+        IoException
+    );
 }
 
 Value ConditionalThrowExpression(bool enabled) {

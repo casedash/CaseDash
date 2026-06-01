@@ -1650,48 +1650,10 @@ module.exports = grammar(C, {
     macro_statement_exception_call: $ => prec(PREC.CALL, seq(
       field('function', alias($._statement_exception_call_macro_identifier, $.identifier)),
       '(',
-      choice(
-        seq(
-          $.macro_statement_declaration_fragment,
-          field('argument', $.expression),
-          ',',
-          field('exception', $.macro_exception_type),
-          optional(seq(',', field('message', $.expression))),
-        ),
-        seq(
-          $.macro_argument_declaration_fragment,
-          field('argument', $.expression),
-          ',',
-          field('exception', $.macro_exception_type),
-          optional(seq(',', field('message', $.expression))),
-        ),
-        seq(
-          $.macro_plain_declaration_fragment,
-          field('argument', $.expression),
-          ',',
-          field('exception', $.macro_exception_type),
-          optional(seq(',', field('message', $.expression))),
-        ),
-        seq(
-          $.macro_typed_declaration_fragment,
-          field('argument', $.expression),
-          ',',
-          field('exception', $.macro_exception_type),
-          optional(seq(',', field('message', $.expression))),
-        ),
-        seq(
-          field('argument', $.compound_statement),
-          ',',
-          field('exception', $.macro_exception_type),
-          optional(seq(',', field('message', $.expression))),
-        ),
-        seq(
-          field('argument', $.expression),
-          ',',
-          field('exception', $.macro_exception_type),
-          optional(seq(',', field('message', $.expression))),
-        ),
-      ),
+      field('argument', $.macro_call_statement_argument),
+      ',',
+      field('exception', $.macro_exception_type),
+      optional(seq(',', field('message', $.expression))),
       ')',
     )),
 
@@ -1709,17 +1671,47 @@ module.exports = grammar(C, {
     macro_statement_argument_call: $ => prec(PREC.CALL, seq(
       field('function', alias($._statement_argument_call_macro_identifier, $.identifier)),
       '(',
-      choice(
-        seq($.macro_argument_declaration_fragment, field('argument', $.expression)),
-        seq($.macro_plain_declaration_fragment, field('argument', $.expression)),
-        seq($.macro_typed_declaration_fragment, field('argument', $.expression)),
-        field('argument', $.compound_statement),
-        field('argument', $.expression),
-      ),
+      field('argument', $.macro_call_statement_argument),
       ')',
     )),
 
     _statement_argument_call_macro_identifier: _ => token(prec(1, new RegExp(STATEMENT_ARGUMENT_CALL_MACRO_PATTERN))),
+
+    macro_call_statement_argument: $ => choice(
+      $.macro_statement_sequence_argument,
+      $.macro_call_statement_item,
+    ),
+
+    macro_statement_sequence_argument: $ => seq(
+      repeat1(seq($.macro_call_statement_item, ';')),
+      $.macro_call_statement_item,
+    ),
+
+    macro_call_statement_item: $ => choice(
+      alias($.macro_declaration_without_semicolon, $.declaration),
+      alias($.macro_expression_without_semicolon, $.expression_statement),
+      $.compound_statement,
+      $.if_statement,
+      $.for_statement,
+      $.while_statement,
+      $.switch_statement,
+      $.try_statement,
+    ),
+
+    macro_declaration_without_semicolon: $ => seq(
+      $._declaration_specifiers,
+      field('declarator', choice(
+        seq(
+          optional($.ms_call_modifier),
+          $._declarator,
+          optional($.gnu_asm_expression),
+        ),
+        $.init_declarator,
+      )),
+      optional($.declaration_suffix_preproc_ifdef),
+    ),
+
+    macro_expression_without_semicolon: $ => $.expression,
 
     macro_qualified_identifier: $ => seq(
       alias($._qualified_identifier_prefix_macro, $.identifier),
@@ -2140,17 +2132,6 @@ module.exports = grammar(C, {
       $.compound_statement,
       $.preproc_prefixed_expression,
     ),
-
-    macro_statement_declaration_fragment: _ => token(prec(
-      1,
-      /(?:const[ \t]+)?(?:[A-Za-z_]\w*::)+[A-Za-z_][A-Za-z0-9_:<>]*[ \t]+[A-Za-z_]\w*(?:[^,();\n]|\r?\n[ \t]*|\((?:[^();]|\r?\n[ \t]*|\([^();]*\))*\))*;\r?\n/,
-    )),
-
-    macro_argument_declaration_fragment: _ => token(prec(1, /\[\[maybe_unused\]\][ \t]+(?:const[ \t]+)?auto(?:[^\n=]|\r?\n[ \t]*)*=[ \t]*/)),
-
-    macro_plain_declaration_fragment: _ => token(prec(1, /(?:const[ \t]+)?auto(?:[^\n=]|\r?\n[ \t]*)*=[ \t]*/)),
-
-    macro_typed_declaration_fragment: _ => token(prec(1, /(?:const[ \t]+)?[A-Za-z_:][A-Za-z0-9_:<>]*[ \t]+[A-Za-z_]\w*[ \t]*=[ \t]*/)),
 
     preproc_prefixed_expression: $ => seq(
       repeat1($.preproc_argument_fragment),

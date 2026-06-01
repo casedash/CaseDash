@@ -178,7 +178,7 @@ IoTimeout);
 void SplitConstDeclarationMacroArgument(Source& source) {
 EXPECT_THROW(
 [[maybe_unused]] const auto
-bytes_read = source.ReadSome(kBuffer, kDeadline),
+bytes_read = source.ReadSome(kVeryLongBufferNameForFormatterFixture, kVeryLongDeadlineNameForFormatterFixture),
 IoTimeout);
 }
 

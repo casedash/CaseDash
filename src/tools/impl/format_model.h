@@ -111,6 +111,7 @@ enum class SyntaxNodeKind : std::uint16_t {
     AttributeDeclaration,
     Attribute,
     AttributedStatement,
+    MacroStatementSequence,
     MsCallModifier,
     MsDeclspecModifier,
     FunctionSuffixMacro,
