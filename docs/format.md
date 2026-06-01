@@ -869,10 +869,13 @@ UEXPECT_THROW(auto future = Client().SayHello(request), std::runtime_error);
 
 #### StatementArgumentCallMacros
 
-`StatementArgumentCallMacros` names assertion-style calls whose argument can be a statement or declaration fragment but has no exception-type argument.
+`StatementArgumentCallMacros` names assertion-style calls whose argument can be a statement or declaration fragment but has no exception-type argument. When the argument is a compound statement, the closing brace stays attached to the macro call close.
 
 ```cpp
-UEXPECT_NO_THROW(const auto stream = Client().ReadMany(request));
+UEXPECT_NO_THROW({
+    const auto stream = Client().ReadMany(request);
+    EXPECT_TRUE(stream);
+});
 ```
 
 #### NameMacroCalls
