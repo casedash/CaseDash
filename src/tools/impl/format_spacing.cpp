@@ -98,6 +98,41 @@ bool HasCallModifierBeforeDeclaratorBinding(const PrintToken& token) {
     return false;
 }
 
+bool IsFunctionPointerDeclaratorGroupOpen(const PrintToken& token) {
+    if (token.kind != PrintTokenKind::Known || token.syntaxKind != SyntaxNodeKind::LeftParen || token.node == nullptr) {
+        return false;
+    }
+    const SyntaxNode* parent = ParentNode(token);
+    if (parent == nullptr) {
+        return false;
+    }
+
+    bool inGroup = false;
+    bool hasPointerMarker = false;
+    bool sawClose = false;
+    for (const SyntaxNode* child : parent->children) {
+        if (child == nullptr) {
+            continue;
+        }
+        if (child == token.node) {
+            inGroup = true;
+            continue;
+        }
+        if (!inGroup) {
+            continue;
+        }
+        if (sawClose) {
+            return child->kind == SyntaxNodeKind::ParameterList && hasPointerMarker;
+        }
+        if (child->kind == SyntaxNodeKind::RightParen) {
+            sawClose = true;
+            continue;
+        }
+        hasPointerMarker = hasPointerMarker || child->kind == SyntaxNodeKind::Star;
+    }
+    return false;
+}
+
 }  // namespace
 
 bool IsPreprocessorPrintToken(PrintTokenKind kind) {
@@ -276,6 +311,9 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
             return false;
         }
         if (IsParenthesizedDeclarator(current.parentKind)) {
+            return true;
+        }
+        if (IsFunctionPointerDeclaratorGroupOpen(current)) {
             return true;
         }
         if (
