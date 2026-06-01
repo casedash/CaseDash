@@ -128,7 +128,9 @@ bool IsFunctionPointerDeclaratorGroupOpen(const PrintToken& token) {
             sawClose = true;
             continue;
         }
-        hasPointerMarker = hasPointerMarker || child->kind == SyntaxNodeKind::Star;
+        hasPointerMarker = hasPointerMarker ||
+            child->kind == SyntaxNodeKind::Star ||
+            (child->kind == SyntaxNodeKind::FreeToken && child->text.find('*') != std::string_view::npos);
     }
     return false;
 }

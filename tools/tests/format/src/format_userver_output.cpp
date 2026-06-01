@@ -536,9 +536,8 @@ auto DecltypeValueInitialization(Func& func) {
 
 using MemberFunctionPointerArray = std::array<void (FieldSubparser::*)(), Count>;
 
-using GenericPrepareUnaryCall = std::unique_ptr<grpc::ClientAsyncResponseReader<grpc::ByteBuffer>>(
-    grpc::GenericStub::*
-)(grpc::ClientContext*, const grpc::string&);
+using GenericPrepareUnaryCall = std::unique_ptr<grpc::ClientAsyncResponseReader<grpc::ByteBuffer>>
+    (grpc::GenericStub::*)(grpc::ClientContext*, const grpc::string&);
 using AuthCheckerFactoryFactory = utils::UniqueRef<AuthCheckerFactoryBase> (*)(const components::ComponentContext&);
 
 PrepareUnaryCallProxy(

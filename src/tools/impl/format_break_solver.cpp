@@ -1345,10 +1345,17 @@ private:
     {
         NodeResults alternatives;
         NodeResult compact = SolveFunctionSignatureCompact(node, column, indentLevel, lineHasText);
-        if (compact.valid) {
+        NodeResult split = SolveFunctionSignatureSplit(node, column, indentLevel, lineHasText);
+        if (
+            compact.valid &&
+            !(
+                node.functionSignaturePrefersOuterSplit &&
+                split.valid &&
+                (compact.extraLines > 0 || compact.maxOverflow > 0)
+            )
+        ) {
             alternatives.push_back(compact);
         }
-        NodeResult split = SolveFunctionSignatureSplit(node, column, indentLevel, lineHasText);
         if (split.valid) {
             alternatives.push_back(split);
         }
@@ -1360,6 +1367,14 @@ private:
         NodeResult split = SolveFunctionSignatureSplit(node, column, indentLevel, lineHasText);
         NodeResult returnType =
             node.children.empty() ? NodeResult{}: Solve(*node.children[0], column, indentLevel, lineHasText);
+        if (
+            compact.valid &&
+            split.valid &&
+            node.functionSignaturePrefersOuterSplit &&
+            (compact.extraLines > 0 || compact.maxOverflow > 0)
+        ) {
+            return split;
+        }
         if (compact.valid && split.valid && returnType.valid && returnType.extraLines > 0) {
             return split;
         }

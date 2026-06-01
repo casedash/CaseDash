@@ -61,7 +61,11 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::FieldDeclaration, "field_declaration", Bit(TokenClass::MacroDeclarationFragment)),
     Tree(SyntaxNodeKind::FieldDeclaration, "macro_method_declaration", Bit(TokenClass::MacroDeclarationFragment)),
     Tree(SyntaxNodeKind::AliasDeclaration, "alias_declaration", Bit(TokenClass::MacroDeclarationFragment)),
-    Tree(SyntaxNodeKind::AliasDeclaration, "function_pointer_alias_declaration", Bit(TokenClass::MacroDeclarationFragment)),
+    Tree(
+        SyntaxNodeKind::FunctionPointerAliasDeclaration,
+        "function_pointer_alias_declaration",
+        Bit(TokenClass::MacroDeclarationFragment)
+    ),
     Tree(SyntaxNodeKind::Declaration, "deduction_guide_declaration", Bit(TokenClass::MacroDeclarationFragment)),
     Tree(SyntaxNodeKind::FunctionDefinition, "function_definition", Bit(TokenClass::MacroDeclarationFragment)),
     Tree(SyntaxNodeKind::FunctionDefinition, "macro_function_definition", Bit(TokenClass::MacroDeclarationFragment)),
@@ -662,6 +666,8 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "FieldDeclaration";
         case SyntaxNodeKind::AliasDeclaration:
             return "AliasDeclaration";
+        case SyntaxNodeKind::FunctionPointerAliasDeclaration:
+            return "FunctionPointerAliasDeclaration";
         case SyntaxNodeKind::FunctionDefinition:
             return "FunctionDefinition";
         case SyntaxNodeKind::CompoundStatement:

@@ -34,6 +34,7 @@ enum class SyntaxNodeKind : std::uint16_t {
     Declaration,
     FieldDeclaration,
     AliasDeclaration,
+    FunctionPointerAliasDeclaration,
     FunctionDefinition,
     CompoundStatement,
     FieldDeclarationList,
