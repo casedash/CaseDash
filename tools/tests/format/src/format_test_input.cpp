@@ -479,6 +479,13 @@ void StartLenovoSnapshot(void* contextPtr) {
     );
 }
 
+// Expression/template ambiguity: parenthesize value template arguments that could parse as type-like arguments.
+using TemplateValueWorkaround = Box<(Size(A*B))>;
+
+bool TemplateExpressionWorkaround() {
+return (a < b) > (c);
+}
+
 HRESULT CreateWriteFactory(ComPtr<IDWriteFactory>& dwriteFactory_) {
     return DWriteCreateFactory(
         DWRITE_FACTORY_TYPE_SHARED,

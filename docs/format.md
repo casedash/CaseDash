@@ -62,6 +62,28 @@ When a parenthesized direct initializer needs expression operands that could par
 int product((a * b), (c & d));
 ```
 
+## Expression Template Ambiguity
+
+The formatter has no symbol table and cannot distinguish every expression from every template-id. It follows deterministic syntax-only parser behavior:
+
+- Callable template-id shapes parse as template calls: `name<args>(...)`, `qualified::name<args>(...)`, and nested template arguments.
+- Relational chains that do not form a callable template-id parse as expressions, e.g. `value < min || value > max` and `a < b > c`.
+- Template argument lists prefer type-like arguments when a name could be either a type or a value.
+
+If a non-type template argument expression can parse as a type-like argument, parenthesize the value argument. For example, `Size(A*B)` inside a template argument list parses as a type-like function declarator and formats with type-declarator spacing. Write the value expression as:
+
+```cpp
+using X = Box<(Size(A * B))>;
+```
+
+Parenthesize expression chains that look like callable template-ids:
+
+```cpp
+return (a < b) > (c);
+```
+
+Without those parentheses, `a < b > (c)` is parsed as the template call `a<b>(c)`.
+
 ## Line Hygiene
 
 - Remove trailing whitespace from every line.
