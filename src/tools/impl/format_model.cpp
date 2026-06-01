@@ -123,7 +123,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::PreprocArg, "preproc_arg", Bit(TokenClass::WholeNodeAsFreeToken)),
     Tree(SyntaxNodeKind::PreprocArg, "macro_arrow_chain", Bit(TokenClass::WholeNodeAsFreeToken)),
     Tree(SyntaxNodeKind::FunctionDefinition, "macro_function_definition_with_trailing_parameters"),
-    Tree(SyntaxNodeKind::FreeToken, "top_level_chained_call_statement", Bit(TokenClass::WholeNodeAsFreeToken)),
+    Tree(SyntaxNodeKind::FreeToken, "top_level_call_statement", Bit(TokenClass::WholeNodeAsFreeToken)),
     Tree(SyntaxNodeKind::FreeToken, "top_level_operator_macro_call", Bit(TokenClass::WholeNodeAsFreeToken)),
     Tree(SyntaxNodeKind::FreeToken, "name_macro_call", Bit(TokenClass::WholeNodeAsFreeToken)),
     Tree(SyntaxNodeKind::FreeToken, "function_pointer_type_descriptor", Bit(TokenClass::WholeNodeAsFreeToken)),

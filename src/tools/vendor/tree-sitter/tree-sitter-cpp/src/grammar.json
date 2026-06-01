@@ -156,7 +156,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "top_level_chained_call_statement"
+          "name": "top_level_call_statement"
         },
         {
           "type": "SYMBOL",
@@ -360,7 +360,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "top_level_chained_call_statement"
+          "name": "top_level_call_statement"
         },
         {
           "type": "SYMBOL",
@@ -12326,14 +12326,14 @@
         }
       }
     },
-    "top_level_chained_call_statement": {
+    "top_level_call_statement": {
       "type": "TOKEN",
       "content": {
         "type": "PREC",
         "value": 1,
         "content": {
           "type": "PATTERN",
-          "value": "(?:(?:BENCHMARK[A-Za-z0-9_]*|INSTANTIATE[A-Za-z0-9_]*|REGISTER_TYPED[A-Za-z0-9_]*|TYPED[A-Za-z0-9_]*|USERVER_DEFINE_STRUCT_SUBSET[A-Za-z0-9_]*))\\((?:[^()]|\\((?:[^()]|\\((?:[^()]|\\((?:[^()]|\\((?:[^()])*\\))*\\))*\\))*\\))*\\)(?:[ \\t]+[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+)?(?:[ \\t]*->[^\\n;]*)*(?:\\r?\\n[ \\t]*->[^\\n;]*)*;"
+          "value": "(?:(?:BENCHMARK[A-Za-z0-9_]*|ENUM_STRING_DECLARE|INSTANTIATE[A-Za-z0-9_]*|REGISTER_TYPED[A-Za-z0-9_]*|TYPED[A-Za-z0-9_]*|USERVER_DEFINE_STRUCT_SUBSET[A-Za-z0-9_]*))\\((?:[^()]|\\((?:[^()]|\\((?:[^()]|\\((?:[^()]|\\((?:[^()])*\\))*\\))*\\))*\\))*\\)(?:[ \\t]+[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+)?(?:[ \\t]*->[^\\n;]*)*(?:\\r?\\n[ \\t]*->[^\\n;]*)*;"
         }
       }
     },

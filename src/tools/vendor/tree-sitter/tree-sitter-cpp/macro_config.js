@@ -71,9 +71,10 @@ module.exports = {
       "BENCHMARK_TEMPLATE",
       // tools/tests/format/.cpp-format-userver
     ],
-    top_level_chained_call_statement: [
+    top_level_call_statement: [
       // .cpp-format
       "BENCHMARK*",
+      "ENUM_STRING_DECLARE",
       // tools/tests/format/.cpp-format-userver
       "INSTANTIATE*",
       "REGISTER_TYPED*",
