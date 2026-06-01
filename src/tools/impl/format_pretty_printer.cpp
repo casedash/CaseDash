@@ -567,6 +567,18 @@ private:
         return DirectTokenChild(node, known) != nullptr;
     }
 
+    static bool RightParenClosesCompoundExpression(const PrintToken& token, const PrintToken& next) {
+        if (token.parentKind != SyntaxNodeKind::CompoundStatement || next.syntaxKind != SyntaxNodeKind::RightParen) {
+            return false;
+        }
+        const SyntaxNode* compound = token.node != nullptr ? token.node->parent : nullptr;
+        return compound != nullptr &&
+            compound->kind == SyntaxNodeKind::CompoundStatement &&
+            compound->parent != nullptr &&
+            next.node != nullptr &&
+            next.node->parent == compound->parent;
+    }
+
     static bool IsOpeningDelimiterToken(SyntaxNodeKind kind) {
         return kind == SyntaxNodeKind::LeftParen ||
             kind == SyntaxNodeKind::LeftBracket ||
@@ -2160,6 +2172,7 @@ private:
                 const bool closesLambdaArgument = token.parentKind == SyntaxNodeKind::CompoundStatement &&
                     token.grandParentKind == SyntaxNodeKind::LambdaExpression &&
                     next->syntaxKind == SyntaxNodeKind::RightParen;
+                const bool closesCompoundExpression = RightParenClosesCompoundExpression(token, *next);
                 const bool attachesToFollowingKeyword =
                     SyntaxNodeKindHasClass(next->syntaxKind, TokenClass::AttachAfterBlockKeyword) &&
                         next->syntaxKind != SyntaxNodeKind::KeywordWhile;
@@ -2173,6 +2186,7 @@ private:
                         SyntaxNodeKindHasClass(next->syntaxKind, TokenClass::BinaryOperator)
                     ) ||
                     closesLambdaArgument ||
+                    closesCompoundExpression ||
                     attachesToFollowingKeyword ||
                     closesDoWhile
                 ) {

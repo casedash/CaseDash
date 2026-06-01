@@ -465,8 +465,7 @@ void MacroCompoundArgument() {
     UEXPECT_NO_THROW({
         const auto result = coll.Distinct("type", mongo::options::Comment("test distinct operation"));
         EXPECT_EQ(2, result.size());
-    }
-    );
+    });
 }
 
 void MacroTypedDeclarationArgument(Pool& pool) {
