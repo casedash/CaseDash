@@ -54,8 +54,7 @@ public: \
     }
 #define FORMAT_USERVER_BENCHMARK_ARGS ->Arg(2)->Arg(4)
 #define IMPL_UTEST_FORMAT_USERVER(name) \
-    TestLauncher<::testing::Test>::RunTest< \
-        name>();                         \
+    TestLauncher<::testing::Test>::RunTest<name>(); \
     struct FormatUserverForceSemicolon
 
 BENCHMARK_CAPTURE(FormatterBenchmark, Mode, kValue) FORMAT_USERVER_BENCHMARK_ARGS;
