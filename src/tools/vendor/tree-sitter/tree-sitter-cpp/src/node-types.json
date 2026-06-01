@@ -5824,6 +5824,46 @@
     }
   },
   {
+    "type": "nested_requirement",
+    "named": true,
+    "fields": {
+      "constraint": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "(",
+            "named": false
+          },
+          {
+            "type": ")",
+            "named": false
+          },
+          {
+            "type": "constraint_conjunction",
+            "named": true
+          },
+          {
+            "type": "constraint_disjunction",
+            "named": true
+          },
+          {
+            "type": "expression",
+            "named": true
+          },
+          {
+            "type": "template_type",
+            "named": true
+          },
+          {
+            "type": "type_identifier",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "new_declarator",
     "named": true,
     "fields": {
@@ -11391,10 +11431,6 @@
   },
   {
     "type": "namespace_identifier",
-    "named": true
-  },
-  {
-    "type": "nested_requirement",
     "named": true
   },
   {

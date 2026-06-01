@@ -122,7 +122,8 @@ constexpr utils::StringLiteral kFormatUserverPrefixes[] = {
 };
 
 template <typename T>
-concept FormatUserverConvertible = requires(T& value){FormatUserverConvert(value);
+concept FormatUserverConvertible = requires(T& value) {
+    FormatUserverConvert(value);
 } &&
 #if FORMAT_USERVER_OLD_LIB
     // Old libraries reject long double here.
@@ -419,8 +420,9 @@ DateParts OperatorConversionCall(DatePartsParts ymd) {
 }
 
 template <typename T>
-concept HasNonEmptyName = requires{requires !std::string_view{T::kName}
-.empty();};
+concept HasNonEmptyName = requires {
+    requires !std::string_view{T::kName}.empty();
+};
 
 template <typename T>
 struct DetectedBufferCategory : decltype(DetectBufferCategory<T>()) {};
