@@ -67,7 +67,57 @@ void RecursiveFilesInto(std::string_view root, std::vector<std::string>& files) 
     FindClose(find);
 }
 
+bool DiscoverRecursiveToolFilesInto(
+    std::string_view root,
+    ToolFileDiscoveryFilter& filter,
+    ToolFileDiscoveryResult& result,
+    std::string& error
+) {
+    const std::string pattern = (FilePath(root) / "*").string();
+    WIN32_FIND_DATAA data{};
+    HANDLE find = FindFirstFileA(pattern.c_str(), &data);
+    if (find == INVALID_HANDLE_VALUE) {
+        return true;
+    }
+    do {
+        const std::string name = data.cFileName;
+        if (name == "." || name == "..") {
+            continue;
+        }
+        const std::string path = AbsolutePath((FilePath(root) / name).string());
+        if ((data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0) {
+            if (!filter.ShouldVisitDirectory(path, error)) {
+                if (!error.empty()) {
+                    FindClose(find);
+                    return false;
+                }
+                continue;
+            }
+            if (!DiscoverRecursiveToolFilesInto(path, filter, result, error)) {
+                FindClose(find);
+                return false;
+            }
+        } else if (filter.ShouldIncludeFile(path, error)) {
+            result.files.push_back(path);
+        } else {
+            if (!error.empty()) {
+                FindClose(find);
+                return false;
+            }
+            ++result.skippedFiles;
+        }
+    } while (FindNextFileA(find, &data));
+    FindClose(find);
+    return true;
+}
+
 }  // namespace
+
+bool ToolFileDiscoveryFilter::ShouldVisitDirectory(std::string_view path, std::string& error) {
+    (void)path;
+    (void)error;
+    return true;
+}
 
 std::string ExecutablePath() {
     std::string path(MAX_PATH, '\0');
@@ -160,6 +210,56 @@ std::vector<std::string> RecursiveFiles(std::string_view root) {
     std::vector<std::string> files;
     RecursiveFilesInto(root, files);
     return files;
+}
+
+std::optional<std::vector<std::string>> ReadToolFileList(std::string_view path, std::string& error) {
+    if (path.empty()) {
+        error = "--files requires a path";
+        return std::nullopt;
+    }
+
+    std::optional<std::string> text = ReadFileBinary(AbsolutePath(path));
+    if (!text.has_value()) {
+        error = "failed to read --files list " + std::string(path);
+        return std::nullopt;
+    }
+
+    std::vector<std::string> files;
+    for (std::string line : SplitLines(*text)) {
+        line = Trim(line);
+        if (!line.empty()) {
+            files.push_back(std::move(line));
+        }
+    }
+    return files;
+}
+
+std::optional<ToolFileDiscoveryResult> DiscoverRecursiveToolFiles(
+    const std::vector<std::string>& roots,
+    ToolFileDiscoveryFilter& filter,
+    std::string& error
+) {
+    ToolFileDiscoveryResult result;
+    for (const std::string& root : roots) {
+        const std::string absoluteRoot = AbsolutePath(root);
+        if (!DirectoryExists(absoluteRoot)) {
+            error = "recursive root does not exist: " + root;
+            return std::nullopt;
+        }
+        if (!filter.ShouldVisitDirectory(absoluteRoot, error)) {
+            if (!error.empty()) {
+                return std::nullopt;
+            }
+            continue;
+        }
+        if (!DiscoverRecursiveToolFilesInto(absoluteRoot, filter, result, error)) {
+            return std::nullopt;
+        }
+    }
+    std::sort(result.files.begin(), result.files.end(), [](const std::string& left, const std::string& right) {
+        return NormalizePathKey(left) < NormalizePathKey(right);
+    });
+    return result;
 }
 
 bool StartsWith(std::string_view value, std::string_view prefix) {

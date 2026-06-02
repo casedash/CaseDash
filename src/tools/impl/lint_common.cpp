@@ -1,29 +1,8 @@
 #include "tools/impl/lint_common.h"
 
-#include <cstdio>
 #include <stdexcept>
 
-#include "tools/impl/tools_common.h"
-#include "util/strings.h"
-
 namespace tools::lint {
-
-namespace {
-
-std::string QuoteCommandArgument(std::string_view value) {
-    std::string quoted = "\"";
-    for (char ch : value) {
-        if (ch == '"') {
-            quoted += "\\\"";
-        } else {
-            quoted.push_back(ch);
-        }
-    }
-    quoted.push_back('"');
-    return quoted;
-}
-
-}  // namespace
 
 int FileRecord::LineCount() const {
     return static_cast<int>(lines.size());
@@ -57,38 +36,6 @@ std::set<std::string> RequireSuffixGroup(
         );
     }
     return found->second;
-}
-
-std::optional<std::vector<std::string>> RunGitLsFiles(const std::vector<std::string>& args) {
-    std::string command = "git ls-files";
-    for (const std::string& arg : args) {
-        command.push_back(' ');
-        command += QuoteCommandArgument(arg);
-    }
-    command += " 2>nul";
-
-    FILE* pipe = _popen(command.c_str(), "r");
-    if (pipe == nullptr) {
-        return std::nullopt;
-    }
-    std::string output;
-    char buffer[4096];
-    while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
-        output += buffer;
-    }
-    const int status = _pclose(pipe);
-    if (status != 0) {
-        return std::nullopt;
-    }
-
-    std::vector<std::string> lines;
-    for (std::string line : SplitLines(output)) {
-        line = Trim(line);
-        if (!line.empty()) {
-            lines.push_back(line);
-        }
-    }
-    return lines;
 }
 
 }  // namespace tools::lint

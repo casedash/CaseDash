@@ -254,6 +254,28 @@ class FormatCommandTests(unittest.TestCase):
             self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
             self.assertRegex(result.stdout, r"Checked 1 file in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
 
+    def test_recursive_option_discovers_cpp_and_headers(self) -> None:
+        build_dir = REPO_ROOT / "build"
+        build_dir.mkdir(exist_ok=True)
+
+        with tempfile.TemporaryDirectory(prefix="format_recursive_", dir=build_dir) as temp_dir:
+            root = Path(temp_dir)
+            nested = root / "src" / "nested"
+            nested.mkdir(parents=True)
+            shutil.copyfile(REPO_ROOT / ".cpp-format", root / ".cpp-format")
+            (root / ".cpp-format-ignore").write_text("ignored\n", encoding="utf-8")
+            (nested / "sample.cpp").write_text("int sample() {\n    return 1;\n}\n", encoding="utf-8")
+            (nested / "sample.h").write_text("#pragma once\n", encoding="utf-8")
+            (nested / "sample.txt").write_text("int ignored(){return 1;}\n", encoding="utf-8")
+            ignored = root / "ignored"
+            ignored.mkdir()
+            (ignored / "ignored.cpp").write_text("int ignored(){return 1;}\n", encoding="utf-8")
+
+            result = native_format("--style=file", "--dry-run", "-r", ".", cwd=root)
+
+            self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+            self.assertRegex(result.stdout, r"Checked 2 files in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
+
     def test_concurrency_one_preserves_file_list_output_order(self) -> None:
         build_dir = REPO_ROOT / "build"
         build_dir.mkdir(exist_ok=True)
@@ -606,6 +628,8 @@ class FormatCommandTests(unittest.TestCase):
             ("--style",),
             ("--files",),
             ("--files=",),
+            ("-r",),
+            ("-r=",),
             ("--concurrency",),
             ("--concurrency", "0"),
             ("--concurrency", "nope"),

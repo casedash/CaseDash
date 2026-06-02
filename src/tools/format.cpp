@@ -17,6 +17,7 @@
 #include "tools/impl/tools_parallel.h"
 #include "tools/impl/tools_progress.h"
 #include "util/file_path.h"
+#include "util/strings.h"
 
 namespace {
 
@@ -133,6 +134,59 @@ std::string CompletedFileText(int completedCount, size_t totalCount) {
     return text;
 }
 
+bool IsFormatRecursiveInput(std::string_view path) {
+    const std::string suffix = ToLower(Extension(path));
+    return suffix == ".cpp" || suffix == ".h";
+}
+
+bool IsDefaultFormatRecursiveExcludedDirectory(std::string_view path, std::string_view root) {
+    const std::string relative = ToLower(RelativePath(path, root));
+    if (relative.empty()) {
+        return false;
+    }
+    const std::vector<std::string> parts = Split(relative, '/');
+    if (parts.empty()) {
+        return false;
+    }
+    static const std::vector<std::string> excludedTopLevel = {
+        ".agents",
+        ".git",
+        ".github",
+        ".githooks",
+        "build",
+        "cmake",
+        "docs",
+        "installer",
+        "resources",
+        "tools",
+        "vcpkg",
+        "web"
+    };
+    return std::find(excludedTopLevel.begin(), excludedTopLevel.end(), parts.front()) != excludedTopLevel.end();
+}
+
+class FormatRecursiveFileFilter final : public ToolFileDiscoveryFilter {
+public:
+    FormatRecursiveFileFilter(FormatStyleCache& styleCache, std::string currentDirectory) :
+        styleCache_(styleCache),
+        currentDirectory_(std::move(currentDirectory)) {}
+
+    bool ShouldVisitDirectory(std::string_view path, std::string& error) override {
+        if (IsDefaultFormatRecursiveExcludedDirectory(path, currentDirectory_)) {
+            return false;
+        }
+        return !styleCache_.IsIgnored(path, error);
+    }
+
+    bool ShouldIncludeFile(std::string_view path, std::string& error) override {
+        return IsFormatRecursiveInput(path) && !styleCache_.IsIgnored(path, error);
+    }
+
+private:
+    FormatStyleCache& styleCache_;
+    std::string currentDirectory_;
+};
+
 void PrintFormatSummary(
     FILE* output,
     const char* verb,
@@ -191,7 +245,7 @@ int RunFormat(int argc, char** argv) {
     const std::string currentDirectory = AbsolutePath(CurrentDirectoryPath().string());
     FILE* summary = SummaryStream(options);
 
-    if (options.files.empty() && !options.fileListProvided) {
+    if (options.files.empty() && !options.fileListProvided && !options.recursiveInputProvided) {
         std::string error;
         const FormatterConfig* config = styleCache.ConfigForPath(currentDirectory, error);
         if (config == nullptr) {
@@ -230,10 +284,24 @@ int RunFormat(int argc, char** argv) {
     int processedCount = 0;
     std::vector<PendingFileFormat> pendingResults;
     std::vector<ResolvedFileFormat> work;
-    work.reserve(options.files.size());
+    std::vector<std::string> files = options.files;
 
-    for (int index = 0; index < static_cast<int>(options.files.size()); ++index) {
-        const std::string file = AbsolutePath(options.files[static_cast<size_t>(index)]);
+    if (!options.recursiveRoots.empty()) {
+        FormatRecursiveFileFilter filter(styleCache, currentDirectory);
+        std::string error;
+        std::optional<ToolFileDiscoveryResult> recursiveFiles =
+            DiscoverRecursiveToolFiles(options.recursiveRoots, filter, error);
+        if (!recursiveFiles.has_value()) {
+            std::fprintf(stderr, "%s\n", error.c_str());
+            return 2;
+        }
+        files.insert(files.end(), recursiveFiles->files.begin(), recursiveFiles->files.end());
+    }
+
+    work.reserve(files.size());
+
+    for (int index = 0; index < static_cast<int>(files.size()); ++index) {
+        const std::string file = AbsolutePath(files[static_cast<size_t>(index)]);
         std::string error;
         if (styleCache.IsIgnored(file, error)) {
             ++ignoredCount;

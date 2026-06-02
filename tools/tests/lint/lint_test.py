@@ -55,6 +55,8 @@ class LintCheckTests(unittest.TestCase):
                 "--check",
                 "--no-progress",
                 "-v",
+                "-r",
+                ".",
             ],
             cwd=clean_root,
             env=env,
@@ -99,6 +101,8 @@ class LintCheckTests(unittest.TestCase):
                 "--no-progress",
                 "--concurrency",
                 "1",
+                "-r",
+                ".",
             ],
             cwd=clean_root,
             env=env,
@@ -109,6 +113,38 @@ class LintCheckTests(unittest.TestCase):
 
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertIn("Lint succeeded after scanning 2 lint input file(s), 8 LOC in", result.stdout)
+
+    def test_lint_check_reads_newline_file_list(self) -> None:
+        clean_root = TEST_ROOT / "build" / "file_list"
+        shutil.rmtree(clean_root, ignore_errors=True)
+        (clean_root / "src").mkdir(parents=True)
+        (clean_root / "src" / "maintained.h").write_text("#pragma once\n", encoding="utf-8")
+        file_list = clean_root / "files.txt"
+        file_list.write_text("src/maintained.h\n\n", encoding="utf-8")
+
+        env = os.environ.copy()
+        env["GIT_CEILING_DIRECTORIES"] = str(TEST_ROOT.parent)
+        result = subprocess.run(
+            [
+                str(TOOLS_EXE),
+                "lint_check",
+                "--config",
+                str(REPO_ROOT / "tools" / "lint_config.json"),
+                "--check",
+                "--no-progress",
+                "-i",
+                "--files",
+                str(file_list),
+            ],
+            cwd=clean_root,
+            env=env,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+        self.assertIn("Lint succeeded after scanning 1 lint input file(s), 1 LOC in", result.stdout)
 
     def test_lint_check_reports_all_known_violation_shapes(self) -> None:
         shutil.rmtree(TEST_ROOT / "build", ignore_errors=True)
@@ -122,6 +158,8 @@ class LintCheckTests(unittest.TestCase):
                 "--config",
                 str(REPO_ROOT / "tools" / "lint_config.json"),
                 "--check",
+                "-r",
+                ".",
                 "--report-json",
                 str(REPORT_PATH.relative_to(TEST_ROOT)),
             ],
@@ -162,6 +200,8 @@ class LintCheckTests(unittest.TestCase):
                     str(REPO_ROOT / "tools" / "lint_config.json"),
                     "--check",
                     "--no-progress",
+                    "-r",
+                    ".",
                 ],
                 cwd=TEST_ROOT,
                 env=env,

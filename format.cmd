@@ -77,32 +77,27 @@ if not "!ensure_format_tool_result!"=="0" (
     exit /b !ensure_format_tool_result!
 )
 
-if not exist "%script_root%build" mkdir "%script_root%build"
-set "candidate_list=%script_root%build\format_candidates_%RANDOM%_%RANDOM%.txt"
-set "file_list=%script_root%build\format_files_%RANDOM%_%RANDOM%.txt"
-if exist "!candidate_list!" del /q "!candidate_list!" >nul 2>nul
-if exist "!file_list!" del /q "!file_list!" >nul 2>nul
+set "file_list="
+if /I not "!scope!"=="all" (
+    if not exist "%script_root%build" mkdir "%script_root%build"
+    set "file_list=%script_root%build\format_files_%RANDOM%_%RANDOM%.txt"
+    if exist "!file_list!" del /q "!file_list!" >nul 2>nul
 
-call :collect_files
-set "collect_result=!errorlevel!"
-if not "!collect_result!"=="0" (
-    del /q "!candidate_list!" "!file_list!" >nul 2>nul
-    popd >nul
-    exit /b !collect_result!
-)
-
-for %%I in ("!file_list!") do set "file_list_size=%%~zI"
-if "!file_list_size!"=="0" (
-    if /I "!scope!"=="all" (
-        echo No maintained C++ source files were found.
-        set "empty_result=1"
-    ) else (
-        echo No eligible !scope! C++ source files were found.
-        set "empty_result=0"
+    call :collect_files
+    set "collect_result=!errorlevel!"
+    if not "!collect_result!"=="0" (
+        del /q "!file_list!" >nul 2>nul
+        popd >nul
+        exit /b !collect_result!
     )
-    del /q "!candidate_list!" "!file_list!" >nul 2>nul
-    popd >nul
-    exit /b !empty_result!
+
+    for %%I in ("!file_list!") do set "file_list_size=%%~zI"
+    if "!file_list_size!"=="0" (
+        echo No eligible !scope! C++ source files were found.
+        del /q "!file_list!" >nul 2>nul
+        popd >nul
+        exit /b 0
+    )
 )
 
 set "native_options=--style=file"
@@ -115,7 +110,11 @@ if defined concurrency_arg set "native_options=!native_options! !concurrency_arg
 if "!verbose!"=="1" set "native_options=!native_options! --verbose"
 
 set "format_failed=0"
-"%script_root%build\CaseDashTools.exe" format !native_options! --files "!file_list!"
+if /I "!scope!"=="all" (
+    "%script_root%build\CaseDashTools.exe" format !native_options! -r .
+) else (
+    "%script_root%build\CaseDashTools.exe" format !native_options! --files "!file_list!"
+)
 set "format_failed=!errorlevel!"
 
 if "!format_failed!"=="0" if "!restage!"=="1" (
@@ -127,39 +126,13 @@ if "!format_failed!"=="0" if "!restage!"=="1" (
     call :run_git_add_chunk
 )
 
-del /q "!candidate_list!" "!file_list!" >nul 2>nul
+if defined file_list del /q "!file_list!" >nul 2>nul
 popd >nul
 exit /b !format_failed!
 
 :collect_files
-if /I "!scope!"=="all" (
-    git -C "%root_arg%" -c core.quotepath=off -c core.safecrlf=false ls-files --cached --others --exclude-standard -- src tests > "!candidate_list!"
-) else if /I "!scope!"=="changed" (
-    git -C "%root_arg%" rev-parse --verify HEAD >nul 2>nul
-    if errorlevel 1 (
-        git -C "%root_arg%" -c core.quotepath=off -c core.safecrlf=false diff --name-only --diff-filter=ACMR --cached -- src tests > "!candidate_list!"
-    ) else (
-        git -C "%root_arg%" -c core.quotepath=off -c core.safecrlf=false diff --name-only --diff-filter=ACMR HEAD -- src tests > "!candidate_list!"
-    )
-    git -C "%root_arg%" -c core.quotepath=off -c core.safecrlf=false ls-files --others --exclude-standard -- src tests >> "!candidate_list!"
-) else if /I "!scope!"=="staged" (
-    git -C "%root_arg%" -c core.quotepath=off -c core.safecrlf=false diff --cached --name-only --diff-filter=ACMR -- src tests > "!candidate_list!"
-) else (
-    exit /b 2
-)
-if errorlevel 1 exit /b !errorlevel!
-
-set "last_file="
-> "!file_list!" (
-    for /f "usebackq delims=" %%F in (`sort "!candidate_list!"`) do (
-        if /I not "%%F"=="!last_file!" (
-            set "last_file=%%F"
-            if /I "%%~xF"==".cpp" if exist "%root_arg%\%%F" echo %%F
-            if /I "%%~xF"==".h" if exist "%root_arg%\%%F" echo %%F
-        )
-    )
-)
-exit /b 0
+powershell -NoProfile -ExecutionPolicy Bypass -File "%script_root%tools\git_file_list.ps1" -Root "%root_arg%" -Scope "!scope!" -Output "!file_list!" -Roots "src,tests" -Extensions ".cpp,.h"
+exit /b !errorlevel!
 
 :append_git_file
 set arg="%~1"
