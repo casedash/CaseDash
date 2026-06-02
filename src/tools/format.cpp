@@ -136,7 +136,7 @@ std::string CompletedFileText(int completedCount, size_t totalCount) {
 
 bool IsFormatRecursiveInput(std::string_view path) {
     const std::string suffix = ToLower(Extension(path));
-    return suffix == ".cpp" || suffix == ".h";
+    return suffix == ".cpp" || suffix == ".h" || suffix == ".hpp";
 }
 
 bool IsDefaultFormatRecursiveExcludedDirectory(std::string_view path, std::string_view root) {
