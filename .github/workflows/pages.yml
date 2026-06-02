@@ -26,6 +26,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ inputs.ref }}
+          submodules: true
 
       - name: Restore vcpkg caches
         id: vcpkg-cache-restore

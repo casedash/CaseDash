@@ -127,7 +127,8 @@ FilePath SourceConfigPath() {
 }
 
 FilePath SourceFormatGoldenInputPath() {
-    return FilePath(CASEDASH_SOURCE_DIR) / "tools" / "tests" / "format" / "src" / "format_test_input.cpp";
+    return FilePath(CASEDASH_SOURCE_DIR) / "external" / "strictfmt" / "tests" / "format" / "src" /
+        "format_test_input.cpp";
 }
 
 FilePath SourceRootPath() {
@@ -1007,9 +1008,12 @@ std::vector<std::string> SourceFormatAllInputPaths() {
     std::sort(files.begin(), files.end(), [](const std::string& left, const std::string& right) {
         return NormalizePathKey(left) < NormalizePathKey(right);
     });
-    files.erase(std::unique(files.begin(), files.end(), [](const std::string& left, const std::string& right) {
-        return NormalizePathKey(left) == NormalizePathKey(right);
-    }), files.end());
+    files.erase(
+        std::unique(files.begin(), files.end(), [](const std::string& left, const std::string& right) {
+            return NormalizePathKey(left) == NormalizePathKey(right);
+        }),
+        files.end()
+    );
     return files;
 }
 

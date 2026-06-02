@@ -14,7 +14,15 @@ REPO_ROOT = TEST_ROOT.parents[2]
 REPORT_PATH = TEST_ROOT / "build" / "lint_report.json"
 TOOLS_EXE = REPO_ROOT / "build" / "CaseDashTools.exe"
 VENDORED_TOOL_HEADER = (
-    REPO_ROOT / "src" / "tools" / "vendor" / "tree-sitter" / "tree-sitter-cpp" / "src" / "tree_sitter" / "parser.h"
+    REPO_ROOT /
+    "external" /
+    "strictfmt" /
+    "vendor" /
+    "tree-sitter" /
+    "tree-sitter-cpp" /
+    "src" /
+    "tree_sitter" /
+    "parser.h"
 )
 
 
@@ -37,9 +45,10 @@ class LintCheckTests(unittest.TestCase):
     def test_lint_check_excludes_tool_vendor_from_clean_summary_accounting(self) -> None:
         clean_root = TEST_ROOT / "build" / "clean_summary"
         shutil.rmtree(clean_root, ignore_errors=True)
-        (clean_root / "src" / "tools" / "vendor").mkdir(parents=True)
+        (clean_root / "external" / "strictfmt" / "vendor").mkdir(parents=True)
+        (clean_root / "src").mkdir(parents=True)
         (clean_root / "src" / "maintained.h").write_text("#pragma once\n", encoding="utf-8")
-        (clean_root / "src" / "tools" / "vendor" / "ignored.h").write_text(
+        (clean_root / "external" / "strictfmt" / "vendor" / "ignored.h").write_text(
             "#pragma once\n" + "std::function<void()> ignored;\n" * 25,
             encoding="utf-8",
         )

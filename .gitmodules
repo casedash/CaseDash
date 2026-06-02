@@ -1,0 +1,3 @@
+[submodule "external/strictfmt"]
+	path = external/strictfmt
+	url = https://github.com/elizarov/strictfmt.git

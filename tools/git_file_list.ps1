@@ -10,7 +10,9 @@ param(
 
     [string]$Roots = "",
 
-    [string]$Extensions = ""
+    [string]$Extensions = "",
+
+    [string]$Prefix = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -46,8 +48,16 @@ function Split-ListArgument {
     return @($Value -split "," | ForEach-Object { $_.Trim() } | Where-Object { $_.Length -gt 0 })
 }
 
+function Normalize-Prefix {
+    param([string]$Value)
+
+    $normalized = $Value.Replace("\", "/").Trim("/")
+    return $normalized
+}
+
 $RootList = Split-ListArgument $Roots
 $ExtensionList = Split-ListArgument $Extensions
+$OutputPrefix = Normalize-Prefix $Prefix
 $pathspec = Get-PathspecArgs
 $paths = @()
 
@@ -84,8 +94,12 @@ foreach ($path in ($paths | Sort-Object)) {
     if (-not [System.IO.File]::Exists((Join-Path $Root $normalized))) {
         continue
     }
-    if ($seen.Add($normalized)) {
-        $selected.Add($normalized)
+    $outputPath = $normalized
+    if ($OutputPrefix.Length -gt 0) {
+        $outputPath = "$OutputPrefix/$normalized"
+    }
+    if ($seen.Add($outputPath)) {
+        $selected.Add($outputPath)
     }
 }
 

@@ -23,8 +23,13 @@ namespace {
 constexpr int kToolStaleExitCode = 3;
 
 const std::vector<std::string>& ToolRefreshExcludedPrefixes() {
-    static const std::vector<std::string> prefixes = {"src/vendor/", "src/tools/vendor/"};
+    static const std::vector<std::string> prefixes = {"src/vendor/", "external/strictfmt/vendor/"};
     return prefixes;
+}
+
+const std::vector<std::string>& ToolRefreshSourceRoots() {
+    static const std::vector<std::string> roots = {"src/tools", "external/strictfmt/include", "external/strictfmt/src"};
+    return roots;
 }
 
 struct LintArgs {
@@ -49,15 +54,20 @@ bool IsNewerThan(std::string_view source, std::uint64_t targetTime) {
 }
 
 bool IsCMakeBuildGraphStale(const std::string& repoRoot) {
-    const std::optional<std::uint64_t> cmakeListsTime = LastWriteTime((FilePath(repoRoot) / "CMakeLists.txt").string());
-    if (!cmakeListsTime.has_value()) {
-        return false;
-    }
-
     // A CMake edit can refresh build.ninja without relinking CaseDashTools when the tool target is unchanged.
     const std::optional<std::uint64_t> buildGraphTime =
         LastWriteTime((FilePath(repoRoot) / "build/cmake/build.ninja").string());
-    return !buildGraphTime.has_value() || *cmakeListsTime > *buildGraphTime;
+    if (!buildGraphTime.has_value()) {
+        return true;
+    }
+    const std::vector<std::string> cmakeInputs = {"CMakeLists.txt", "external/strictfmt/CMakeLists.txt"};
+    for (const std::string& cmakeInput : cmakeInputs) {
+        const std::optional<std::uint64_t> cmakeInputTime = LastWriteTime((FilePath(repoRoot) / cmakeInput).string());
+        if (cmakeInputTime.has_value() && *cmakeInputTime > *buildGraphTime) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool IsToolStale() {
@@ -70,15 +80,21 @@ bool IsToolStale() {
     if (IsCMakeBuildGraphStale(repoRoot)) {
         return true;
     }
-    for (const std::string& path : RecursiveFiles((FilePath(repoRoot) / "src/tools").string())) {
-        const std::string relative = RelativePath(path, repoRoot);
-        // The freshness check runs before lint config parsing, so keep vendored roots out here as well.
-        if (IsExcluded(relative, ToolRefreshExcludedPrefixes())) {
+    for (const std::string& root : ToolRefreshSourceRoots()) {
+        const std::string absoluteRoot = (FilePath(repoRoot) / root).string();
+        if (!DirectoryExists(absoluteRoot)) {
             continue;
         }
-        const std::string suffix = Extension(path);
-        if ((suffix == ".cpp" || suffix == ".h") && IsNewerThan(path, *exeTime)) {
-            return true;
+        for (const std::string& path : RecursiveFiles(absoluteRoot)) {
+            const std::string relative = RelativePath(path, repoRoot);
+            // The freshness check runs before lint config parsing, so keep vendored roots out here as well.
+            if (IsExcluded(relative, ToolRefreshExcludedPrefixes())) {
+                continue;
+            }
+            const std::string suffix = Extension(path);
+            if ((suffix == ".cpp" || suffix == ".h") && IsNewerThan(path, *exeTime)) {
+                return true;
+            }
         }
     }
     return false;

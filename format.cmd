@@ -131,10 +131,34 @@ popd >nul
 exit /b !format_failed!
 
 :collect_files
-powershell -NoProfile -ExecutionPolicy Bypass -File "%script_root%tools\git_file_list.ps1" -Root "%root_arg%" -Scope "!scope!" -Output "!file_list!" -Roots "src,tests" -Extensions ".c,.cc,.cpp,.cxx,.c++,.h,.hh,.hpp,.hxx,.h++,.ipp,.inl,.tpp"
-exit /b !errorlevel!
+set "format_extensions=.c,.cc,.cpp,.cxx,.c++,.h,.hh,.hpp,.hxx,.h++,.ipp,.inl,.tpp"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%script_root%tools\git_file_list.ps1" -Root "%root_arg%" -Scope "!scope!" -Output "!file_list!" -Roots "src,tests" -Extensions "!format_extensions!"
+set "collect_parent_result=!errorlevel!"
+if not "!collect_parent_result!"=="0" exit /b !collect_parent_result!
+
+set "strictfmt_root=%root_arg%\external\strictfmt"
+if exist "!strictfmt_root!\.git" (
+    set "strictfmt_file_list=%script_root%build\format_strictfmt_files_%RANDOM%_%RANDOM%.txt"
+    if exist "!strictfmt_file_list!" del /q "!strictfmt_file_list!" >nul 2>nul
+    powershell -NoProfile -ExecutionPolicy Bypass -File "%script_root%tools\git_file_list.ps1" -Root "!strictfmt_root!" -Scope "!scope!" -Output "!strictfmt_file_list!" -Roots "include,src,tests" -Extensions "!format_extensions!" -Prefix "external/strictfmt"
+    set "collect_strictfmt_result=!errorlevel!"
+    if not "!collect_strictfmt_result!"=="0" (
+        del /q "!strictfmt_file_list!" >nul 2>nul
+        exit /b !collect_strictfmt_result!
+    )
+    type "!strictfmt_file_list!" >> "!file_list!"
+    del /q "!strictfmt_file_list!" >nul 2>nul
+)
+exit /b 0
 
 :append_git_file
+set "arg=%~1"
+if /I "!arg:~0,19!"=="external/strictfmt/" (
+    set "strictfmt_arg=!arg:~19!"
+    git -C "%root_arg%\external\strictfmt" -c core.safecrlf=false add -- "!strictfmt_arg!"
+    if errorlevel 1 set "format_failed=1"
+    exit /b 0
+)
 set arg="%~1"
 set "chunk_args=!chunk_args! !arg!"
 set /a chunk_count+=1
@@ -150,7 +174,6 @@ set "chunk_count=0"
 exit /b 0
 
 :ensure_format_tool
-if exist "%script_root%build\CaseDashTools.exe" exit /b 0
 call "%script_root%build.cmd" /tools
 exit /b !errorlevel!
 
