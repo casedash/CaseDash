@@ -270,10 +270,23 @@ class FormatCommandTests(unittest.TestCase):
             nested.mkdir(parents=True)
             shutil.copyfile(REPO_ROOT / ".cpp-format", root / ".cpp-format")
             (root / ".cpp-format-ignore").write_text("ignored\n", encoding="utf-8")
-            (nested / "sample.c").write_text("int sample_c() {\n    return 1;\n}\n", encoding="utf-8")
-            (nested / "sample.cpp").write_text("int sample() {\n    return 1;\n}\n", encoding="utf-8")
-            (nested / "sample.h").write_text("#pragma once\n", encoding="utf-8")
-            (nested / "sample.hpp").write_text("#pragma once\n", encoding="utf-8")
+            suffixes = [
+                ".c",
+                ".cc",
+                ".cpp",
+                ".cxx",
+                ".c++",
+                ".h",
+                ".hh",
+                ".hpp",
+                ".hxx",
+                ".h++",
+                ".ipp",
+                ".inl",
+                ".tpp",
+            ]
+            for index, suffix in enumerate(suffixes):
+                (nested / f"sample_{index}{suffix}").write_text("#pragma once\n", encoding="utf-8")
             (nested / "sample.txt").write_text("int ignored(){return 1;}\n", encoding="utf-8")
             ignored = root / "ignored"
             ignored.mkdir()
@@ -282,7 +295,7 @@ class FormatCommandTests(unittest.TestCase):
             result = native_format("--style=file", "--dry-run", "-r", ".", cwd=root)
 
             self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-            self.assertRegex(result.stdout, r"Checked 4 files in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
+            self.assertRegex(result.stdout, r"Checked 13 files in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
 
     def test_concurrency_one_preserves_file_list_output_order(self) -> None:
         build_dir = REPO_ROOT / "build"

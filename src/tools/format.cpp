@@ -136,7 +136,9 @@ std::string CompletedFileText(int completedCount, size_t totalCount) {
 
 bool IsFormatRecursiveInput(std::string_view path) {
     const std::string suffix = ToLower(Extension(path));
-    return suffix == ".c" || suffix == ".cpp" || suffix == ".h" || suffix == ".hpp";
+    static const std::vector<std::string> supportedSuffixes =
+        {".c", ".cc", ".cpp", ".cxx", ".c++", ".h", ".hh", ".hpp", ".hxx", ".h++", ".ipp", ".inl", ".tpp"};
+    return std::find(supportedSuffixes.begin(), supportedSuffixes.end(), suffix) != supportedSuffixes.end();
 }
 
 class FormatRecursiveFileFilter final : public ToolFileDiscoveryFilter {
