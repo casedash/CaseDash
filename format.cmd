@@ -131,7 +131,7 @@ popd >nul
 exit /b !format_failed!
 
 :collect_files
-powershell -NoProfile -ExecutionPolicy Bypass -File "%script_root%tools\git_file_list.ps1" -Root "%root_arg%" -Scope "!scope!" -Output "!file_list!" -Roots "src,tests" -Extensions ".cpp,.h"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%script_root%tools\git_file_list.ps1" -Root "%root_arg%" -Scope "!scope!" -Output "!file_list!" -Roots "src,tests" -Extensions ".c,.cpp,.h,.hpp"
 exit /b !errorlevel!
 
 :append_git_file

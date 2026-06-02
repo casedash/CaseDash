@@ -136,45 +136,14 @@ std::string CompletedFileText(int completedCount, size_t totalCount) {
 
 bool IsFormatRecursiveInput(std::string_view path) {
     const std::string suffix = ToLower(Extension(path));
-    return suffix == ".cpp" || suffix == ".h" || suffix == ".hpp";
-}
-
-bool IsDefaultFormatRecursiveExcludedDirectory(std::string_view path, std::string_view root) {
-    const std::string relative = ToLower(RelativePath(path, root));
-    if (relative.empty()) {
-        return false;
-    }
-    const std::vector<std::string> parts = Split(relative, '/');
-    if (parts.empty()) {
-        return false;
-    }
-    static const std::vector<std::string> excludedTopLevel = {
-        ".agents",
-        ".git",
-        ".github",
-        ".githooks",
-        "build",
-        "cmake",
-        "docs",
-        "installer",
-        "resources",
-        "tools",
-        "vcpkg",
-        "web"
-    };
-    return std::find(excludedTopLevel.begin(), excludedTopLevel.end(), parts.front()) != excludedTopLevel.end();
+    return suffix == ".c" || suffix == ".cpp" || suffix == ".h" || suffix == ".hpp";
 }
 
 class FormatRecursiveFileFilter final : public ToolFileDiscoveryFilter {
 public:
-    FormatRecursiveFileFilter(FormatStyleCache& styleCache, std::string currentDirectory) :
-        styleCache_(styleCache),
-        currentDirectory_(std::move(currentDirectory)) {}
+    explicit FormatRecursiveFileFilter(FormatStyleCache& styleCache) : styleCache_(styleCache) {}
 
     bool ShouldVisitDirectory(std::string_view path, std::string& error) override {
-        if (IsDefaultFormatRecursiveExcludedDirectory(path, currentDirectory_)) {
-            return false;
-        }
         return !styleCache_.IsIgnored(path, error);
     }
 
@@ -184,7 +153,6 @@ public:
 
 private:
     FormatStyleCache& styleCache_;
-    std::string currentDirectory_;
 };
 
 void PrintFormatSummary(
@@ -287,7 +255,7 @@ int RunFormat(int argc, char** argv) {
     std::vector<std::string> files = options.files;
 
     if (!options.recursiveRoots.empty()) {
-        FormatRecursiveFileFilter filter(styleCache, currentDirectory);
+        FormatRecursiveFileFilter filter(styleCache);
         std::string error;
         std::optional<ToolFileDiscoveryResult> recursiveFiles =
             DiscoverRecursiveToolFiles(options.recursiveRoots, filter, error);

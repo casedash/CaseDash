@@ -47,6 +47,10 @@ def read_fixture(path: Path) -> str:
     return (TEST_ROOT / path).read_text(encoding="utf-8")
 
 
+def write_empty_ignore(root: Path) -> None:
+    (root / ".cpp-format-ignore").write_text("", encoding="utf-8")
+
+
 @contextmanager
 def copied_fixtures(*paths: Path):
     build_dir = REPO_ROOT / "build"
@@ -54,6 +58,7 @@ def copied_fixtures(*paths: Path):
 
     with tempfile.TemporaryDirectory(prefix="format_fixtures_", dir=build_dir) as temp_dir:
         root = Path(temp_dir)
+        write_empty_ignore(root)
         copies = {}
         for path in paths:
             copied_path = root / path.name
@@ -244,6 +249,7 @@ class FormatCommandTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory(prefix="format_files_", dir=build_dir) as temp_dir:
             root = Path(temp_dir)
+            write_empty_ignore(root)
             source = root / OUTPUT_FIXTURE.name
             shutil.copyfile(TEST_ROOT / OUTPUT_FIXTURE, source)
             file_list = root / "files.txt"
@@ -264,6 +270,7 @@ class FormatCommandTests(unittest.TestCase):
             nested.mkdir(parents=True)
             shutil.copyfile(REPO_ROOT / ".cpp-format", root / ".cpp-format")
             (root / ".cpp-format-ignore").write_text("ignored\n", encoding="utf-8")
+            (nested / "sample.c").write_text("int sample_c() {\n    return 1;\n}\n", encoding="utf-8")
             (nested / "sample.cpp").write_text("int sample() {\n    return 1;\n}\n", encoding="utf-8")
             (nested / "sample.h").write_text("#pragma once\n", encoding="utf-8")
             (nested / "sample.hpp").write_text("#pragma once\n", encoding="utf-8")
@@ -275,7 +282,7 @@ class FormatCommandTests(unittest.TestCase):
             result = native_format("--style=file", "--dry-run", "-r", ".", cwd=root)
 
             self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-            self.assertRegex(result.stdout, r"Checked 3 files in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
+            self.assertRegex(result.stdout, r"Checked 4 files in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
 
     def test_concurrency_one_preserves_file_list_output_order(self) -> None:
         build_dir = REPO_ROOT / "build"
@@ -284,6 +291,7 @@ class FormatCommandTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="format_order_", dir=build_dir) as temp_dir:
             root = Path(temp_dir)
             shutil.copyfile(REPO_ROOT / ".cpp-format", root / ".cpp-format")
+            write_empty_ignore(root)
             first = root / "first.cpp"
             second = root / "second.cpp"
             first.write_text("int first(){return 1;}\n", encoding="utf-8")
@@ -312,6 +320,7 @@ class FormatCommandTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="format_in_place_", dir=build_dir) as temp_dir:
             root = Path(temp_dir)
             shutil.copyfile(REPO_ROOT / ".cpp-format", root / ".cpp-format")
+            write_empty_ignore(root)
             source = root / "sample.cpp"
             source.write_text("int main(){return 1;}\n", encoding="utf-8")
 
@@ -567,6 +576,7 @@ class FormatCommandTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="format_parse_error_", dir=build_dir) as temp_dir:
             root = Path(temp_dir)
             shutil.copyfile(REPO_ROOT / ".cpp-format", root / ".cpp-format")
+            write_empty_ignore(root)
             valid = root / "valid.cpp"
             invalid = root / "invalid.cpp"
             valid.write_text("int main(){return 1;}\n", encoding="utf-8")
@@ -587,6 +597,7 @@ class FormatCommandTests(unittest.TestCase):
             nested = root / "a" / "b"
             nested.mkdir(parents=True)
             shutil.copyfile(REPO_ROOT / ".cpp-format", root / ".cpp-format")
+            write_empty_ignore(root)
             source = nested / "sample.cpp"
             source.write_text("int main(){return 1;}\n", encoding="utf-8")
 
