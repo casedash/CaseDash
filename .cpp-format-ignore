@@ -1,3 +1,6 @@
+.git
+build
 src/vendor
 src/tools/vendor
 tools/tests
+vcpkg
