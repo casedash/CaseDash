@@ -6,6 +6,19 @@
 #include <string_view>
 #include <vector>
 
+class ToolFileDiscoveryFilter {
+public:
+    virtual ~ToolFileDiscoveryFilter() = default;
+
+    virtual bool ShouldVisitDirectory(std::string_view path, std::string& error);
+    virtual bool ShouldIncludeFile(std::string_view path, std::string& error) = 0;
+};
+
+struct ToolFileDiscoveryResult {
+    std::vector<std::string> files;
+    int skippedFiles = 0;
+};
+
 std::string ExecutablePath();
 std::string AbsolutePath(std::string_view path);
 std::string RelativePath(std::string_view path, std::string_view root);
@@ -17,6 +30,12 @@ bool DirectoryExists(std::string_view path);
 bool EnsureParentDirectory(std::string_view path);
 std::optional<std::uint64_t> LastWriteTime(std::string_view path);
 std::vector<std::string> RecursiveFiles(std::string_view root);
+std::optional<std::vector<std::string>> ReadToolFileList(std::string_view path, std::string& error);
+std::optional<ToolFileDiscoveryResult> DiscoverRecursiveToolFiles(
+    const std::vector<std::string>& roots,
+    ToolFileDiscoveryFilter& filter,
+    std::string& error
+);
 
 bool StartsWith(std::string_view value, std::string_view prefix);
 bool EndsWith(std::string_view value, std::string_view suffix);

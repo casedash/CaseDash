@@ -34,6 +34,8 @@ struct LintArgs {
     bool verbose = false;
     size_t concurrency = 0;
     std::optional<std::string> reportJson;
+    std::vector<std::string> files;
+    std::vector<std::string> recursiveRoots;
 };
 
 struct CompletedLintScan {
@@ -103,8 +105,27 @@ LintArgs ParseArgs(int argc, char** argv, const std::string& projectRoot) {
             args.configPath = ResolveProjectPath(projectRoot, argv[++i]);
         } else if (arg == "--check") {
             args.check = true;
+        } else if (arg == "-i") {
+            // Accepted for wrapper symmetry with format; lint_check never rewrites inputs.
         } else if (arg == "--no-progress") {
             args.noProgress = true;
+        } else if (arg == "-r" || arg == "--recursive") {
+            if (i + 1 >= argc) {
+                throw std::runtime_error("-r requires a value");
+            }
+            args.recursiveRoots.push_back(ResolveProjectPath(projectRoot, argv[++i]));
+        } else if (StartsWith(arg, "--recursive=")) {
+            const std::string value(std::string_view(arg).substr(12));
+            if (value.empty()) {
+                throw std::runtime_error("-r requires a value");
+            }
+            args.recursiveRoots.push_back(ResolveProjectPath(projectRoot, value));
+        } else if (StartsWith(arg, "-r=")) {
+            const std::string value(std::string_view(arg).substr(3));
+            if (value.empty()) {
+                throw std::runtime_error("-r requires a value");
+            }
+            args.recursiveRoots.push_back(ResolveProjectPath(projectRoot, value));
         } else if (arg == "--concurrency") {
             if (i + 1 >= argc) {
                 throw std::runtime_error("--concurrency requires a value");
@@ -123,11 +144,40 @@ LintArgs ParseArgs(int argc, char** argv, const std::string& projectRoot) {
                 throw std::runtime_error("--report-json requires a value");
             }
             args.reportJson = argv[++i];
+        } else if (arg == "--files") {
+            if (i + 1 >= argc) {
+                throw std::runtime_error("--files requires a value");
+            }
+            std::string error;
+            std::optional<std::vector<std::string>> files = ReadToolFileList(argv[++i], error);
+            if (!files.has_value()) {
+                throw std::runtime_error(error);
+            }
+            args.files.insert(args.files.end(), files->begin(), files->end());
+        } else if (StartsWith(arg, "--files=")) {
+            std::string error;
+            std::optional<std::vector<std::string>> files = ReadToolFileList(std::string_view(arg).substr(8), error);
+            if (!files.has_value()) {
+                throw std::runtime_error(error);
+            }
+            args.files.insert(args.files.end(), files->begin(), files->end());
+        } else if (StartsWith(arg, "-files=")) {
+            std::string error;
+            std::optional<std::vector<std::string>> files = ReadToolFileList(std::string_view(arg).substr(7), error);
+            if (!files.has_value()) {
+                throw std::runtime_error(error);
+            }
+            args.files.insert(args.files.end(), files->begin(), files->end());
         } else if (arg == "-v" || arg == "--verbose") {
             args.verbose = true;
-        } else {
+        } else if (!arg.empty() && arg[0] == '-') {
             throw std::runtime_error("unknown argument " + arg);
+        } else {
+            args.files.push_back(arg);
         }
+    }
+    if (args.files.empty() && args.recursiveRoots.empty()) {
+        throw std::runtime_error("lint_check requires file input from file arguments, --files, or -r");
     }
     args.configPath = ResolveProjectPath(projectRoot, args.configPath);
     return args;
@@ -217,47 +267,80 @@ bool IsLintInput(const FileEntry& entry, const std::string& projectRoot, const S
     return !IsExcluded(relative, settings.excludedPrefixes);
 }
 
-std::set<std::string> ProjectPathsFromGit(const std::string& projectRoot, const std::vector<std::string>& lines) {
-    std::set<std::string> paths;
-    for (const std::string& line : lines) {
-        paths.insert(NormalizePathKey((FilePath(projectRoot) / line).string()));
+bool DirectoryCanContainLintInput(std::string_view relative, const ScanSettings& settings) {
+    if (relative.empty() || settings.roots.empty()) {
+        return true;
     }
-    return paths;
+    for (const std::string& root : settings.roots) {
+        if (relative == root || StartsWith(relative, root + "/") || StartsWith(root, std::string(relative) + "/")) {
+            return true;
+        }
+    }
+    return false;
 }
 
-std::vector<FileEntry> DiscoverLintInputs(const std::string& projectRoot, const ScanSettings& settings) {
-    const std::optional<std::vector<std::string>> trackedLines = RunGitLsFiles(settings.roots);
-    std::vector<std::string> untrackedArgs = {"--others", "--exclude-standard"};
-    untrackedArgs.insert(untrackedArgs.end(), settings.roots.begin(), settings.roots.end());
-    const std::optional<std::vector<std::string>> untrackedLines = RunGitLsFiles(untrackedArgs);
+class LintRecursiveFileFilter final : public ToolFileDiscoveryFilter {
+public:
+    LintRecursiveFileFilter(const std::string& projectRoot, const ScanSettings& settings) :
+        projectRoot_(projectRoot),
+        settings_(settings) {}
 
+    bool ShouldVisitDirectory(std::string_view path, std::string& error) override {
+        (void)error;
+        const std::string relative = RelativePath(path, projectRoot_);
+        return !IsExcluded(relative, settings_.excludedPrefixes) && DirectoryCanContainLintInput(relative, settings_);
+    }
+
+    bool ShouldIncludeFile(std::string_view path, std::string& error) override {
+        (void)error;
+        return IsLintInput(FileEntry{std::string(path), true}, projectRoot_, settings_);
+    }
+
+private:
+    const std::string& projectRoot_;
+    const ScanSettings& settings_;
+};
+
+std::vector<FileEntry>
+    ResolveLintInputs(const LintArgs& args, const std::string& projectRoot, const ScanSettings& settings)
+{
     std::vector<FileEntry> entries;
-    if (!trackedLines.has_value() || !untrackedLines.has_value()) {
-        for (const std::string& root : settings.roots) {
-            for (const std::string& path : RecursiveFiles((FilePath(projectRoot) / root).string())) {
-                FileEntry entry{path, true};
-                if (IsLintInput(entry, projectRoot, settings)) {
-                    entries.push_back(std::move(entry));
-                }
-            }
+    for (const std::string& file : args.files) {
+        const std::string absolute = ResolveProjectPath(projectRoot, file);
+        if (!FileExists(FilePath(absolute))) {
+            throw std::runtime_error("input file does not exist: " + file);
         }
-    } else {
-        const std::set<std::string> trackedPaths = ProjectPathsFromGit(projectRoot, *trackedLines);
-        std::set<std::string> allPaths = trackedPaths;
-        const std::set<std::string> untrackedPaths = ProjectPathsFromGit(projectRoot, *untrackedLines);
-        allPaths.insert(untrackedPaths.begin(), untrackedPaths.end());
-        for (const std::string& key : allPaths) {
-            FileEntry entry{AbsolutePath(key), trackedPaths.find(key) != trackedPaths.end()};
-            if (FileExists(FilePath(entry.path)) && IsLintInput(entry, projectRoot, settings)) {
-                entries.push_back(std::move(entry));
-            }
+        FileEntry entry{absolute, true};
+        if (IsLintInput(entry, projectRoot, settings)) {
+            entries.push_back(std::move(entry));
         }
     }
 
-    std::sort(entries.begin(), entries.end(), [&](const FileEntry& left, const FileEntry& right) {
+    if (!args.recursiveRoots.empty()) {
+        LintRecursiveFileFilter filter(projectRoot, settings);
+        std::string error;
+        std::optional<ToolFileDiscoveryResult> recursiveFiles =
+            DiscoverRecursiveToolFiles(args.recursiveRoots, filter, error);
+        if (!recursiveFiles.has_value()) {
+            throw std::runtime_error(error);
+        }
+        for (const std::string& path : recursiveFiles->files) {
+            entries.push_back({path, true});
+        }
+    }
+
+    std::set<std::string> seen;
+    std::vector<FileEntry> uniqueEntries;
+    uniqueEntries.reserve(entries.size());
+    for (FileEntry& entry : entries) {
+        if (seen.insert(NormalizePathKey(entry.path)).second) {
+            uniqueEntries.push_back(std::move(entry));
+        }
+    }
+    std::sort(uniqueEntries.begin(), uniqueEntries.end(), [&](const FileEntry& left, const FileEntry& right) {
         return RelativePath(left.path, projectRoot) < RelativePath(right.path, projectRoot);
     });
-    return entries;
+    return uniqueEntries;
 }
 
 FileRecord ScanFile(const FileEntry& entry, const std::string& projectRoot, const ScanSettings& settings) {
@@ -449,6 +532,13 @@ int RunLintCheck(int argc, char** argv) {
     ScanSettings settings;
     try {
         args = ParseArgs(argc, argv, projectRoot);
+    } catch (const std::exception& error) {
+        std::fprintf(stderr, "lint argument error: %s\n", error.what());
+        std::printf("Lint failed in %s.\n", FormatToolElapsed(std::chrono::steady_clock::now() - started).c_str());
+        return 2;
+    }
+
+    try {
         const std::optional<std::string> configText = ReadFileBinary(args.configPath);
         if (!configText.has_value()) {
             throw std::runtime_error("could not read " + args.configPath);
@@ -482,7 +572,7 @@ int RunLintCheck(int argc, char** argv) {
     std::vector<FileRecord> records;
     std::vector<CheckResult> results;
     try {
-        entries = DiscoverLintInputs(projectRoot, settings);
+        entries = ResolveLintInputs(args, projectRoot, settings);
         records = ScanLintInputs(entries, projectRoot, settings, args.concurrency, !args.noProgress, started);
         for (const FileRecord& record : records) {
             for (std::unique_ptr<Checker>& checker : checkers) {

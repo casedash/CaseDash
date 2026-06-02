@@ -17,9 +17,11 @@ struct FormatOptions {
     bool verbose = false;
     bool help = false;
     bool fileListProvided = false;
+    bool recursiveInputProvided = false;
     size_t concurrency = 0;
     std::optional<std::string> explicitStylePath;
     std::vector<std::string> files;
+    std::vector<std::string> recursiveRoots;
 };
 
 std::optional<FormatOptions> ParseFormatArgs(int argc, char** argv, std::string& error);

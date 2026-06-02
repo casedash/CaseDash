@@ -81,6 +81,4 @@ std::set<std::string> RequireSuffixGroup(
     std::string_view groupName
 );
 
-std::optional<std::vector<std::string>> RunGitLsFiles(const std::vector<std::string>& args);
-
 }  // namespace tools::lint

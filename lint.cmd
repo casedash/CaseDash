@@ -61,12 +61,24 @@ if not "!ensure_lint_tool_result!"=="0" (
     exit /b !ensure_lint_tool_result!
 )
 
+if not exist "%root%build" mkdir "%root%build"
+set "file_list=%root%build\lint_files_%RANDOM%_%RANDOM%.txt"
+if exist "!file_list!" del /q "!file_list!" >nul 2>nul
+call :collect_lint_files
+set "collect_lint_files_result=!errorlevel!"
+if not "!collect_lint_files_result!"=="0" (
+    del /q "!file_list!" >nul 2>nul
+    popd >nul
+    exit /b !collect_lint_files_result!
+)
+
 call :run_lint_check
 set "lint_check_result=!errorlevel!"
 if "!lint_check_result!"=="3" (
     call :build_lint_tool
     set "build_lint_tool_result=!errorlevel!"
     if not "!build_lint_tool_result!"=="0" (
+        del /q "!file_list!" >nul 2>nul
         popd >nul
         exit /b !build_lint_tool_result!
     )
@@ -74,6 +86,7 @@ if "!lint_check_result!"=="3" (
     set "lint_check_result=!errorlevel!"
 )
 if "!lint_check_result!"=="2" (
+    del /q "!file_list!" >nul 2>nul
     popd >nul
     exit /b 2
 )
@@ -87,6 +100,7 @@ if "!include_lint!"=="1" (
     )
     set "include_lint_result=!errorlevel!"
     if "!include_lint_result!"=="2" (
+        del /q "!file_list!" >nul 2>nul
         popd >nul
         exit /b 2
     )
@@ -94,10 +108,12 @@ if "!include_lint!"=="1" (
 )
 
 if "%failed%"=="0" (
+    del /q "!file_list!" >nul 2>nul
     popd >nul
     exit /b 0
 )
 
+del /q "!file_list!" >nul 2>nul
 popd >nul
 exit /b 1
 
@@ -130,8 +146,12 @@ exit /b !errorlevel!
 call "%root%build.cmd" /tools
 exit /b !errorlevel!
 
+:collect_lint_files
+powershell -NoProfile -ExecutionPolicy Bypass -File "%root%tools\git_file_list.ps1" -Root "%root_arg%" -Scope all -Output "!file_list!" -Roots "src,tests,resources" -Extensions ".h,.cpp,.rc"
+exit /b !errorlevel!
+
 :run_lint_check
-"%root%build\CaseDashTools.exe" lint_check --config "%root%tools\lint_config.json" !lint_check_args!
+"%root%build\CaseDashTools.exe" lint_check --config "%root%tools\lint_config.json" !lint_check_args! --files "!file_list!"
 exit /b !errorlevel!
 
 :usage

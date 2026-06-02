@@ -30,23 +30,22 @@ std::optional<std::string> ParseStyleValue(std::string_view value, std::string& 
 }
 
 bool AppendFilesFromList(std::string_view path, FormatOptions& options, std::string& error) {
-    if (path.empty()) {
-        error = "--files requires a path";
-        return false;
-    }
-    const std::string absolute = AbsolutePath(path);
-    std::optional<std::string> text = ReadFileBinary(absolute);
-    if (!text) {
-        error = "failed to read --files list " + std::string(path);
+    std::optional<std::vector<std::string>> files = ReadToolFileList(path, error);
+    if (!files.has_value()) {
         return false;
     }
     options.fileListProvided = true;
-    for (std::string line : SplitLines(*text)) {
-        line = Trim(line);
-        if (!line.empty()) {
-            options.files.push_back(line);
-        }
+    options.files.insert(options.files.end(), files->begin(), files->end());
+    return true;
+}
+
+bool AppendRecursiveRoot(std::string_view path, FormatOptions& options, std::string& error) {
+    if (path.empty()) {
+        error = "-r requires a path";
+        return false;
     }
+    options.recursiveInputProvided = true;
+    options.recursiveRoots.emplace_back(path);
     return true;
 }
 
@@ -72,6 +71,22 @@ std::optional<FormatOptions> ParseFormatArgs(int argc, char** argv, std::string&
             options.mode = FormatMode::DryRun;
         } else if (arg == "-v" || arg == "--verbose") {
             options.verbose = true;
+        } else if (arg == "-r" || arg == "--recursive") {
+            if (index + 1 >= argc) {
+                error = "-r requires a path";
+                return std::nullopt;
+            }
+            if (!AppendRecursiveRoot(argv[++index], options, error)) {
+                return std::nullopt;
+            }
+        } else if (StartsWith(arg, "--recursive=")) {
+            if (!AppendRecursiveRoot(std::string_view(arg).substr(12), options, error)) {
+                return std::nullopt;
+            }
+        } else if (StartsWith(arg, "-r=")) {
+            if (!AppendRecursiveRoot(std::string_view(arg).substr(3), options, error)) {
+                return std::nullopt;
+            }
         } else if (arg == "--concurrency") {
             if (index + 1 >= argc) {
                 error = "--concurrency requires a value";
@@ -129,7 +144,12 @@ std::optional<FormatOptions> ParseFormatArgs(int argc, char** argv, std::string&
             options.files.push_back(arg);
         }
     }
-    if (options.mode == FormatMode::InPlace && options.files.empty() && !options.fileListProvided) {
+    if (
+        options.mode == FormatMode::InPlace &&
+        options.files.empty() &&
+        !options.fileListProvided &&
+        !options.recursiveInputProvided
+    ) {
         error = "-i requires at least one file";
         return std::nullopt;
     }
@@ -146,6 +166,6 @@ void PrintFormatUsage(FILE* output) {
     std::fprintf(
         output,
         "  CaseDashTools.exe format [--style=file|--style=<path>|--style=file:<path>] [-i|-n|--dry-run] "
-            "[--concurrency <n>] [--files <path>|--files=<path>] [file...]\n"
+            "[--concurrency <n>] [-r <path>|--files <path>|--files=<path>] [file...]\n"
     );
 }
