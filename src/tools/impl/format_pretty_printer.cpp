@@ -105,6 +105,68 @@ bool IsConditionalPreprocessorDirective(std::string_view line) {
         StartsWith(line, "#endif");
 }
 
+bool IsConditionalBranchSeparatorLine(std::string_view line) {
+    return StartsWith(line, "#elif") ||
+        StartsWith(line, "#else") ||
+        StartsWith(line, "#endif");
+}
+
+bool IsStructuredConditionalPreprocessorNode(const SyntaxNode& node) {
+    return (
+        node.kind == SyntaxNodeKind::PreprocIf ||
+        node.kind == SyntaxNodeKind::PreprocIfdef ||
+        node.kind == SyntaxNodeKind::PreprocElse ||
+        node.kind == SyntaxNodeKind::PreprocElif
+    ) && !IsPreprocessorNode(node);
+}
+
+std::string_view FirstSourceLine(std::string_view text) {
+    const size_t end = text.find_first_of("\r\n");
+    return end == std::string_view::npos ? text : text.substr(0, end);
+}
+
+bool IsPreprocHeaderSeparator(const SyntaxNode& node) {
+    return node.kind == SyntaxNodeKind::FreeToken && node.text.find_first_of("\r\n") != std::string_view::npos;
+}
+
+bool IsPreprocIfdefHeaderChild(const SyntaxNode& node, size_t index) {
+    if (index < 2) {
+        return true;
+    }
+    return index == 2 && IsPreprocHeaderSeparator(node);
+}
+
+bool IsPreprocElseHeaderChild(const SyntaxNode& node, size_t index) {
+    if (index == 0) {
+        return true;
+    }
+    return index == 1 && IsPreprocHeaderSeparator(node);
+}
+
+bool IsPreprocIfHeaderChild(const SyntaxNode& node, bool& inHeader) {
+    if (!inHeader) {
+        return false;
+    }
+    if (IsPreprocHeaderSeparator(node)) {
+        inHeader = false;
+        return true;
+    }
+    return true;
+}
+
+bool IsPreprocEndifToken(const SyntaxNode& node) {
+    const std::string_view line = TrimSourceLine(FirstSourceLine(node.text));
+    return node.kind == SyntaxNodeKind::FreeToken && (
+        line == "#endif" ||
+        StartsWith(line, "#endif ") ||
+        StartsWith(line, "#endif\t")
+    );
+}
+
+std::string_view PreprocEndifLine(const SyntaxNode& node) {
+    return TrimSourceLine(FirstSourceLine(node.text));
+}
+
 bool IsRawStatementToken(const PrintToken& token) {
     if (token.kind != PrintTokenKind::Free || token.text.find_first_of("\r\n") != std::string_view::npos) {
         return false;
@@ -164,6 +226,41 @@ bool KeepsListCommentInBreakModel(const PrintToken& token) {
         default:
             return false;
     }
+}
+
+void AppendPreprocessorPrintToken(
+    const SyntaxNode& node,
+    std::string_view text,
+    SyntaxNodeKind parentKind,
+    SyntaxNodeKind grandParentKind,
+    bool inTemplateDeclaration,
+    bool inRequiresClause,
+    bool inCompilerCallModifier,
+    bool inSingleStatementLambdaBody,
+    bool inMacroValue,
+    bool breakBeforeMacroValue,
+    bool structuredPreprocessor,
+    const SyntaxNode* macroDefinition,
+    const SyntaxNode* macroValueElement,
+    std::vector<PrintToken>& tokens
+) {
+    tokens.push_back({
+        .kind = PrintTokenKind::Preprocessor,
+        .syntaxKind = node.kind,
+        .text = text,
+        .parentKind = parentKind,
+        .grandParentKind = grandParentKind,
+        .inTemplateDeclaration = inTemplateDeclaration,
+        .inRequiresClause = inRequiresClause,
+        .inCompilerCallModifier = inCompilerCallModifier,
+        .inSingleStatementLambdaBody = inSingleStatementLambdaBody,
+        .structuredPreprocessor = structuredPreprocessor,
+        .inMacroValue = inMacroValue,
+        .breakBeforeMacroValue = breakBeforeMacroValue,
+        .node = &node,
+        .macroDefinition = macroDefinition,
+        .macroValueElement = macroValueElement
+    });
 }
 
 void AppendTokens(
@@ -245,6 +342,78 @@ void AppendTokens(
             .macroDefinition = childMacroDefinition,
             .macroValueElement = macroValueElement
         });
+        return;
+    }
+    if (IsStructuredConditionalPreprocessorNode(node)) {
+        AppendPreprocessorPrintToken(
+            node,
+            TrimSourceLine(FirstSourceLine(node.text)),
+            parentKind,
+            grandParentKind,
+            childInTemplateDeclaration,
+            childInRequiresClause,
+            childInCompilerCallModifier,
+            childInSingleStatementLambdaBody,
+            childInMacroValue,
+            childBreakBeforeMacroValue,
+            true,
+            childMacroDefinition,
+            macroValueElement,
+            tokens
+        );
+
+        bool inPreprocIfHeader = true;
+        for (size_t index = 0; index < node.children.size(); ++index) {
+            const SyntaxNode* child = node.children[index];
+            if (child == nullptr) {
+                continue;
+            }
+            if (IsPreprocEndifToken(*child)) {
+                AppendPreprocessorPrintToken(
+                    *child,
+                    PreprocEndifLine(*child),
+                    parentKind,
+                    grandParentKind,
+                    childInTemplateDeclaration,
+                    childInRequiresClause,
+                    childInCompilerCallModifier,
+                    childInSingleStatementLambdaBody,
+                    childInMacroValue,
+                    childBreakBeforeMacroValue,
+                    true,
+                    childMacroDefinition,
+                    macroValueElement,
+                    tokens
+                );
+                continue;
+            }
+            if (nodeKind == SyntaxNodeKind::PreprocIfdef && IsPreprocIfdefHeaderChild(*child, index)) {
+                continue;
+            }
+            if (nodeKind == SyntaxNodeKind::PreprocElse && IsPreprocElseHeaderChild(*child, index)) {
+                continue;
+            }
+            if (
+                (nodeKind == SyntaxNodeKind::PreprocIf || nodeKind == SyntaxNodeKind::PreprocElif) &&
+                IsPreprocIfHeaderChild(*child, inPreprocIfHeader)
+            ) {
+                continue;
+            }
+            AppendTokens(
+                *child,
+                nodeKind,
+                parentKind,
+                childInTemplateDeclaration,
+                childInRequiresClause,
+                childInCompilerCallModifier,
+                childInSingleStatementLambdaBody,
+                childMacroDefinition,
+                macroValueElement,
+                childInMacroValue,
+                childBreakBeforeMacroValue,
+                tokens
+            );
+        }
         return;
     }
     if (SyntaxNodeKindHasClass(nodeKind, TokenClass::Known)) {
@@ -480,9 +649,10 @@ public:
         for (size_t index = 0; index < tokens.size(); ++index) {
             currentTokenIndex_ = index;
             const PrintToken* previous = PreviousToken(tokens, index);
+            const PrintToken* rawPrevious = index == 0 ? nullptr : &tokens[index - 1];
             const PrintToken* next = NextToken(tokens, index);
             const PrintToken* rawNext = RawNextToken(tokens, index);
-            PrintOne(tokens[index], previous, next, rawNext);
+            PrintOne(tokens[index], previous, rawPrevious, next, rawNext);
         }
         activeTokens_ = nullptr;
         FlushPendingTokens();
@@ -833,6 +1003,21 @@ private:
         atLineStart_ = true;
         lineHasText_ = false;
         currentColumn_ = 0;
+        macroContinuationLine_ = false;
+        forceColumnZeroLine_ = false;
+        pendingIndentLevel_.reset();
+    }
+
+    void ReopenLastOutputLine() {
+        if (!output_.empty() && output_.back() == '\n') {
+            output_.pop_back();
+        }
+        const size_t lineStart = output_.find_last_of('\n');
+        currentColumn_ = lineStart == std::string::npos ?
+            static_cast<int>(output_.size()) :
+            static_cast<int>(output_.size() - lineStart - 1);
+        atLineStart_ = false;
+        lineHasText_ = currentColumn_ > 0;
         macroContinuationLine_ = false;
         forceColumnZeroLine_ = false;
         pendingIndentLevel_.reset();
@@ -1794,10 +1979,21 @@ private:
         }
     }
 
-    void
-        PrintOne(const PrintToken& token, const PrintToken* previous, const PrintToken* next, const PrintToken* rawNext)
-    {
-        PrepareMacroBoundary(previous, token);
+    bool CanAttachToPreviousPreprocessorLine(const PrintToken& token, const PrintToken* rawPrevious) const {
+        return token.kind == PrintTokenKind::TrailingComment &&
+            rawPrevious != nullptr &&
+            rawPrevious->kind == PrintTokenKind::Preprocessor &&
+            StartsWith(rawPrevious->text, "#endif");
+    }
+
+    void PrintOne(
+        const PrintToken& token,
+        const PrintToken* previous,
+        const PrintToken* rawPrevious,
+        const PrintToken* next,
+        const PrintToken* rawNext
+    ) {
+        PrepareMacroBoundary(rawPrevious, token);
         if (token.kind == PrintTokenKind::BlankLine) {
             FlushPendingTokens();
             BlankLine();
@@ -1809,6 +2005,9 @@ private:
                 return;
             }
             FlushPendingTokens();
+            if (CanAttachToPreviousPreprocessorLine(token, rawPrevious)) {
+                ReopenLastOutputLine();
+            }
             PrintComment(token);
             return;
         }
@@ -1863,7 +2062,7 @@ private:
         currentColumn_ = 0;
         atLineStart_ = true;
         lineHasText_ = false;
-        if (!text.empty() && next != nullptr) {
+        if (!text.empty() && next != nullptr && !IsConditionalBranchSeparatorLine(next->text)) {
             BlankLine();
         }
     }
@@ -1873,13 +2072,24 @@ private:
         const std::string line = hasLineBreak ?
             FormatOpeningIncludeBlocksText(config_, PreserveSourceLines(token.text), sourcePath_) :
             CollapseSourceWhitespace(token.text);
+        const bool isInclude = StartsWith(line, "#include");
+        if (token.structuredPreprocessor || isInclude) {
+            if (lineHasText_) {
+                NewLine();
+            }
+            output_.append(line);
+            AdvanceCurrentColumn(line);
+            lineHasText_ = true;
+            atLineStart_ = false;
+            NewLine();
+            return;
+        }
         const bool conditionalMacroFunctionHeader = IsConditionalMacroFunctionHeader(token);
         const bool inlineFragment =
             token.parentKind == SyntaxNodeKind::ArgumentList ||
             token.parentKind == SyntaxNodeKind::BinaryExpression ||
             token.parentKind == SyntaxNodeKind::ConditionClause ||
             token.grandParentKind == SyntaxNodeKind::ArgumentList;
-        const bool isInclude = StartsWith(line, "#include");
         const bool isUndef = StartsWith(line, "#undef");
         const bool isConditionalDirective = IsConditionalPreprocessorDirective(line);
         if (isUndef) {

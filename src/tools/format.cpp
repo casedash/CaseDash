@@ -125,6 +125,23 @@ FILE* SummaryStream(const FormatOptions& options) {
     return options.mode == FormatMode::Stdout ? stderr : stdout;
 }
 
+void PrintSourceError(FILE* output, std::string_view file, std::string_view error) {
+    const std::vector<std::string> lines = SplitLines(error);
+    if (lines.empty()) {
+        std::fprintf(output, "%.*s: formatter error\n", static_cast<int>(file.size()), file.data());
+        return;
+    }
+    for (const std::string& line : lines) {
+        std::fprintf(
+            output,
+            "%.*s: %s\n",
+            static_cast<int>(file.size()),
+            file.data(),
+            line.c_str()
+        );
+    }
+}
+
 std::string CompletedFileText(int completedCount, size_t totalCount) {
     std::string text = std::to_string(completedCount);
     if (completedCount != static_cast<int>(totalCount)) {
@@ -224,7 +241,7 @@ int RunFormat(int argc, char** argv) {
         }
         SourceFormatResult result = FormatSourceText(ReadStdinText(), *config, "<stdin>");
         if (!result.ok) {
-            std::fprintf(stderr, "<stdin>: %s\n", result.error.c_str());
+            PrintSourceError(stderr, "<stdin>", result.error);
             return 1;
         }
         if (options.mode == FormatMode::DryRun && result.changed) {
@@ -320,7 +337,7 @@ int RunFormat(int argc, char** argv) {
         ++processedCount;
         SourceFormatResult& result = completedFormat.pending.result;
         if (!result.ok) {
-            std::fprintf(stderr, "%s: %s\n", file.c_str(), result.error.c_str());
+            PrintSourceError(stderr, file, result.error);
             ++parseErrorCount;
             failed = true;
             continue;

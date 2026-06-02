@@ -126,9 +126,6 @@ const TOP_LEVEL_CALL_ARGUMENTS_PATTERN =
 const METHOD_DECLARATION_MACRO_PATTERN = regexUnion([
   macroCategoryPattern('method_declaration_macro'),
 ]);
-const PREPROCESSOR_STREAMING_STATEMENT_MACRO_PATTERN = regexUnion([
-  macroCategoryPattern('preprocessor_streaming_statement_macro'),
-]);
 const TYPE_SPECIFIER_MACRO_CALL_PATTERN = regexUnion([
   macroCategoryPattern('type_specifier_macro_call'),
 ]);
@@ -895,7 +892,7 @@ module.exports = grammar(C, {
 
     standalone_qualifier_preproc_if: _ => token(prec(
       1,
-      /#[ \t]*if[^\n]*\r?\n(?:[ \t]*\/\/[^\n]*\r?\n)*[ \t]*(?:const|constexpr|consteval)[^\n]*\r?\n(?:#[ \t]*else\r?\n(?:[ \t]*\/\/[^\n]*\r?\n)*[ \t]*(?:const|constexpr|consteval)[^\n]*\r?\n)?#[ \t]*endif/,
+      /#[ \t]*if[^\n]*\r?\n(?:[ \t]*\/\/[^\n]*\r?\n)*[ \t]*(?:const|constexpr|consteval)[ \t]*(?:\/\/[^\n]*)?\r?\n(?:#[ \t]*else\r?\n(?:[ \t]*\/\/[^\n]*\r?\n)*[ \t]*(?:const|constexpr|consteval)[ \t]*(?:\/\/[^\n]*)?\r?\n)?#[ \t]*endif/,
     )),
 
     standalone_attribute_preproc_if: _ => token(prec(
@@ -1427,7 +1424,6 @@ module.exports = grammar(C, {
     ),
 
     _non_case_statement: ($, original) => choice(
-      $.preproc_streaming_statement,
       $.preproc_guarded_assignment_statement,
       $.preproc_selected_braced_if_else_statement,
       $.preproc_selected_if_statement,
@@ -1445,11 +1441,6 @@ module.exports = grammar(C, {
       field('condition', $.condition_clause),
       field('body', $.compound_statement),
     ),
-
-    preproc_streaming_statement: _ => token(prec(
-      1,
-      new RegExp(String.raw`#[ \t]*(?:if|ifdef|ifndef)[^\n]*\r?\n(?:[ \t]*(?:(?:\/\/[^\n]*)?)\r?\n)*[ \t]*${PREPROCESSOR_STREAMING_STATEMENT_MACRO_PATTERN}\(\)[ \t]*(?:\/\/[^\n]*)?\r?\n(?:#[ \t]*else[^\n]*\r?\n(?:[ \t]*(?:(?:\/\/[^\n]*)?)\r?\n)*[ \t]*${PREPROCESSOR_STREAMING_STATEMENT_MACRO_PATTERN}\(\)[ \t]*(?:\/\/[^\n]*)?\r?\n)?#[ \t]*endif[ \t]*(?:\r?\n[ \t]*)?<<[^\n;]*(?:\r?\n[ \t]*<<[^\n;]*)*;`),
-    )),
 
     preproc_endif_fragment: _ => token(prec(1, /#[ \t]*endif/)),
 
