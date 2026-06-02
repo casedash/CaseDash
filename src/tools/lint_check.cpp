@@ -70,13 +70,12 @@ bool IsCMakeBuildGraphStale(const std::string& repoRoot) {
     return false;
 }
 
-bool IsToolStale() {
-    const std::string exePath = ExecutablePath();
+bool IsToolStale(const std::string& repoRoot) {
+    const std::string exePath = (FilePath(repoRoot) / "build/CaseDashTools.exe").string();
     const std::optional<std::uint64_t> exeTime = LastWriteTime(exePath);
     if (!exeTime.has_value()) {
         return false;
     }
-    const std::string repoRoot = FilePath(FilePath(exePath).ParentPath().string()).ParentPath().string();
     if (IsCMakeBuildGraphStale(repoRoot)) {
         return true;
     }
@@ -536,12 +535,12 @@ int RunLintCheck(int argc, char** argv) {
     using namespace tools::lint;
 
     const auto started = std::chrono::steady_clock::now();
-    if (IsToolStale()) {
+    const std::string projectRoot = AbsolutePath(CurrentDirectoryPath().string());
+    if (IsToolStale(projectRoot)) {
         std::fprintf(stderr, "CaseDashTools build inputs changed; rebuilding.\n");
         return kToolStaleExitCode;
     }
 
-    const std::string projectRoot = AbsolutePath(CurrentDirectoryPath().string());
     LintArgs args;
     JsonValue config;
     std::map<std::string, std::set<std::string>> suffixGroups;

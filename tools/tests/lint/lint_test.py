@@ -86,9 +86,11 @@ class LintCheckTests(unittest.TestCase):
         (clean_root / "src" / "tools" / "threaded.h").write_text(
             "#pragma once\n"
             "\n"
+            "#include <filesystem>\n"
             "#include <thread>\n"
             "\n"
             "struct ToolThreaded {\n"
+            "    std::filesystem::path path;\n"
             "    std::thread worker;\n"
             "};\n",
             encoding="utf-8",
@@ -121,7 +123,48 @@ class LintCheckTests(unittest.TestCase):
         )
 
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertIn("Lint succeeded after scanning 2 lint input file(s), 8 LOC in", result.stdout)
+        self.assertIn("Lint succeeded after scanning 2 lint input file(s), 10 LOC in", result.stdout)
+
+    def test_lint_check_allows_strictfmt_filesystem_and_threading_primitives(self) -> None:
+        clean_root = TEST_ROOT / "build" / "strictfmt_portable"
+        shutil.rmtree(clean_root, ignore_errors=True)
+        (clean_root / "external" / "strictfmt" / "src" / "tools").mkdir(parents=True)
+        (clean_root / "external" / "strictfmt" / "src" / "tools" / "portable.cpp").write_text(
+            "#include <filesystem>\n"
+            "#include <thread>\n"
+            "\n"
+            "void UseFormatterTooling() {\n"
+            "    std::filesystem::path path;\n"
+            "    std::thread worker;\n"
+            "    worker.join();\n"
+            "}\n",
+            encoding="utf-8",
+        )
+
+        env = os.environ.copy()
+        env["GIT_CEILING_DIRECTORIES"] = str(TEST_ROOT.parent)
+        result = subprocess.run(
+            [
+                str(TOOLS_EXE),
+                "lint_check",
+                "--config",
+                str(REPO_ROOT / "tools" / "lint_config.json"),
+                "--check",
+                "--no-progress",
+                "--concurrency",
+                "1",
+                "-r",
+                ".",
+            ],
+            cwd=clean_root,
+            env=env,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+        self.assertIn("Lint succeeded after scanning 1 lint input file(s), 8 LOC in", result.stdout)
 
     def test_lint_check_reads_newline_file_list(self) -> None:
         clean_root = TEST_ROOT / "build" / "file_list"
