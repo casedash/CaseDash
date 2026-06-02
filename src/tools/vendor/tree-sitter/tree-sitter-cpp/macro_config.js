@@ -95,12 +95,6 @@ module.exports = {
       "MOCK_METHOD",
       // tools/tests/format/.cpp-format-userver
     ],
-    preprocessor_streaming_statement_macro: [
-      // .cpp-format
-      "GTEST_SKIP",
-      "FAIL",
-      // tools/tests/format/.cpp-format-userver
-    ],
     statement_exception_call_macro: [
       // .cpp-format
       "EXPECT_THROW",

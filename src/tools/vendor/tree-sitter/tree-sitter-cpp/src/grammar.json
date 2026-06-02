@@ -6609,10 +6609,6 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "preproc_streaming_statement"
-        },
-        {
-          "type": "SYMBOL",
           "name": "preproc_guarded_assignment_statement"
         },
         {
@@ -14247,7 +14243,7 @@
         "value": 1,
         "content": {
           "type": "PATTERN",
-          "value": "#[ \\t]*if[^\\n]*\\r?\\n(?:[ \\t]*\\/\\/[^\\n]*\\r?\\n)*[ \\t]*(?:const|constexpr|consteval)[^\\n]*\\r?\\n(?:#[ \\t]*else\\r?\\n(?:[ \\t]*\\/\\/[^\\n]*\\r?\\n)*[ \\t]*(?:const|constexpr|consteval)[^\\n]*\\r?\\n)?#[ \\t]*endif"
+          "value": "#[ \\t]*if[^\\n]*\\r?\\n(?:[ \\t]*\\/\\/[^\\n]*\\r?\\n)*[ \\t]*(?:const|constexpr|consteval)[ \\t]*(?:\\/\\/[^\\n]*)?\\r?\\n(?:#[ \\t]*else\\r?\\n(?:[ \\t]*\\/\\/[^\\n]*\\r?\\n)*[ \\t]*(?:const|constexpr|consteval)[ \\t]*(?:\\/\\/[^\\n]*)?\\r?\\n)?#[ \\t]*endif"
         }
       }
     },
@@ -17153,17 +17149,6 @@
           "value": ";"
         }
       ]
-    },
-    "preproc_streaming_statement": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 1,
-        "content": {
-          "type": "PATTERN",
-          "value": "#[ \\t]*(?:if|ifdef|ifndef)[^\\n]*\\r?\\n(?:[ \\t]*(?:(?:\\/\\/[^\\n]*)?)\\r?\\n)*[ \\t]*(?:(?:GTEST_SKIP|FAIL))\\(\\)[ \\t]*(?:\\/\\/[^\\n]*)?\\r?\\n(?:#[ \\t]*else[^\\n]*\\r?\\n(?:[ \\t]*(?:(?:\\/\\/[^\\n]*)?)\\r?\\n)*[ \\t]*(?:(?:GTEST_SKIP|FAIL))\\(\\)[ \\t]*(?:\\/\\/[^\\n]*)?\\r?\\n)?#[ \\t]*endif[ \\t]*(?:\\r?\\n[ \\t]*)?<<[^\\n;]*(?:\\r?\\n[ \\t]*<<[^\\n;]*)*;"
-        }
-      }
     },
     "preproc_endif_fragment": {
       "type": "TOKEN",

@@ -596,8 +596,6 @@ Multi-parameter lambda parameter lists and capture lists split all-or-nothing.
 
 ## Preprocessor And Macros
 
-Preprocessor directives stay at column zero.
-
 Put one empty line after `#pragma once` when another source item follows. Put one empty line before and after each `#undef` when it separates `#undef` from a neighboring source item.
 
 Macro continuation backslashes, spaces before continuation backslashes, and continuation newlines are formatter-owned. A multi-line macro definition is parsed as one replacement list, then emitted with continuation backslashes on all continued macro lines.
@@ -613,6 +611,95 @@ Macro category roles and parser regeneration ownership are described in [Formatt
     X(Scalar, "scalar") \
     X(Percent, "percent") \
     X(Memory, "memory")
+```
+
+## Conditional Compilation And Local Includes
+
+Conditional compilation is accepted only when each branch contributes complete grammar items at the surrounding level: complete declarations, complete statements, field or method declarations, enum entries, macro definitions, includes, or similar syntax that already has a mandatory structural line break. The conditional directive lines stay at column zero, and the guarded code keeps the indentation it would have at that source location.
+
+```cpp
+void NormalizeSocketFlags(int& flags) {
+#ifdef SOCK_CLOEXEC
+    flags &= ~SOCK_CLOEXEC;
+#endif
+}
+
+struct ConnectionOptions {
+#ifdef FORMAT_USERVER_HAS_SOCKET_MARK
+    int socket_mark = 0;
+#endif
+
+#ifndef FORMAT_USERVER_DISABLE_TLS
+    void EnableTls();
+#endif
+};
+
+#if FORMAT_USERVER_LEGACY_FMT
+#define FORMAT_USERVER_CONST
+#else
+#define FORMAT_USERVER_CONST const
+#endif
+```
+
+Local `#include` directives follow the same boundary rule: they may stand where the surrounding grammar accepts a complete declaration, statement, member declaration, enum entry, or directive, but not inside another expression or declaration. The include directive line stays at column zero.
+
+```cpp
+void RegisterGeneratedMetrics() {
+#include "generated_metrics.inc"
+    CommitGeneratedMetrics();
+}
+```
+
+Conditional directives are rejected below the complete-item boundary, such as inside an expression, declaration, or statement header. The formatter reports every offending `#if`, `#ifdef`, `#ifndef`, or `#include` line as `unsupported preprocessor placement`.
+
+Do not patch one operand into an expression:
+
+```cpp
+constexpr int kOptmask =
+    ARES_OPT_FLAGS | ARES_OPT_TIMEOUTMS | ARES_OPT_TRIES | ARES_OPT_DOMAINS |
+#if ARES_VERSION < 0x011400
+    ARES_OPT_SOCK_STATE_CB |
+#endif
+    ARES_OPT_LOOKUPS;
+```
+
+Prefer a separately declared compatibility constant, or a conditionally declared macro when the surrounding language position cannot name a constant.
+
+```cpp
+#if ARES_VERSION < 0x011400
+constexpr int kAresOptSockStateCbCompat = ARES_OPT_SOCK_STATE_CB;
+#else
+constexpr int kAresOptSockStateCbCompat = 0;
+#endif
+
+constexpr int kOptmask =
+    ARES_OPT_FLAGS |
+    ARES_OPT_TIMEOUTMS |
+    ARES_OPT_TRIES |
+    ARES_OPT_DOMAINS |
+    kAresOptSockStateCbCompat |
+    ARES_OPT_LOOKUPS;
+```
+
+Do not patch declaration modifiers directly into the declaration:
+
+```cpp
+#ifndef FORMAT_USERVER_CLANG
+[[gnu::visibility("default")]] [[gnu::externally_visible]]
+#endif
+int FormatUserverExternAttribute();
+```
+
+Prefer a conditionally defined modifier macro and use that macro in the declaration. Configure the macro under the grammar role it plays, such as `FunctionPrefixes` for function declaration modifiers.
+
+```cpp
+#ifndef FORMAT_USERVER_CLANG
+#define FORMAT_USERVER_EXTERN_ATTRIBUTES [[gnu::visibility("default")]] [[gnu::externally_visible]]
+#else
+#define FORMAT_USERVER_EXTERN_ATTRIBUTES
+#endif
+
+FORMAT_USERVER_EXTERN_ATTRIBUTES int FormatUserverExternAttribute();
 ```
 
 ## Include Sorting
@@ -877,17 +964,6 @@ USERVER_DEFINE_STRUCT_SUBSET_REF(SmolDependenciesRef, Dependencies, a, c, d);
 
 ```cpp
 MOCK_METHOD(void, SetValue, (std::string_view key, std::string&& value), (override));
-```
-
-#### PreprocessorStreamingStatementMacros
-
-`PreprocessorStreamingStatementMacros` names zero-argument macros selected by preprocessor branches and followed by a stream insertion tail. The parser keeps the selected branch and trailing `<<` chain as one preprocessor statement.
-
-```cpp
-#ifndef FORMAT_USERVER_ARCADIA
-GTEST_SKIP()
-#endif
-    << "disabled for this environment";
 ```
 
 #### StatementExceptionCallMacros

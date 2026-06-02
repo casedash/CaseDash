@@ -24,6 +24,7 @@ struct PrintToken {
     bool inRequiresClause = false;
     bool inCompilerCallModifier = false;
     bool inSingleStatementLambdaBody = false;
+    bool structuredPreprocessor = false;
     bool inMacroValue = false;
     bool breakBeforeMacroValue = false;
     int macroValueRemainingWidth = 0;

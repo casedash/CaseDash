@@ -139,7 +139,6 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::Tree, "typeid_expression"),
     Tree(SyntaxNodeKind::Tree, "cpp_cast_expression"),
     Tree(SyntaxNodeKind::Tree, "macro_exception_type"),
-    Tree(SyntaxNodeKind::PreprocIf, "preproc_streaming_statement", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_guarded_assignment_statement", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_selected_braced_if_else_statement", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_selected_if_header", kAtomicPreprocessorClasses),

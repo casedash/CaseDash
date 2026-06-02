@@ -1,0 +1,21 @@
+<stdin>: unsupported preprocessor placement at 6:1: #if ARES_VERSION < 0x011400
+<stdin>: unsupported preprocessor placement at 13:1: #ifndef FORMAT_USERVER_CLANG
+<stdin>: unsupported preprocessor placement at 20:1: #ifdef FORMAT_USERVER_PREFIX
+<stdin>: unsupported preprocessor placement at 31:1: #if FORMAT_USERVER_OLD_LIB
+<stdin>: unsupported preprocessor placement at 40:1: #ifdef FORMAT_USERVER_THROW
+<stdin>: unsupported preprocessor placement at 46:1: #if FORMAT_USERVER_OPENSSL_HAS_CONST_SIGNATURE
+<stdin>: unsupported preprocessor placement at 55:1: #if FORMAT_USERVER_HAS_DUPLICATE_WOULD_BLOCK
+<stdin>: unsupported preprocessor placement at 66:1: #if FORMAT_USERVER_PIPELINE_STATUS
+<stdin>: unsupported preprocessor placement at 77:1: #if FORMAT_USERVER_PIPELINE_STATUS
+<stdin>: unsupported preprocessor placement at 87:1: #if FORMAT_USERVER_NEW_MONGO
+<stdin>: unsupported preprocessor placement at 100:1: #if FORMAT_USERVER_USE_WOULD_BLOCK
+<stdin>: unsupported preprocessor placement at 113:1: #ifdef FORMAT_USERVER_FAST_ARGUMENT
+<stdin>: unsupported preprocessor placement at 121:1: #ifdef FORMAT_USERVER_FLAG_A
+<stdin>: unsupported preprocessor placement at 124:1: #ifdef FORMAT_USERVER_FLAG_B
+<stdin>: unsupported preprocessor placement at 132:1: #ifndef FORMAT_USERVER_ARCADIA
+<stdin>: unsupported preprocessor placement at 143:1: #if FORMAT_USERVER_PROTOBUF_GE_4022000
+<stdin>: unsupported preprocessor placement at 157:1: #if FORMAT_USERVER_PROTOBUF_GE_6033000
+<stdin>: unsupported preprocessor placement at 166:1: #if FORMAT_USERVER_HAS_PIPELINING
+<stdin>: unsupported preprocessor placement at 176:1: #if FORMAT_USERVER_USE_UTC
+<stdin>: unsupported preprocessor placement at 186:1: #if FORMAT_USERVER_USE_CONSTEXPR
+<stdin>: unsupported preprocessor placement at 201:1: #include "format_userver_value.inc"
