@@ -1,6 +1,6 @@
 # Vendor Package
 
-`src/vendor/` contains narrow runtime vendored source kept inside the repository only when package-managed dependencies are not practical. `src/tools/vendor/` contains tool-only vendored source, including grammar inputs and generated parser sources used by native repository tools.
+`src/vendor/` contains narrow runtime vendored source kept inside the repository only when package-managed dependencies are not practical. `external/strictfmt/vendor/` contains strictfmt-owned grammar inputs and generated parser sources.
 
 ## Responsibilities
 

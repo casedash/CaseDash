@@ -28,6 +28,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ inputs.tag || github.ref }}
+          submodules: true
 
       - name: Validate release tag
         shell: pwsh
@@ -143,6 +144,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ inputs.tag || github.ref }}
+          submodules: true
 
       - name: Restore vcpkg caches
         id: vcpkg-cache-restore

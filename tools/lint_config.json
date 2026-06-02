@@ -8,14 +8,14 @@
   "scan": {
     "roots": ["src", "tests", "resources"],
     "suffix_group": "lint_inputs",
-    "excluded_prefixes": ["src/vendor/", "src/tools/vendor/"],
+    "excluded_prefixes": ["src/vendor/", "external/strictfmt/vendor/"],
     "include_pattern": "^\\s*#include\\s+(?:\"([^\"]+)\"|<([^>]+)>)"
   },
   "architecture": {
     "roots": ["src"],
     "header_suffix_group": "headers",
     "implementation_suffix_group": "implementations",
-    "header_body_allowlist": ["src/tools/impl/format_break_model_inline_helpers.h"],
+    "header_body_allowlist": ["external/strictfmt/src/tools/impl/format_break_model_inline_helpers.h"],
     "cpp_without_header_allowlist": ["src/main/main.cpp", "src/headless/headless_main.cpp"],
     "control_keywords": ["catch", "for", "if", "switch", "while"]
   },
@@ -23,7 +23,7 @@
     "roots": ["src", "tests", "resources"],
     "suffix_group": "lint_inputs",
     "tracked_only": true,
-    "include_roots": ["src", "resources"],
+    "include_roots": ["src", "resources", "external/strictfmt/include", "external/strictfmt/src"],
     "nolint_pattern": "\\bNOLINT(?:NEXTLINE|BEGIN|END)?\\b",
     "nolint_message": "Local NOLINT suppressions are not allowed; fix the finding or add a maintained checker-level exception instead."
   },

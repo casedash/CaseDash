@@ -844,52 +844,24 @@ set_target_properties(CaseDashHeadless PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY "${output_root}"
 )
 
-find_package(unofficial-tree-sitter CONFIG REQUIRED)
-
-add_library(CaseDashTreeSitterCppGrammar STATIC
-    src/tools/vendor/tree-sitter/tree-sitter-cpp/src/parser.c
-    src/tools/vendor/tree-sitter/tree-sitter-cpp/src/scanner.c
+set(CASEDASH_STRICTFMT_SOURCE_DIR "${CMAKE_SOURCE_DIR}/external/strictfmt" CACHE PATH
+    "Source directory for the strictfmt formatter project."
 )
-target_include_directories(CaseDashTreeSitterCppGrammar
-    PRIVATE
-        "${CMAKE_SOURCE_DIR}/src/tools/vendor/tree-sitter/tree-sitter-cpp/src"
-    PUBLIC
-        "${CMAKE_SOURCE_DIR}/src/tools/vendor/tree-sitter/tree-sitter-cpp/include"
-)
-target_link_libraries(CaseDashTreeSitterCppGrammar PUBLIC
-    unofficial::tree-sitter::tree-sitter
-)
-target_compile_options(CaseDashTreeSitterCppGrammar PRIVATE
-    $<$<C_COMPILER_ID:MSVC>:/w>
-)
+if(NOT EXISTS "${CASEDASH_STRICTFMT_SOURCE_DIR}/CMakeLists.txt")
+    message(FATAL_ERROR "strictfmt source directory was not found at ${CASEDASH_STRICTFMT_SOURCE_DIR}.")
+endif()
+add_subdirectory("${CASEDASH_STRICTFMT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/strictfmt")
 
 add_executable(CaseDashTools
     src/tools/tools_main.cpp
-    src/tools/format.cpp
-    src/tools/format_model_dump.cpp
-    src/tools/impl/format_args.cpp
-    src/tools/impl/format_break_model.cpp
-    src/tools/impl/format_break_model_builder.cpp
-    src/tools/impl/format_break_solver.cpp
-    src/tools/impl/format_config.cpp
-    src/tools/impl/format_include_sort.cpp
-    src/tools/impl/format_model.cpp
-    src/tools/impl/format_model_builder.cpp
-    src/tools/impl/format_model_parse.cpp
-    src/tools/impl/format_pretty_printer.cpp
-    src/tools/impl/format_spacing.cpp
     src/tools/lint_check.cpp
     src/tools/impl/lint_checkers.cpp
     src/tools/impl/lint_common.cpp
     src/tools/impl/lint_json.cpp
-    src/tools/impl/tools_parallel.cpp
-    src/tools/impl/tools_progress.cpp
-    src/tools/impl/tools_common.cpp
-    src/util/file_path.cpp
-    src/util/strings.cpp
-    src/util/text_encoding.cpp
 )
 target_include_directories(CaseDashTools PRIVATE
+    "${CASEDASH_STRICTFMT_SOURCE_DIR}/include"
+    "${CASEDASH_STRICTFMT_SOURCE_DIR}/src"
     "${CMAKE_SOURCE_DIR}/src"
 )
 target_compile_definitions(CaseDashTools PRIVATE
@@ -917,8 +889,8 @@ target_link_options(CaseDashTools PRIVATE
     $<$<CONFIG:RelWithDebInfo>:/INCREMENTAL>
 )
 target_link_libraries(CaseDashTools PRIVATE
-    unofficial::tree-sitter::tree-sitter
-    CaseDashTreeSitterCppGrammar
+    strictfmt::cli
+    strictfmt::util
 )
 set_target_properties(CaseDashTools PROPERTIES
     OUTPUT_NAME "CaseDashTools"
@@ -1140,22 +1112,6 @@ add_executable(CaseDashBenchmarks
     ${CASEDASH_LAYOUT_EDIT_META_CPP}
     ${CASEDASH_BENCHMARKS_VERSION_RC}
     tests/benchmarks.cpp
-    src/tools/format.cpp
-    src/tools/impl/format_args.cpp
-    src/tools/impl/format_break_model.cpp
-    src/tools/impl/format_break_model_builder.cpp
-    src/tools/impl/format_break_solver.cpp
-    src/tools/impl/format_config.cpp
-    src/tools/impl/format_include_sort.cpp
-    src/tools/impl/format_model.cpp
-    src/tools/impl/format_model_builder.cpp
-    src/tools/impl/format_model_parse.cpp
-    src/tools/impl/format_pretty_printer.cpp
-    src/tools/impl/format_spacing.cpp
-    src/tools/impl/tools_parallel.cpp
-    src/tools/impl/tools_progress.cpp
-    src/tools/impl/tools_common.cpp
-    src/util/strings.cpp
     src/util/numeric_format.cpp
     src/util/text_format.cpp
     src/util/win32_format.cpp
@@ -1224,7 +1180,6 @@ add_executable(CaseDashBenchmarks
     src/layout_edit/layout_edit_trace_session.cpp
     src/layout_edit/impl/layout_snap_solver.cpp
     src/util/numeric_safety.cpp
-    src/util/file_path.cpp
     src/telemetry/metrics.cpp
     src/layout_model/dashboard_overlay_state.cpp
     src/widget/card_chrome_layout.cpp
@@ -1273,7 +1228,6 @@ add_executable(CaseDashBenchmarks
     src/util/resource_strings.cpp
     src/util/lightweight_mutex.cpp
     src/util/high_precision_timer.cpp
-    src/util/text_encoding.cpp
     src/util/trace.cpp
     src/util/trace_timing.cpp
     src/vendor/adlx/SDK/ADLXHelper/Windows/Cpp/ADLXHelper.cpp
@@ -1298,6 +1252,7 @@ set_property(SOURCE ${casedash_release_inline_limited_sources} APPEND PROPERTY
 )
 
 target_include_directories(CaseDashBenchmarks PRIVATE
+    "${CASEDASH_STRICTFMT_SOURCE_DIR}/src"
     "${CMAKE_SOURCE_DIR}/src"
     "${CMAKE_SOURCE_DIR}/resources"
     "${CMAKE_SOURCE_DIR}/src/vendor/adlx"
@@ -1336,7 +1291,8 @@ target_link_options(CaseDashBenchmarks PRIVATE
     /MANIFEST:NO
 )
 target_link_libraries(CaseDashBenchmarks PRIVATE
-    CaseDashTreeSitterCppGrammar
+    strictfmt::core
+    strictfmt::util
     user32
     gdi32
     d3d11

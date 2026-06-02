@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
+        with:
+          submodules: true
 
       - name: Restore vcpkg caches
         id: vcpkg-cache-restore

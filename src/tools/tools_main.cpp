@@ -3,7 +3,7 @@
 #include <cstdio>
 #include <string>
 
-#include "tools/format.h"
+#include "strictfmt/cli.h"
 #include "tools/format_model_dump.h"
 #include "tools/lint_check.h"
 
@@ -33,7 +33,7 @@ int RunToolsMain(int argc, char** argv) {
     }
     const std::string tool = argv[1];
     if (tool == "format") {
-        return RunFormat(argc - 2, argv + 2);
+        return RunStrictfmtCli(argc - 1, argv + 1);
     }
     if (tool == "format_model_dump") {
         return RunFormatModelDump(argc - 2, argv + 2);
