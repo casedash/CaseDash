@@ -174,6 +174,7 @@ set "chunk_count=0"
 exit /b 0
 
 :ensure_format_tool
+if exist "%script_root%build\CaseDashTools.exe" exit /b 0
 call "%script_root%build.cmd" /tools
 exit /b !errorlevel!
 
