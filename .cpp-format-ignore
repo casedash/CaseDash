@@ -1,6 +1,5 @@
 .git
 build
 src/vendor
-external/strictfmt/vendor
 tools/tests
 vcpkg
