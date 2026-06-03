@@ -13,8 +13,8 @@ void PrintUsage() {
     std::fprintf(stderr, "Usage:\n");
     std::fprintf(
         stderr,
-        "  CaseDashTools.exe format [--style=file|--style=<path>|--style=file:<path>] [-i|-n|--dry-run] "
-            "[-v|--verbose] [-r <path>|--files <path>|--files=<path>] [file...]\n"
+        "  CaseDashTools.exe format [--style <path>] [-i|-n|--dry-run] "
+            "[-v|--verbose] [-r <path>|--files <path>] [file...]\n"
     );
     std::fprintf(stderr, "  CaseDashTools.exe format_model_dump <source-file>\n");
     std::fprintf(

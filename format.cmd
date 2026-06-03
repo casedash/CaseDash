@@ -56,13 +56,6 @@ if /I "%~1"=="--concurrency" (
     shift
     goto parse_args
 )
-set "arg=%~1"
-if /I "!arg:~0,14!"=="--concurrency=" (
-    if "!arg:~14!"=="" goto :usage
-    set "concurrency_arg=--concurrency !arg:~14!"
-    shift
-    goto parse_args
-)
 goto :usage
 
 :args_done
@@ -100,7 +93,7 @@ if /I not "!scope!"=="all" (
     )
 )
 
-set "native_options=--style=file"
+set "native_options="
 if /I "!mode!"=="fix" (
     set "native_options=!native_options! -i"
 ) else (
