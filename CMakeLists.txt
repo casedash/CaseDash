@@ -850,7 +850,16 @@ set(CASEDASH_STRICTFMT_SOURCE_DIR "${CMAKE_SOURCE_DIR}/external/strictfmt" CACHE
 if(NOT EXISTS "${CASEDASH_STRICTFMT_SOURCE_DIR}/CMakeLists.txt")
     message(FATAL_ERROR "strictfmt source directory was not found at ${CASEDASH_STRICTFMT_SOURCE_DIR}.")
 endif()
-add_subdirectory("${CASEDASH_STRICTFMT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/strictfmt")
+set(STRICTFMT_BUILD_STANDALONE OFF CACHE BOOL "CaseDash embeds strictfmt through CaseDashTools." FORCE)
+set(STRICTFMT_FORMAT_TEST_EXE "$<TARGET_FILE:CaseDashTools>" CACHE STRING
+    "CaseDash runs strictfmt tests through CaseDashTools.exe."
+    FORCE
+)
+set(STRICTFMT_FORMAT_TEST_EXE_ARGS "format" CACHE STRING
+    "CaseDashTools subcommand used by strictfmt tests."
+    FORCE
+)
+add_subdirectory("${CASEDASH_STRICTFMT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/strictfmt" EXCLUDE_FROM_ALL)
 
 add_executable(CaseDashTools
     src/tools/tools_main.cpp
@@ -896,6 +905,9 @@ set_target_properties(CaseDashTools PROPERTIES
     OUTPUT_NAME "CaseDashTools"
     VS_DEBUGGER_WORKING_DIRECTORY "${output_root}"
 )
+if(TARGET strictfmt_tests)
+    add_dependencies(strictfmt_tests CaseDashTools)
+endif()
 
 enable_testing()
 
