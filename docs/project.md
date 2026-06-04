@@ -45,7 +45,7 @@ See also: [docs/build.md](build.md) for setup and commands, [docs/glossary.md](g
 - Keep generated build outputs inside `build\`, with `web\dist\` as the generated website output and the repo-root `vcpkg\` directory as the deliberate persistent exception for manifest-installed dependencies.
 - Keep shared vcpkg download and registry caches outside the worktree in the user-local cache root that `build.cmd` exports through `VCPKG_DOWNLOADS` and `X_VCPKG_REGISTRIES_CACHE`.
 - Keep package-managed dependencies in `vcpkg.json` when practical. Tool-only grammar sources that must be generated or locally adapted live under `external\strictfmt\vendor\`, outside maintained formatter and lint source discovery.
-- Keep formatter configuration changes aligned with `external\strictfmt\docs\format.md`; the formatter source owns style behavior, while `external\strictfmt\tools\regenerate_tree_sitter_grammar.py` consumes macro categories without hardcoding project-specific macro names in C++.
+- Keep formatter configuration changes aligned with `external\strictfmt\docs\format.md`; the formatter source owns style behavior, and runtime macro categories are read from the active `.cpp-format` by the strictfmt parser scanner without hardcoding project-specific macro names in C++.
 - Keep GitHub-restored dependency caches under `.github-cache\`, which is ignored and owned by the GitHub workflows.
 - Keep pull request merge protection tied to the GitHub `Validation` job so PR changes pass build, test, formatting, and unused-include checks on the Windows runner before merge.
 - Keep tracked text files checked out with CRLF line endings through the repo-level `.gitattributes` policy; binary assets are excluded from text normalization there.
