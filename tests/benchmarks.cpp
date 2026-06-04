@@ -31,6 +31,7 @@
 #include "telemetry/impl/collector.h"
 #include "telemetry/metrics.h"
 #include "telemetry/telemetry.h"
+#include "tools/impl/format_config.h"
 #include "tools/impl/format_model_parse.h"
 #include "tools/impl/format_pretty_printer.h"
 #include "tools/impl/tools_common.h"
@@ -1030,7 +1031,7 @@ void RunFormatAllWorker(const std::vector<FormatAllFileWork>& work, FormatAllWor
         ++stats.processedFiles;
 
         const auto parseStart = Clock::now();
-        FormatModel model = ParseFormatModel(*input);
+        FormatModel model = ParseFormatModel(*input, *item.config);
         RecordPhase(stats.parse, Clock::now() - parseStart);
         if (!model.parse.ok) {
             const std::string parseError =
@@ -1091,7 +1092,7 @@ int RunFormatGoldenBenchmarkCommand(size_t iterations, double renderScale) {
     const auto loopStart = Clock::now();
     for (size_t iteration = 0; iteration < iterations; ++iteration) {
         const auto parseStart = Clock::now();
-        FormatModel model = ParseFormatModel(*input);
+        FormatModel model = ParseFormatModel(*input, *config);
         RecordPhase(parseStats, Clock::now() - parseStart);
         if (!model.parse.ok) {
             const std::string error = model.parse.error.empty() ? "tree-sitter parser setup failed" : model.parse.error;
