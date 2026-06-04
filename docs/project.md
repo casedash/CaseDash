@@ -15,6 +15,7 @@ See also: [docs/build.md](build.md) for setup and commands, [docs/glossary.md](g
 - `docs/diagnostics.md` owns diagnostics CLI behavior, output contracts, and diagnostics validation recipes.
 - `docs/build.md` owns build prerequisites, developer commands, install flow, and tooling entrypoints.
 - `external/strictfmt/docs/format.md` owns source formatting policy, wrapping model, format constants, and include-sorting policy.
+- `docs/format_macro_journal.md` owns strictfmt parser macro-category minimization experiments and retained or rejected conclusions.
 - `docs/source_policy_guardrails.md` owns short explanations for hard source-policy lessons, including lint-enforced bans and review-enforced rules that are too noisy to check mechanically.
 - `docs/architecture.md` and `docs/architecture/*.md` own subsystem structure, code boundaries, package notes, runtime flows, and build-graph shape.
 - `docs/web.md` owns public website behavior, content, generated-asset contracts, and website build flow.
