@@ -20,6 +20,9 @@
 #include "config/config_telemetry.h"
 #include "dashboard_renderer/dashboard_renderer.h"
 #include "dashboard_renderer/impl/dashboard_renderer_benchmark.h"
+#include "format/impl/format_config.h"
+#include "format/impl/format_model_parse.h"
+#include "format/impl/format_pretty_printer.h"
 #include "layout_edit/layout_edit_controller.h"
 #include "layout_edit/layout_edit_parameter_edit.h"
 #include "layout_edit/layout_edit_service.h"
@@ -31,10 +34,7 @@
 #include "telemetry/impl/collector.h"
 #include "telemetry/metrics.h"
 #include "telemetry/telemetry.h"
-#include "tools/impl/format_config.h"
-#include "tools/impl/format_model_parse.h"
-#include "tools/impl/format_pretty_printer.h"
-#include "tools/impl/tools_common.h"
+#include "tools/tools_common.h"
 #include "util/enum_string.h"
 #include "util/file_path.h"
 #include "util/lightweight_mutex.h"
@@ -128,8 +128,8 @@ FilePath SourceConfigPath() {
 }
 
 FilePath SourceFormatGoldenInputPath() {
-    return FilePath(CASEDASH_SOURCE_DIR) / "external" / "strictfmt" / "tests" / "format" / "src" /
-        "format_test_input.cpp";
+    return
+        FilePath(CASEDASH_SOURCE_DIR) / "external" / "strictfmt" / "tests" / "format" / "src" / "format_test_input.cpp";
 }
 
 FilePath SourceRootPath() {
@@ -1203,7 +1203,9 @@ int RunFormatAllBenchmarkCommand(size_t iterations, double renderScale) {
         }
 
         // format-all tracks cumulative formatter CPU work, so keep it serial instead of measuring parallel wall time.
-        std::vector<FormatAllWorkerStats> workerStats(1);
+        std::vector<
+            FormatAllWorkerStats
+        > workerStats(1);
         RunFormatAllWorker(work, workerStats[0]);
 
         size_t processedFiles = 0;

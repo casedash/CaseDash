@@ -133,7 +133,7 @@ set "strictfmt_root=%root_arg%\external\strictfmt"
 if exist "!strictfmt_root!\.git" (
     set "strictfmt_file_list=%script_root%build\format_strictfmt_files_%RANDOM%_%RANDOM%.txt"
     if exist "!strictfmt_file_list!" del /q "!strictfmt_file_list!" >nul 2>nul
-    powershell -NoProfile -ExecutionPolicy Bypass -File "%script_root%tools\git_file_list.ps1" -Root "!strictfmt_root!" -Scope "!scope!" -Output "!strictfmt_file_list!" -Roots "include,src,tests" -Extensions "!format_extensions!" -Prefix "external/strictfmt"
+    powershell -NoProfile -ExecutionPolicy Bypass -File "%script_root%tools\git_file_list.ps1" -Root "!strictfmt_root!" -Scope "!scope!" -Output "!strictfmt_file_list!" -Roots "src,tests" -Extensions "!format_extensions!" -Prefix "external/strictfmt"
     set "collect_strictfmt_result=!errorlevel!"
     if not "!collect_strictfmt_result!"=="0" (
         del /q "!strictfmt_file_list!" >nul 2>nul
