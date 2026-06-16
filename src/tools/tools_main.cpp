@@ -3,8 +3,8 @@
 #include <cstdio>
 #include <string>
 
-#include "strictfmt/cli.h"
-#include "tools/format_model_dump.h"
+#include "format/format_model_dump.h"
+#include "format/strictfmt_cli.h"
 #include "tools/lint_check.h"
 
 namespace {

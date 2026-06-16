@@ -9,7 +9,7 @@
 #include <tuple>
 #include <utility>
 
-#include "tools/impl/tools_common.h"
+#include "tools/tools_common.h"
 #include "util/file_path.h"
 #include "util/strings.h"
 
@@ -1120,15 +1120,16 @@ private:
                 }
                 allowedPackages += package;
             }
-            findings.push_back(
-                {source + " -> " + target, external->second.violationKind, FormatTemplate(
-                    external->second.violationMessage,
-                    {{"source", source}, {"target", target}, {"source_package", sourcePackage}, {
-                        "allowed_packages",
-                        allowedPackages
-                    }}
-                )}
-            );
+            findings.push_back({
+                source + " -> " + target,
+                external->second.violationKind,
+                FormatTemplate(external->second.violationMessage, {
+                    {"source", source},
+                    {"target", target},
+                    {"source_package", sourcePackage},
+                    {"allowed_packages", allowedPackages}
+                })
+            });
         }
         return findings;
     }

@@ -851,6 +851,10 @@ if(NOT EXISTS "${CASEDASH_STRICTFMT_SOURCE_DIR}/CMakeLists.txt")
     message(FATAL_ERROR "strictfmt source directory was not found at ${CASEDASH_STRICTFMT_SOURCE_DIR}.")
 endif()
 set(STRICTFMT_BUILD_STANDALONE OFF CACHE BOOL "CaseDash embeds strictfmt through CaseDashTools." FORCE)
+set(STRICTFMT_USE_SYSTEM_TREE_SITTER OFF CACHE BOOL
+    "CaseDash builds strictfmt with strictfmt's vendored tree-sitter runtime."
+    FORCE
+)
 set(STRICTFMT_FORMAT_TEST_EXE "$<TARGET_FILE:CaseDashTools>" CACHE STRING
     "CaseDash runs strictfmt tests through CaseDashTools.exe."
     FORCE
@@ -869,7 +873,6 @@ add_executable(CaseDashTools
     src/tools/impl/lint_json.cpp
 )
 target_include_directories(CaseDashTools PRIVATE
-    "${CASEDASH_STRICTFMT_SOURCE_DIR}/include"
     "${CASEDASH_STRICTFMT_SOURCE_DIR}/src"
     "${CMAKE_SOURCE_DIR}/src"
 )
@@ -898,8 +901,7 @@ target_link_options(CaseDashTools PRIVATE
     $<$<CONFIG:RelWithDebInfo>:/INCREMENTAL>
 )
 target_link_libraries(CaseDashTools PRIVATE
-    strictfmt::cli
-    strictfmt::util
+    strictfmt_cli
 )
 set_target_properties(CaseDashTools PROPERTIES
     OUTPUT_NAME "CaseDashTools"
@@ -1124,7 +1126,9 @@ add_executable(CaseDashBenchmarks
     ${CASEDASH_LAYOUT_EDIT_META_CPP}
     ${CASEDASH_BENCHMARKS_VERSION_RC}
     tests/benchmarks.cpp
+    src/util/file_path.cpp
     src/util/numeric_format.cpp
+    src/util/text_encoding.cpp
     src/util/text_format.cpp
     src/util/win32_format.cpp
     src/util/elevated_process.cpp
@@ -1264,10 +1268,10 @@ set_property(SOURCE ${casedash_release_inline_limited_sources} APPEND PROPERTY
 )
 
 target_include_directories(CaseDashBenchmarks PRIVATE
-    "${CASEDASH_STRICTFMT_SOURCE_DIR}/src"
     "${CMAKE_SOURCE_DIR}/src"
     "${CMAKE_SOURCE_DIR}/resources"
     "${CMAKE_SOURCE_DIR}/src/vendor/adlx"
+    "${CASEDASH_STRICTFMT_SOURCE_DIR}/src"
     "${CASEDASH_GENERATED_DIR}"
 )
 add_dependencies(CaseDashBenchmarks CaseDashGeneratedResources CaseDashGeneratedConfigMeta)
@@ -1303,8 +1307,7 @@ target_link_options(CaseDashBenchmarks PRIVATE
     /MANIFEST:NO
 )
 target_link_libraries(CaseDashBenchmarks PRIVATE
-    strictfmt::core
-    strictfmt::util
+    strictfmt_core
     user32
     gdi32
     d3d11

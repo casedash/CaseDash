@@ -10,9 +10,9 @@
 #include "tools/impl/lint_checkers.h"
 #include "tools/impl/lint_common.h"
 #include "tools/impl/lint_json.h"
-#include "tools/impl/tools_common.h"
-#include "tools/impl/tools_parallel.h"
-#include "tools/impl/tools_progress.h"
+#include "tools/tools_common.h"
+#include "tools/tools_parallel.h"
+#include "tools/tools_progress.h"
 #include "util/file_path.h"
 #include "util/strings.h"
 
@@ -28,7 +28,7 @@ const std::vector<std::string>& ToolRefreshExcludedPrefixes() {
 }
 
 const std::vector<std::string>& ToolRefreshSourceRoots() {
-    static const std::vector<std::string> roots = {"src/tools", "external/strictfmt/include", "external/strictfmt/src"};
+    static const std::vector<std::string> roots = {"src/tools", "external/strictfmt/src"};
     return roots;
 }
 

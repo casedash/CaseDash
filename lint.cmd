@@ -147,7 +147,7 @@ call "%root%build.cmd" /tools
 exit /b !errorlevel!
 
 :collect_lint_files
-powershell -NoProfile -ExecutionPolicy Bypass -File "%root%tools\git_file_list.ps1" -Root "%root_arg%" -Scope all -Output "!file_list!" -Roots "src,tests,resources,external/strictfmt/include,external/strictfmt/src" -Extensions ".h,.cpp,.rc"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%root%tools\git_file_list.ps1" -Root "%root_arg%" -Scope all -Output "!file_list!" -Roots "src,tests,resources,external/strictfmt/src" -Extensions ".h,.cpp,.rc"
 exit /b !errorlevel!
 
 :run_lint_check
