@@ -30,17 +30,64 @@ Always build through the repository entrypoint:
 build.cmd
 ```
 
-`build.cmd` configures the maintained CMake tree under `build\cmake\` only when the cache is missing, the generator changes, `CASEDASH_LINK_MAPS` changes, or `CASEDASH_FORCE_CONFIGURE` is set. Normal repeated builds reuse the existing cache and go straight to `cmake --build`, which lets CMake regenerate only when its tracked inputs change. The script keeps final executables under `build\`, preserves the repo-root `vcpkg\` manifest install tree across clean builds, restores `build\cmake\compile_commands.json` for `clangd`-based editors, and keeps vcpkg download plus registry caches in a user-local cache root so fresh worktrees reuse the same bootstrap downloads. The vcpkg manifest installs the GTest test dependency. strictfmt owns the vendored tree-sitter runtime and C++ grammar under `external\strictfmt\vendor\tree-sitter\`; CaseDash forces strictfmt's vendored tree-sitter mode, compiles those sources into the embedded `CaseDashTools` format subcommand and formatter benchmarks, and regenerates grammar outputs through `external\strictfmt\tools\regenerate_tree_sitter_grammar.py`. The default build targets are `CaseDash`, `CaseDashHeadless`, `CaseDashTests`, and `CaseDashTools`; `CaseDashBenchmarks` is built only when `build.cmd /benchmarks` or `build.cmd Release /benchmarks` is requested, and `build.cmd /tools` builds only `CaseDashTools` for tooling refreshes. CaseDash imports strictfmt with the standalone executable target disabled, so `build.cmd`, `build.cmd /tools`, and the CaseDash CMake all target do not build `build\strictfmt.exe`; standalone formatter binaries are built through strictfmt's own build scripts. `CaseDashHeadless.exe` is a build, CI, and website asset tool; it is not installed or published as a release payload and is linked as an explicit console-subsystem executable with headless-specific manifest identity. CMake embeds the manifest that declares UTF-8 as the process active code page, and maintained native targets are built for explicit Win32 A API text boundaries rather than `UNICODE` macro dispatch. CMake generates config runtime metadata and a review manifest under `build\cmake\generated\config\` from `src\config\config.h` and `src\config\config_primitives.h`; it also generates layout-edit field metadata under `build\cmake\generated\layout_model\`. The config generator validates generated section and key spellings against `resources\config.ini`. CMake generates a compressed embedded text-resource atlas under `build\cmake\generated\compressed_resources\` for headless, tests, and tools, plus a production atlas under `build\cmake\generated\compressed_resources_app\` that excludes headless-only source strings; both atlases exclude the headless-only `[layout_guide_sheet]` config section. `CaseDashHeadless.exe` alone links a generated `RCDATA` resource containing that section and loads it as a diagnostics config extension before layout guide sheet export. Both atlases use the maintained config and localization source files in `resources\` plus deduplicated first source-use `RES_STR("...")` trace strings scanned from the selected source set. The resource generator validates embedded source text as BOM-free UTF-8, writes `build\cmake\generated\resource_strings.generated.h` with the collision-checked hash seed for compile-time `RES_STR` literals, and rewrites generated outputs only when their contents change.
+`build.cmd` configures the maintained CMake tree under `build\cmake\` when the cache is missing, the generator changes, `CASEDASH_LINK_MAPS` changes, or `CASEDASH_FORCE_CONFIGURE` is set. Normal repeated builds reuse the existing cache and go straight to `cmake --build`.
 
-CaseDash records strictfmt as the `external\strictfmt` submodule. Fresh clones use `git clone --recurse-submodules` or `git submodule update --init external/strictfmt` before building. Local rapid-iteration checkouts can point CMake at a sibling strictfmt worktree with `-DCASEDASH_STRICTFMT_SOURCE_DIR=<path>` and then force configure before the next build.
+### Build Outputs
 
-The benchmark target keeps CaseDash include directories ahead of strictfmt include directories because both trees expose un-namespaced `util\` headers. It links CaseDash path and text-encoding utility implementations explicitly, then links strictfmt formatter libraries for formatter benchmark internals.
+- Final executables are written under `build\`.
+- `build\cmake\compile_commands.json` is restored for `clangd`-based editors.
+- The repo-root `vcpkg\` manifest install tree is preserved across clean builds.
+- The vcpkg manifest installs the GTest test dependency.
+- vcpkg download and registry caches live in the shared cache root so fresh worktrees reuse bootstrap downloads.
 
-By default the shared cache root is `%LOCALAPPDATA%\CaseDash\cache`, falls back to `%USERPROFILE%\.casedash\cache` when `LOCALAPPDATA` is unavailable, and can be overridden with `CASEDASH_CACHE_ROOT`. `build.cmd` exports `VCPKG_DOWNLOADS` and `X_VCPKG_REGISTRIES_CACHE` from that root unless the caller already set them.
+### Build Targets
 
-If `build.cmd` must refresh CMake or vcpkg state without deleting the build tree, set `CASEDASH_FORCE_CONFIGURE=1` for that run. If `devenv.cmd` or the Visual Studio toolchain changes, delete `build\cmake` before the next build so CMake does not reuse stale compiler paths; the repo-root `vcpkg\` install tree and shared downloads cache are preserved.
+- The default build targets are `CaseDash`, `CaseDashHeadless`, `CaseDashTests`, and `CaseDashTools`.
+- `build.cmd /tools` builds only `CaseDashTools` for tooling refreshes.
+- `build.cmd /benchmarks` and `build.cmd Release /benchmarks` also build `CaseDashBenchmarks`.
+- `CaseDashHeadless.exe` is a build, CI, and website asset tool. It is not installed or published as a release payload, and it is linked as an explicit console-subsystem executable with headless-specific manifest identity.
 
-Release linker maps are opt-in size-investigation artifacts and are not produced by the normal build. Run `build_maps.cmd` to configure `CASEDASH_LINK_MAPS=ON`, force the app executable to relink, write `build\CaseDash.map`, and write the maintained summary to `build\CaseDash.map.summary.txt`. Add `/benchmarks` only when benchmark maps are needed; that also writes `build\CaseDashBenchmarks.map` and `build\CaseDashBenchmarks.map.summary.txt`. For ad hoc inspection of an existing map, run `python tools\analyze_link_map.py build\CaseDash.map --top 25`; to compare two maps by inferred symbol delta, run `python tools\compare_link_maps.py build\CaseDash.map path\to\other\CaseDash.map --top 10`. The analyzer estimates symbol sizes from adjacent MSVC map addresses, so its object, library, and symbol rankings are investigation guides rather than exact byte ownership. The manual GitHub `Size Map Artifacts` workflow runs the same app map build on `windows-2025-vs2026` and uploads `CaseDash.exe`, `CaseDash.map`, `CaseDash.map.summary.txt`, and artifact metadata for remote toolchain comparisons. Size assumptions and active experiment guidance live in [docs/optimize_size.md](optimize_size.md).
+### Generated Build Inputs
+
+- CMake embeds the manifest that declares UTF-8 as the process active code page. Maintained native targets use explicit Win32 A API text boundaries rather than `UNICODE` macro dispatch.
+- Config runtime metadata and the config review manifest are generated under `build\cmake\generated\config\` from `src\config\config.h` and `src\config\config_primitives.h`.
+- Layout-edit field metadata is generated under `build\cmake\generated\layout_model\`.
+- The config generator validates generated section and key spellings against `resources\config.ini`.
+- The headless, tests, and tools atlas is generated under `build\cmake\generated\compressed_resources\`.
+- The production atlas is generated under `build\cmake\generated\compressed_resources_app\` and excludes headless-only source strings.
+- Both atlases exclude the headless-only `[layout_guide_sheet]` config section and include maintained config, localization, and deduplicated first source-use `RES_STR("...")` trace strings.
+- `CaseDashHeadless.exe` alone links a generated `RCDATA` resource containing `[layout_guide_sheet]` and loads it as a diagnostics config extension before layout guide sheet export.
+- The resource generator validates embedded source text as BOM-free UTF-8, writes `build\cmake\generated\resource_strings.generated.h` with the collision-checked hash seed for compile-time `RES_STR` literals, and rewrites generated outputs only when contents change.
+
+### strictfmt Integration
+
+- CaseDash records strictfmt as the `external\strictfmt` submodule. Fresh clones use `git clone --recurse-submodules` or `git submodule update --init external/strictfmt` before building.
+- Local rapid-iteration checkouts can point CMake at a sibling strictfmt worktree with `-DCASEDASH_STRICTFMT_SOURCE_DIR=<path>` and then force configure before the next build.
+- strictfmt owns the vendored tree-sitter runtime and C++ grammar under `external\strictfmt\vendor\tree-sitter\`.
+- CaseDash forces strictfmt's vendored tree-sitter mode and compiles those sources into the embedded `CaseDashTools` format subcommand and formatter benchmarks.
+- Grammar outputs are regenerated through `external\strictfmt\tools\regenerate_tree_sitter_grammar.py`.
+- CaseDash imports strictfmt with the standalone executable target disabled. `build.cmd`, `build.cmd /tools`, and the CaseDash CMake all target do not build `build\strictfmt.exe`; standalone formatter binaries are built through strictfmt's own build scripts.
+- The benchmark target keeps CaseDash include directories ahead of strictfmt include directories because both trees expose un-namespaced `util\` headers. It links CaseDash path and text-encoding utility implementations explicitly, then links strictfmt formatter libraries for formatter benchmark internals.
+
+### Build Cache
+
+- By default the shared cache root is `%LOCALAPPDATA%\CaseDash\cache`.
+- When `LOCALAPPDATA` is unavailable, the cache root falls back to `%USERPROFILE%\.casedash\cache`.
+- `CASEDASH_CACHE_ROOT` overrides the default cache root.
+- `build.cmd` exports `VCPKG_DOWNLOADS` and `X_VCPKG_REGISTRIES_CACHE` from that root unless the caller already set them.
+- Set `CASEDASH_FORCE_CONFIGURE=1` when `build.cmd` must refresh CMake or vcpkg state without deleting the build tree.
+- Delete `build\cmake` when `devenv.cmd` or the Visual Studio toolchain changes so CMake does not reuse stale compiler paths. The repo-root `vcpkg\` install tree and shared downloads cache are preserved.
+
+### Linker Maps
+
+- Release linker maps are opt-in size-investigation artifacts and are not produced by the normal build.
+- Run `build_maps.cmd` to configure `CASEDASH_LINK_MAPS=ON`, force the app executable to relink, write `build\CaseDash.map`, and write `build\CaseDash.map.summary.txt`.
+- Add `/benchmarks` only when benchmark maps are needed. That also writes `build\CaseDashBenchmarks.map` and `build\CaseDashBenchmarks.map.summary.txt`.
+- Inspect an existing map with `python tools\analyze_link_map.py build\CaseDash.map --top 25`.
+- Compare two maps by inferred symbol delta with `python tools\compare_link_maps.py build\CaseDash.map path\to\other\CaseDash.map --top 10`.
+- Treat analyzer object, library, and symbol rankings as investigation guides rather than exact byte ownership because symbol sizes are estimated from adjacent MSVC map addresses.
+- The manual GitHub `Size Map Artifacts` workflow runs the same app map build on `windows-2025-vs2026` and uploads `CaseDash.exe`, `CaseDash.map`, `CaseDash.map.summary.txt`, and artifact metadata for remote toolchain comparisons.
+- Size assumptions and active experiment guidance live in [docs/optimize_size.md](optimize_size.md).
 
 ## Test
 
