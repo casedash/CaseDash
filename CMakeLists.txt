@@ -851,10 +851,6 @@ if(NOT EXISTS "${CASEDASH_STRICTFMT_SOURCE_DIR}/CMakeLists.txt")
     message(FATAL_ERROR "strictfmt source directory was not found at ${CASEDASH_STRICTFMT_SOURCE_DIR}.")
 endif()
 set(STRICTFMT_BUILD_STANDALONE OFF CACHE BOOL "CaseDash embeds strictfmt through CaseDashTools." FORCE)
-set(STRICTFMT_USE_SYSTEM_TREE_SITTER OFF CACHE BOOL
-    "CaseDash builds strictfmt with strictfmt's vendored tree-sitter runtime."
-    FORCE
-)
 set(STRICTFMT_FORMAT_TEST_EXE "$<TARGET_FILE:CaseDashTools>" CACHE STRING
     "CaseDash runs strictfmt tests through CaseDashTools.exe."
     FORCE
