@@ -1,0 +1,37 @@
+# See external/strictfmt/docs/format.md for details
+---
+ColumnLimit: 120
+IndentWidth: 4
+TabWidth: 4
+
+IncludeCategories:
+  - Regex: '^<(winsock2|ws2tcpip)\.h>$'
+    Priority: 1
+  - Regex: '^<windows\.h>$'
+    Priority: 2
+  - Regex: '^<.*>$'
+    Priority: 3
+  - Regex: '^"vendor/.*"$'
+    Priority: 4
+  - Regex: '^".*"$'
+    Priority: 5
+MainIncludeChar: Quote
+IncludeIsMainRegex: '(Test)?$'
+
+MacroCategories:
+  BareIdentifierMacros:
+    - CALLBACK
+    - WINAPI
+  DeclarationPrefixMacros:
+    - WINAPI
+  CallSyntaxMacros:
+    - TEST
+    - TEST_F
+    - ENUM_STRING_DECLARE
+
+StreamShift:
+  ConfigurationMethods:
+    - std::left
+    - std::fixed
+    - std::setprecision
+    - std::setw
