@@ -24,10 +24,6 @@ MacroCategories:
     - WINAPI
   DeclarationPrefixMacros:
     - WINAPI
-  CallSyntaxMacros:
-    - TEST
-    - TEST_F
-    - ENUM_STRING_DECLARE
 
 StreamShift:
   ConfigurationMethods:
