@@ -19,11 +19,9 @@ MainIncludeChar: Quote
 IncludeIsMainRegex: '(Test)?$'
 
 MacroCategories:
-  BareIdentifierMacros:
+  DeclarationModifierMacros:
+    - WINAPI
     - CALLBACK
-    - WINAPI
-  DeclarationPrefixMacros:
-    - WINAPI
 
 StreamShift:
   ConfigurationMethods:
