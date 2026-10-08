@@ -73,9 +73,7 @@ std::string FallbackProcessName(DWORD processId) {
     return FormatText("pid:%lu", static_cast<unsigned long>(processId));
 }
 
-bool IsPermissionDenied(ULONG status) {
-    return status == ERROR_ACCESS_DENIED;
-}
+bool IsPermissionDenied(ULONG status) { return status == ERROR_ACCESS_DENIED; }
 
 std::string BuildSessionName() {
     return FormatText("CaseDashPresentedFps-%lu", static_cast<unsigned long>(GetCurrentProcessId()));
@@ -127,9 +125,7 @@ bool IsExcludedProcessName(const std::string& processName) {
     return processName.empty() || processName == "casedash" || processName == "dwm";
 }
 
-char LowerAscii(char ch) {
-    return ch >= 'A' && ch <= 'Z' ? static_cast<char>(ch - 'A' + 'a') : ch;
-}
+char LowerAscii(char ch) { return ch >= 'A' && ch <= 'Z' ? static_cast<char>(ch - 'A' + 'a') : ch; }
 
 bool ContainsAsciiInsensitive(const char* value, std::string_view needle) {
     if (needle.empty()) {
@@ -176,9 +172,7 @@ class PresentedFpsEtwProvider final : public FpsTelemetryProvider {
 public:
     explicit PresentedFpsEtwProvider(Trace& trace) : trace_(trace) {}
 
-    ~PresentedFpsEtwProvider() override {
-        Stop();
-    }
+    ~PresentedFpsEtwProvider() override { Stop(); }
 
     bool Initialize() override {
         LightweightMutexLock lock(mutex_);
@@ -214,9 +208,7 @@ public:
             status = StartTraceA(&sessionHandle_, sessionName_.c_str(), &sessionProps.properties);
             if (trace_.Enabled(TracePrefix::FpsEtw)) {
                 trace_.WriteFmt(
-                    TracePrefix::FpsEtw,
-                    RES_STR("start_trace_retry status=%s"),
-                    FormatWin32Error(status).c_str()
+                    TracePrefix::FpsEtw, RES_STR("start_trace_retry status=%s"), FormatWin32Error(status).c_str()
                 );
             }
         }
@@ -275,8 +267,7 @@ public:
         processingThread_ = CreateThread(nullptr, 0, &PresentedFpsEtwProvider::ProcessTraceThread, this, 0, nullptr);
         if (processingThread_ == nullptr) {
             diagnostics_ = FormatText(
-                RES_STR("Failed to create FPS ETW processing thread: %s"),
-                FormatWin32Error(GetLastError()).c_str()
+                RES_STR("Failed to create FPS ETW processing thread: %s"), FormatWin32Error(GetLastError()).c_str()
             );
             StopLocked();
             return false;
@@ -332,24 +323,21 @@ public:
             if (requireSelectedGpuActivity && topGpu3dUsage_ < kGpu3dActiveThresholdPercent) {
                 sample.available = true;
                 sample.fps = 0.0;
-                sample.diagnostics = BuildDiagnosticsLocked(FormatText(
-                    RES_STR(" selected adapter idle/off; fps=value=0.0%s"),
-                    GpuUsageDiagnostics().c_str()
-                ));
+                sample.diagnostics = BuildDiagnosticsLocked(
+                    FormatText(RES_STR(" selected adapter idle/off; fps=value=0.0%s"), GpuUsageDiagnostics().c_str())
+                );
                 return sample;
             }
             sample.available = false;
-            sample.diagnostics = BuildDiagnosticsLocked(FormatText(
-                RES_STR(" No presenting application selected.%s"),
-                GpuUsageDiagnostics().c_str()
-            ));
+            sample.diagnostics = BuildDiagnosticsLocked(
+                FormatText(RES_STR(" No presenting application selected.%s"), GpuUsageDiagnostics().c_str())
+            );
             return sample;
         }
 
         const double rawFps = static_cast<double>(bestSelection.count) / kFpsWindowSeconds;
-        if (
-            requireSelectedGpuActivity && Gpu3dUsageForProcess(bestSelection.processId) < kGpu3dActiveThresholdPercent
-        ) {
+        if (requireSelectedGpuActivity && Gpu3dUsageForProcess(bestSelection.processId) < kGpu3dActiveThresholdPercent)
+        {
             ResetSelectionLocked();
             sample.available = false;
             sample.processId = bestSelection.processId;
@@ -358,7 +346,7 @@ public:
             sample.diagnostics = BuildDiagnosticsLocked(FormatText(
                 RES_STR(
                     " selected adapter has no active GPU Engine 3D presenter. process=%s source=%s "
-                    "window_count=%zu raw_fps=value=%.1f%s"
+                        "window_count=%zu raw_fps=value=%.1f%s"
                 ),
                 sample.processName.c_str(),
                 PresentEventSourceName(bestSelection.source),
@@ -445,10 +433,9 @@ private:
             return;
         }
         if (bucket.firstEvent >= 256 && bucket.firstEvent * 2 >= bucket.events.size()) {
-            bucket.events.erase(
-                bucket.events.begin(),
-                bucket.events.begin() + static_cast<std::ptrdiff_t>(bucket.firstEvent)
-            );
+            bucket
+                .events
+                .erase(bucket.events.begin(), bucket.events.begin() + static_cast<std::ptrdiff_t>(bucket.firstEvent));
             bucket.firstEvent = 0;
         }
     }
@@ -469,9 +456,7 @@ private:
     }
 
     ProcessEventSelection SelectBestProcessLocked(
-        ProcessPresentEventBuckets& eventsByProcess,
-        uint64_t minimumQpc,
-        bool requireGpu3dActivity
+        ProcessPresentEventBuckets& eventsByProcess, uint64_t minimumQpc, bool requireGpu3dActivity
     ) {
         ProcessEventSelection selection;
         selection.source =
@@ -502,8 +487,7 @@ private:
     }
 
     ProcessEventSelection SelectBestSourceLocked(
-        const ProcessEventSelection& runtimeSelection,
-        const ProcessEventSelection& kernelSelection
+        const ProcessEventSelection& runtimeSelection, const ProcessEventSelection& kernelSelection
     ) const {
         if (runtimeSelection.processId == 0) {
             return kernelSelection;
@@ -582,9 +566,7 @@ private:
     }
 
     ProcessEventSelection ApplyProcessHysteresisLocked(
-        const ProcessEventSelection& candidate,
-        uint64_t minimumQpc,
-        bool requireGpu3dActivity
+        const ProcessEventSelection& candidate, uint64_t minimumQpc, bool requireGpu3dActivity
     ) {
         if (selectedProcessId_ == 0 || candidate.processId == selectedProcessId_) {
             return candidate;
@@ -752,10 +734,7 @@ private:
         PDH_STATUS status = PdhGetRawCounterArrayA(gpu3dCounter_, &bufferSize, &itemCount, nullptr);
         if (status != PDH_MORE_DATA) {
             SetGpuUsageTwoStatusText(
-                gpuUsageDiagnostics_,
-                static_cast<long>(collectStatus),
-                "gpu3d_prepare",
-                static_cast<long>(status)
+                gpuUsageDiagnostics_, static_cast<long>(collectStatus), "gpu3d_prepare", static_cast<long>(status)
             );
             return;
         }
@@ -765,10 +744,7 @@ private:
         status = PdhGetRawCounterArrayA(gpu3dCounter_, &bufferSize, &itemCount, items);
         if (status != ERROR_SUCCESS) {
             SetGpuUsageTwoStatusText(
-                gpuUsageDiagnostics_,
-                static_cast<long>(collectStatus),
-                "gpu3d_fetch",
-                static_cast<long>(status)
+                gpuUsageDiagnostics_, static_cast<long>(collectStatus), "gpu3d_fetch", static_cast<long>(status)
             );
             return;
         }
@@ -838,9 +814,7 @@ private:
         );
     }
 
-    std::string GpuUsageDiagnostics() const {
-        return GpuUsageDiagnosticsForProcess(selectedProcessId_);
-    }
+    std::string GpuUsageDiagnostics() const { return GpuUsageDiagnosticsForProcess(selectedProcessId_); }
 
     std::string GpuUsageDiagnosticsForProcess(DWORD processId) const {
         if (processId == 0) {
@@ -853,14 +827,7 @@ private:
 
     ULONG EnableProvider(const GUID& providerGuid, uint64_t anyKeyword, UCHAR level) const {
         return EnableTraceEx2(
-            sessionHandle_,
-            &providerGuid,
-            EVENT_CONTROL_CODE_ENABLE_PROVIDER,
-            level,
-            anyKeyword,
-            0,
-            0,
-            nullptr
+            sessionHandle_, &providerGuid, EVENT_CONTROL_CODE_ENABLE_PROVIDER, level, anyKeyword, 0, 0, nullptr
         );
     }
 
@@ -1001,9 +968,7 @@ private:
         }
         const ULONG processStatus = ProcessTrace(&handle, 1, nullptr, nullptr);
         trace_.WriteFmt(
-            TracePrefix::FpsEtw,
-            RES_STR("process_trace_done status=%s"),
-            FormatWin32Error(processStatus).c_str()
+            TracePrefix::FpsEtw, RES_STR("process_trace_done status=%s"), FormatWin32Error(processStatus).c_str()
         );
     }
 

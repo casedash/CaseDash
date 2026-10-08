@@ -50,14 +50,13 @@ std::string FormatScalarMetric(const ScalarMetric& metric, int precision) {
     return FormatText("%.*f %.*s", precision, *metric.value, static_cast<int>(unit.size()), unit.data());
 }
 
-typedef PDH_STATUS(WINAPI* PdhAddEnglishCounterAFn)(PDH_HQUERY, LPCSTR, DWORD_PTR, PDH_HCOUNTER*);
+typedef PDH_STATUS (WINAPI *PdhAddEnglishCounterAFn)(PDH_HQUERY, LPCSTR, DWORD_PTR, PDH_HCOUNTER*);
 
 PDH_STATUS AddCounterCompat(PDH_HQUERY query, std::string_view path, PDH_HCOUNTER* counter) {
     const std::string pathText(path);
-    static PdhAddEnglishCounterAFn addEnglish = reinterpret_cast<PdhAddEnglishCounterAFn>(GetProcAddress(
-        GetModuleHandleA(kPdhLibraryName),
-        "PdhAddEnglishCounterA"
-    ));
+    static PdhAddEnglishCounterAFn addEnglish = reinterpret_cast<PdhAddEnglishCounterAFn>(
+        GetProcAddress(GetModuleHandleA(kPdhLibraryName), "PdhAddEnglishCounterA")
+    );
     if (addEnglish != nullptr) {
         return addEnglish(query, pathText.c_str(), 0, counter);
     }
@@ -71,9 +70,7 @@ std::string DetectCpuName() {
     }
 
     const auto registryName = ReadRegistryString(
-        HKEY_LOCAL_MACHINE,
-        "HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0",
-        "ProcessorNameString"
+        HKEY_LOCAL_MACHINE, "HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0", "ProcessorNameString"
     );
     if (registryName.has_value()) {
         return CollapseAsciiWhitespace(Trim(*registryName));

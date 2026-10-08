@@ -11,6 +11,4 @@ int ShowAppMessageBox(HWND owner, std::string_view text, UINT type) {
     return MessageBoxA(owner, message.c_str(), kAppTitle, type);
 }
 
-int ShowAppMessageBox(std::string_view text, UINT type) {
-    return ShowAppMessageBox(nullptr, text, type);
-}
+int ShowAppMessageBox(std::string_view text, UINT type) { return ShowAppMessageBox(nullptr, text, type); }

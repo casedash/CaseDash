@@ -46,14 +46,16 @@ std::string GetLayoutEditParameterDisplayName(LayoutEditParameter parameter) {
     return label;
 }
 
-std::optional<LayoutEditParameter> FindLayoutEditParameterByConfigField(
-    std::string_view sectionName, std::string_view parameterName) {
+std::optional<LayoutEditParameter>
+    FindLayoutEditParameterByConfigField(std::string_view sectionName, std::string_view parameterName)
+{
     const auto fields = LayoutEditConfigFieldMetadataDescriptors();
     for (size_t i = 0; i < fields.size(); ++i) {
         const auto parameter = static_cast<LayoutEditParameter>(i);
         const auto& field = fields[i];
-        if (std::string_view(field.sectionName) == sectionName &&
-            std::string_view(field.parameterName) == parameterName) {
+        if (
+            std::string_view(field.sectionName) == sectionName && std::string_view(field.parameterName) == parameterName
+        ) {
             return parameter;
         }
     }

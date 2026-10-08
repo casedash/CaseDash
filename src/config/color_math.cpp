@@ -26,26 +26,24 @@ double NormalizeHueDegrees(double value) {
     return value;
 }
 
-unsigned int ClampByte(double value) {
-    return static_cast<unsigned int>(std::clamp(std::round(value), 0.0, 255.0));
-}
+unsigned int ClampByte(double value) { return static_cast<unsigned int>(std::clamp(std::round(value), 0.0, 255.0)); }
 
 double Min3Double(double first, double second, double third) {
     // Size: avoid std::min/std::max initializer_list helper code in color conversions.
     return std::min(std::min(first, second), third);
 }
 
-double Max3Double(double first, double second, double third) {
-    return std::max(std::max(first, second), third);
-}
+double Max3Double(double first, double second, double third) { return std::max(std::max(first, second), third); }
 
 }  // namespace
 
 ColorBytes ColorBytesFromRgba(std::uint32_t rgba) {
-    return ColorBytes{static_cast<double>((rgba >> 24) & 0xFFu),
+    return ColorBytes{
+        static_cast<double>((rgba >> 24) & 0xFFu),
         static_cast<double>((rgba >> 16) & 0xFFu),
         static_cast<double>((rgba >> 8) & 0xFFu),
-        static_cast<double>(rgba & 0xFFu)};
+        static_cast<double>(rgba & 0xFFu)
+    };
 }
 
 std::uint32_t RgbaFromColorBytes(ColorBytes color) {
@@ -65,9 +63,11 @@ OklabColor OklabFromColorBytes(ColorBytes color) {
     const double mRoot = std::cbrt(m);
     const double sRoot = std::cbrt(s);
 
-    return OklabColor{0.2104542553 * lRoot + 0.7936177850 * mRoot - 0.0040720468 * sRoot,
+    return OklabColor{
+        0.2104542553 * lRoot + 0.7936177850 * mRoot - 0.0040720468 * sRoot,
         1.9779984951 * lRoot - 2.4285922050 * mRoot + 0.4505937099 * sRoot,
-        0.0259040371 * lRoot + 0.7827717662 * mRoot - 0.8086757660 * sRoot};
+        0.0259040371 * lRoot + 0.7827717662 * mRoot - 0.8086757660 * sRoot
+    };
 }
 
 ColorBytes ColorBytesFromOklab(OklabColor color, double alpha) {
@@ -97,9 +97,7 @@ OklabColor OklabFromOklch(OklchColor color) {
     return OklabColor{color.l, color.c * std::cos(hue), color.c * std::sin(hue)};
 }
 
-OklchColor OklchFromColorBytes(ColorBytes color) {
-    return OklchFromOklab(OklabFromColorBytes(color));
-}
+OklchColor OklchFromColorBytes(ColorBytes color) { return OklchFromOklab(OklabFromColorBytes(color)); }
 
 ColorBytes ColorBytesFromOklch(OklchColor color, double alpha) {
     return ColorBytesFromOklab(OklabFromOklch(color), alpha);
@@ -163,7 +161,8 @@ ColorBytes ColorBytesFromHsv(HsvColor color, double alpha) {
 
 OklabColor MixOklab(OklabColor from, OklabColor to, double amount) {
     return OklabColor{
-        from.l + (to.l - from.l) * amount, from.a + (to.a - from.a) * amount, from.b + (to.b - from.b) * amount};
+        from.l + (to.l - from.l) * amount, from.a + (to.a - from.a) * amount, from.b + (to.b - from.b) * amount
+    };
 }
 
 OklabColor RotateOklabHue(OklabColor color, double degrees) {

@@ -9,12 +9,7 @@ namespace {
 constexpr std::string_view kRuntimePlaceholderMetricId = "nothing";
 
 const MetricDefinitionConfig kRuntimePlaceholderMetricDefinition{
-    std::string(kRuntimePlaceholderMetricId),
-    MetricDisplayStyle::Scalar,
-    false,
-    1.0,
-    "",
-    "Nothing",
+    std::string(kRuntimePlaceholderMetricId), MetricDisplayStyle::Scalar, false, 1.0, "", "Nothing",
 };
 
 }  // namespace
@@ -37,9 +32,7 @@ MetricDefinitionConfig* FindMetricDefinition(MetricsSectionConfig& metrics, std:
     return nullptr;
 }
 
-bool IsRuntimePlaceholderMetricId(std::string_view id) {
-    return id == kRuntimePlaceholderMetricId;
-}
+bool IsRuntimePlaceholderMetricId(std::string_view id) { return id == kRuntimePlaceholderMetricId; }
 
 const MetricDefinitionConfig* FindEffectiveMetricDefinition(const MetricsSectionConfig& metrics, std::string_view id) {
     const MetricDefinitionConfig* definition = FindMetricDefinition(metrics, id);
@@ -88,16 +81,18 @@ void ApplyResolvedTelemetrySelections(AppConfig& config, const ResolvedTelemetry
     }
 }
 
-AppConfig BuildEffectiveRuntimeConfig(
-    const AppConfig& uiConfig, const ResolvedTelemetrySelections& resolvedSelections) {
+AppConfig BuildEffectiveRuntimeConfig(const AppConfig& uiConfig, const ResolvedTelemetrySelections& resolvedSelections)
+{
     AppConfig config = uiConfig;
     ApplyResolvedTelemetrySelections(config, resolvedSelections);
     return config;
 }
 
 std::string FormatMetricDefinitionValue(const MetricDefinitionConfig& definition) {
-    return FormatText("%s,%s,%s",
+    return FormatText(
+        "%s,%s,%s",
         definition.telemetryScale ? "*" : FormatDoubleGeneral(definition.scale).c_str(),
         definition.unit.c_str(),
-        definition.label.c_str());
+        definition.label.c_str()
+    );
 }

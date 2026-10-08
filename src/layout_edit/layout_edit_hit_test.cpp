@@ -13,17 +13,17 @@ namespace {
 
 bool IsAnchorHandleKind(LayoutEditActiveRegionKind kind) {
     return kind == LayoutEditActiveRegionKind::StaticEditAnchorHandle ||
-           kind == LayoutEditActiveRegionKind::DynamicEditAnchorHandle;
+        kind == LayoutEditActiveRegionKind::DynamicEditAnchorHandle;
 }
 
 bool IsAnchorTargetKind(LayoutEditActiveRegionKind kind) {
     return kind == LayoutEditActiveRegionKind::StaticEditAnchorTarget ||
-           kind == LayoutEditActiveRegionKind::DynamicEditAnchorTarget;
+        kind == LayoutEditActiveRegionKind::DynamicEditAnchorTarget;
 }
 
 bool IsColorTargetKind(LayoutEditActiveRegionKind kind) {
-    return kind == LayoutEditActiveRegionKind::StaticColorTarget ||
-           kind == LayoutEditActiveRegionKind::DynamicColorTarget;
+    return
+        kind == LayoutEditActiveRegionKind::StaticColorTarget || kind == LayoutEditActiveRegionKind::DynamicColorTarget;
 }
 
 bool LayoutGuideSnapCandidateLess(const LayoutGuideSnapCandidate& left, const LayoutGuideSnapCandidate& right) {
@@ -57,8 +57,10 @@ int AnchorHoverPriority(const LayoutEditAnchorRegion& region) {
 }
 
 bool AnchorHandleContains(const LayoutEditAnchorRegion& region, RenderPoint clientPoint) {
-    if (!region.anchorHitRect.Contains(clientPoint) &&
-        !region.anchorRect.Inflate(region.anchorHitPadding, region.anchorHitPadding).Contains(clientPoint)) {
+    if (
+        !region.anchorHitRect.Contains(clientPoint) &&
+        !region.anchorRect.Inflate(region.anchorHitPadding, region.anchorHitPadding).Contains(clientPoint)
+    ) {
         return false;
     }
     if (region.shape != AnchorShape::Circle) {
@@ -83,27 +85,34 @@ long long RectArea(const RenderRect& rect) {
 }
 
 int WidgetExtentForAxis(const LayoutEditWidgetRegion& widget, LayoutGuideAxis axis) {
-    return axis == LayoutGuideAxis::Vertical ? std::max(0, static_cast<int>(widget.rect.right - widget.rect.left))
-                                             : std::max(0, static_cast<int>(widget.rect.bottom - widget.rect.top));
+    return axis == LayoutGuideAxis::Vertical ? std::max(0, static_cast<int>(widget.rect.right - widget.rect.left)) :
+        std::max(0, static_cast<int>(widget.rect.bottom - widget.rect.top));
 }
 
 bool IsWidgetAffectedByGuide(const LayoutEditWidgetRegion& widget, const LayoutEditGuide& guide) {
     if (!guide.renderCardId.empty() && widget.widget.renderCardId != guide.renderCardId) {
         return false;
     }
-    return widget.rect.left >= guide.containerRect.left && widget.rect.top >= guide.containerRect.top &&
-           widget.rect.right <= guide.containerRect.right && widget.rect.bottom <= guide.containerRect.bottom;
+    return widget.rect.left >= guide.containerRect.left &&
+        widget.rect.top >= guide.containerRect.top &&
+        widget.rect.right <= guide.containerRect.right &&
+        widget.rect.bottom <= guide.containerRect.bottom;
 }
 
-bool MatchesSimilarityRepresentative(const LayoutEditWidgetRegion& candidate,
+bool MatchesSimilarityRepresentative(
+    const LayoutEditWidgetRegion& candidate,
     LayoutGuideAxis axis,
     const std::string& cardId,
     WidgetClass widgetClass,
     int extent,
     int edgeStart,
-    int edgeEnd) {
-    if (candidate.widget.renderCardId != cardId || candidate.widgetClass != widgetClass ||
-        WidgetExtentForAxis(candidate, axis) != extent) {
+    int edgeEnd
+) {
+    if (
+        candidate.widget.renderCardId != cardId ||
+        candidate.widgetClass != widgetClass ||
+        WidgetExtentForAxis(candidate, axis) != extent
+    ) {
         return false;
     }
     if (axis == LayoutGuideAxis::Vertical) {
@@ -112,24 +121,30 @@ bool MatchesSimilarityRepresentative(const LayoutEditWidgetRegion& candidate,
     return candidate.rect.top == edgeStart && candidate.rect.bottom == edgeEnd;
 }
 
-bool HasPriorTargetType(const std::vector<LayoutEditWidgetRegion>& widgets,
+bool HasPriorTargetType(
+    const std::vector<LayoutEditWidgetRegion>& widgets,
     size_t targetIndex,
     const LayoutEditWidgetIdentity& affectedWidget,
     WidgetClass widgetClass,
     LayoutGuideAxis axis,
-    int extent) {
+    int extent
+) {
     for (size_t i = 0; i < targetIndex; ++i) {
         const LayoutEditWidgetRegion& candidate = widgets[i];
-        if (!MatchesWidgetIdentity(candidate.widget, affectedWidget) && candidate.widgetClass == widgetClass &&
-            WidgetExtentForAxis(candidate, axis) == extent) {
+        if (
+            !MatchesWidgetIdentity(candidate.widget, affectedWidget) &&
+            candidate.widgetClass == widgetClass &&
+            WidgetExtentForAxis(candidate, axis) == extent
+        ) {
             return true;
         }
     }
     return false;
 }
 
-std::vector<LayoutEditWidgetRegion> CollectSimilarityIndicatorWidgets(
-    const LayoutEditActiveRegions& regions, LayoutGuideAxis axis) {
+std::vector<LayoutEditWidgetRegion>
+    CollectSimilarityIndicatorWidgets(const LayoutEditActiveRegions& regions, LayoutGuideAxis axis)
+{
     // Size: scan the already-small result list; separate seen-key vectors measured larger.
     std::vector<LayoutEditWidgetRegion> widgets;
     for (const LayoutEditActiveRegion& region : regions) {
@@ -148,7 +163,8 @@ std::vector<LayoutEditWidgetRegion> CollectSimilarityIndicatorWidgets(
         const int edgeEnd = axis == LayoutGuideAxis::Vertical ? widget->rect.right : widget->rect.bottom;
         const auto duplicate = [&](const LayoutEditWidgetRegion& candidate) {
             return MatchesSimilarityRepresentative(
-                candidate, axis, widget->widget.renderCardId, widget->widgetClass, extent, edgeStart, edgeEnd);
+                candidate, axis, widget->widget.renderCardId, widget->widgetClass, extent, edgeStart, edgeEnd
+            );
         };
         if (std::find_if(widgets.begin(), widgets.end(), duplicate) != widgets.end()) {
             continue;
@@ -209,8 +225,9 @@ const LayoutEditGapAnchor* HitTestGapEditAnchor(const LayoutEditActiveRegions& r
     return bestAnchor;
 }
 
-const LayoutEditAnchorRegion* HitTestEditableAnchorTarget(
-    const LayoutEditActiveRegions& regions, RenderPoint clientPoint) {
+const LayoutEditAnchorRegion*
+    HitTestEditableAnchorTarget(const LayoutEditActiveRegions& regions, RenderPoint clientPoint)
+{
     const LayoutEditAnchorRegion* bestRegion = nullptr;
     long long bestArea = (std::numeric_limits<long long>::max)();
     for (auto it = regions.rbegin(); it != regions.rend(); ++it) {
@@ -230,8 +247,9 @@ const LayoutEditAnchorRegion* HitTestEditableAnchorTarget(
     return bestRegion;
 }
 
-const LayoutEditAnchorRegion* HitTestEditableAnchorHandle(
-    const LayoutEditActiveRegions& regions, RenderPoint clientPoint) {
+const LayoutEditAnchorRegion*
+    HitTestEditableAnchorHandle(const LayoutEditActiveRegions& regions, RenderPoint clientPoint)
+{
     const LayoutEditAnchorRegion* bestRegion = nullptr;
     int bestPriority = 0;
     for (auto it = regions.rbegin(); it != regions.rend(); ++it) {
@@ -251,8 +269,8 @@ const LayoutEditAnchorRegion* HitTestEditableAnchorHandle(
     return bestRegion;
 }
 
-const LayoutEditColorRegion* HitTestEditableColorRegion(
-    const LayoutEditActiveRegions& regions, RenderPoint clientPoint) {
+const LayoutEditColorRegion* HitTestEditableColorRegion(const LayoutEditActiveRegions& regions, RenderPoint clientPoint)
+{
     const LayoutEditColorRegion* bestRegion = nullptr;
     int bestPriority = (std::numeric_limits<int>::max)();
     long long bestArea = (std::numeric_limits<long long>::max)();
@@ -275,8 +293,9 @@ const LayoutEditColorRegion* HitTestEditableColorRegion(
     return bestRegion;
 }
 
-const LayoutEditAnchorRegion* FindEditableAnchorRegion(
-    const LayoutEditActiveRegions& regions, const LayoutEditAnchorKey& key) {
+const LayoutEditAnchorRegion*
+    FindEditableAnchorRegion(const LayoutEditActiveRegions& regions, const LayoutEditAnchorKey& key)
+{
     for (const LayoutEditActiveRegion& region : regions) {
         if (!IsAnchorHandleKind(region.kind) && !IsAnchorTargetKind(region.kind)) {
             continue;
@@ -289,8 +308,8 @@ const LayoutEditAnchorRegion* FindEditableAnchorRegion(
     return nullptr;
 }
 
-const LayoutEditGapAnchor* FindGapEditAnchor(
-    const LayoutEditActiveRegions& regions, const LayoutEditGapAnchorKey& key) {
+const LayoutEditGapAnchor* FindGapEditAnchor(const LayoutEditActiveRegions& regions, const LayoutEditGapAnchorKey& key)
+{
     for (const LayoutEditActiveRegion& region : regions) {
         if (region.kind != LayoutEditActiveRegionKind::GapHandle) {
             continue;
@@ -309,24 +328,33 @@ const LayoutEditGuide* FindLayoutEditGuide(const LayoutEditActiveRegions& region
             continue;
         }
         const auto* candidate = LayoutEditActiveRegionPayloadAs<LayoutEditGuide>(region);
-        if (candidate != nullptr && candidate->renderCardId == guide.renderCardId &&
-            candidate->editCardId == guide.editCardId && candidate->nodePath == guide.nodePath &&
-            candidate->separatorIndex == guide.separatorIndex) {
+        if (
+            candidate != nullptr &&
+            candidate->renderCardId == guide.renderCardId &&
+            candidate->editCardId == guide.editCardId &&
+            candidate->nodePath == guide.nodePath &&
+            candidate->separatorIndex == guide.separatorIndex
+        ) {
             return candidate;
         }
     }
     return nullptr;
 }
 
-const LayoutEditWidgetGuide* FindWidgetEditGuide(
-    const LayoutEditActiveRegions& regions, const LayoutEditWidgetGuide& guide) {
+const LayoutEditWidgetGuide*
+    FindWidgetEditGuide(const LayoutEditActiveRegions& regions, const LayoutEditWidgetGuide& guide)
+{
     for (const LayoutEditActiveRegion& region : regions) {
         if (region.kind != LayoutEditActiveRegionKind::WidgetGuide) {
             continue;
         }
         const auto* candidate = LayoutEditActiveRegionPayloadAs<LayoutEditWidgetGuide>(region);
-        if (candidate != nullptr && candidate->parameter == guide.parameter && candidate->guideId == guide.guideId &&
-            MatchesWidgetIdentity(candidate->widget, guide.widget)) {
+        if (
+            candidate != nullptr &&
+            candidate->parameter == guide.parameter &&
+            candidate->guideId == guide.guideId &&
+            MatchesWidgetIdentity(candidate->widget, guide.widget)
+        ) {
             return candidate;
         }
     }
@@ -453,8 +481,9 @@ LayoutEditHoverResolution ResolveLayoutEditHover(const LayoutEditActiveRegions& 
     return resolution;
 }
 
-std::vector<LayoutGuideSnapCandidate> CollectLayoutGuideSnapCandidates(
-    const LayoutEditActiveRegions& regions, const LayoutEditGuide& guide) {
+std::vector<LayoutGuideSnapCandidate>
+    CollectLayoutGuideSnapCandidates(const LayoutEditActiveRegions& regions, const LayoutEditGuide& guide)
+{
     std::vector<LayoutEditWidgetRegion> allWidgets = CollectSimilarityIndicatorWidgets(regions, guide.axis);
     std::vector<LayoutGuideSnapCandidate> candidates;
     for (const LayoutEditWidgetRegion& affected : allWidgets) {
@@ -475,11 +504,7 @@ std::vector<LayoutGuideSnapCandidate> CollectLayoutGuideSnapCandidates(
                 continue;
             }
             candidates.push_back(LayoutGuideSnapCandidate{
-                affected.widget,
-                targetExtent,
-                startExtent,
-                std::abs(targetExtent - startExtent),
-                i,
+                affected.widget, targetExtent, startExtent, std::abs(targetExtent - startExtent), i,
             });
         }
     }

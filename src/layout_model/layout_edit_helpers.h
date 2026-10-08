@@ -17,7 +17,8 @@ bool MatchesLayoutCardTitleEditKey(const LayoutCardTitleEditKey& left, const Lay
 bool MatchesThemeColorEditKey(const ThemeColorEditKey& left, const ThemeColorEditKey& right);
 bool MatchesLayoutNodeFieldEditKey(const LayoutNodeFieldEditKey& left, const LayoutNodeFieldEditKey& right);
 bool MatchesCardChromeSelectionIdentity(
-    const LayoutEditWidgetIdentity& selection, const LayoutEditWidgetIdentity& candidate);
+    const LayoutEditWidgetIdentity& selection, const LayoutEditWidgetIdentity& candidate
+);
 bool MatchesLayoutEditFocusKey(const LayoutEditFocusKey& left, const LayoutEditFocusKey& right);
 bool MatchesLayoutEditFocusKey(const LayoutEditFocusKey& focusKey, const LayoutEditGuide& guide);
 bool MatchesLayoutEditFocusKey(const LayoutEditFocusKey& focusKey, const LayoutEditWidgetGuide& guide);
@@ -25,12 +26,15 @@ bool MatchesLayoutEditFocusKey(const LayoutEditFocusKey& focusKey, const LayoutE
 bool MatchesLayoutEditFocusKey(const LayoutEditFocusKey& focusKey, const LayoutEditAnchorKey& key);
 bool MatchesLayoutEditSelectionHighlight(const LayoutEditSelectionHighlight& highlight, const LayoutEditGuide& guide);
 bool MatchesLayoutEditSelectionHighlight(
-    const LayoutEditSelectionHighlight& highlight, const LayoutEditWidgetGuide& guide);
+    const LayoutEditSelectionHighlight& highlight, const LayoutEditWidgetGuide& guide
+);
 bool MatchesLayoutEditSelectionHighlight(
-    const LayoutEditSelectionHighlight& highlight, const LayoutEditGapAnchorKey& key);
+    const LayoutEditSelectionHighlight& highlight, const LayoutEditGapAnchorKey& key
+);
 bool MatchesLayoutEditSelectionHighlight(const LayoutEditSelectionHighlight& highlight, const LayoutEditAnchorKey& key);
 bool MatchesLayoutEditSelectionHighlight(
-    const LayoutEditSelectionHighlight& highlight, const LayoutEditColorRegion& region);
+    const LayoutEditSelectionHighlight& highlight, const LayoutEditColorRegion& region
+);
 std::optional<LayoutEditParameter> LayoutEditAnchorParameter(const LayoutEditAnchorKey& key);
 std::optional<LayoutMetricEditKey> LayoutEditAnchorMetricKey(const LayoutEditAnchorKey& key);
 std::optional<LayoutCardTitleEditKey> LayoutEditAnchorCardTitleKey(const LayoutEditAnchorKey& key);

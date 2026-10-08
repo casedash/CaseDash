@@ -23,9 +23,7 @@ namespace {
 
 constexpr char kWriteBinaryMode[] = "wb";
 
-std::string ReadBinaryFile(const FilePath& path) {
-    return ReadFileBinary(path).value_or(std::string{});
-}
+std::string ReadBinaryFile(const FilePath& path) { return ReadFileBinary(path).value_or(std::string{}); }
 
 bool WriteTelemetryDumpFile(const FilePath& path, const TelemetryDump& dump) {
     std::FILE* output = nullptr;
@@ -38,9 +36,11 @@ bool WriteTelemetryDumpFile(const FilePath& path, const TelemetryDump& dump) {
 }
 
 bool SaveBlankWallpaperImage(
-    const FilePath& path, const TelemetryDump& dump, const AppConfig& config, double targetScale, Trace& trace) {
+    const FilePath& path, const TelemetryDump& dump, const AppConfig& config, double targetScale, Trace& trace
+) {
     std::string screenshotError;
-    return SaveDumpScreenshot(path,
+    return SaveDumpScreenshot(
+        path,
         dump.snapshot,
         config,
         targetScale,
@@ -51,39 +51,48 @@ bool SaveBlankWallpaperImage(
         trace,
         false,
         RenderPoint{},
-        &screenshotError);
+        &screenshotError
+    );
 }
 
-bool SetConfiguredMonitorWallpaper(const AppConfig& config,
+bool SetConfiguredMonitorWallpaper(
+    const AppConfig& config,
     const std::wstring& wideWallpaperPath,
     const std::string& pathText,
     const char* action,
-    Trace& trace) {
+    Trace& trace
+) {
     if (config.display.monitorName.empty()) {
-        trace.WriteFmt(TracePrefix::Wallpaper,
+        trace.WriteFmt(
+            TracePrefix::Wallpaper,
             RES_STR("%s_skipped_missing_monitor wallpaper=\"%s\""),
             action,
-            config.display.wallpaper.c_str());
+            config.display.wallpaper.c_str()
+        );
         return false;
     }
 
     const std::optional<TargetMonitorInfo> targetMonitor = FindTargetMonitor(config.display.monitorName);
     if (!targetMonitor.has_value()) {
-        trace.WriteFmt(TracePrefix::Wallpaper,
+        trace.WriteFmt(
+            TracePrefix::Wallpaper,
             RES_STR("%s_monitor_unresolved monitor=\"%s\" wallpaper=\"%s\""),
             action,
             config.display.monitorName.c_str(),
-            config.display.wallpaper.c_str());
+            config.display.wallpaper.c_str()
+        );
         return false;
     }
 
     const HRESULT initStatus = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     const bool shouldUninitialize = initStatus == S_OK || initStatus == S_FALSE;
     if (FAILED(initStatus) && initStatus != RPC_E_CHANGED_MODE) {
-        trace.WriteFmt(TracePrefix::Wallpaper,
+        trace.WriteFmt(
+            TracePrefix::Wallpaper,
             RES_STR("%s_coinitialize_failed hr=0x%08lX"),
             action,
-            static_cast<unsigned long>(initStatus));
+            static_cast<unsigned long>(initStatus)
+        );
         return false;
     }
 
@@ -91,10 +100,12 @@ bool SetConfiguredMonitorWallpaper(const AppConfig& config,
     const HRESULT createStatus =
         CoCreateInstance(CLSID_DesktopWallpaper, nullptr, CLSCTX_ALL, IID_PPV_ARGS(&desktopWallpaper));
     if (FAILED(createStatus) || desktopWallpaper == nullptr) {
-        trace.WriteFmt(TracePrefix::Wallpaper,
+        trace.WriteFmt(
+            TracePrefix::Wallpaper,
             RES_STR("%s_create_failed hr=0x%08lX"),
             action,
-            static_cast<unsigned long>(createStatus));
+            static_cast<unsigned long>(createStatus)
+        );
         if (shouldUninitialize) {
             CoUninitialize();
         }
@@ -106,10 +117,12 @@ bool SetConfiguredMonitorWallpaper(const AppConfig& config,
     UINT monitorCount = 0;
     const HRESULT countStatus = desktopWallpaper->GetMonitorDevicePathCount(&monitorCount);
     if (FAILED(countStatus)) {
-        trace.WriteFmt(TracePrefix::Wallpaper,
+        trace.WriteFmt(
+            TracePrefix::Wallpaper,
             RES_STR("%s_monitor_count_failed hr=0x%08lX"),
             action,
-            static_cast<unsigned long>(countStatus));
+            static_cast<unsigned long>(countStatus)
+        );
     } else {
         for (UINT index = 0; index < monitorCount; ++index) {
             LPWSTR monitorId = nullptr;
@@ -124,13 +137,15 @@ bool SetConfiguredMonitorWallpaper(const AppConfig& config,
                 targetFound = true;
                 const HRESULT setStatus = desktopWallpaper->SetWallpaper(monitorId, wideWallpaperPath.c_str());
                 applied = SUCCEEDED(setStatus);
-                trace.WriteFmt(TracePrefix::Wallpaper,
+                trace.WriteFmt(
+                    TracePrefix::Wallpaper,
                     RES_STR("%s_%s monitor=\"%s\" path=\"%s\" hr=0x%08lX"),
                     action,
                     applied ? "done" : "failed",
                     config.display.monitorName.c_str(),
                     pathText.c_str(),
-                    static_cast<unsigned long>(setStatus));
+                    static_cast<unsigned long>(setStatus)
+                );
                 CoTaskMemFree(monitorId);
                 break;
             }
@@ -139,11 +154,13 @@ bool SetConfiguredMonitorWallpaper(const AppConfig& config,
     }
 
     if (!targetFound) {
-        trace.WriteFmt(TracePrefix::Wallpaper,
+        trace.WriteFmt(
+            TracePrefix::Wallpaper,
             RES_STR("%s_target_not_found monitor=\"%s\" path=\"%s\""),
             action,
             config.display.monitorName.c_str(),
-            pathText.c_str());
+            pathText.c_str()
+        );
     }
 
     desktopWallpaper->Release();
@@ -162,13 +179,13 @@ bool ApplyConfiguredWallpaper(const AppConfig& config, Trace& trace) {
 
     const FilePath wallpaperPath = ResolveExecutableRelativePath(FilePath(config.display.wallpaper));
     if (wallpaperPath.empty()) {
-        trace.WriteFmt(
-            TracePrefix::Wallpaper, RES_STR("path_empty monitor=\"%s\""), config.display.monitorName.c_str());
+        trace
+            .WriteFmt(TracePrefix::Wallpaper, RES_STR("path_empty monitor=\"%s\""), config.display.monitorName.c_str());
         return false;
     }
 
-    return SetConfiguredMonitorWallpaper(
-        config, wallpaperPath.WideForNativeApi(), wallpaperPath.string(), "apply", trace);
+    return
+        SetConfiguredMonitorWallpaper(config, wallpaperPath.WideForNativeApi(), wallpaperPath.string(), "apply", trace);
 }
 
 bool ClearConfiguredWallpaper(const AppConfig& config, Trace& trace) {
@@ -179,13 +196,15 @@ bool ClearConfiguredWallpaper(const AppConfig& config, Trace& trace) {
     return SetConfiguredMonitorWallpaper(config, emptyWallpaperPath, std::string{}, "clear", trace);
 }
 
-bool ConfigureDisplay(const AppConfig& config,
+bool ConfigureDisplay(
+    const AppConfig& config,
     const TelemetryDump& dump,
     double targetScale,
     bool writeWallpaper,
     const AppConfig* previousWallpaperConfig,
     Trace& trace,
-    HWND owner) {
+    HWND owner
+) {
     const FilePath configPath = GetRuntimeConfigPath();
     const FilePath imagePath = GetExecutableDirectory() / kDefaultBlankWallpaperFileName;
 
@@ -195,8 +214,7 @@ bool ConfigureDisplay(const AppConfig& config,
         }
         const bool configSaved = SaveConfig(configPath, config, ConfigParseContext{TelemetryMetricCatalog()});
         const bool wallpaperApplied = configSaved && (!writeWallpaper || ApplyConfiguredWallpaper(config, trace));
-        const bool previousWallpaperCleared =
-            wallpaperApplied &&
+        const bool previousWallpaperCleared = wallpaperApplied &&
             (previousWallpaperConfig == nullptr || ClearConfiguredWallpaper(*previousWallpaperConfig, trace));
         return previousWallpaperCleared;
     }
@@ -220,9 +238,11 @@ bool ConfigureDisplay(const AppConfig& config,
     std::string parameters =
         FormatText("/configure-display %s", QuoteCommandLineArgument(tempConfigPath.string()).c_str());
     if (writeWallpaper) {
-        AppendFormat(parameters,
+        AppendFormat(
+            parameters,
             " /configure-display-write-wallpaper /configure-display-dump %s",
-            QuoteCommandLineArgument(tempDumpPath.string()).c_str());
+            QuoteCommandLineArgument(tempDumpPath.string()).c_str()
+        );
     }
     DWORD exitCode = 1;
     const bool launched = RunElevatedSelfAndWait(owner, parameters, {}, SW_HIDE, &exitCode);
@@ -230,11 +250,12 @@ bool ConfigureDisplay(const AppConfig& config,
     RemoveFileIfExists(tempDumpPath);
     const bool elevatedConfigured = launched && exitCode == 0;
     return elevatedConfigured &&
-           (previousWallpaperConfig == nullptr || ClearConfiguredWallpaper(*previousWallpaperConfig, trace));
+        (previousWallpaperConfig == nullptr || ClearConfiguredWallpaper(*previousWallpaperConfig, trace));
 }
 
 int RunElevatedConfigureDisplayMode(
-    const FilePath& configPayloadPath, const FilePath& dumpPayloadPath, bool writeWallpaper) {
+    const FilePath& configPayloadPath, const FilePath& dumpPayloadPath, bool writeWallpaper
+) {
     if (configPayloadPath.empty() || (writeWallpaper && dumpPayloadPath.empty())) {
         return 2;
     }

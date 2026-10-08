@@ -18,8 +18,10 @@ struct HeadlessCommandLineConsumption {
 };
 
 DiagnosticsCommandLineTracker CreateHeadlessCommandLineTracker(
-    HeadlessCommandLineConsumption& consumption, const CommandLineArguments& commandLine);
+    HeadlessCommandLineConsumption& consumption, const CommandLineArguments& commandLine
+);
 bool IsHeadlessCommandLineHelpRequested(const CommandLineArguments& commandLine);
 HeadlessCommandLineValidationResult ValidateHeadlessCommandLine(
-    const CommandLineArguments& commandLine, const HeadlessCommandLineConsumption& consumption);
+    const CommandLineArguments& commandLine, const HeadlessCommandLineConsumption& consumption
+);
 void PrintHeadlessCommandLineHelp(std::FILE* stream, std::string_view message = {});

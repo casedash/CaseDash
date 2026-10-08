@@ -32,30 +32,32 @@ constexpr COLORREF kDefaultCloseButtonGlyphColor = RGB(255, 255, 255);
 constexpr int kTitlebarButtonHoverBlendPercent = 6;
 constexpr int kTitlebarButtonPressedBlendPercent = 12;
 
-int ColorChannel(COLORREF color, int shift) {
-    return static_cast<int>((color >> shift) & 0xFF);
-}
+int ColorChannel(COLORREF color, int shift) { return static_cast<int>((color >> shift) & 0xFF); }
 
 COLORREF BlendColor(COLORREF from, COLORREF to, int toPercent) {
     const int clampedPercent = std::clamp(toPercent, 0, 100);
     const auto blend = [clampedPercent](int fromChannel, int toChannel) {
         return static_cast<BYTE>((fromChannel * (100 - clampedPercent) + toChannel * clampedPercent) / 100);
     };
-    return RGB(blend(ColorChannel(from, 0), ColorChannel(to, 0)),
+    return RGB(
+        blend(ColorChannel(from, 0), ColorChannel(to, 0)),
         blend(ColorChannel(from, 8), ColorChannel(to, 8)),
-        blend(ColorChannel(from, 16), ColorChannel(to, 16)));
+        blend(ColorChannel(from, 16), ColorChannel(to, 16))
+    );
 }
 
 bool SystemAppsUseLightTheme() {
     DWORD value = 1;
     DWORD valueSize = sizeof(value);
-    const LSTATUS status = RegGetValueA(HKEY_CURRENT_USER,
+    const LSTATUS status = RegGetValueA(
+        HKEY_CURRENT_USER,
         "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
         "AppsUseLightTheme",
         RRF_RT_REG_DWORD,
         nullptr,
         &value,
-        &valueSize);
+        &valueSize
+    );
     return status != ERROR_SUCCESS || value != 0;
 }
 
@@ -63,7 +65,7 @@ bool HighContrastEnabled() {
     HIGHCONTRASTA highContrast{};
     highContrast.cbSize = sizeof(highContrast);
     return SystemParametersInfoA(SPI_GETHIGHCONTRAST, highContrast.cbSize, &highContrast, 0) != FALSE &&
-           (highContrast.dwFlags & HCF_HIGHCONTRASTON) != 0;
+        (highContrast.dwFlags & HCF_HIGHCONTRASTON) != 0;
 }
 
 bool LooksLikeCloseActionColor(COLORREF color) {
@@ -73,7 +75,8 @@ bool LooksLikeCloseActionColor(COLORREF color) {
     return red >= 160 && green <= 140 && blue <= 160 && red >= green + 40;
 }
 
-template <typename Value> HRESULT SetDwmAttribute(HWND hwnd, DWORD attribute, const Value& value) {
+template <typename Value>
+HRESULT SetDwmAttribute(HWND hwnd, DWORD attribute, const Value& value) {
     return DwmSetWindowAttribute(hwnd, attribute, &value, sizeof(value));
 }
 
@@ -84,7 +87,8 @@ DashboardTitlebarPalette ResolveDashboardTitlebarPalette(HWND) {
         ResolveNativeThemeSelectedBackground(GetSysColor(COLOR_MENU), GetSysColor(COLOR_HIGHLIGHT));
     if (HighContrastEnabled()) {
         return ResolveDashboardTitlebarPaletteFromBaseColors(
-            GetSysColor(COLOR_WINDOW), GetSysColor(COLOR_WINDOWTEXT), selectedBackground);
+            GetSysColor(COLOR_WINDOW), GetSysColor(COLOR_WINDOWTEXT), selectedBackground
+        );
     }
 
     // UxTheme's WINDOW caption fill hint can still report legacy accent colors on Windows 11, while DWM renders the
@@ -93,16 +97,19 @@ DashboardTitlebarPalette ResolveDashboardTitlebarPalette(HWND) {
     return ResolveDashboardTitlebarPaletteFromBaseColors(
         lightTheme ? kModernLightCaptionBackground : kModernDarkCaptionBackground,
         lightTheme ? kModernLightCaptionText : kModernDarkCaptionText,
-        selectedBackground);
+        selectedBackground
+    );
 }
 
 DashboardTitlebarPalette ResolveDashboardTitlebarPaletteFromBaseColors(COLORREF background, COLORREF text) {
     return ResolveDashboardTitlebarPaletteFromBaseColors(
-        background, text, ResolveNativeThemeSelectedBackground(background, text));
+        background, text, ResolveNativeThemeSelectedBackground(background, text)
+    );
 }
 
-DashboardTitlebarPalette ResolveDashboardTitlebarPaletteFromBaseColors(
-    COLORREF background, COLORREF text, COLORREF selectedBackground) {
+DashboardTitlebarPalette
+    ResolveDashboardTitlebarPaletteFromBaseColors(COLORREF background, COLORREF text, COLORREF selectedBackground)
+{
     DashboardTitlebarPalette palette;
     palette.background = background;
     palette.text = text;
@@ -124,7 +131,8 @@ int ResolveDashboardTitlebarResizeCornerHitSize(UINT dpi) {
 
 DashboardCloseButtonColors ResolveDashboardCloseButtonColors(HWND hwnd, bool pressed) {
     DashboardCloseButtonColors colors{
-        pressed ? kDefaultCloseButtonPressedColor : kDefaultCloseButtonHoverColor, kDefaultCloseButtonGlyphColor};
+        pressed ? kDefaultCloseButtonPressedColor : kDefaultCloseButtonHoverColor, kDefaultCloseButtonGlyphColor
+    };
     if (HighContrastEnabled()) {
         return DashboardCloseButtonColors{GetSysColor(COLOR_HIGHLIGHT), GetSysColor(COLOR_HIGHLIGHTTEXT)};
     }
@@ -136,8 +144,10 @@ DashboardCloseButtonColors ResolveDashboardCloseButtonColors(HWND hwnd, bool pre
 
     COLORREF themeBackground{};
     const int state = pressed ? CBS_PUSHED : CBS_HOT;
-    if (SUCCEEDED(GetThemeColor(theme, WP_CLOSEBUTTON, state, TMT_FILLCOLOR, &themeBackground)) &&
-        LooksLikeCloseActionColor(themeBackground)) {
+    if (
+        SUCCEEDED(GetThemeColor(theme, WP_CLOSEBUTTON, state, TMT_FILLCOLOR, &themeBackground)) &&
+        LooksLikeCloseActionColor(themeBackground)
+    ) {
         colors.background = themeBackground;
     }
     CloseThemeData(theme);
@@ -167,6 +177,9 @@ DashboardTitlebarChromeResult ApplyDashboardTitlebarChrome(HWND hwnd, bool title
 }
 
 bool DashboardTitlebarChromeSucceeded(const DashboardTitlebarChromeResult& result) {
-    return SUCCEEDED(result.cornerPreference) && SUCCEEDED(result.borderColor) && SUCCEEDED(result.captionColor) &&
-           SUCCEEDED(result.textColor) && SUCCEEDED(result.darkMode);
+    return SUCCEEDED(result.cornerPreference) &&
+        SUCCEEDED(result.borderColor) &&
+        SUCCEEDED(result.captionColor) &&
+        SUCCEEDED(result.textColor) &&
+        SUCCEEDED(result.darkMode);
 }

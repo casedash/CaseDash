@@ -54,7 +54,8 @@ public:
     void WriteVFmt(TracePrefix prefix, const char* format, va_list args) const;
     void WriteVFmt(TracePrefix prefix, ResourceStringId format, va_list args) const;
 
-    template <typename Builder> void WriteLazy(TracePrefix prefix, Builder&& builder) const {
+    template <typename Builder>
+    void WriteLazy(TracePrefix prefix, Builder&& builder) const {
         if (!Enabled(prefix)) {
             return;
         }

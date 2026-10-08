@@ -52,7 +52,8 @@ const LayoutNodeConfig* FindLayoutNodeByPath(const LayoutNodeConfig& root, const
 
 template <typename Mutate>
 bool ApplyLayoutNodeMutation(
-    AppConfig& config, const std::string& editCardId, const std::vector<size_t>& nodePath, Mutate&& mutate) {
+    AppConfig& config, const std::string& editCardId, const std::vector<size_t>& nodePath, Mutate&& mutate
+) {
     bool updated = false;
     if (editCardId.empty()) {
         updated = mutate(FindLayoutNodeByPath(config.layout.structure.cards, nodePath));
@@ -69,9 +70,7 @@ bool ApplyLayoutNodeMutation(
     return updated;
 }
 
-std::string JoinMetricRefs(const std::vector<std::string>& metricRefs) {
-    return JoinNames(metricRefs);
-}
+std::string JoinMetricRefs(const std::vector<std::string>& metricRefs) { return JoinNames(metricRefs); }
 
 }  // namespace
 
@@ -109,9 +108,7 @@ std::string ReadLayoutNodeFieldValue(const LayoutNodeConfig& node, LayoutNodeFie
     return {};
 }
 
-std::vector<std::string> ParseMetricListMetricRefs(std::string_view parameter) {
-    return SplitTrimmed(parameter, ',');
-}
+std::vector<std::string> ParseMetricListMetricRefs(std::string_view parameter) { return SplitTrimmed(parameter, ','); }
 
 std::vector<std::string> AvailableMetricListMetricIds(const AppConfig& config, const ConfigMetricCatalog& catalog) {
     std::vector<std::string> metricIds;
@@ -202,18 +199,25 @@ bool ApplyLayoutEditValue(AppConfig& config, const LayoutEditFocusKey& key, cons
 }
 
 bool ApplyMetricListOrder(
-    AppConfig& config, const LayoutEditWidgetIdentity& widget, const std::vector<std::string>& metricRefs) {
-    const LayoutNodeFieldEditKey key{
-        widget.editCardId, widget.nodePath, WidgetClass::MetricList, LayoutNodeField::Parameter};
+    AppConfig& config, const LayoutEditWidgetIdentity& widget, const std::vector<std::string>& metricRefs
+) {
+    const LayoutNodeFieldEditKey
+        key{widget.editCardId, widget.nodePath, WidgetClass::MetricList, LayoutNodeField::Parameter};
     return ApplyLayoutEditValue(config, LayoutEditFocusKey{key}, LayoutEditValue{metricRefs});
 }
 
-bool ApplyContainerChildOrder(
-    AppConfig& config, const LayoutContainerChildOrderEditKey& key, int fromIndex, int toIndex) {
+bool
+    ApplyContainerChildOrder(AppConfig& config, const LayoutContainerChildOrderEditKey& key, int fromIndex, int toIndex)
+{
     const auto applyOrder = [&](LayoutNodeConfig* node) -> bool {
-        if (node == nullptr || (node->name != "rows" && node->name != "columns") || fromIndex < 0 || toIndex < 0 ||
+        if (
+            node == nullptr ||
+            (node->name != "rows" && node->name != "columns") ||
+            fromIndex < 0 ||
+            toIndex < 0 ||
             fromIndex >= static_cast<int>(node->children.size()) ||
-            toIndex >= static_cast<int>(node->children.size())) {
+            toIndex >= static_cast<int>(node->children.size())
+        ) {
             return false;
         }
         if (fromIndex == toIndex) {

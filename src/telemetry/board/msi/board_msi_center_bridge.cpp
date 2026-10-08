@@ -117,7 +117,7 @@ String^ ReadMsiFanName(Object^ fanName, FieldInfo^ fanNameBytesField, FieldInfo^
 }
 
 MethodInfo^ FindJsonDeserializer(Type^ jsonType) {
-    for each(MethodInfo^ method in jsonType->GetMethods(BindingFlags::Public | BindingFlags::Static)) {
+    for each (MethodInfo^ method in jsonType->GetMethods(BindingFlags::Public | BindingFlags::Static)) {
         if (
             !String::Equals(method->Name, "JSONDeSerializer", StringComparison::Ordinal) ||
             !method->IsGenericMethodDefinition
@@ -156,9 +156,7 @@ public:
 };
 
 bool InitializeMsiCenterRuntime(
-    MsiCenterRuntimeContext^ context,
-    const char* msiCenterDirectory,
-    MsiCenterCaptureSink& sink
+    MsiCenterRuntimeContext^ context, const char* msiCenterDirectory, MsiCenterCaptureSink& sink
 ) {
     if (context->loaded) {
         return true;
@@ -239,19 +237,18 @@ T GetFieldValueOr(FieldInfo^ field, Object^ owner, T fallback) {
 }
 
 bool CaptureMsiCenterSnapshot(
-    MsiCenterRuntimeContext^ context,
-    const char* msiCenterDirectory,
-    MsiCenterCaptureSink& sink
+    MsiCenterRuntimeContext^ context, const char* msiCenterDirectory, MsiCenterCaptureSink& sink
 ) {
     if (!InitializeMsiCenterRuntime(context, msiCenterDirectory, sink)) {
         return false;
     }
 
     try {
-        array<unsigned char>^ bytes = safe_cast<array<unsigned char>^>(context->sendDataMethod->Invoke(
-            nullptr,
-            gcnew array<Object^>{kMsiCenterServicePort, MsiCenterCurrentDataCommand()}
-        ));
+        array<unsigned char>^ bytes = safe_cast<array<unsigned char>^>(
+            context
+                ->sendDataMethod
+                ->Invoke(nullptr, gcnew array<Object^>{kMsiCenterServicePort, MsiCenterCurrentDataCommand()})
+        );
         if (bytes == nullptr || bytes->Length <= 1) {
             SetDiagnostics(sink, "MSI Center hardware-monitor query returned no data.");
             return false;
@@ -268,13 +265,10 @@ bool CaptureMsiCenterSnapshot(
         Array^ fanIds = dynamic_cast<Array^>(context->curFanIdField->GetValue(ccEngine));
         Array^ fanSpeeds = dynamic_cast<Array^>(context->curFanSpeedField->GetValue(ccEngine));
         Array^ fanNames = dynamic_cast<Array^>(context->fanNameField->GetValue(ccEngine));
-        const int availableFans = Math::Min(
-            fanCount,
-            Math::Min(
-                fanIds != nullptr ? fanIds->Length : 0,
-                Math::Min(fanSpeeds != nullptr ? fanSpeeds->Length : 0, fanNames != nullptr ? fanNames->Length : 0)
-            )
-        );
+        const int availableFans = Math::Min(fanCount, Math::Min(
+            fanIds != nullptr ? fanIds->Length : 0,
+            Math::Min(fanSpeeds != nullptr ? fanSpeeds->Length : 0, fanNames != nullptr ? fanNames->Length : 0)
+        ));
         for (int i = 0; i < availableFans; ++i) {
             const int id = Convert::ToInt32(fanIds->GetValue(i), Globalization::CultureInfo::InvariantCulture);
             const double rpm = Convert::ToDouble(fanSpeeds->GetValue(i), Globalization::CultureInfo::InvariantCulture);
@@ -287,13 +281,10 @@ bool CaptureMsiCenterSnapshot(
         const int temperatureCount = Math::Max(0, GetFieldValueOr<int>(context->temperatureCountsField, ccEngine, 0));
         Array^ temperatureIds = dynamic_cast<Array^>(context->curTempIdField->GetValue(ccEngine));
         Array^ temperatureValues = dynamic_cast<Array^>(context->temperatureValueField->GetValue(ccEngine));
-        const int availableTemperatures = Math::Min(
-            temperatureCount,
-            Math::Min(
-                temperatureIds != nullptr ? temperatureIds->Length : 0,
-                temperatureValues != nullptr ? temperatureValues->Length : 0
-            )
-        );
+        const int availableTemperatures = Math::Min(temperatureCount, Math::Min(
+            temperatureIds != nullptr ? temperatureIds->Length : 0,
+            temperatureValues != nullptr ? temperatureValues->Length : 0
+        ));
         for (int i = 0; i < availableTemperatures; ++i) {
             const int id = Convert::ToInt32(temperatureIds->GetValue(i), Globalization::CultureInfo::InvariantCulture);
             const double celsius =

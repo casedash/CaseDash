@@ -18,7 +18,8 @@
 namespace {
 
 bool ParseMetricDefinition(
-    const std::string& value, MetricDefinitionConfig& definition, const ConfigParseContext& context) {
+    const std::string& value, MetricDefinitionConfig& definition, const ConfigParseContext& context
+) {
     const std::vector<std::string> parts = SplitTrimmedPreservingEmpty(value, ',');
     const std::optional<MetricDisplayStyle> metadataStyle = context.metricCatalog.FindMetricDisplayStyle(definition.id);
     if (!metadataStyle.has_value()) {
@@ -55,10 +56,12 @@ bool ParseMetricDefinition(
 
 bool ApplyBoardSectionValue(BoardConfig& board, const std::string& key, const std::string& value);
 bool ApplyMetricsSectionValue(
-    MetricsSectionConfig& metrics, const std::string& key, const std::string& value, const ConfigParseContext& context);
+    MetricsSectionConfig& metrics, const std::string& key, const std::string& value, const ConfigParseContext& context
+);
 
 bool ApplyStructuredSectionFields(
-    const RuntimeConfigSectionDescriptor& section, void* owner, const std::string& key, const std::string& value) {
+    const RuntimeConfigSectionDescriptor& section, void* owner, const std::string& key, const std::string& value
+) {
     for (const RuntimeConfigFieldDescriptor& field : RuntimeConfigFields(section)) {
         if (key == std::string_view(field.key, field.keyLength)) {
             DecodeRuntimeConfigField(field, owner, value);
@@ -68,11 +71,13 @@ bool ApplyStructuredSectionFields(
     return false;
 }
 
-bool ApplySectionValue(const RuntimeConfigSectionDescriptor& section,
+bool ApplySectionValue(
+    const RuntimeConfigSectionDescriptor& section,
     void* owner,
     const std::string& key,
     const std::string& value,
-    const ConfigParseContext& context) {
+    const ConfigParseContext& context
+) {
     switch (section.codec) {
         case RuntimeConfigSectionCodec::Structured:
             return ApplyStructuredSectionFields(section, owner, key, value);
@@ -84,11 +89,13 @@ bool ApplySectionValue(const RuntimeConfigSectionDescriptor& section,
     return false;
 }
 
-bool DispatchRuntimeConfigSection(AppConfig& config,
+bool DispatchRuntimeConfigSection(
+    AppConfig& config,
     const std::string& section,
     const std::string& key,
     const std::string& value,
-    const ConfigParseContext& context) {
+    const ConfigParseContext& context
+) {
     const RuntimeConfigSectionDescriptor* descriptor = FindRuntimeConfigSection(section);
     if (descriptor == nullptr) {
         return false;
@@ -127,10 +134,8 @@ public:
                 if (!ParseChildren(node.children)) {
                     return false;
                 }
-            } else {
-                if (!ParseParameter(node.parameter)) {
-                    return false;
-                }
+            } else if (!ParseParameter(node.parameter)) {
+                return false;
             }
             SkipWhitespace();
             if (!Consume(')')) {
@@ -152,9 +157,7 @@ public:
     }
 
 private:
-    static bool IsContainer(const std::string& name) {
-        return name == "rows" || name == "columns";
-    }
+    static bool IsContainer(const std::string& name) { return name == "rows" || name == "columns"; }
 
     void SkipWhitespace() {
         while (index_ < text_.size() && std::isspace(static_cast<unsigned char>(text_[index_])) != 0) {
@@ -271,8 +274,12 @@ bool IsWidgetOrContainerNodeName(const std::string& name) {
 
 void MarkCardReferencesRecursive(LayoutNodeConfig& node, const std::set<std::string>& cardIds) {
     node.cardReference = false;
-    if (node.children.empty() && LayoutCardReferenceParameterSupported(node.parameter) &&
-        !IsWidgetOrContainerNodeName(node.name) && cardIds.find(node.name) != cardIds.end()) {
+    if (
+        node.children.empty() &&
+        LayoutCardReferenceParameterSupported(node.parameter) &&
+        !IsWidgetOrContainerNodeName(node.name) &&
+        cardIds.find(node.name) != cardIds.end()
+    ) {
         node.cardReference = true;
     }
     for (auto& child : node.children) {
@@ -304,10 +311,9 @@ bool ApplyBoardSectionValue(BoardConfig& board, const std::string& key, const st
     return false;
 }
 
-bool ApplyMetricsSectionValue(MetricsSectionConfig& metrics,
-    const std::string& key,
-    const std::string& value,
-    const ConfigParseContext& context) {
+bool ApplyMetricsSectionValue(
+    MetricsSectionConfig& metrics, const std::string& key, const std::string& value, const ConfigParseContext& context
+) {
     if (key.empty()) {
         return false;
     }
@@ -340,7 +346,8 @@ struct ApplyConfigTextContext {
 void ApplyConfigEntry(void* context, std::string_view section, std::string_view key, std::string_view value) {
     auto& applyContext = *static_cast<ApplyConfigTextContext*>(context);
     DispatchRuntimeConfigSection(
-        *applyContext.config, std::string(section), std::string(key), std::string(value), *applyContext.parseContext);
+        *applyContext.config, std::string(section), std::string(key), std::string(value), *applyContext.parseContext
+    );
 }
 
 void ApplyConfigText(std::string_view text, AppConfig& config, const ConfigParseContext& context) {
@@ -398,16 +405,15 @@ void ForEachConfigEntry(std::string_view text, void* context, ConfigEntryVisitor
     }
 }
 
-std::string LoadEmbeddedConfigTemplate() {
-    return LoadTextResourceData(TextResourceId::ConfigTemplate);
-}
+std::string LoadEmbeddedConfigTemplate() { return LoadTextResourceData(TextResourceId::ConfigTemplate); }
 
 AppConfig LoadConfig(const FilePath& path, bool includeOverlay, const ConfigParseContext& context) {
     return LoadConfigWithExtraTemplate(path, includeOverlay, context, {});
 }
 
 AppConfig LoadConfigWithExtraTemplate(
-    const FilePath& path, bool includeOverlay, const ConfigParseContext& context, std::string_view extraTemplate) {
+    const FilePath& path, bool includeOverlay, const ConfigParseContext& context, std::string_view extraTemplate
+) {
     AppConfig config;
     ApplyConfigText(LoadEmbeddedConfigTemplate(), config, context);
     if (!extraTemplate.empty()) {

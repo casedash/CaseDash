@@ -34,13 +34,15 @@ TEST(ConfigResolution, CollectsUniqueBoardBindingsFromNestedCardLayouts) {
     LayoutConfig layout;
     LayoutCardConfig card;
     card.id = "cpu";
-    card.layout = MakeContainerNode("rows",
-        {MakeWidgetNode("metric_list", "board.temp.cpu, gpu.load, board.fan.system"),
-            MakeContainerNode("columns",
-                {MakeWidgetNode("gauge", "board.temp.cpu"),
-                    MakeWidgetNode("text", "board.fan.system"),
-                    MakeWidgetNode("text", "board.temp.vrm"),
-                    MakeWidgetNode("metric_list", "board.temp.cpu=CPU Legacy")})});
+    card.layout = MakeContainerNode("rows", {
+        MakeWidgetNode("metric_list", "board.temp.cpu, gpu.load, board.fan.system"),
+        MakeContainerNode("columns", {
+            MakeWidgetNode("gauge", "board.temp.cpu"),
+            MakeWidgetNode("text", "board.fan.system"),
+            MakeWidgetNode("text", "board.temp.vrm"),
+            MakeWidgetNode("metric_list", "board.temp.cpu=CPU Legacy")
+        })
+    });
     layout.cards.push_back(card);
 
     const LayoutBindingSelection selection = CollectLayoutBindings(layout);
@@ -56,8 +58,10 @@ TEST(ConfigResolution, CollectsGpuFanFallbackBoardBindingFromGpuFanMetric) {
     LayoutConfig layout;
     LayoutCardConfig card;
     card.id = "gpu";
-    card.layout = MakeContainerNode("rows",
-        {MakeWidgetNode("metric_list", "gpu.vram, gpu.fan"), MakeWidgetNode("metric_list", "board.fan.cpu, gpu.fan")});
+    card.layout = MakeContainerNode(
+        "rows",
+        {MakeWidgetNode("metric_list", "gpu.vram, gpu.fan"), MakeWidgetNode("metric_list", "board.fan.cpu, gpu.fan")}
+    );
     layout.cards.push_back(card);
 
     const LayoutBindingSelection selection = CollectLayoutBindings(layout);
@@ -71,8 +75,9 @@ TEST(ConfigResolution, CollectsCpuTemperatureFallbackBoardBindingFromGpuTemperat
     LayoutConfig layout;
     LayoutCardConfig card;
     card.id = "gpu";
-    card.layout = MakeContainerNode("rows",
-        {MakeWidgetNode("metric_list", "gpu.temp, gpu.clock"), MakeWidgetNode("metric_list", "board.temp.vrm")});
+    card.layout = MakeContainerNode(
+        "rows", {MakeWidgetNode("metric_list", "gpu.temp, gpu.clock"), MakeWidgetNode("metric_list", "board.temp.vrm")}
+    );
     layout.cards.push_back(card);
 
     const LayoutBindingSelection selection = CollectLayoutBindings(layout);
@@ -87,7 +92,8 @@ TEST(ConfigResolution, CollectsPresentedFpsRequestFromGpuFpsMetric) {
     LayoutCardConfig card;
     card.id = "gpu";
     card.layout = MakeContainerNode(
-        "rows", {MakeWidgetNode("metric_list", "gpu.load, gpu.fps"), MakeWidgetNode("text", "network.down")});
+        "rows", {MakeWidgetNode("metric_list", "gpu.load, gpu.fps"), MakeWidgetNode("text", "network.down")}
+    );
     layout.cards.push_back(card);
 
     const LayoutBindingSelection selection = CollectLayoutBindings(layout);
@@ -136,8 +142,11 @@ TEST(ConfigResolution, ExtractTelemetrySettingsIncludesBoardSelectionAndPresente
     config.layout.board.temperatureSensorNames["cpu"] = "CPU";
     config.layout.board.fanSensorNames["system"] = "SYS_FAN";
     config.layout.gauge.labelBottom = 42;
-    config.layout.metrics.definitions.push_back(
-        MetricDefinitionConfig{"gpu.temp", MetricDisplayStyle::Scalar, false, 100.0, "C", "Core Temp"});
+    config
+        .layout
+        .metrics
+        .definitions
+        .push_back(MetricDefinitionConfig{"gpu.temp", MetricDisplayStyle::Scalar, false, 100.0, "C", "Core Temp"});
 
     const TelemetrySettings settings = ExtractTelemetrySettings(config);
 
@@ -157,8 +166,11 @@ TEST(ConfigResolution, EffectiveRuntimeConfigPreservesUiEditsWhileOverlayingReso
     uiConfig.gpu.adapterName = "Configured GPU";
     uiConfig.storage.drives = {"Z"};
     uiConfig.layout.gauge.labelBottom = 42;
-    uiConfig.layout.metrics.definitions.push_back(
-        MetricDefinitionConfig{"gpu.temp", MetricDisplayStyle::Scalar, false, 100.0, "C", "Core Temp"});
+    uiConfig
+        .layout
+        .metrics
+        .definitions
+        .push_back(MetricDefinitionConfig{"gpu.temp", MetricDisplayStyle::Scalar, false, 100.0, "C", "Core Temp"});
 
     ResolvedTelemetrySelections resolvedSelections;
     resolvedSelections.adapterName = "Resolved Ethernet";

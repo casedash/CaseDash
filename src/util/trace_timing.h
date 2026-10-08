@@ -48,7 +48,8 @@ private:
     };
 
     void EmitSnapshot(
-        const Trace& trace, std::vector<OperationStats> stats, std::chrono::nanoseconds intervalElapsed) const;
+        const Trace& trace, std::vector<OperationStats> stats, std::chrono::nanoseconds intervalElapsed
+    ) const;
 
     mutable LightweightMutex mutex_;
     std::vector<OperationStats> stats_;

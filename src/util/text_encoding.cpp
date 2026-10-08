@@ -4,9 +4,7 @@
 
 namespace {
 
-int CheckedSize(size_t size) {
-    return size > static_cast<size_t>(INT_MAX) ? -1 : static_cast<int>(size);
-}
+int CheckedSize(size_t size) { return size > static_cast<size_t>(INT_MAX) ? -1 : static_cast<int>(size); }
 
 }  // namespace
 
@@ -50,6 +48,4 @@ std::string TextFromWide(std::wstring_view text) {
     return result;
 }
 
-bool IsValidUtf8(std::string_view text) {
-    return text.empty() || !WideFromText(text).empty();
-}
+bool IsValidUtf8(std::string_view text) { return text.empty() || !WideFromText(text).empty(); }

@@ -70,88 +70,25 @@ constexpr SyntheticHistorySpec kBoardTempCpuHistory{65.0, 5.0, 7.0, 2.0, 12.0};
 constexpr SyntheticHistorySpec kBoardFanCpuHistory{1380.0, 180.0, 6.8, 70.0, 11.0};
 constexpr SyntheticHistorySpec kBoardFanSystemHistory{905.0, 85.0, 8.0, 30.0, 13.0};
 
-constexpr SyntheticThroughputSpec kNetworkUploadHistory{
-    22.0,
-    7.5,
-    7.0,
-    4.0,
-    16.0,
-    3.2,
-    12.0,
-    18.0,
-    5.5,
-    2.4,
-    6.5,
-    29.0,
-    12.0,
-    3.0,
-    0x13579BDFu
-};
+constexpr SyntheticThroughputSpec
+    kNetworkUploadHistory{22.0, 7.5, 7.0, 4.0, 16.0, 3.2, 12.0, 18.0, 5.5, 2.4, 6.5, 29.0, 12.0, 3.0, 0x13579BDFu};
 
 constexpr SyntheticThroughputSpec kNetworkDownloadHistory{
-    198.0,
-    56.0,
-    6.1,
-    34.0,
-    12.5,
-    19.0,
-    92.0,
-    17.0,
-    2.8,
-    2.6,
-    48.0,
-    27.0,
-    8.0,
-    3.1,
-    0x2468ACE1u
+    198.0, 56.0, 6.1, 34.0, 12.5, 19.0, 92.0, 17.0, 2.8, 2.6, 48.0, 27.0, 8.0, 3.1, 0x2468ACE1u
 };
 
-constexpr SyntheticThroughputSpec kStorageReadHistory{
-    146.0,
-    48.0,
-    5.7,
-    28.0,
-    11.0,
-    16.0,
-    118.0,
-    15.0,
-    3.7,
-    2.2,
-    64.0,
-    24.0,
-    6.5,
-    2.6,
-    0xA5C31E27u
-};
+constexpr SyntheticThroughputSpec
+    kStorageReadHistory{146.0, 48.0, 5.7, 28.0, 11.0, 16.0, 118.0, 15.0, 3.7, 2.2, 64.0, 24.0, 6.5, 2.6, 0xA5C31E27u};
 
-constexpr SyntheticThroughputSpec kStorageWriteHistory{
-    44.0,
-    18.0,
-    6.0,
-    11.0,
-    13.5,
-    8.5,
-    52.0,
-    21.0,
-    9.0,
-    2.8,
-    19.0,
-    26.0,
-    4.0,
-    3.2,
-    0x5EED1234u
-};
+constexpr SyntheticThroughputSpec
+    kStorageWriteHistory{44.0, 18.0, 6.0, 11.0, 13.5, 8.5, 52.0, 21.0, 9.0, 2.8, 19.0, 26.0, 4.0, 3.2, 0x5EED1234u};
 
 constexpr size_t kSyntheticRawThroughputSamples =
     kRetainedThroughputHistorySamples * kThroughputHistorySmoothingSamples;
 
-uint64_t SyntheticScalarSampleTick(uint64_t tick) {
-    return (kRetainedScalarHistorySamples - 1u) + tick;
-}
+uint64_t SyntheticScalarSampleTick(uint64_t tick) { return (kRetainedScalarHistorySamples - 1u) + tick; }
 
-uint64_t SyntheticThroughputSampleTick(uint64_t tick) {
-    return (kSyntheticRawThroughputSamples - 1u) + tick;
-}
+uint64_t SyntheticThroughputSampleTick(uint64_t tick) { return (kSyntheticRawThroughputSamples - 1u) + tick; }
 
 void AssignStringList(std::vector<std::string>& target, const char* const* values, size_t count) {
     target.clear();
@@ -161,9 +98,7 @@ void AssignStringList(std::vector<std::string>& target, const char* const* value
     }
 }
 
-std::string ReadBinaryFile(const FilePath& path) {
-    return ReadFileBinary(path).value_or(std::string{});
-}
+std::string ReadBinaryFile(const FilePath& path) { return ReadFileBinary(path).value_or(std::string{}); }
 
 double SyntheticHistoryValue(uint64_t sampleTick, const SyntheticHistorySpec& spec) {
     const double position = static_cast<double>(sampleTick);
@@ -211,19 +146,15 @@ double SyntheticThroughputValue(uint64_t sampleTick, const SyntheticThroughputSp
     const double drift =
         std::sin(position / spec.periodA) * spec.driftA + std::cos((position + 9.0) / spec.periodB) * spec.driftB;
     const double fastJitter = SyntheticNoiseSigned(sampleTick, 0, spec.seed) * spec.jitterAmplitude;
-    const double slowJitter = SyntheticNoiseSigned(
-        sampleTick / 2,
-        static_cast<size_t>(sampleTick / 4),
-        spec.seed ^ 0xA511E9B3u
-    ) * (spec.jitterAmplitude * 0.65);
+    const double slowJitter =
+        SyntheticNoiseSigned(sampleTick / 2, static_cast<size_t>(sampleTick / 4), spec.seed ^ 0xA511E9B3u) *
+            (spec.jitterAmplitude * 0.65);
     const double burst =
         SyntheticPulse(position, spec.burstPeriod, spec.burstOffset, spec.burstWidth) * spec.burstAmplitude;
     const double microBurst = SyntheticPulse(
-        position,
-        spec.burstPeriod * 0.53 + 3.0,
-        spec.burstOffset * 0.61 + 1.5,
-        spec.burstWidth * 0.55 + 0.35
-    ) * (spec.burstAmplitude * 0.35);
+        position, spec.burstPeriod * 0.53 + 3.0, spec.burstOffset * 0.61 + 1.5, spec.burstWidth * 0.55 + 0.35
+    ) *
+        (spec.burstAmplitude * 0.35);
     const double dip = SyntheticPulse(position, spec.dipPeriod, spec.dipOffset, spec.dipWidth) * spec.dipAmplitude;
     return (std::max)(0.0, spec.base + drift + fastJitter + slowJitter + burst + microBurst - dip);
 }
@@ -277,9 +208,7 @@ void AddSyntheticHistory(SystemSnapshot& snapshot, RetainedHistoryKey key, std::
     snapshot.retainedHistories.push_back(std::move(history));
 }
 
-double LastHistorySample(const std::vector<double>& samples) {
-    return samples.empty() ? 0.0 : samples.back();
-}
+double LastHistorySample(const std::vector<double>& samples) { return samples.empty() ? 0.0 : samples.back(); }
 
 double PushSyntheticThroughputSample(
     SystemSnapshot& snapshot,
@@ -307,12 +236,7 @@ double SeedSyntheticThroughputHistory(
 }
 
 DriveInfo BuildSyntheticDrive(
-    const char* label,
-    const char* volumeLabel,
-    double usedPercent,
-    double freeGb,
-    double readMbps,
-    double writeMbps
+    const char* label, const char* volumeLabel, double usedPercent, double freeGb, double readMbps, double writeMbps
 ) {
     DriveInfo drive;
     drive.label = label;
@@ -362,10 +286,8 @@ TelemetryDump BuildSyntheticTelemetryDump(uint64_t tick) {
     snapshot.gpu.fpsAppName = "fluxsim";
     snapshot.gpu.vram = MemoryMetric{LastHistorySample(gpuVram), 15.984375};
 
-    snapshot.boardTemperatures.push_back({
-        "cpu",
-        ScalarMetric{LastHistorySample(boardTempCpu), ScalarMetricUnit::Celsius}
-    });
+    snapshot
+        .boardTemperatures.push_back({"cpu", ScalarMetric{LastHistorySample(boardTempCpu), ScalarMetricUnit::Celsius}});
     snapshot.boardFans.push_back({"cpu", ScalarMetric{LastHistorySample(boardFanCpu), ScalarMetricUnit::Rpm}});
     snapshot.boardFans.push_back({"system", ScalarMetric{LastHistorySample(boardFanSystem), ScalarMetricUnit::Rpm}});
 
@@ -390,28 +312,16 @@ TelemetryDump BuildSyntheticTelemetryDump(uint64_t tick) {
     AddSyntheticHistory(snapshot, "board.fan.cpu", std::move(boardFanCpu));
     AddSyntheticHistory(snapshot, "board.fan.system", std::move(boardFanSystem));
     snapshot.network.uploadMbps = SeedSyntheticThroughputHistory(
-        snapshot,
-        retainedHistoryStore,
-        RetainedHistoryKey::NetworkUpload,
-        kNetworkUploadHistory
+        snapshot, retainedHistoryStore, RetainedHistoryKey::NetworkUpload, kNetworkUploadHistory
     );
     snapshot.network.downloadMbps = SeedSyntheticThroughputHistory(
-        snapshot,
-        retainedHistoryStore,
-        RetainedHistoryKey::NetworkDownload,
-        kNetworkDownloadHistory
+        snapshot, retainedHistoryStore, RetainedHistoryKey::NetworkDownload, kNetworkDownloadHistory
     );
     snapshot.storage.readMbps = SeedSyntheticThroughputHistory(
-        snapshot,
-        retainedHistoryStore,
-        RetainedHistoryKey::StorageRead,
-        kStorageReadHistory
+        snapshot, retainedHistoryStore, RetainedHistoryKey::StorageRead, kStorageReadHistory
     );
     snapshot.storage.writeMbps = SeedSyntheticThroughputHistory(
-        snapshot,
-        retainedHistoryStore,
-        RetainedHistoryKey::StorageWrite,
-        kStorageWriteHistory
+        snapshot, retainedHistoryStore, RetainedHistoryKey::StorageWrite, kStorageWriteHistory
     );
 
     snapshot.now = BuildSyntheticTimestamp(tick);
@@ -421,9 +331,7 @@ TelemetryDump BuildSyntheticTelemetryDump(uint64_t tick) {
     dump.boardProvider.boardProduct = "X570 AORUS ULTRA";
     dump.boardProvider.driverLibrary = "Synthetic";
     AssignStringList(
-        dump.boardProvider.requestedFanNames,
-        kSyntheticRequestedFanNames,
-        ARRAYSIZE(kSyntheticRequestedFanNames)
+        dump.boardProvider.requestedFanNames, kSyntheticRequestedFanNames, ARRAYSIZE(kSyntheticRequestedFanNames)
     );
     AssignStringList(
         dump.boardProvider.requestedTemperatureNames,
@@ -431,9 +339,7 @@ TelemetryDump BuildSyntheticTelemetryDump(uint64_t tick) {
         ARRAYSIZE(kSyntheticRequestedTemperatureNames)
     );
     AssignStringList(
-        dump.boardProvider.availableFanNames,
-        kSyntheticAvailableFanNames,
-        ARRAYSIZE(kSyntheticAvailableFanNames)
+        dump.boardProvider.availableFanNames, kSyntheticAvailableFanNames, ARRAYSIZE(kSyntheticAvailableFanNames)
     );
     AssignStringList(
         dump.boardProvider.availableTemperatureNames,
@@ -451,21 +357,16 @@ TelemetryDump BuildSyntheticTelemetryDump(uint64_t tick) {
     return dump;
 }
 
-void UpdateSyntheticTelemetryDump(
-    TelemetryDump& dump,
-    uint64_t tick,
-    const RetainedHistoryStore& retainedHistoryStore
-) {
+void UpdateSyntheticTelemetryDump(TelemetryDump& dump, uint64_t tick, const RetainedHistoryStore& retainedHistoryStore)
+{
     SystemSnapshot& snapshot = dump.snapshot;
 
     snapshot.cpu.loadPercent = SyntheticHistoryValue(SyntheticScalarSampleTick(tick), kCpuLoadHistory);
     snapshot.cpu.clock = ScalarMetric{
-        SyntheticHistoryValue(SyntheticScalarSampleTick(tick), kCpuClockHistory),
-        ScalarMetricUnit::Gigahertz
+        SyntheticHistoryValue(SyntheticScalarSampleTick(tick), kCpuClockHistory), ScalarMetricUnit::Gigahertz
     };
     snapshot.cpu.memory = MemoryMetric{
-        SyntheticHistoryValue(SyntheticScalarSampleTick(tick), kCpuRamHistory),
-        kSyntheticCpuMemoryTotalGb
+        SyntheticHistoryValue(SyntheticScalarSampleTick(tick), kCpuRamHistory), kSyntheticCpuMemoryTotalGb
     };
     retainedHistoryStore.PushSample(snapshot, RetainedHistoryKey::CpuLoad, snapshot.cpu.loadPercent);
     retainedHistoryStore.PushSample(snapshot, RetainedHistoryKey::CpuClock, snapshot.cpu.clock.value.value_or(0.0));
@@ -473,12 +374,10 @@ void UpdateSyntheticTelemetryDump(
 
     snapshot.gpu.loadPercent = SyntheticHistoryValue(SyntheticScalarSampleTick(tick), kGpuLoadHistory);
     snapshot.gpu.temperature = ScalarMetric{
-        SyntheticHistoryValue(SyntheticScalarSampleTick(tick), kGpuTemperatureHistory),
-        ScalarMetricUnit::Celsius
+        SyntheticHistoryValue(SyntheticScalarSampleTick(tick), kGpuTemperatureHistory), ScalarMetricUnit::Celsius
     };
     snapshot.gpu.clock = ScalarMetric{
-        SyntheticHistoryValue(SyntheticScalarSampleTick(tick), kGpuClockHistory),
-        ScalarMetricUnit::Megahertz
+        SyntheticHistoryValue(SyntheticScalarSampleTick(tick), kGpuClockHistory), ScalarMetricUnit::Megahertz
     };
     snapshot.gpu.fan =
         ScalarMetric{SyntheticHistoryValue(SyntheticScalarSampleTick(tick), kGpuFanHistory), ScalarMetricUnit::Rpm};
@@ -487,11 +386,8 @@ void UpdateSyntheticTelemetryDump(
     snapshot.gpu.vram =
         MemoryMetric{SyntheticHistoryValue(SyntheticScalarSampleTick(tick), kGpuVramHistory), 15.984375};
     retainedHistoryStore.PushSample(snapshot, RetainedHistoryKey::GpuLoad, snapshot.gpu.loadPercent);
-    retainedHistoryStore.PushSample(
-        snapshot,
-        RetainedHistoryKey::GpuTemperature,
-        snapshot.gpu.temperature.value.value_or(0.0)
-    );
+    retainedHistoryStore
+        .PushSample(snapshot, RetainedHistoryKey::GpuTemperature, snapshot.gpu.temperature.value.value_or(0.0));
     retainedHistoryStore.PushSample(snapshot, RetainedHistoryKey::GpuClock, snapshot.gpu.clock.value.value_or(0.0));
     retainedHistoryStore.PushSample(snapshot, RetainedHistoryKey::GpuFan, snapshot.gpu.fan.value.value_or(0.0));
     retainedHistoryStore.PushSample(snapshot, RetainedHistoryKey::GpuFps, snapshot.gpu.fps.value.value_or(0.0));
@@ -499,50 +395,31 @@ void UpdateSyntheticTelemetryDump(
 
     if (!snapshot.boardTemperatures.empty()) {
         snapshot.boardTemperatures[0].metric = ScalarMetric{
-            SyntheticHistoryValue(SyntheticScalarSampleTick(tick), kBoardTempCpuHistory),
-            ScalarMetricUnit::Celsius
+            SyntheticHistoryValue(SyntheticScalarSampleTick(tick), kBoardTempCpuHistory), ScalarMetricUnit::Celsius
         };
     }
     if (snapshot.boardFans.size() >= 2) {
         snapshot.boardFans[0].metric = ScalarMetric{
-            SyntheticHistoryValue(SyntheticScalarSampleTick(tick), kBoardFanCpuHistory),
-            ScalarMetricUnit::Rpm
+            SyntheticHistoryValue(SyntheticScalarSampleTick(tick), kBoardFanCpuHistory), ScalarMetricUnit::Rpm
         };
         snapshot.boardFans[1].metric = ScalarMetric{
-            SyntheticHistoryValue(SyntheticScalarSampleTick(tick), kBoardFanSystemHistory),
-            ScalarMetricUnit::Rpm
+            SyntheticHistoryValue(SyntheticScalarSampleTick(tick), kBoardFanSystemHistory), ScalarMetricUnit::Rpm
         };
     }
     retainedHistoryStore.PushBoardMetricSamples(snapshot);
 
     const uint64_t throughputTick = SyntheticThroughputSampleTick(tick);
     snapshot.network.uploadMbps = PushSyntheticThroughputSample(
-        snapshot,
-        retainedHistoryStore,
-        RetainedHistoryKey::NetworkUpload,
-        throughputTick,
-        kNetworkUploadHistory
+        snapshot, retainedHistoryStore, RetainedHistoryKey::NetworkUpload, throughputTick, kNetworkUploadHistory
     );
     snapshot.network.downloadMbps = PushSyntheticThroughputSample(
-        snapshot,
-        retainedHistoryStore,
-        RetainedHistoryKey::NetworkDownload,
-        throughputTick,
-        kNetworkDownloadHistory
+        snapshot, retainedHistoryStore, RetainedHistoryKey::NetworkDownload, throughputTick, kNetworkDownloadHistory
     );
     snapshot.storage.readMbps = PushSyntheticThroughputSample(
-        snapshot,
-        retainedHistoryStore,
-        RetainedHistoryKey::StorageRead,
-        throughputTick,
-        kStorageReadHistory
+        snapshot, retainedHistoryStore, RetainedHistoryKey::StorageRead, throughputTick, kStorageReadHistory
     );
     snapshot.storage.writeMbps = PushSyntheticThroughputSample(
-        snapshot,
-        retainedHistoryStore,
-        RetainedHistoryKey::StorageWrite,
-        throughputTick,
-        kStorageWriteHistory
+        snapshot, retainedHistoryStore, RetainedHistoryKey::StorageWrite, throughputTick, kStorageWriteHistory
     );
 
     snapshot.now = BuildSyntheticTimestamp(tick);
@@ -579,8 +456,7 @@ std::vector<GpuAdapterCandidate> EnumerateSnapshotGpuAdapterCandidates(const Sys
 }
 
 ResolvedGpuCandidate ResolveConfiguredGpuCandidate(
-    const std::string& configuredAdapterName,
-    const std::vector<GpuAdapterCandidate>& availableCandidates
+    const std::string& configuredAdapterName, const std::vector<GpuAdapterCandidate>& availableCandidates
 ) {
     ResolvedGpuCandidate resolved;
     if (availableCandidates.empty()) {
@@ -610,8 +486,7 @@ ResolvedGpuCandidate ResolveConfiguredGpuCandidate(
 }
 
 void MarkSelectedGpuAdapterCandidates(
-    std::vector<GpuAdapterCandidate>& candidates,
-    const ResolvedGpuCandidate& selectedCandidate
+    std::vector<GpuAdapterCandidate>& candidates, const ResolvedGpuCandidate& selectedCandidate
 ) {
     bool selected = false;
     for (auto& candidate : candidates) {
@@ -621,8 +496,7 @@ void MarkSelectedGpuAdapterCandidates(
 }
 
 ResolvedNetworkCandidate ResolveConfiguredNetworkCandidate(
-    const std::string& configuredAdapterName,
-    const std::vector<NetworkAdapterCandidate>& availableCandidates
+    const std::string& configuredAdapterName, const std::vector<NetworkAdapterCandidate>& availableCandidates
 ) {
     ResolvedNetworkCandidate resolved;
     if (availableCandidates.empty()) {
@@ -655,8 +529,7 @@ ResolvedNetworkCandidate ResolveConfiguredNetworkCandidate(
 }
 
 void MarkSelectedNetworkAdapterCandidates(
-    std::vector<NetworkAdapterCandidate>& candidates,
-    const ResolvedNetworkCandidate& selectedCandidate
+    std::vector<NetworkAdapterCandidate>& candidates, const ResolvedNetworkCandidate& selectedCandidate
 ) {
     bool selected = false;
     for (auto& candidate : candidates) {
@@ -693,8 +566,7 @@ std::vector<StorageDriveCandidate> EnumerateSnapshotStorageDriveCandidates(const
 }
 
 void MarkSelectedStorageDriveCandidates(
-    std::vector<StorageDriveCandidate>& candidates,
-    const std::vector<std::string>& selectedDrives
+    std::vector<StorageDriveCandidate>& candidates, const std::vector<std::string>& selectedDrives
 ) {
     for (auto& candidate : candidates) {
         candidate.selected =
@@ -715,10 +587,7 @@ FilePath ResolveFakePath(const FilePath& workingDirectory, const FilePath& confi
 class FakeTelemetryCollector : public TelemetryCollector {
 public:
     FakeTelemetryCollector(
-        FilePath fakePath,
-        TelemetryDumpLoader loadFakeDump,
-        bool liveSyntheticSource,
-        Trace& trace
+        FilePath fakePath, TelemetryDumpLoader loadFakeDump, bool liveSyntheticSource, Trace& trace
     ) :
         fakePath_(std::move(fakePath)),
         useSyntheticSource_(fakePath_.empty()),
@@ -748,29 +617,17 @@ public:
         return true;
     }
 
-    const SystemSnapshot& Snapshot() const override {
-        return dump_.snapshot;
-    }
+    const SystemSnapshot& Snapshot() const override { return dump_.snapshot; }
 
-    TelemetryDump Dump() const override {
-        return dump_;
-    }
+    TelemetryDump Dump() const override { return dump_; }
 
-    const ResolvedTelemetrySelections& ResolvedSelections() const override {
-        return resolvedSelections_;
-    }
+    const ResolvedTelemetrySelections& ResolvedSelections() const override { return resolvedSelections_; }
 
-    const std::vector<GpuAdapterCandidate>& GpuAdapterCandidates() const override {
-        return gpuAdapters_;
-    }
+    const std::vector<GpuAdapterCandidate>& GpuAdapterCandidates() const override { return gpuAdapters_; }
 
-    const std::vector<NetworkAdapterCandidate>& NetworkAdapterCandidates() const override {
-        return networkAdapters_;
-    }
+    const std::vector<NetworkAdapterCandidate>& NetworkAdapterCandidates() const override { return networkAdapters_; }
 
-    const std::vector<StorageDriveCandidate>& StorageDriveCandidates() const override {
-        return storageDrives_;
-    }
+    const std::vector<StorageDriveCandidate>& StorageDriveCandidates() const override { return storageDrives_; }
 
     void ApplySettings(const TelemetrySettings& settings) override {
         selectionSettings_ = settings.selection;
@@ -886,9 +743,7 @@ private:
         const std::string input = ReadBinaryFile(fakePath_);
         if (input.empty()) {
             trace_.WriteFmt(
-                TracePrefix::Fake,
-                RES_STR("load_failed reason=open path=\"%s\""),
-                fakePath_.string().c_str()
+                TracePrefix::Fake, RES_STR("load_failed reason=open path=\"%s\""), fakePath_.string().c_str()
             );
             if (required && errorText != nullptr) {
                 *errorText = FormatText("Failed to open fake telemetry file:\n%s", fakePath_.string().c_str());
@@ -952,9 +807,6 @@ std::unique_ptr<TelemetryCollector> CreateFakeTelemetryCollector(
     Trace& trace
 ) {
     return std::make_unique<FakeTelemetryCollector>(
-        ResolveFakePath(workingDirectory, configuredPath),
-        loadFakeDump,
-        liveSyntheticSource,
-        trace
+        ResolveFakePath(workingDirectory, configuredPath), loadFakeDump, liveSyntheticSource, trace
     );
 }

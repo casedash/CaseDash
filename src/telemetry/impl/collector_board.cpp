@@ -44,10 +44,9 @@ bool HasConfiguredSensorName(const std::unordered_map<std::string, std::string>&
     return it != sensorNames.end() && !it->second.empty();
 }
 
-std::optional<std::string> FindAutoBoardSensorName(
-    const std::string& logicalName,
-    const std::vector<std::string>& availableSensorNames
-) {
+std::optional<std::string>
+    FindAutoBoardSensorName(const std::string& logicalName, const std::vector<std::string>& availableSensorNames)
+{
     const auto findContaining = [&](const std::string& text) -> std::optional<std::string> {
         const auto it = std::find_if(availableSensorNames.begin(), availableSensorNames.end(), [&](const auto& name) {
             return ContainsInsensitive(name, text);
@@ -134,10 +133,9 @@ void InitializeBoardCollector(RealTelemetryCollectorState& state, const BoardTel
 
     if (!HasRequestedBoardMetrics(settings)) {
         ClearBoardProviderState(state, ResourceStringText(RES_STR("No board metrics requested by layout.")));
-        state.trace_.Write(
-            TracePrefix::Telemetry,
-            RES_STR("board_provider_initialize_skipped reason=no_requested_metrics")
-        );
+        state
+            .trace_
+            .Write(TracePrefix::Telemetry, RES_STR("board_provider_initialize_skipped reason=no_requested_metrics"));
         return;
     }
 
@@ -176,10 +174,9 @@ void ReconfigureBoardCollector(RealTelemetryCollectorState& state, const BoardTe
 
     if (!HasRequestedBoardMetrics(settings)) {
         ClearBoardProviderState(state, ResourceStringText(RES_STR("No board metrics requested by layout.")));
-        state.trace_.Write(
-            TracePrefix::Telemetry,
-            RES_STR("board_provider_reconfigure_skipped reason=no_requested_metrics")
-        );
+        state
+            .trace_
+            .Write(TracePrefix::Telemetry, RES_STR("board_provider_reconfigure_skipped reason=no_requested_metrics"));
         return;
     }
 

@@ -20,6 +20,6 @@ std::string BuildCommandLineExcludingSwitch(const CommandLineArguments& argument
 std::optional<size_t> FindSwitchIndex(const CommandLineArguments& arguments, std::string_view target);
 bool HasSwitch(const CommandLineArguments& arguments, std::string_view target);
 std::optional<std::string> GetSwitchValue(const CommandLineArguments& arguments, std::string_view target);
-std::optional<CommandLineColonSwitchValue> GetColonSwitchValueWithIndex(
-    const CommandLineArguments& arguments, std::string_view target);
+std::optional<CommandLineColonSwitchValue>
+    GetColonSwitchValueWithIndex(const CommandLineArguments& arguments, std::string_view target);
 std::optional<std::string> GetColonSwitchValue(const CommandLineArguments& arguments, std::string_view target);

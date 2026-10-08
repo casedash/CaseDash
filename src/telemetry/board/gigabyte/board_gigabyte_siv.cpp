@@ -25,9 +25,7 @@ namespace {
 constexpr char kEngineEnvironmentControlDll[] = "Gigabyte.Engine.EnvironmentControl.dll";
 constexpr char kSivUninstallKey[] = "SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall";
 
-std::string TextFromNullableWide(const wchar_t* text) {
-    return text != nullptr ? TextFromWide(text) : std::string();
-}
+std::string TextFromNullableWide(const wchar_t* text) { return text != nullptr ? TextFromWide(text) : std::string(); }
 
 struct GigabyteSivSnapshot {
     bool success = false;
@@ -53,11 +51,10 @@ std::optional<FilePath> FindInstalledSivDirectory() {
         if (RegOpenKeyExA(uninstallKey, childName, 0, KEY_READ, &childKey) == ERROR_SUCCESS) {
             const auto displayName = ReadRegistryString(childKey, nullptr, "DisplayName");
             const std::string displayNameText = displayName.value_or("");
-            const bool isSiv = !displayNameText.empty() &&
-                (
-                    EqualsInsensitive(displayNameText, "SIV") ||
-                    EqualsInsensitive(displayNameText, "System Information Viewer")
-                );
+            const bool isSiv = !displayNameText.empty() && (
+                EqualsInsensitive(displayNameText, "SIV") ||
+                EqualsInsensitive(displayNameText, "System Information Viewer")
+            );
             if (isSiv) {
                 const auto installLocation = ReadRegistryString(childKey, nullptr, "InstallLocation");
                 if (installLocation.has_value() && !installLocation->empty()) {
@@ -146,9 +143,7 @@ public:
         return std::move(snapshot_);
     }
 
-    GigabyteSivSnapshot FinishFailure() {
-        return std::move(snapshot_);
-    }
+    GigabyteSivSnapshot FinishFailure() { return std::move(snapshot_); }
 
 private:
     Trace& trace_;
@@ -200,9 +195,7 @@ public:
         }
         for (size_t i = 0; i < fanMetricTemplate_.size(); ++i) {
             AppendRequestedBoardMetricIndex(
-                requestedFanIndexBySourceName_,
-                ResolveFanSensorName(fanMetricTemplate_[i].name),
-                i
+                requestedFanIndexBySourceName_, ResolveFanSensorName(fanMetricTemplate_[i].name), i
             );
         }
         requestedDiagnosticsSuffix_.clear();
@@ -258,9 +251,7 @@ public:
         ResetBoardMetricValues(sample.temperatures);
         ResetBoardMetricValues(sample.fans);
         ApplyBoardSensorReadingsToMetrics(
-            snapshot.temperatures,
-            requestedTemperatureIndexBySourceName_,
-            sample.temperatures
+            snapshot.temperatures, requestedTemperatureIndexBySourceName_, sample.temperatures
         );
         ApplyBoardSensorReadingsToMetrics(snapshot.fans, requestedFanIndexBySourceName_, sample.fans);
         sample.available = HasAvailableMetricValue(sample.temperatures) || HasAvailableMetricValue(sample.fans);
@@ -277,9 +268,7 @@ private:
         return ResolveMappedBoardSensorName(settings_.fanSensorNames, logicalName);
     }
 
-    Trace& trace() {
-        return trace_;
-    }
+    Trace& trace() { return trace_; }
 
     void PopulateUnavailableSample(BoardVendorTelemetrySample& sample) const {
         sample.availableFanNames = availableFanNames_;

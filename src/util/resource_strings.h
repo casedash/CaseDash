@@ -19,7 +19,8 @@ std::uint32_t ResourceStringHash(const char* text, std::size_t length);
 
 }  // namespace resource_strings_detail
 
-template <std::size_t Size> consteval ResourceStringId RES_STR(const char (&text)[Size]) {
+template <std::size_t Size>
+consteval ResourceStringId RES_STR(const char (&text)[Size]) {
     std::uint32_t hash = resource_strings_detail::ResourceStringHashSeed;
     for (std::size_t index = 0; index < Size - 1; ++index) {
         hash ^= static_cast<std::uint8_t>(text[index]);

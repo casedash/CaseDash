@@ -7,9 +7,9 @@
 
 namespace {
 
-constexpr uint32_t kCashDashServiceRequestMagic = 0x51524443;  // "CDRQ" little-endian.
-constexpr uint32_t kCashDashServiceResponseMagic = 0x53524443;  // "CDRS" little-endian.
-constexpr uint32_t kFpsServicePayloadMagic = 0x31535046;  // "FPS1" little-endian.
+constexpr uint32_t kCashDashServiceRequestMagic = 0x51524443;      // "CDRQ" little-endian.
+constexpr uint32_t kCashDashServiceResponseMagic = 0x53524443;     // "CDRS" little-endian.
+constexpr uint32_t kFpsServicePayloadMagic = 0x31535046;           // "FPS1" little-endian.
 constexpr uint32_t kBoardSensorsServicePayloadMagic = 0x31534442;  // "BDS1" little-endian.
 constexpr uint32_t kFpsServiceProtocolVersion = 2;
 constexpr uint32_t kFpsServiceFlagAvailable = 1u << 0u;
@@ -202,10 +202,8 @@ bool IsKnownRequestId(uint32_t id) {
 
 }  // namespace
 
-std::vector<char> BuildCashDashServiceRequest(
-    CashDashServiceRequestId id,
-    const FpsTelemetrySampleOptions& fpsOptions
-) {
+std::vector<char> BuildCashDashServiceRequest(CashDashServiceRequestId id, const FpsTelemetrySampleOptions& fpsOptions)
+{
     const std::string name = RequestName(id);
     const uint32_t nameBytes = StringSizeOrMax(name);
     const uint32_t adapterLuidTokenBytes =
@@ -224,11 +222,9 @@ std::vector<char> BuildCashDashServiceRequest(
     return output;
 }
 
-std::optional<CashDashServiceRequest> ParseCashDashServiceRequest(
-    const void* data,
-    size_t size,
-    std::string& diagnostics
-) {
+std::optional<CashDashServiceRequest>
+    ParseCashDashServiceRequest(const void* data, size_t size, std::string& diagnostics)
+{
     diagnostics.clear();
     const char* cursor = static_cast<const char*>(data);
     size_t remaining = size;
@@ -426,11 +422,9 @@ std::vector<char> SerializeBoardSensorsServiceSample(const BoardVendorTelemetryS
     return output;
 }
 
-std::optional<BoardVendorTelemetrySample> ParseBoardSensorsServiceResponse(
-    const void* data,
-    size_t size,
-    std::string& diagnostics
-) {
+std::optional<BoardVendorTelemetrySample>
+    ParseBoardSensorsServiceResponse(const void* data, size_t size, std::string& diagnostics)
+{
     diagnostics.clear();
     const char* cursor = static_cast<const char*>(data);
     size_t remaining = size;
@@ -492,17 +486,11 @@ std::optional<BoardVendorTelemetrySample> ParseBoardSensorsServiceResponse(
         !ReadString(cursor, remaining, payloadHeader.diagnosticsBytes, sample.diagnostics) ||
         !ReadStringVector(cursor, remaining, payloadHeader.requestedFanCount, sample.requestedFanNames) ||
         !ReadStringVector(
-            cursor,
-            remaining,
-            payloadHeader.requestedTemperatureCount,
-            sample.requestedTemperatureNames
+            cursor, remaining, payloadHeader.requestedTemperatureCount, sample.requestedTemperatureNames
         ) ||
         !ReadStringVector(cursor, remaining, payloadHeader.availableFanCount, sample.availableFanNames) ||
         !ReadStringVector(
-            cursor,
-            remaining,
-            payloadHeader.availableTemperatureCount,
-            sample.availableTemperatureNames
+            cursor, remaining, payloadHeader.availableTemperatureCount, sample.availableTemperatureNames
         ) ||
         !ReadMetricVector(cursor, remaining, payloadHeader.fanCount, sample.fans) ||
         !ReadMetricVector(cursor, remaining, payloadHeader.temperatureCount, sample.temperatures) ||

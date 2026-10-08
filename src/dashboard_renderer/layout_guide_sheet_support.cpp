@@ -26,12 +26,14 @@ std::vector<LayoutGuideSheetCardSummary> CollectLayoutGuideSheetCardSummaries(co
 }
 
 bool SaveLayoutGuideSheetSurfacePng(
-    DashboardRenderer& renderer, const FilePath& imagePath, int width, int height, Renderer::DrawCallback draw) {
+    DashboardRenderer& renderer, const FilePath& imagePath, int width, int height, Renderer::DrawCallback draw
+) {
     return renderer.renderer_->SavePng(imagePath, width, height, draw);
 }
 
 bool RenderLayoutGuideSheetSurfaceOffscreen(
-    DashboardRenderer& renderer, int width, int height, Renderer::DrawCallback draw) {
+    DashboardRenderer& renderer, int width, int height, Renderer::DrawCallback draw
+) {
     return renderer.renderer_->DrawOffscreen(width, height, draw);
 }
 
@@ -50,16 +52,20 @@ void EndLayoutGuideSheetDynamicArtifacts(DashboardRenderer& renderer) {
     renderer.activeOverlayState_ = nullptr;
 }
 
-void DrawLayoutGuideSheetCard(DashboardRenderer& renderer,
+void DrawLayoutGuideSheetCard(
+    DashboardRenderer& renderer,
     const std::string& cardId,
     const RenderRect& sourceRect,
     const RenderRect& destRect,
-    const MetricSource& metrics) {
+    const MetricSource& metrics
+) {
     renderer.Renderer().PushClipRect(destRect.Inflate(renderer.ScaleLogical(4), renderer.ScaleLogical(4)));
     renderer.Renderer().PushTranslation(RenderPoint{destRect.left - sourceRect.left, destRect.top - sourceRect.top});
-    const auto cardIt = std::find_if(renderer.layoutResolver_->resolvedLayout_.cards.begin(),
+    const auto cardIt = std::find_if(
+        renderer.layoutResolver_->resolvedLayout_.cards.begin(),
         renderer.layoutResolver_->resolvedLayout_.cards.end(),
-        [&](const auto& card) { return card.id == cardId; });
+        [&](const auto& card) { return card.id == cardId; }
+    );
     if (cardIt != renderer.layoutResolver_->resolvedLayout_.cards.end()) {
         renderer.DrawResolvedWidget(cardIt->chrome, metrics);
         for (const auto& widget : cardIt->widgets) {
@@ -70,11 +76,13 @@ void DrawLayoutGuideSheetCard(DashboardRenderer& renderer,
     renderer.Renderer().PopClipRect();
 }
 
-void DrawLayoutGuideSheetOverlay(DashboardRenderer& renderer,
+void DrawLayoutGuideSheetOverlay(
+    DashboardRenderer& renderer,
     const DashboardOverlayState& overlayState,
     const RenderRect& sourceRect,
     const RenderRect& destRect,
-    const MetricSource& metrics) {
+    const MetricSource& metrics
+) {
     renderer.Renderer().PushClipRect(destRect.Inflate(renderer.ScaleLogical(4), renderer.ScaleLogical(4)));
     renderer.Renderer().PushTranslation(RenderPoint{destRect.left - sourceRect.left, destRect.top - sourceRect.top});
     renderer.layoutEditOverlayRenderer_->Draw(overlayState, metrics);
@@ -82,11 +90,13 @@ void DrawLayoutGuideSheetOverlay(DashboardRenderer& renderer,
     renderer.Renderer().PopClipRect();
 }
 
-LayoutGuideSheetCardChromeArtifacts BuildLayoutGuideSheetCardChromeArtifacts(DashboardRenderer& renderer,
+LayoutGuideSheetCardChromeArtifacts BuildLayoutGuideSheetCardChromeArtifacts(
+    DashboardRenderer& renderer,
     const std::string& cardId,
     const RenderRect& rect,
     const MetricSource* metrics,
-    bool suppressTitle) {
+    bool suppressTitle
+) {
     LayoutGuideSheetCardChromeArtifacts artifacts;
     const LayoutCardConfig* card = renderer.FindCardConfigById(cardId);
     if (card == nullptr) {
@@ -124,24 +134,33 @@ LayoutGuideSheetCardChromeArtifacts BuildLayoutGuideSheetCardChromeArtifacts(Das
     artifacts.widgetGuides = renderer.layoutResolver_->widgetEditGuides_;
     artifacts.anchorRegions = renderer.layoutResolver_->staticEditableAnchorRegions_;
     artifacts.colorRegions = renderer.layoutResolver_->dynamicColorEditRegions_;
-    if (!displayCard.icon.empty() && !artifacts.chromeLayout.iconRect.IsEmpty() &&
+    if (
+        !displayCard.icon.empty() &&
+        !artifacts.chromeLayout.iconRect.IsEmpty() &&
         std::none_of(artifacts.colorRegions.begin(), artifacts.colorRegions.end(), [](const auto& region) {
             return region.parameter == LayoutEditParameter::ColorIcon;
-        })) {
-        artifacts.colorRegions.push_back(
-            LayoutEditColorRegion{LayoutEditParameter::ColorIcon, artifacts.chromeLayout.iconRect});
+        })
+    ) {
+        artifacts
+            .colorRegions
+            .push_back(LayoutEditColorRegion{LayoutEditParameter::ColorIcon, artifacts.chromeLayout.iconRect});
     }
-    if (!displayCard.title.empty() && !artifacts.chromeLayout.titleRect.IsEmpty() &&
+    if (
+        !displayCard.title.empty() &&
+        !artifacts.chromeLayout.titleRect.IsEmpty() &&
         std::none_of(artifacts.colorRegions.begin(), artifacts.colorRegions.end(), [](const auto& region) {
             return region.parameter == LayoutEditParameter::ColorForeground;
-        })) {
-        const RenderRect titleTextRect =
-            renderer.Renderer()
-                .MeasureTextBlock(artifacts.chromeLayout.titleRect,
-                    displayCard.title,
-                    TextStyleId::Title,
-                    TextLayoutOptions::SingleLine(TextHorizontalAlign::Leading, TextVerticalAlign::Center))
-                .textRect;
+        })
+    ) {
+        const RenderRect titleTextRect = renderer
+            .Renderer()
+            .MeasureTextBlock(
+                artifacts.chromeLayout.titleRect,
+                displayCard.title,
+                TextStyleId::Title,
+                TextLayoutOptions::SingleLine(TextHorizontalAlign::Leading, TextVerticalAlign::Center)
+            )
+            .textRect;
         artifacts.colorRegions.push_back(LayoutEditColorRegion{LayoutEditParameter::ColorForeground, titleTextRect});
     }
 

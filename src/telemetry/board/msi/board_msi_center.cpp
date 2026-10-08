@@ -23,9 +23,7 @@ namespace {
 
 constexpr char kMsiUninstallKey[] = "SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall";
 
-std::string TextFromNullableWide(const wchar_t* text) {
-    return text != nullptr ? TextFromWide(text) : std::string();
-}
+std::string TextFromNullableWide(const wchar_t* text) { return text != nullptr ? TextFromWide(text) : std::string(); }
 
 struct MsiCenterSnapshot {
     bool success = false;
@@ -97,10 +95,7 @@ public:
 
     void TraceQuerySuccess(int fanCount, int temperatureCount) override {
         trace_.WriteFmt(
-            TracePrefix::MsiCenter,
-            RES_STR("snapshot_done fan_count=%d temp_count=%d"),
-            fanCount,
-            temperatureCount
+            TracePrefix::MsiCenter, RES_STR("snapshot_done fan_count=%d temp_count=%d"), fanCount, temperatureCount
         );
     }
 
@@ -128,9 +123,7 @@ public:
         return std::move(snapshot_);
     }
 
-    MsiCenterSnapshot FinishFailure() {
-        return std::move(snapshot_);
-    }
+    MsiCenterSnapshot FinishFailure() { return std::move(snapshot_); }
 
 private:
     Trace& trace_;
@@ -181,9 +174,7 @@ public:
         }
         for (size_t i = 0; i < fanMetricTemplate_.size(); ++i) {
             AppendRequestedBoardMetricIndex(
-                requestedFanIndexBySourceName_,
-                ResolveFanSensorName(fanMetricTemplate_[i].name),
-                i
+                requestedFanIndexBySourceName_, ResolveFanSensorName(fanMetricTemplate_[i].name), i
             );
         }
         requestedDiagnosticsSuffix_.clear();
@@ -245,9 +236,7 @@ public:
         ResetBoardMetricValues(sample.temperatures);
         ResetBoardMetricValues(sample.fans);
         ApplyBoardSensorReadingsToMetrics(
-            snapshot.temperatures,
-            requestedTemperatureIndexBySourceName_,
-            sample.temperatures
+            snapshot.temperatures, requestedTemperatureIndexBySourceName_, sample.temperatures
         );
         ApplyBoardSensorReadingsToMetrics(snapshot.fans, requestedFanIndexBySourceName_, sample.fans);
         sample.available = HasAvailableMetricValue(sample.temperatures) || HasAvailableMetricValue(sample.fans);
@@ -264,9 +253,7 @@ private:
         return ResolveMappedBoardSensorName(settings_.fanSensorNames, logicalName);
     }
 
-    Trace& trace() {
-        return trace_;
-    }
+    Trace& trace() { return trace_; }
 
     Trace& trace_;
     BoardVendorInfo info_;

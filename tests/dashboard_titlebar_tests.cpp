@@ -14,18 +14,18 @@ void ExpectRect(const RECT& rect, int left, int top, int right, int bottom) {
     EXPECT_EQ(rect.bottom, bottom);
 }
 
-bool RectUsable(const RECT& rect) {
-    return rect.right > rect.left && rect.bottom > rect.top;
-}
+bool RectUsable(const RECT& rect) { return rect.right > rect.left && rect.bottom > rect.top; }
 
 void ExpectNoOverlappingControlRects(const DashboardTitlebarControlLayout& layout) {
-    const std::array<RECT, 7> rects{layout.appMenuRect,
+    const std::array<RECT, 7> rects{
+        layout.appMenuRect,
         layout.themeComboRect,
         layout.layoutComboRect,
         layout.editLayoutRect,
         layout.displayRect,
         layout.closeRect,
-        layout.titleTextRect};
+        layout.titleTextRect
+    };
     for (size_t i = 0; i < rects.size(); ++i) {
         if (!RectUsable(rects[i])) {
             continue;
@@ -138,10 +138,12 @@ TEST(DashboardTitlebarGeometry, PreservesClientRectThroughAdjustedMargins) {
     const DashboardTitlebarGeometry geometry = ResolveDashboardTitlebarGeometry(client, monitor, margins);
 
     ASSERT_TRUE(geometry.canShow);
-    const RECT reconstructedClient{geometry.windowRect.left + margins.left,
+    const RECT reconstructedClient{
+        geometry.windowRect.left + margins.left,
         geometry.windowRect.top + margins.top,
         geometry.windowRect.right - margins.right,
-        geometry.windowRect.bottom - margins.bottom};
+        geometry.windowRect.bottom - margins.bottom
+    };
     ExpectRect(reconstructedClient, 100, 100, 500, 300);
 }
 
@@ -294,27 +296,33 @@ TEST(DashboardTitlebarTooltip, ResolvesControlKeys) {
     EXPECT_STREQ(
         ResolveDashboardTitlebarTooltipTarget(POINT{10, 10}, appMenu, layout, theme, editLayout, display, close)
             .localizationKey,
-        "titlebar.app_menu");
+        "titlebar.app_menu"
+    );
     EXPECT_STREQ(
         ResolveDashboardTitlebarTooltipTarget(POINT{120, 10}, appMenu, layout, theme, editLayout, display, close)
             .localizationKey,
-        "titlebar.layout");
+        "titlebar.layout"
+    );
     EXPECT_STREQ(
         ResolveDashboardTitlebarTooltipTarget(POINT{200, 10}, appMenu, layout, theme, editLayout, display, close)
             .localizationKey,
-        "titlebar.theme");
+        "titlebar.theme"
+    );
     EXPECT_STREQ(
         ResolveDashboardTitlebarTooltipTarget(POINT{320, 10}, appMenu, layout, theme, editLayout, display, close)
             .localizationKey,
-        "titlebar.edit_layout");
+        "titlebar.edit_layout"
+    );
     EXPECT_STREQ(
         ResolveDashboardTitlebarTooltipTarget(POINT{360, 10}, appMenu, layout, theme, editLayout, display, close)
             .localizationKey,
-        "titlebar.display");
+        "titlebar.display"
+    );
     EXPECT_STREQ(
         ResolveDashboardTitlebarTooltipTarget(POINT{400, 10}, appMenu, layout, theme, editLayout, display, close)
             .localizationKey,
-        "titlebar.close");
+        "titlebar.close"
+    );
 }
 
 TEST(DashboardTitlebarTooltip, SkipsUnavailableControls) {

@@ -7,10 +7,12 @@ D2D1_POINT_2F D2DPointFromRenderPoint(RenderPoint point) {
 }
 
 D2D1_RECT_F D2DRectFromRenderRect(const RenderRect& rect) {
-    return D2D1::RectF(static_cast<float>(rect.left),
+    return D2D1::RectF(
+        static_cast<float>(rect.left),
         static_cast<float>(rect.top),
         static_cast<float>(rect.right),
-        static_cast<float>(rect.bottom));
+        static_cast<float>(rect.bottom)
+    );
 }
 
 namespace {
@@ -19,7 +21,8 @@ D2D1_POINT_2F ArcPoint(const RenderPathArc& arc, double angleDegrees) {
     const double radians = angleDegrees * 3.14159265358979323846 / 180.0;
     return D2D1::Point2F(
         static_cast<float>(arc.center.x) + static_cast<float>(std::cos(radians) * static_cast<double>(arc.radiusX)),
-        static_cast<float>(arc.center.y) + static_cast<float>(std::sin(radians) * static_cast<double>(arc.radiusY)));
+        static_cast<float>(arc.center.y) + static_cast<float>(std::sin(radians) * static_cast<double>(arc.radiusY))
+    );
 }
 
 D2D1_SWEEP_DIRECTION ArcSweepDirection(double sweepAngleDegrees) {
@@ -36,21 +39,25 @@ void AddArcSegments(ID2D1GeometrySink* sink, const RenderPathArc& arc, D2D1_POIN
     while (std::abs(remaining) > 180.0) {
         const double chunk = remaining > 0.0 ? 180.0 : -180.0;
         const double end = start + chunk;
-        sink->AddArc(D2D1::ArcSegment(ArcPoint(arc, end),
+        sink->AddArc(D2D1::ArcSegment(
+            ArcPoint(arc, end),
             D2D1::SizeF(static_cast<float>(arc.radiusX), static_cast<float>(arc.radiusY)),
             0.0f,
             ArcSweepDirection(chunk),
-            D2D1_ARC_SIZE_SMALL));
+            D2D1_ARC_SIZE_SMALL
+        ));
         start = end;
         remaining -= chunk;
     }
 
     if (remaining != 0.0) {
-        sink->AddArc(D2D1::ArcSegment(endPoint,
+        sink->AddArc(D2D1::ArcSegment(
+            endPoint,
             D2D1::SizeF(static_cast<float>(arc.radiusX), static_cast<float>(arc.radiusY)),
             0.0f,
             ArcSweepDirection(remaining),
-            std::abs(remaining) > 180.0 ? D2D1_ARC_SIZE_LARGE : D2D1_ARC_SIZE_SMALL));
+            std::abs(remaining) > 180.0 ? D2D1_ARC_SIZE_LARGE : D2D1_ARC_SIZE_SMALL
+        ));
     }
 }
 
@@ -89,8 +96,9 @@ Microsoft::WRL::ComPtr<ID2D1PathGeometry> CreateD2DRenderArcGeometry(ID2D1Factor
     return geometry;
 }
 
-Microsoft::WRL::ComPtr<ID2D1PathGeometry> CreateD2DRenderArcsGeometry(
-    ID2D1Factory* factory, std::span<const RenderArc> arcs) {
+Microsoft::WRL::ComPtr<ID2D1PathGeometry>
+    CreateD2DRenderArcsGeometry(ID2D1Factory* factory, std::span<const RenderArc> arcs)
+{
     Microsoft::WRL::ComPtr<ID2D1PathGeometry> geometry;
     if (factory == nullptr || arcs.empty()) {
         return geometry;

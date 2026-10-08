@@ -37,6 +37,6 @@ LayoutEditParameterInfo GetLayoutEditParameterInfo(LayoutEditParameter parameter
 const LayoutEditConfigFieldMetadata& GetLayoutEditConfigFieldMetadata(LayoutEditParameter parameter);
 bool IsFontLayoutEditParameter(LayoutEditParameter parameter);
 std::string GetLayoutEditParameterDisplayName(LayoutEditParameter parameter);
-std::optional<LayoutEditParameter> FindLayoutEditParameterByConfigField(
-    std::string_view sectionName, std::string_view parameterName);
+std::optional<LayoutEditParameter>
+    FindLayoutEditParameterByConfigField(std::string_view sectionName, std::string_view parameterName);
 std::optional<LayoutEditTooltipDescriptor> FindLayoutEditTooltipDescriptor(LayoutEditParameter parameter);

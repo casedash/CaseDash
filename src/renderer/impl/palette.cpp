@@ -6,31 +6,31 @@ namespace {
 
 RenderColor ToRenderColor(ColorConfig color) {
     const unsigned int rgb = color.ToRgb();
-    return RenderColor{static_cast<std::uint8_t>((rgb >> 16) & 0xFFu),
+    return RenderColor{
+        static_cast<std::uint8_t>((rgb >> 16) & 0xFFu),
         static_cast<std::uint8_t>((rgb >> 8) & 0xFFu),
         static_cast<std::uint8_t>(rgb & 0xFFu),
-        color.Alpha()};
+        color.Alpha()
+    };
 }
 
-std::size_t ColorSlot(RenderColorId id) {
-    return static_cast<std::size_t>(id);
-}
+std::size_t ColorSlot(RenderColorId id) { return static_cast<std::size_t>(id); }
 
 }  // namespace
 
 D2D1_COLOR_F RenderColor::ToD2DColorF() const {
     constexpr float kScale = 1.0f / 255.0f;
-    return D2D1::ColorF(static_cast<float>(r) * kScale,
+    return D2D1::ColorF(
+        static_cast<float>(r) * kScale,
         static_cast<float>(g) * kScale,
         static_cast<float>(b) * kScale,
-        static_cast<float>(a) * kScale);
+        static_cast<float>(a) * kScale
+    );
 }
 
 RendererPalette::RendererPalette() = default;
 
-RendererPalette::RendererPalette(const ColorsConfig& colors) {
-    Rebuild(colors);
-}
+RendererPalette::RendererPalette(const ColorsConfig& colors) { Rebuild(colors); }
 
 void RendererPalette::Rebuild(const ColorsConfig& colors) {
     colors_[ColorSlot(RenderColorId::Background)] = ToRenderColor(colors.backgroundColor);
@@ -50,6 +50,4 @@ void RendererPalette::Rebuild(const ColorsConfig& colors) {
     colors_[ColorSlot(RenderColorId::GraphAxis)] = ToRenderColor(colors.graphAxisColor);
 }
 
-const RenderColor& RendererPalette::Get(RenderColorId id) const {
-    return colors_[ColorSlot(id)];
-}
+const RenderColor& RendererPalette::Get(RenderColorId id) const { return colors_[ColorSlot(id)]; }

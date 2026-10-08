@@ -49,14 +49,16 @@ struct LayoutEditContainerChildReorderRegion {
     RenderRect childRect{};
 };
 
-using LayoutEditActiveRegionPayload = std::variant<LayoutEditCardRegion,
+using LayoutEditActiveRegionPayload = std::variant<
+    LayoutEditCardRegion,
     LayoutEditWidgetRegion,
     LayoutEditGuide,
     LayoutEditContainerChildReorderRegion,
     LayoutEditGapAnchor,
     LayoutEditWidgetGuide,
     LayoutEditAnchorRegion,
-    LayoutEditColorRegion>;
+    LayoutEditColorRegion
+>;
 
 struct LayoutEditActiveRegion {
     RenderRect box{};
@@ -64,11 +66,13 @@ struct LayoutEditActiveRegion {
     LayoutEditActiveRegionPayload payload = LayoutEditCardRegion{};
 };
 
-template <typename T> const T* LayoutEditActiveRegionPayloadAs(const LayoutEditActiveRegionPayload& payload) {
+template <typename T>
+const T* LayoutEditActiveRegionPayloadAs(const LayoutEditActiveRegionPayload& payload) {
     return std::get_if<T>(&payload);
 }
 
-template <typename T> const T* LayoutEditActiveRegionPayloadAs(const LayoutEditActiveRegion& region) {
+template <typename T>
+const T* LayoutEditActiveRegionPayloadAs(const LayoutEditActiveRegion& region) {
     return LayoutEditActiveRegionPayloadAs<T>(region.payload);
 }
 

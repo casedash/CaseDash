@@ -58,9 +58,7 @@ public:
         return *this;
     }
 
-    HANDLE Get() const {
-        return handle_;
-    }
+    HANDLE Get() const { return handle_; }
 
     HANDLE Release() {
         HANDLE handle = handle_;
@@ -97,9 +95,7 @@ public:
         return *this;
     }
 
-    SC_HANDLE Get() const {
-        return handle_;
-    }
+    SC_HANDLE Get() const { return handle_; }
 
 private:
     SC_HANDLE handle_ = nullptr;
@@ -130,9 +126,7 @@ public:
         return *this;
     }
 
-    void* Get() const {
-        return memory_;
-    }
+    void* Get() const { return memory_; }
 
 private:
     void* memory_ = nullptr;
@@ -229,8 +223,10 @@ std::optional<std::string> QueryServiceBinaryPath(SC_HANDLE service) {
 
     std::vector<BYTE> buffer(bytesNeeded);
     auto* config = reinterpret_cast<QUERY_SERVICE_CONFIGA*>(buffer.data());
-    if (!QueryServiceConfigA(service, config, static_cast<DWORD>(buffer.size()), &bytesNeeded) ||
-        config->lpBinaryPathName == nullptr) {
+    if (
+        !QueryServiceConfigA(service, config, static_cast<DWORD>(buffer.size()), &bytesNeeded) ||
+        config->lpBinaryPathName == nullptr
+    ) {
         return std::nullopt;
     }
     return config->lpBinaryPathName;
@@ -239,7 +235,8 @@ std::optional<std::string> QueryServiceBinaryPath(SC_HANDLE service) {
 DWORD QueryServiceStatusProcess(SC_HANDLE service, SERVICE_STATUS_PROCESS& status) {
     DWORD bytesNeeded = 0;
     if (!QueryServiceStatusEx(
-            service, SC_STATUS_PROCESS_INFO, reinterpret_cast<LPBYTE>(&status), sizeof(status), &bytesNeeded)) {
+        service, SC_STATUS_PROCESS_INFO, reinterpret_cast<LPBYTE>(&status), sizeof(status), &bytesNeeded
+    )) {
         return GetLastError();
     }
     return ERROR_SUCCESS;
@@ -343,7 +340,8 @@ DWORD StopServiceIfRunning(SC_HANDLE service) {
 SECURITY_ATTRIBUTES PipeSecurityAttributes(LocalMemory& securityDescriptor) {
     PSECURITY_DESCRIPTOR descriptor = nullptr;
     ConvertStringSecurityDescriptorToSecurityDescriptorA(
-        kPipeSecurityDescriptor, SDDL_REVISION_1, &descriptor, nullptr);
+        kPipeSecurityDescriptor, SDDL_REVISION_1, &descriptor, nullptr
+    );
     securityDescriptor = LocalMemory(descriptor);
 
     SECURITY_ATTRIBUTES attributes{};
@@ -356,14 +354,16 @@ SECURITY_ATTRIBUTES PipeSecurityAttributes(LocalMemory& securityDescriptor) {
 Handle CreateFpsPipeInstance() {
     LocalMemory securityDescriptor;
     SECURITY_ATTRIBUTES securityAttributes = PipeSecurityAttributes(securityDescriptor);
-    return Handle(CreateNamedPipeA(kFpsServicePipeName,
+    return Handle(CreateNamedPipeA(
+        kFpsServicePipeName,
         PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
         PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
         PIPE_UNLIMITED_INSTANCES,
         kPipeBufferBytes,
         kPipeBufferBytes,
         0,
-        securityAttributes.lpSecurityDescriptor != nullptr ? &securityAttributes : nullptr));
+        securityAttributes.lpSecurityDescriptor != nullptr ? &securityAttributes : nullptr
+    ));
 }
 
 bool ConnectPipeOrStop(HANDLE pipe, HANDLE stopEvent) {
@@ -413,8 +413,10 @@ void ServePipeClient(HANDLE pipe, PipeServerState& state) {
         if (serviceRequest.has_value()) {
             break;
         }
-        if (diagnostics.find("too short") == std::string::npos &&
-            diagnostics.find("payload is malformed") == std::string::npos) {
+        if (
+            diagnostics.find("too short") == std::string::npos &&
+            diagnostics.find("payload is malformed") == std::string::npos
+        ) {
             return;
         }
     }
@@ -556,15 +558,10 @@ void WINAPI ServiceMain(DWORD, LPSTR*) {
 
 }  // namespace
 
-bool IsFpsServiceCommandLine(const CommandLineArguments& commandLine) {
-    return HasSwitch(commandLine, "/service");
-}
+bool IsFpsServiceCommandLine(const CommandLineArguments& commandLine) { return HasSwitch(commandLine, "/service"); }
 
 int RunFpsServiceMode() {
-    SERVICE_TABLE_ENTRYA serviceTable[] = {
-        {const_cast<LPSTR>(kFpsServiceName), ServiceMain},
-        {nullptr, nullptr},
-    };
+    SERVICE_TABLE_ENTRYA serviceTable[] = {{const_cast<LPSTR>(kFpsServiceName), ServiceMain}, {nullptr, nullptr}};
     return StartServiceCtrlDispatcherA(serviceTable) ? 0 : 1;
 }
 
@@ -581,7 +578,8 @@ DWORD InstallOrUpdateFpsService() {
         return GetLastError();
     }
 
-    ServiceHandle service(CreateServiceA(manager.Get(),
+    ServiceHandle service(CreateServiceA(
+        manager.Get(),
         kFpsServiceName,
         kFpsServiceDisplayName,
         kServiceAccess,
@@ -593,7 +591,8 @@ DWORD InstallOrUpdateFpsService() {
         nullptr,
         nullptr,
         nullptr,
-        nullptr));
+        nullptr
+    ));
 
     if (service.Get() == nullptr) {
         const DWORD createError = GetLastError();
@@ -607,17 +606,19 @@ DWORD InstallOrUpdateFpsService() {
         const std::optional<std::string> previousBinaryPath = QueryServiceBinaryPath(service.Get());
         const bool binaryPathChanged =
             !previousBinaryPath.has_value() || !IsExpectedServiceBinaryPath(*previousBinaryPath);
-        if (!ChangeServiceConfigA(service.Get(),
-                SERVICE_WIN32_OWN_PROCESS,
-                SERVICE_AUTO_START,
-                SERVICE_ERROR_NORMAL,
-                binaryPath.c_str(),
-                nullptr,
-                nullptr,
-                nullptr,
-                nullptr,
-                nullptr,
-                kFpsServiceDisplayName)) {
+        if (!ChangeServiceConfigA(
+            service.Get(),
+            SERVICE_WIN32_OWN_PROCESS,
+            SERVICE_AUTO_START,
+            SERVICE_ERROR_NORMAL,
+            binaryPath.c_str(),
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            kFpsServiceDisplayName
+        )) {
             return GetLastError();
         }
         if (binaryPathChanged) {

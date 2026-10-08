@@ -9,7 +9,8 @@ namespace {
 constexpr char kRunAsVerb[] = "runas";
 
 bool LaunchElevatedSelf(
-    HWND owner, std::string_view parameters, const FilePath& workingDirectory, int showCommand, HANDLE* process) {
+    HWND owner, std::string_view parameters, const FilePath& workingDirectory, int showCommand, HANDLE* process
+) {
     if (process != nullptr) {
         *process = nullptr;
     }
@@ -67,7 +68,8 @@ bool RunElevatedSelf(HWND owner, std::string_view parameters, const FilePath& wo
 }
 
 bool RunElevatedSelfAndWait(
-    HWND owner, std::string_view parameters, const FilePath& workingDirectory, int showCommand, DWORD* exitCode) {
+    HWND owner, std::string_view parameters, const FilePath& workingDirectory, int showCommand, DWORD* exitCode
+) {
     if (exitCode != nullptr) {
         *exitCode = 1;
     }

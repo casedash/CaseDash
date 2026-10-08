@@ -38,13 +38,15 @@ public:
     virtual void SetLayoutEditInteractiveDragTraceActive(bool active) = 0;
     virtual void RebuildLayoutEditArtifacts() = 0;
     virtual bool ApplyLayoutGuideWeights(const LayoutEditLayoutTarget& target, const std::vector<int>& weights) = 0;
-    virtual bool ApplyMetricListOrder(
-        const LayoutEditWidgetIdentity& widget, const std::vector<std::string>& metricRefs) = 0;
+    virtual bool
+        ApplyMetricListOrder(const LayoutEditWidgetIdentity& widget, const std::vector<std::string>& metricRefs) = 0;
     virtual bool ApplyContainerChildOrder(const LayoutContainerChildOrderEditKey& key, int fromIndex, int toIndex) = 0;
-    virtual std::optional<int> EvaluateLayoutWidgetExtentForWeights(const LayoutEditLayoutTarget& target,
+    virtual std::optional<int> EvaluateLayoutWidgetExtentForWeights(
+        const LayoutEditLayoutTarget& target,
         const std::vector<int>& weights,
         const LayoutEditWidgetIdentity& widget,
-        LayoutGuideAxis axis) = 0;
+        LayoutGuideAxis axis
+    ) = 0;
     virtual bool ApplyLayoutEditValue(LayoutEditParameter parameter, double value) = 0;
     virtual void InvalidateLayoutEdit() = 0;
     virtual void BeginLayoutEditTraceSession(ResourceStringId kind, const std::string& detail) = 0;
@@ -80,9 +82,11 @@ private:
         LayoutEditWidgetIdentity widget;
 
         bool operator==(const ExtentCacheKey& other) const {
-            return weights == other.weights && widget.kind == other.widget.kind &&
-                   widget.renderCardId == other.widget.renderCardId && widget.editCardId == other.widget.editCardId &&
-                   widget.nodePath == other.widget.nodePath;
+            return weights == other.weights &&
+                widget.kind == other.widget.kind &&
+                widget.renderCardId == other.widget.renderCardId &&
+                widget.editCardId == other.widget.editCardId &&
+                widget.nodePath == other.widget.nodePath;
         }
     };
 

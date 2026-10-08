@@ -31,10 +31,12 @@ void AddUniqueValue(std::vector<std::string>& values, const std::string& value) 
     }
 }
 
-void CollectLayoutBindingsRecursive(const LayoutNodeConfig& node,
+void CollectLayoutBindingsRecursive(
+    const LayoutNodeConfig& node,
     std::vector<std::string>& boardTemperatures,
     std::vector<std::string>& boardFans,
-    bool& presentedFpsRequested) {
+    bool& presentedFpsRequested
+) {
     for (const std::string& metricRef : SplitTrimmed(node.parameter, ',')) {
         if (!IsValidMetricId(metricRef)) {
             continue;
@@ -75,7 +77,8 @@ LayoutBindingSelection CollectLayoutBindings(const LayoutConfig& layout) {
     LayoutBindingSelection result;
     for (const auto& card : layout.cards) {
         CollectLayoutBindingsRecursive(
-            card.layout, result.boardTemperatureNames, result.boardFanNames, result.presentedFpsRequested);
+            card.layout, result.boardTemperatureNames, result.boardFanNames, result.presentedFpsRequested
+        );
     }
     return result;
 }

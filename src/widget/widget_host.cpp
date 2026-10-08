@@ -1,7 +1,8 @@
 #include "widget/widget_host.h"
 
 void WidgetHost::AddWidgetAnimation(
-    WidgetAnimationPtr animation, WidgetAnimationStatePtr targetState, std::optional<RenderRect> clipRect) {
+    WidgetAnimationPtr animation, WidgetAnimationStatePtr targetState, std::optional<RenderRect> clipRect
+) {
     if (animation == nullptr || targetState == nullptr) {
         return;
     }

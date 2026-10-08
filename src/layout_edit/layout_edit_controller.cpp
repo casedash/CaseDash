@@ -25,15 +25,15 @@ std::string FormatNodePath(const std::vector<size_t>& path) {
     return formatted.empty() ? "root" : formatted;
 }
 
-const char* AxisName(LayoutGuideAxis axis) {
-    return axis == LayoutGuideAxis::Vertical ? "vertical" : "horizontal";
-}
+const char* AxisName(LayoutGuideAxis axis) { return axis == LayoutGuideAxis::Vertical ? "vertical" : "horizontal"; }
 
 std::string DescribeLayoutGuide(const LayoutEditGuide& guide) {
-    std::string detail = FormatText("axis=%s separator=%zu path=%s",
+    std::string detail = FormatText(
+        "axis=%s separator=%zu path=%s",
         AxisName(guide.axis),
         guide.separatorIndex,
-        FormatNodePath(guide.nodePath).c_str());
+        FormatNodePath(guide.nodePath).c_str()
+    );
     if (!guide.editCardId.empty()) {
         AppendFormat(detail, " card=%s", guide.editCardId.c_str());
     }
@@ -46,10 +46,12 @@ std::string DescribeWidgetParameter(LayoutEditParameter parameter) {
 }
 
 std::string DescribeWidgetGuide(const LayoutEditWidgetGuide& guide) {
-    std::string detail = FormatText("axis=%s parameter=%s guide_id=%d",
+    std::string detail = FormatText(
+        "axis=%s parameter=%s guide_id=%d",
         AxisName(guide.axis),
         DescribeWidgetParameter(guide.parameter).c_str(),
-        guide.guideId);
+        guide.guideId
+    );
     if (guide.widget.kind == LayoutEditWidgetIdentity::Kind::CardChrome) {
         AppendFormat(detail, " card=%s", guide.widget.editCardId.c_str());
     } else {
@@ -59,25 +61,26 @@ std::string DescribeWidgetGuide(const LayoutEditWidgetGuide& guide) {
 }
 
 std::string DescribeGapEditAnchor(const LayoutEditGapAnchor& anchor) {
-    const std::string scope = anchor.key.widget.kind == LayoutEditWidgetIdentity::Kind::DashboardChrome
-                                  ? " dashboard"
-                                  : FormatText(" card=%s", anchor.key.widget.renderCardId.c_str());
-    return FormatText("axis=%s parameter=%s path=%s%s",
+    const std::string scope = anchor.key.widget.kind == LayoutEditWidgetIdentity::Kind::DashboardChrome ? " dashboard" :
+        FormatText(" card=%s", anchor.key.widget.renderCardId.c_str());
+    return FormatText(
+        "axis=%s parameter=%s path=%s%s",
         AxisName(anchor.axis),
         DescribeWidgetParameter(anchor.key.parameter).c_str(),
         FormatNodePath(anchor.key.nodePath).c_str(),
-        scope.c_str());
+        scope.c_str()
+    );
 }
 
 std::string DescribeEditableAnchor(const LayoutEditAnchorKey& key) {
     const std::optional<LayoutEditParameter> parameter = LayoutEditAnchorParameter(key);
     const std::optional<LayoutMetricEditKey> metricKey = LayoutEditAnchorMetricKey(key);
-    const std::string subject = parameter.has_value()
-                                    ? FormatText("parameter=%s", DescribeWidgetParameter(*parameter).c_str())
-                                : metricKey.has_value() ? FormatText("metric=%s", metricKey->metricId.c_str())
-                                : LayoutEditAnchorNodeFieldKey(key).has_value()           ? "node_field"
-                                : LayoutEditAnchorContainerChildOrderKey(key).has_value() ? "container_child_reorder"
-                                                                                          : "subject=unknown";
+    const std::string subject =
+        parameter.has_value() ? FormatText("parameter=%s", DescribeWidgetParameter(*parameter).c_str()) :
+            metricKey.has_value() ? FormatText("metric=%s", metricKey->metricId.c_str()) :
+            LayoutEditAnchorNodeFieldKey(key).has_value() ? "node_field" :
+            LayoutEditAnchorContainerChildOrderKey(key).has_value() ? "container_child_reorder" :
+            "subject=unknown";
     std::string detail = FormatText("%s anchor_id=%d", subject.c_str(), key.anchorId);
     if (key.widget.kind == LayoutEditWidgetIdentity::Kind::CardChrome) {
         AppendFormat(detail, " card=%s", key.widget.editCardId.c_str());
@@ -87,16 +90,13 @@ std::string DescribeEditableAnchor(const LayoutEditAnchorKey& key) {
     return detail;
 }
 
-int ContainerChildAxisStart(const RenderRect& rect, bool horizontal) {
-    return horizontal ? rect.left : rect.top;
-}
+int ContainerChildAxisStart(const RenderRect& rect, bool horizontal) { return horizontal ? rect.left : rect.top; }
 
-int ContainerChildAxisEnd(const RenderRect& rect, bool horizontal) {
-    return horizontal ? rect.right : rect.bottom;
-}
+int ContainerChildAxisEnd(const RenderRect& rect, bool horizontal) { return horizontal ? rect.right : rect.bottom; }
 
-std::optional<int> ContainerChildSlotIndexForCoordinate(
-    const std::vector<RenderRect>& childRects, bool horizontal, int coordinate) {
+std::optional<int>
+    ContainerChildSlotIndexForCoordinate(const std::vector<RenderRect>& childRects, bool horizontal, int coordinate)
+{
     std::optional<int> lastSlot;
     for (int index = 0; index < static_cast<int>(childRects.size()); ++index) {
         const RenderRect& rect = childRects[static_cast<size_t>(index)];
@@ -180,8 +180,10 @@ double ClampGaugeSegmentGapForCurrentConfig(const AppConfig& config, double valu
     }
 
     const double minSegmentSweep = MinimumGaugeSegmentSweep(totalSweep, segmentCount);
-    const double maxSegmentGap = (std::max)(0.0,
-        (totalSweep - (minSegmentSweep * static_cast<double>(segmentCount))) / static_cast<double>(segmentCount - 1));
+    const double maxSegmentGap = (std::max)(
+        0.0,
+        (totalSweep - (minSegmentSweep * static_cast<double>(segmentCount))) / static_cast<double>(segmentCount - 1)
+    );
     return std::clamp(value, 0.0, maxSegmentGap);
 }
 
@@ -191,14 +193,17 @@ double ClampDriveUsageActivitySegmentGapForCurrentConfig(const AppConfig& config
         return 0.0;
     }
 
-    const int rowContentHeight = (std::max)(config.layout.fonts.label.size,
-        (std::max)(config.layout.fonts.smallText.size, config.layout.driveUsageList.barHeight));
+    const int rowContentHeight = (std::max)(
+        config.layout.fonts.label.size,
+        (std::max)(config.layout.fonts.smallText.size, config.layout.driveUsageList.barHeight)
+    );
     const int maxGap = (std::max)(0, (rowContentHeight - segmentCount) / (segmentCount - 1));
     return static_cast<double>(std::clamp((std::max)(0, static_cast<int>(std::lround(value))), 0, maxGap));
 }
 
 bool ComputeGaugeSegmentGapDegrees(
-    const LayoutEditWidgetGuide& guide, RenderPoint clientPoint, double& segmentGapDegrees) {
+    const LayoutEditWidgetGuide& guide, RenderPoint clientPoint, double& segmentGapDegrees
+) {
     double pointerAngle = 0.0;
     if (!ComputeGaugePointerAngle(guide.dragOrigin, clientPoint, pointerAngle)) {
         return false;
@@ -241,17 +246,19 @@ void LayoutEditController::StopSession(bool showLayoutEditGuidesAfterStop) {
     host_.InvalidateLayoutEdit();
 }
 
-LayoutEditActiveRegions LayoutEditController::ActiveRegions() const {
-    return host_.CollectLayoutEditActiveRegions();
-}
+LayoutEditActiveRegions LayoutEditController::ActiveRegions() const { return host_.CollectLayoutEditActiveRegions(); }
 
 LayoutEditHoverResolution LayoutEditController::ResolveHover(RenderPoint clientPoint) const {
     return host_.ResolveLayoutEditHover(clientPoint);
 }
 
 void LayoutEditController::RefreshHover(RenderPoint clientPoint) {
-    if (activeLayoutDrag_.has_value() || activeWidgetEditDrag_.has_value() || activeGapEditDrag_.has_value() ||
-        activeAnchorEditDrag_.has_value()) {
+    if (
+        activeLayoutDrag_.has_value() ||
+        activeWidgetEditDrag_.has_value() ||
+        activeGapEditDrag_.has_value() ||
+        activeAnchorEditDrag_.has_value()
+    ) {
         return;
     }
 
@@ -292,47 +299,57 @@ void LayoutEditController::RefreshHover(RenderPoint clientPoint) {
     }
     hoverChanged = hoverChanged || widgetHoverChanged;
 
-    if (hoveredGapEditAnchor_.has_value() != nextHoveredGapAnchor.has_value() ||
-        (hoveredGapEditAnchor_.has_value() && nextHoveredGapAnchor.has_value() &&
-            !MatchesGapEditAnchorKey(*hoveredGapEditAnchor_, *nextHoveredGapAnchor))) {
+    if (hoveredGapEditAnchor_.has_value() != nextHoveredGapAnchor.has_value() || (
+        hoveredGapEditAnchor_.has_value() &&
+        nextHoveredGapAnchor.has_value() &&
+        !MatchesGapEditAnchorKey(*hoveredGapEditAnchor_, *nextHoveredGapAnchor)
+    )) {
         hoveredGapEditAnchor_ = nextHoveredGapAnchor;
         overlayState.hoveredGapEditAnchor = hoveredGapEditAnchor_;
         hoverChanged = true;
     }
 
     const std::optional<LayoutEditGapAnchor>& nextGapAnchorRegion = resolution.hoveredGapEditAnchorRegion;
-    if (hoveredGapEditAnchorRegion_.has_value() != nextGapAnchorRegion.has_value() ||
-        (hoveredGapEditAnchorRegion_.has_value() && nextGapAnchorRegion.has_value() &&
-            !MatchesGapEditAnchorKey(hoveredGapEditAnchorRegion_->key, nextGapAnchorRegion->key))) {
+    if (hoveredGapEditAnchorRegion_.has_value() != nextGapAnchorRegion.has_value() || (
+        hoveredGapEditAnchorRegion_.has_value() &&
+        nextGapAnchorRegion.has_value() &&
+        !MatchesGapEditAnchorKey(hoveredGapEditAnchorRegion_->key, nextGapAnchorRegion->key)
+    )) {
         hoveredGapEditAnchorRegion_ = nextGapAnchorRegion;
         hoverChanged = true;
     }
 
-    if (hoveredEditableAnchor_.has_value() != nextHoveredAnchor.has_value() ||
-        (hoveredEditableAnchor_.has_value() && nextHoveredAnchor.has_value() &&
-            !MatchesEditableAnchorKey(*hoveredEditableAnchor_, *nextHoveredAnchor))) {
+    if (hoveredEditableAnchor_.has_value() != nextHoveredAnchor.has_value() || (
+        hoveredEditableAnchor_.has_value() &&
+        nextHoveredAnchor.has_value() &&
+        !MatchesEditableAnchorKey(*hoveredEditableAnchor_, *nextHoveredAnchor)
+    )) {
         hoveredEditableAnchor_ = nextHoveredAnchor;
         overlayState.hoveredEditableAnchor = hoveredEditableAnchor_;
         hoverChanged = true;
     }
 
     const std::optional<LayoutEditWidgetGuide>& nextWidgetGuide = resolution.hoveredWidgetEditGuide;
-    if (hoveredWidgetEditGuide_.has_value() != nextWidgetGuide.has_value() ||
-        (hoveredWidgetEditGuide_.has_value() && nextWidgetGuide.has_value() &&
-            (hoveredWidgetEditGuide_->parameter != nextWidgetGuide->parameter ||
-                hoveredWidgetEditGuide_->guideId != nextWidgetGuide->guideId ||
-                !MatchesWidgetIdentity(hoveredWidgetEditGuide_->widget, nextWidgetGuide->widget)))) {
+    if (hoveredWidgetEditGuide_.has_value() != nextWidgetGuide.has_value() || (
+        hoveredWidgetEditGuide_.has_value() && nextWidgetGuide.has_value() && (
+            hoveredWidgetEditGuide_->parameter != nextWidgetGuide->parameter ||
+            hoveredWidgetEditGuide_->guideId != nextWidgetGuide->guideId ||
+            !MatchesWidgetIdentity(hoveredWidgetEditGuide_->widget, nextWidgetGuide->widget)
+        )
+    )) {
         hoveredWidgetEditGuide_ = nextWidgetGuide;
         hoverChanged = true;
     }
 
     const std::optional<LayoutEditGuide>& nextLayoutGuide = resolution.hoveredLayoutGuide;
-    if (hoveredLayoutGuide_.has_value() != nextLayoutGuide.has_value() ||
-        (hoveredLayoutGuide_.has_value() && nextLayoutGuide.has_value() &&
-            (hoveredLayoutGuide_->renderCardId != nextLayoutGuide->renderCardId ||
-                hoveredLayoutGuide_->editCardId != nextLayoutGuide->editCardId ||
-                hoveredLayoutGuide_->nodePath != nextLayoutGuide->nodePath ||
-                hoveredLayoutGuide_->separatorIndex != nextLayoutGuide->separatorIndex))) {
+    if (hoveredLayoutGuide_.has_value() != nextLayoutGuide.has_value() || (
+        hoveredLayoutGuide_.has_value() && nextLayoutGuide.has_value() && (
+            hoveredLayoutGuide_->renderCardId != nextLayoutGuide->renderCardId ||
+            hoveredLayoutGuide_->editCardId != nextLayoutGuide->editCardId ||
+            hoveredLayoutGuide_->nodePath != nextLayoutGuide->nodePath ||
+            hoveredLayoutGuide_->separatorIndex != nextLayoutGuide->separatorIndex
+        )
+    )) {
         hoveredLayoutGuide_ = nextLayoutGuide;
         overlayState.hoveredLayoutEditGuide = hoveredLayoutGuide_;
         hoverChanged = true;
@@ -361,12 +378,20 @@ bool LayoutEditController::HandleLButtonDown(HWND hwnd, RenderPoint clientPoint)
     if (resolution.actionableAnchorHandle.has_value()) {
         const LayoutEditAnchorRegion* region = FindEditableAnchorRegion(regions, *resolution.actionableAnchorHandle);
         if (region != nullptr) {
-            if (const auto containerOrderKey = LayoutEditAnchorContainerChildOrderKey(region->key);
-                containerOrderKey.has_value()) {
-                const LayoutNodeConfig* node = FindGuideNode(host_.LayoutEditConfig(),
-                    LayoutEditLayoutTarget{containerOrderKey->editCardId, containerOrderKey->nodePath});
-                if (node == nullptr || (node->name != "rows" && node->name != "columns") || region->key.anchorId < 0 ||
-                    region->key.anchorId >= static_cast<int>(node->children.size())) {
+            if (
+                const auto containerOrderKey = LayoutEditAnchorContainerChildOrderKey(region->key);
+                containerOrderKey.has_value()
+            ) {
+                const LayoutNodeConfig* node = FindGuideNode(
+                    host_.LayoutEditConfig(),
+                    LayoutEditLayoutTarget{containerOrderKey->editCardId, containerOrderKey->nodePath}
+                );
+                if (
+                    node == nullptr ||
+                    (node->name != "rows" && node->name != "columns") ||
+                    region->key.anchorId < 0 ||
+                    region->key.anchorId >= static_cast<int>(node->children.size())
+                ) {
                     return false;
                 }
                 ContainerChildReorderDragState drag;
@@ -376,7 +401,7 @@ bool LayoutEditController::HandleLButtonDown(HWND hwnd, RenderPoint clientPoint)
                 drag.currentIndex = region->key.anchorId;
                 drag.childCount = static_cast<int>(node->children.size());
                 drag.dragOffset = (drag.horizontal ? clientPoint.x : clientPoint.y) -
-                                  (drag.horizontal ? region->targetRect.left : region->targetRect.top);
+                    (drag.horizontal ? region->targetRect.left : region->targetRect.top);
                 drag.mouseCoordinate = drag.horizontal ? clientPoint.x : clientPoint.y;
                 activeContainerChildReorderDrag_ = std::move(drag);
                 RefreshContainerChildReorderRects(*activeContainerChildReorderDrag_);
@@ -384,14 +409,17 @@ bool LayoutEditController::HandleLButtonDown(HWND hwnd, RenderPoint clientPoint)
                 activeDrag.stableChildRects = activeDrag.childRects;
                 host_.SetLayoutEditInteractiveDragTraceActive(true);
                 host_.BeginLayoutEditTraceSession(
-                    RES_STR("container_child_reorder"), DescribeEditableAnchor(region->key));
+                    RES_STR("container_child_reorder"), DescribeEditableAnchor(region->key)
+                );
                 SyncRendererInteractionState();
                 host_.InvalidateLayoutEdit();
                 SetCapture(hwnd);
                 return true;
             }
-            if (const auto nodeFieldKey = LayoutEditAnchorNodeFieldKey(region->key);
-                nodeFieldKey.has_value() && nodeFieldKey->widgetClass == WidgetClass::MetricList) {
+            if (
+                const auto nodeFieldKey = LayoutEditAnchorNodeFieldKey(region->key);
+                nodeFieldKey.has_value() && nodeFieldKey->widgetClass == WidgetClass::MetricList
+            ) {
                 const LayoutNodeConfig* node = FindEditableWidgetNode(host_.LayoutEditConfig(), region->key.widget);
                 if (node == nullptr || node->name != "metric_list") {
                     return false;
@@ -405,14 +433,16 @@ bool LayoutEditController::HandleLButtonDown(HWND hwnd, RenderPoint clientPoint)
                 const int rowHeight =
                     (std::max)(1, static_cast<int>(region->targetRect.bottom - region->targetRect.top));
                 const int rowTop = static_cast<int>(region->targetRect.top) - (region->key.anchorId * rowHeight);
-                activeMetricListReorderDrag_ = MetricListReorderDragState{region->key.widget,
+                activeMetricListReorderDrag_ = MetricListReorderDragState{
+                    region->key.widget,
                     metricRefs,
                     rowTop,
                     rowHeight,
                     static_cast<int>(metricRefs.size()),
                     region->key.anchorId,
                     clientPoint.y - static_cast<int>(region->targetRect.top),
-                    clientPoint.y};
+                    clientPoint.y
+                };
                 hoveredEditableWidget_ = region->key.widget;
                 host_.SetLayoutEditInteractiveDragTraceActive(true);
                 host_.BeginLayoutEditTraceSession(RES_STR("metric_list_reorder"), DescribeEditableAnchor(region->key));
@@ -423,14 +453,16 @@ bool LayoutEditController::HandleLButtonDown(HWND hwnd, RenderPoint clientPoint)
             }
             const double startDx = static_cast<double>(clientPoint.x - region->dragOrigin.x);
             const double startDy = static_cast<double>(clientPoint.y - region->dragOrigin.y);
-            activeAnchorEditDrag_ = AnchorEditDragState{region->key,
+            activeAnchorEditDrag_ = AnchorEditDragState{
+                region->key,
                 region->dragAxis,
                 region->dragMode,
                 region->dragOrigin,
                 region->dragScale,
                 region->value,
                 clientPoint,
-                std::sqrt((startDx * startDx) + (startDy * startDy))};
+                std::sqrt((startDx * startDx) + (startDy * startDy))
+            };
             if (region->key.widget.kind == LayoutEditWidgetIdentity::Kind::CardChrome) {
                 hoveredEditableCard_ = region->key.widget;
                 hoveredEditableWidget_.reset();
@@ -445,8 +477,10 @@ bool LayoutEditController::HandleLButtonDown(HWND hwnd, RenderPoint clientPoint)
         }
     }
 
-    if (const LayoutEditAnchorRegion* anchorHandle = HitTestEditableAnchorHandle(regions, clientPoint);
-        anchorHandle != nullptr && !anchorHandle->draggable) {
+    if (
+        const LayoutEditAnchorRegion* anchorHandle = HitTestEditableAnchorHandle(regions, clientPoint);
+        anchorHandle != nullptr && !anchorHandle->draggable
+    ) {
         hoveredEditableAnchor_ = anchorHandle->key;
         if (anchorHandle->key.widget.kind == LayoutEditWidgetIdentity::Kind::CardChrome) {
             hoveredEditableCard_ = anchorHandle->key.widget;
@@ -463,9 +497,7 @@ bool LayoutEditController::HandleLButtonDown(HWND hwnd, RenderPoint clientPoint)
         const LayoutEditGapAnchor* anchor = FindGapEditAnchor(regions, *resolution.actionableGapEditAnchor);
         if (anchor != nullptr) {
             activeGapEditDrag_ = GapEditDragState{
-                *anchor,
-                anchor->value,
-                anchor->dragAxis == AnchorDragAxis::Horizontal ? clientPoint.x : clientPoint.y,
+                *anchor, anchor->value, anchor->dragAxis == AnchorDragAxis::Horizontal ? clientPoint.x : clientPoint.y,
             };
             hoveredGapEditAnchorRegion_ = *anchor;
             host_.SetLayoutEditInteractiveDragTraceActive(true);
@@ -548,19 +580,28 @@ bool LayoutEditController::HandleMouseMove(RenderPoint clientPoint) {
 }
 
 bool LayoutEditController::HandleMouseLeave() {
-    if (activeLayoutDrag_.has_value() || activeWidgetEditDrag_.has_value() || activeGapEditDrag_.has_value() ||
-        activeAnchorEditDrag_.has_value() || activeMetricListReorderDrag_.has_value() ||
-        activeContainerChildReorderDrag_.has_value()) {
+    if (
+        activeLayoutDrag_.has_value() ||
+        activeWidgetEditDrag_.has_value() ||
+        activeGapEditDrag_.has_value() ||
+        activeAnchorEditDrag_.has_value() ||
+        activeMetricListReorderDrag_.has_value() ||
+        activeContainerChildReorderDrag_.has_value()
+    ) {
         return false;
     }
 
     host_.LayoutDashboardOverlayState().hoverOnExposedDashboard = false;
     hasLastClientPoint_ = false;
 
-    const bool hadHover = hoveredLayoutGuide_.has_value() || hoveredLayoutCard_.has_value() ||
-                          hoveredEditableCard_.has_value() || hoveredEditableWidget_.has_value() ||
-                          hoveredGapEditAnchorRegion_.has_value() || hoveredGapEditAnchor_.has_value() ||
-                          hoveredWidgetEditGuide_.has_value() || hoveredEditableAnchor_.has_value();
+    const bool hadHover = hoveredLayoutGuide_.has_value() ||
+        hoveredLayoutCard_.has_value() ||
+        hoveredEditableCard_.has_value() ||
+        hoveredEditableWidget_.has_value() ||
+        hoveredGapEditAnchorRegion_.has_value() ||
+        hoveredGapEditAnchor_.has_value() ||
+        hoveredWidgetEditGuide_.has_value() ||
+        hoveredEditableAnchor_.has_value();
     if (!hadHover) {
         return false;
     }
@@ -625,9 +666,12 @@ bool LayoutEditController::HandleCaptureChanged(HWND hwnd, HWND newCaptureOwner)
         return false;
     }
 
-    const bool hadActiveDrag = activeAnchorEditDrag_.has_value() || activeMetricListReorderDrag_.has_value() ||
-                               activeContainerChildReorderDrag_.has_value() || activeGapEditDrag_.has_value() ||
-                               activeWidgetEditDrag_.has_value() || activeLayoutDrag_.has_value();
+    const bool hadActiveDrag = activeAnchorEditDrag_.has_value() ||
+        activeMetricListReorderDrag_.has_value() ||
+        activeContainerChildReorderDrag_.has_value() ||
+        activeGapEditDrag_.has_value() ||
+        activeWidgetEditDrag_.has_value() ||
+        activeLayoutDrag_.has_value();
     if (!hadActiveDrag) {
         return false;
     }
@@ -652,11 +696,13 @@ bool LayoutEditController::HandleCaptureChanged(HWND hwnd, HWND newCaptureOwner)
 
 bool LayoutEditController::HandleSetCursor(HWND hwnd) {
     if (activeAnchorEditDrag_.has_value()) {
-        SetCursor(LoadCursorA(nullptr,
-            activeAnchorEditDrag_->dragMode == AnchorDragMode::RadialDistance ? IDC_SIZEALL
-            : activeAnchorEditDrag_->dragAxis == AnchorDragAxis::Both         ? IDC_SIZEALL
-            : activeAnchorEditDrag_->dragAxis == AnchorDragAxis::Vertical     ? IDC_SIZEWE
-                                                                              : IDC_SIZENS));
+        SetCursor(LoadCursorA(
+            nullptr,
+            activeAnchorEditDrag_->dragMode == AnchorDragMode::RadialDistance ? IDC_SIZEALL :
+                activeAnchorEditDrag_->dragAxis == AnchorDragAxis::Both ? IDC_SIZEALL :
+                activeAnchorEditDrag_->dragAxis == AnchorDragAxis::Vertical ? IDC_SIZEWE :
+                IDC_SIZENS
+        ));
         return true;
     }
     if (activeMetricListReorderDrag_.has_value()) {
@@ -669,15 +715,15 @@ bool LayoutEditController::HandleSetCursor(HWND hwnd) {
     }
     if (activeGapEditDrag_.has_value()) {
         SetCursor(LoadCursorA(
-            nullptr, activeGapEditDrag_->anchor.dragAxis == AnchorDragAxis::Horizontal ? IDC_SIZEWE : IDC_SIZENS));
+            nullptr, activeGapEditDrag_->anchor.dragAxis == AnchorDragAxis::Horizontal ? IDC_SIZEWE : IDC_SIZENS
+        ));
         return true;
     }
     if (activeWidgetEditDrag_.has_value()) {
         const auto& guide = activeWidgetEditDrag_->guide;
-        SetCursor(LoadCursorA(nullptr,
-            guide.angularDrag                         ? IDC_CROSS
-            : guide.axis == LayoutGuideAxis::Vertical ? IDC_SIZEWE
-                                                      : IDC_SIZENS));
+        SetCursor(LoadCursorA(
+            nullptr, guide.angularDrag ? IDC_CROSS : guide.axis == LayoutGuideAxis::Vertical ? IDC_SIZEWE : IDC_SIZENS
+        ));
         return true;
     }
     if (activeLayoutDrag_.has_value()) {
@@ -694,19 +740,29 @@ bool LayoutEditController::HandleSetCursor(HWND hwnd) {
 }
 
 bool LayoutEditController::HasActiveDrag() const {
-    return activeLayoutDrag_.has_value() || activeWidgetEditDrag_.has_value() || activeGapEditDrag_.has_value() ||
-           activeAnchorEditDrag_.has_value() || activeMetricListReorderDrag_.has_value() ||
-           activeContainerChildReorderDrag_.has_value();
+    return activeLayoutDrag_.has_value() ||
+        activeWidgetEditDrag_.has_value() ||
+        activeGapEditDrag_.has_value() ||
+        activeAnchorEditDrag_.has_value() ||
+        activeMetricListReorderDrag_.has_value() ||
+        activeContainerChildReorderDrag_.has_value();
 }
 
 void LayoutEditController::CancelInteraction() {
-    const bool hadInteraction =
-        hoveredLayoutGuide_.has_value() || hoveredLayoutCard_.has_value() || hoveredEditableCard_.has_value() ||
-        hoveredEditableWidget_.has_value() || hoveredGapEditAnchorRegion_.has_value() ||
-        hoveredGapEditAnchor_.has_value() || hoveredWidgetEditGuide_.has_value() ||
-        hoveredEditableAnchor_.has_value() || activeLayoutDrag_.has_value() || activeWidgetEditDrag_.has_value() ||
-        activeGapEditDrag_.has_value() || activeAnchorEditDrag_.has_value() ||
-        activeMetricListReorderDrag_.has_value() || activeContainerChildReorderDrag_.has_value();
+    const bool hadInteraction = hoveredLayoutGuide_.has_value() ||
+        hoveredLayoutCard_.has_value() ||
+        hoveredEditableCard_.has_value() ||
+        hoveredEditableWidget_.has_value() ||
+        hoveredGapEditAnchorRegion_.has_value() ||
+        hoveredGapEditAnchor_.has_value() ||
+        hoveredWidgetEditGuide_.has_value() ||
+        hoveredEditableAnchor_.has_value() ||
+        activeLayoutDrag_.has_value() ||
+        activeWidgetEditDrag_.has_value() ||
+        activeGapEditDrag_.has_value() ||
+        activeAnchorEditDrag_.has_value() ||
+        activeMetricListReorderDrag_.has_value() ||
+        activeContainerChildReorderDrag_.has_value();
     const bool hadLayoutDrag = activeLayoutDrag_.has_value();
     if (!hadInteraction) {
         return;
@@ -737,12 +793,16 @@ bool LayoutEditController::CurrentTooltipTarget(TooltipTarget& target) {
 
     const LayoutEditActiveRegions regions = ActiveRegions();
     if (activeMetricListReorderDrag_.has_value()) {
-        const LayoutEditAnchorKey key{activeMetricListReorderDrag_->widget,
-            LayoutNodeFieldEditKey{activeMetricListReorderDrag_->widget.editCardId,
+        const LayoutEditAnchorKey key{
+            activeMetricListReorderDrag_->widget,
+            LayoutNodeFieldEditKey{
+                activeMetricListReorderDrag_->widget.editCardId,
                 activeMetricListReorderDrag_->widget.nodePath,
                 WidgetClass::MetricList,
-                LayoutNodeField::Parameter},
-            activeMetricListReorderDrag_->currentIndex};
+                LayoutNodeField::Parameter
+            },
+            activeMetricListReorderDrag_->currentIndex
+        };
         const LayoutEditAnchorRegion* region = FindEditableAnchorRegion(regions, key);
         if (region != nullptr) {
             target.clientPoint = clientPoint;
@@ -752,8 +812,8 @@ bool LayoutEditController::CurrentTooltipTarget(TooltipTarget& target) {
     }
     if (activeContainerChildReorderDrag_.has_value()) {
         for (int anchorId : {activeContainerChildReorderDrag_->currentIndex, 0}) {
-            const LayoutEditAnchorKey key{
-                activeContainerChildReorderDrag_->widget, activeContainerChildReorderDrag_->key, anchorId};
+            const LayoutEditAnchorKey
+                key{activeContainerChildReorderDrag_->widget, activeContainerChildReorderDrag_->key, anchorId};
             const LayoutEditAnchorRegion* region = FindEditableAnchorRegion(regions, key);
             if (region != nullptr) {
                 target.clientPoint = clientPoint;
@@ -805,8 +865,10 @@ bool LayoutEditController::CurrentTooltipTarget(TooltipTarget& target) {
         }
     }
 
-    if (const LayoutEditAnchorRegion* anchorHandle = HitTestEditableAnchorHandle(regions, clientPoint);
-        anchorHandle != nullptr && !anchorHandle->draggable) {
+    if (
+        const LayoutEditAnchorRegion* anchorHandle = HitTestEditableAnchorHandle(regions, clientPoint);
+        anchorHandle != nullptr && !anchorHandle->draggable
+    ) {
         target.clientPoint = clientPoint;
         target.payload = *anchorHandle;
         return true;
@@ -824,8 +886,10 @@ bool LayoutEditController::CurrentTooltipTarget(TooltipTarget& target) {
         return true;
     }
 
-    if (const LayoutEditColorRegion* colorRegion = HitTestEditableColorRegion(regions, clientPoint);
-        colorRegion != nullptr) {
+    if (
+        const LayoutEditColorRegion* colorRegion = HitTestEditableColorRegion(regions, clientPoint);
+        colorRegion != nullptr
+    ) {
         target.clientPoint = clientPoint;
         target.payload = *colorRegion;
         return true;
@@ -863,30 +927,39 @@ void LayoutEditController::SyncRendererInteractionState() {
         overlayState.activeEditableAnchor.reset();
     }
     if (activeMetricListReorderDrag_.has_value()) {
-        overlayState.activeEditableAnchor = LayoutEditAnchorKey{activeMetricListReorderDrag_->widget,
-            LayoutNodeFieldEditKey{activeMetricListReorderDrag_->widget.editCardId,
+        overlayState.activeEditableAnchor = LayoutEditAnchorKey{
+            activeMetricListReorderDrag_->widget,
+            LayoutNodeFieldEditKey{
+                activeMetricListReorderDrag_->widget.editCardId,
                 activeMetricListReorderDrag_->widget.nodePath,
                 WidgetClass::MetricList,
-                LayoutNodeField::Parameter},
-            activeMetricListReorderDrag_->currentIndex};
-        overlayState.activeMetricListReorderDrag = MetricListReorderOverlayState{activeMetricListReorderDrag_->widget,
+                LayoutNodeField::Parameter
+            },
+            activeMetricListReorderDrag_->currentIndex
+        };
+        overlayState.activeMetricListReorderDrag = MetricListReorderOverlayState{
+            activeMetricListReorderDrag_->widget,
             activeMetricListReorderDrag_->currentIndex,
             activeMetricListReorderDrag_->mouseY,
-            activeMetricListReorderDrag_->dragOffsetY};
+            activeMetricListReorderDrag_->dragOffsetY
+        };
     } else {
         overlayState.activeMetricListReorderDrag.reset();
     }
     if (activeContainerChildReorderDrag_.has_value()) {
-        overlayState.activeEditableAnchor = LayoutEditAnchorKey{activeContainerChildReorderDrag_->widget,
+        overlayState.activeEditableAnchor = LayoutEditAnchorKey{
+            activeContainerChildReorderDrag_->widget,
             activeContainerChildReorderDrag_->key,
-            activeContainerChildReorderDrag_->currentIndex};
-        overlayState.activeContainerChildReorderDrag =
-            ContainerChildReorderOverlayState{activeContainerChildReorderDrag_->key,
-                activeContainerChildReorderDrag_->childRects,
-                activeContainerChildReorderDrag_->currentIndex,
-                activeContainerChildReorderDrag_->mouseCoordinate,
-                activeContainerChildReorderDrag_->dragOffset,
-                activeContainerChildReorderDrag_->horizontal};
+            activeContainerChildReorderDrag_->currentIndex
+        };
+        overlayState.activeContainerChildReorderDrag = ContainerChildReorderOverlayState{
+            activeContainerChildReorderDrag_->key,
+            activeContainerChildReorderDrag_->childRects,
+            activeContainerChildReorderDrag_->currentIndex,
+            activeContainerChildReorderDrag_->mouseCoordinate,
+            activeContainerChildReorderDrag_->dragOffset,
+            activeContainerChildReorderDrag_->horizontal
+        };
     } else {
         overlayState.activeContainerChildReorderDrag.reset();
     }
@@ -934,20 +1007,24 @@ void LayoutEditController::SetCursorForPoint(RenderPoint clientPoint) {
         const LayoutEditAnchorRegion* region = FindEditableAnchorRegion(regions, *resolution.actionableAnchorHandle);
         const auto dragAxis = region != nullptr ? region->dragAxis : AnchorDragAxis::Vertical;
         const auto dragMode = region != nullptr ? region->dragMode : AnchorDragMode::AxisDelta;
-        SetCursor(LoadCursorA(nullptr,
-            dragMode == AnchorDragMode::RadialDistance ? IDC_SIZEALL
-            : dragAxis == AnchorDragAxis::Both         ? IDC_SIZEALL
-            : dragAxis == AnchorDragAxis::Vertical     ? IDC_SIZEWE
-                                                       : IDC_SIZENS));
+        SetCursor(LoadCursorA(
+            nullptr,
+            dragMode == AnchorDragMode::RadialDistance ? IDC_SIZEALL :
+                dragAxis == AnchorDragAxis::Both ? IDC_SIZEALL :
+                dragAxis == AnchorDragAxis::Vertical ? IDC_SIZEWE :
+                IDC_SIZENS
+        ));
         return;
     }
 
     if (resolution.hoveredWidgetEditGuide.has_value()) {
         const LayoutEditWidgetGuide& widgetGuide = *resolution.hoveredWidgetEditGuide;
-        SetCursor(LoadCursorA(nullptr,
-            widgetGuide.angularDrag                         ? IDC_CROSS
-            : widgetGuide.axis == LayoutGuideAxis::Vertical ? IDC_SIZEWE
-                                                            : IDC_SIZENS));
+        SetCursor(LoadCursorA(
+            nullptr,
+            widgetGuide.angularDrag ? IDC_CROSS :
+                widgetGuide.axis == LayoutGuideAxis::Vertical ? IDC_SIZEWE :
+                IDC_SIZENS
+        ));
         return;
     }
 
@@ -984,51 +1061,54 @@ bool LayoutEditController::FindSnappedLayoutGuideWeights(LayoutDragState& drag, 
     for (size_t candidateIndex = 0; candidateIndex < drag.snapCandidates.size();) {
         const auto& widget = drag.snapCandidates[candidateIndex].widget;
         std::vector<layout_snap_solver::SnapCandidate> groupedCandidates;
-        while (candidateIndex < drag.snapCandidates.size() &&
-               MatchesWidgetIdentity(drag.snapCandidates[candidateIndex].widget, widget)) {
+        while (
+            candidateIndex < drag.snapCandidates.size() &&
+            MatchesWidgetIdentity(drag.snapCandidates[candidateIndex].widget, widget)
+        ) {
             const auto& candidate = drag.snapCandidates[candidateIndex];
-            groupedCandidates.push_back(layout_snap_solver::SnapCandidate{
-                candidate.targetExtent,
-                candidate.startDistance,
-                candidate.groupOrder,
-            });
+            groupedCandidates.push_back(
+                layout_snap_solver::SnapCandidate{candidate.targetExtent, candidate.startDistance, candidate.groupOrder}
+            );
             ++candidateIndex;
         }
 
         int snappedWeight = 0;
         if (!layout_snap_solver::FindNearestSnapWeight(
-                weights[index],
-                combined,
-                threshold,
-                groupedCandidates,
-                [&](int firstWeight, int& extent) -> bool {
-                    std::vector<int> attemptWeights = weights;
-                    attemptWeights[index] = firstWeight;
-                    attemptWeights[index + 1] = combined - firstWeight;
-                    ExtentCacheKey cacheKey{std::move(attemptWeights), widget};
-                    const auto cached = std::find_if(drag.extentCache.begin(),
-                        drag.extentCache.end(),
-                        [&](const ExtentCacheEntry& entry) { return entry.key == cacheKey; });
-                    if (cached != drag.extentCache.end()) {
-                        if (cached->hasExtent) {
-                            extent = cached->extent;
-                        }
-                        return cached->hasExtent;
+            weights[index],
+            combined,
+            threshold,
+            groupedCandidates,
+            [&](int firstWeight, int& extent) -> bool {
+                std::vector<int> attemptWeights = weights;
+                attemptWeights[index] = firstWeight;
+                attemptWeights[index + 1] = combined - firstWeight;
+                ExtentCacheKey cacheKey{std::move(attemptWeights), widget};
+                const auto cached =
+                    std::find_if(drag.extentCache.begin(), drag.extentCache.end(), [&](const ExtentCacheEntry& entry) {
+                        return entry.key == cacheKey;
+                    });
+                if (cached != drag.extentCache.end()) {
+                    if (cached->hasExtent) {
+                        extent = cached->extent;
                     }
+                    return cached->hasExtent;
+                }
 
-                    const std::optional<int> evaluatedExtent = host_.EvaluateLayoutWidgetExtentForWeights(
-                        LayoutEditLayoutTarget::ForGuide(drag.guide), cacheKey.weights, widget, drag.guide.axis);
-                    ExtentCacheEntry entry;
-                    entry.key = std::move(cacheKey);
-                    entry.hasExtent = evaluatedExtent.has_value();
-                    if (evaluatedExtent.has_value()) {
-                        entry.extent = *evaluatedExtent;
-                        extent = *evaluatedExtent;
-                    }
-                    drag.extentCache.push_back(std::move(entry));
-                    return evaluatedExtent.has_value();
-                },
-                snappedWeight)) {
+                const std::optional<int> evaluatedExtent = host_.EvaluateLayoutWidgetExtentForWeights(
+                    LayoutEditLayoutTarget::ForGuide(drag.guide), cacheKey.weights, widget, drag.guide.axis
+                );
+                ExtentCacheEntry entry;
+                entry.key = std::move(cacheKey);
+                entry.hasExtent = evaluatedExtent.has_value();
+                if (evaluatedExtent.has_value()) {
+                    entry.extent = *evaluatedExtent;
+                    extent = *evaluatedExtent;
+                }
+                drag.extentCache.push_back(std::move(entry));
+                return evaluatedExtent.has_value();
+            },
+            snappedWeight
+        )) {
             continue;
         }
 
@@ -1060,8 +1140,8 @@ bool LayoutEditController::UpdateLayoutDrag(RenderPoint clientPoint) {
     if ((GetKeyState(VK_MENU) & 0x8000) == 0) {
         const auto snapStart = std::chrono::steady_clock::now();
         FindSnappedLayoutGuideWeights(drag, weights);
-        host_.RecordLayoutEditTracePhase(
-            LayoutEditHost::TracePhase::Snap, std::chrono::steady_clock::now() - snapStart);
+        host_
+            .RecordLayoutEditTracePhase(LayoutEditHost::TracePhase::Snap, std::chrono::steady_clock::now() - snapStart);
     }
     if (!host_.ApplyLayoutGuideWeights(LayoutEditLayoutTarget::ForGuide(drag.guide), weights)) {
         return false;
@@ -1098,9 +1178,9 @@ bool LayoutEditController::UpdateWidgetEditDrag(RenderPoint clientPoint) {
     } else {
         const int currentCoordinate = drag.guide.axis == LayoutGuideAxis::Vertical ? clientPoint.x : clientPoint.y;
         const int pixelDelta = currentCoordinate - drag.dragStartCoordinate;
-        const int logicalDelta =
-            static_cast<int>(std::lround(static_cast<double>(pixelDelta * drag.guide.dragDirection) /
-                                         (std::max)(0.1, host_.LayoutEditRenderScale())));
+        const int logicalDelta = static_cast<int>(std::lround(
+            static_cast<double>(pixelDelta * drag.guide.dragDirection) / (std::max)(0.1, host_.LayoutEditRenderScale())
+        ));
         nextValue = (std::max)(0.0, drag.initialValue + static_cast<double>(logicalDelta));
         if (drag.guide.parameter == LayoutEditParameter::DriveUsageActivitySegmentGap) {
             nextValue = ClampDriveUsageActivitySegmentGapForCurrentConfig(host_.LayoutEditConfig(), nextValue);
@@ -1152,7 +1232,8 @@ bool LayoutEditController::UpdateAnchorEditDrag(RenderPoint clientPoint) {
         const double dy = static_cast<double>(clientPoint.y - drag.dragOrigin.y);
         const double distanceDeltaPixels = std::sqrt((dx * dx) + (dy * dy)) - drag.dragStartDistancePixels;
         logicalDelta = static_cast<int>(
-            std::lround(distanceDeltaPixels * drag.dragScale / (std::max)(0.1, host_.LayoutEditRenderScale())));
+            std::lround(distanceDeltaPixels * drag.dragScale / (std::max)(0.1, host_.LayoutEditRenderScale()))
+        );
     } else {
         int pixelDelta = 0;
         double scaleDivisor = drag.dragAxis == AnchorDragAxis::Vertical ? 4.0 : 1.0;
@@ -1165,8 +1246,9 @@ bool LayoutEditController::UpdateAnchorEditDrag(RenderPoint clientPoint) {
                 drag.dragAxis == AnchorDragAxis::Vertical ? drag.dragStartPoint.x : drag.dragStartPoint.y;
             pixelDelta = currentCoordinate - startCoordinate;
         }
-        logicalDelta = static_cast<int>(std::lround(
-            static_cast<double>(pixelDelta) / (std::max)(0.1, host_.LayoutEditRenderScale() * scaleDivisor)));
+        logicalDelta = static_cast<int>(
+            std::lround(static_cast<double>(pixelDelta) / (std::max)(0.1, host_.LayoutEditRenderScale() * scaleDivisor))
+        );
     }
     const int nextValue = (std::max)(1, drag.initialValue + logicalDelta);
     const bool updated = host_.ApplyLayoutEditValue(*parameter, static_cast<double>(nextValue));

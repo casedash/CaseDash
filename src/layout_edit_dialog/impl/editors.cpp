@@ -28,7 +28,9 @@ struct StringLiteralList {
 // Size: static literal lists keep combo setup off vector initializer-list construction.
 constexpr const char* kColorModeOptions[] = {"Literal", "Derived"};
 constexpr const char* kColorExpressionTokens[] = {"background", "foreground", "accent", "guide"};
-constexpr const char* kClockTimeFormats[] = {"HH:MM",
+
+constexpr const char* kClockTimeFormats[] = {
+    "HH:MM",
     "HH:MM:SS",
     "H:MM",
     "H:MM:SS",
@@ -41,8 +43,11 @@ constexpr const char* kClockTimeFormats[] = {"HH:MM",
     "hh:MM am",
     "h:MM am",
     "hh:MM:SS am",
-    "h:MM:SS am"};
-constexpr const char* kClockDateFormats[] = {"YYYY-MM-DD",
+    "h:MM:SS am"
+};
+
+constexpr const char* kClockDateFormats[] = {
+    "YYYY-MM-DD",
     "YYYY/MM/DD",
     "YYYY.MM.DD",
     "DD.MM.YYYY",
@@ -63,23 +68,20 @@ constexpr const char* kClockDateFormats[] = {"YYYY-MM-DD",
     "D MMMM YYYY",
     "dddd, MMMM DD",
     "dddd, MMMM D",
-    "ddd, MMM DD"};
+    "ddd, MMM DD"
+};
 
-const char* QuotedBoolText(bool value) {
-    return value ? "\"true\"" : "\"false\"";
-}
+const char* QuotedBoolText(bool value) { return value ? "\"true\"" : "\"false\""; }
 
-StringLiteralList MakeStringLiteralList(const char* const* values, size_t count) {
-    return {values, count};
-}
+StringLiteralList MakeStringLiteralList(const char* const* values, size_t count) { return {values, count}; }
 
 void ShowLayoutEditSelectionEditor(
-    LayoutEditDialogState* state, HWND hwnd, LayoutEditEditorKind kind, bool metricBinding = false);
+    LayoutEditDialogState* state, HWND hwnd, LayoutEditEditorKind kind, bool metricBinding = false
+);
 
 const LayoutNodeFieldEditKey* SelectedNodeFieldKey(const LayoutEditDialogState* state) {
-    return state != nullptr && state->selectedLeaf != nullptr
-               ? std::get_if<LayoutNodeFieldEditKey>(&state->selectedLeaf->focusKey)
-               : nullptr;
+    return state != nullptr && state->selectedLeaf != nullptr ?
+        std::get_if<LayoutNodeFieldEditKey>(&state->selectedLeaf->focusKey) : nullptr;
 }
 
 const LayoutNodeFieldEditDescriptor* SelectedNodeFieldDescriptor(const LayoutEditDialogState* state) {
@@ -90,26 +92,32 @@ const LayoutNodeFieldEditDescriptor* SelectedNodeFieldDescriptor(const LayoutEdi
 const LayoutNodeFieldEditKey* SelectedMetricListOrderKey(const LayoutEditDialogState* state) {
     const LayoutNodeFieldEditKey* key = SelectedNodeFieldKey(state);
     const LayoutNodeFieldEditDescriptor* descriptor = SelectedNodeFieldDescriptor(state);
-    return key != nullptr && descriptor != nullptr && descriptor->editorKind == LayoutEditEditorKind::MetricListOrder
-               ? key
-               : nullptr;
+    return key != nullptr && descriptor != nullptr && descriptor->editorKind == LayoutEditEditorKind::MetricListOrder ?
+        key : nullptr;
 }
 
 bool IsFontsSectionNode(const LayoutEditDialogState* state) {
-    return state != nullptr && state->selectedLeaf == nullptr && state->selectedNode != nullptr &&
-           state->selectedNode->kind == LayoutEditTreeNodeKind::Section && state->selectedNode->label == "fonts";
+    return state != nullptr &&
+        state->selectedLeaf == nullptr &&
+        state->selectedNode != nullptr &&
+        state->selectedNode->kind == LayoutEditTreeNodeKind::Section &&
+        state->selectedNode->label == "fonts";
 }
 
 bool IsThemeSectionNode(const LayoutEditDialogState* state) {
-    return state != nullptr && state->selectedLeaf == nullptr && state->selectedNode != nullptr &&
-           state->selectedNode->kind == LayoutEditTreeNodeKind::Section &&
-           state->selectedNode->label.rfind("theme.", 0) == 0;
+    return state != nullptr &&
+        state->selectedLeaf == nullptr &&
+        state->selectedNode != nullptr &&
+        state->selectedNode->kind == LayoutEditTreeNodeKind::Section &&
+        state->selectedNode->label.rfind("theme.", 0) == 0;
 }
 
 bool IsLayoutSectionNode(const LayoutEditDialogState* state) {
-    return state != nullptr && state->selectedLeaf == nullptr && state->selectedNode != nullptr &&
-           state->selectedNode->kind == LayoutEditTreeNodeKind::Section &&
-           state->selectedNode->label.rfind("layout.", 0) == 0;
+    return state != nullptr &&
+        state->selectedLeaf == nullptr &&
+        state->selectedNode != nullptr &&
+        state->selectedNode->kind == LayoutEditTreeNodeKind::Section &&
+        state->selectedNode->label.rfind("layout.", 0) == 0;
 }
 
 const ColorConfig* FindThemeColorValue(const AppConfig& config, const ThemeColorEditKey& key) {
@@ -123,14 +131,18 @@ const ColorConfig* FindThemeColorValue(const AppConfig& config, const ThemeColor
     if (selectedTheme == nullptr) {
         return nullptr;
     }
-    if (key.tokenName == "background")
+    if (key.tokenName == "background") {
         return &selectedTheme->background;
-    if (key.tokenName == "foreground")
+    }
+    if (key.tokenName == "foreground") {
         return &selectedTheme->foreground;
-    if (key.tokenName == "accent")
+    }
+    if (key.tokenName == "accent") {
         return &selectedTheme->accent;
-    if (key.tokenName == "guide")
+    }
+    if (key.tokenName == "guide") {
         return &selectedTheme->guide;
+    }
     return nullptr;
 }
 
@@ -171,9 +183,7 @@ const ColorConfig* FindColorRoleValue(const AppConfig& config, LayoutEditParamet
     }
 }
 
-bool IsLiteralColorExpressionText(const std::string& text) {
-    return text.empty() || text.front() == '#';
-}
+bool IsLiteralColorExpressionText(const std::string& text) { return text.empty() || text.front() == '#'; }
 
 std::string DefaultDerivedBase(LayoutEditParameter parameter) {
     switch (parameter) {
@@ -280,9 +290,7 @@ void PopulateLayoutNameCombo(HWND hwnd, const AppConfig& config) {
     }
 }
 
-std::string FormatDialogDouble(double value) {
-    return FormatDoubleGeneral(value, 12);
-}
+std::string FormatDialogDouble(double value) { return FormatDoubleGeneral(value, 12); }
 
 std::string FormatDialogAlphaByte(unsigned int alpha) {
     constexpr char kHex[] = "0123456789ABCDEF";
@@ -298,12 +306,14 @@ int RoundToSliderPosition(double value, int minValue, int maxValue) {
 
 void SetDerivedRotateSliderPosition(HWND hwnd, double value) {
     SendDlgItemMessageA(
-        hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_SLIDER, TBM_SETPOS, TRUE, RoundToSliderPosition(value, -180, 180));
+        hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_SLIDER, TBM_SETPOS, TRUE, RoundToSliderPosition(value, -180, 180)
+    );
 }
 
 void SetDerivedMixSliderPosition(HWND hwnd, double value) {
     SendDlgItemMessageA(
-        hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_SLIDER, TBM_SETPOS, TRUE, RoundToSliderPosition(value * 100.0, 0, 100));
+        hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_SLIDER, TBM_SETPOS, TRUE, RoundToSliderPosition(value * 100.0, 0, 100)
+    );
 }
 
 void SetDerivedAlphaSliderPosition(HWND hwnd, unsigned int value) {
@@ -347,14 +357,15 @@ std::optional<ColorExpression> ReadDerivedColorExpressionFromDialog(HWND hwnd) {
 
 void PopulateColorExpressionControls(HWND hwnd, LayoutEditParameter parameter, const ColorConfig& color) {
     const std::optional<ColorExpression> parsed =
-        !color.expression.empty() && !IsLiteralColorExpressionText(color.expression)
-            ? ParseColorExpression(color.expression)
-            : std::nullopt;
+        !color.expression.empty() && !IsLiteralColorExpressionText(color.expression) ?
+            ParseColorExpression(color.expression) : std::nullopt;
     const bool derived = parsed.has_value();
-    PopulateTextCombo(hwnd,
+    PopulateTextCombo(
+        hwnd,
         IDC_LAYOUT_EDIT_COLOR_MODE_COMBO,
         MakeStringLiteralList(kColorModeOptions, ARRAYSIZE(kColorModeOptions)),
-        derived ? "Derived" : "Literal");
+        derived ? "Derived" : "Literal"
+    );
 
     ColorExpression expression = parsed.value_or(ColorExpression{DefaultDerivedBase(parameter)});
     if (expression.mix.has_value() && expression.mix->target.empty()) {
@@ -362,22 +373,28 @@ void PopulateColorExpressionControls(HWND hwnd, LayoutEditParameter parameter, c
     }
     const StringLiteralList tokens = MakeStringLiteralList(kColorExpressionTokens, ARRAYSIZE(kColorExpressionTokens));
     PopulateTextCombo(hwnd, IDC_LAYOUT_EDIT_COLOR_BASE_COMBO, tokens, expression.base);
-    PopulateTextCombo(hwnd,
+    PopulateTextCombo(
+        hwnd,
         IDC_LAYOUT_EDIT_COLOR_MIX_TARGET_COMBO,
         tokens,
-        expression.mix.has_value() ? expression.mix->target : "accent");
+        expression.mix.has_value() ? expression.mix->target : "accent"
+    );
     CheckDlgButton(
-        hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_CHECK, expression.rotateHue.has_value() ? BST_CHECKED : BST_UNCHECKED);
+        hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_CHECK, expression.rotateHue.has_value() ? BST_CHECKED : BST_UNCHECKED
+    );
     CheckDlgButton(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_CHECK, expression.mix.has_value() ? BST_CHECKED : BST_UNCHECKED);
     CheckDlgButton(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_CHECK, expression.alpha.has_value() ? BST_CHECKED : BST_UNCHECKED);
     SetDialogControlText(
-        hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_EDIT, FormatDialogDouble(expression.rotateHue.value_or(0.0)));
-    SetDialogControlText(hwnd,
+        hwnd, IDC_LAYOUT_EDIT_COLOR_ROTATE_EDIT, FormatDialogDouble(expression.rotateHue.value_or(0.0))
+    );
+    SetDialogControlText(
+        hwnd,
         IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_EDIT,
-        FormatDialogDouble(expression.mix.has_value() ? expression.mix->amount : 0.5));
-    SetDialogControlText(hwnd,
-        IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_EDIT,
-        FormatDialogAlphaByte(expression.alpha.value_or(color.Alpha())));
+        FormatDialogDouble(expression.mix.has_value() ? expression.mix->amount : 0.5)
+    );
+    SetDialogControlText(
+        hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_EDIT, FormatDialogAlphaByte(expression.alpha.value_or(color.Alpha()))
+    );
     SetDerivedRotateSliderPosition(hwnd, expression.rotateHue.value_or(0.0));
     SetDerivedMixSliderPosition(hwnd, expression.mix.has_value() ? expression.mix->amount : 0.5);
     SetDerivedAlphaSliderPosition(hwnd, expression.alpha.value_or(color.Alpha()));
@@ -466,7 +483,7 @@ std::vector<std::string> ReadMetricListOrderDialogRows(const LayoutEditDialogSta
 bool ApplyMetricListOrderRows(LayoutEditDialogState* state, const std::vector<std::string>& metricRefs) {
     const auto* key = SelectedMetricListOrderKey(state);
     return key != nullptr &&
-           state->dialog->Host().ApplyLayoutEditPreview(LayoutEditFocusKey{*key}, LayoutEditValue{metricRefs});
+        state->dialog->Host().ApplyLayoutEditPreview(LayoutEditFocusKey{*key}, LayoutEditValue{metricRefs});
 }
 
 bool ContainsString(const std::vector<std::string>& values, const std::string& text) {
@@ -478,10 +495,9 @@ bool ContainsString(const std::vector<std::string>& values, const std::string& t
     return false;
 }
 
-void PopulateMetricListRowCombo(HWND,
-    const LayoutEditMetricListRowControls& row,
-    const std::vector<std::string>& options,
-    std::string_view selected) {
+void PopulateMetricListRowCombo(
+    HWND, const LayoutEditMetricListRowControls& row, const std::vector<std::string>& options, std::string_view selected
+) {
     if (row.combo == nullptr) {
         return;
     }
@@ -502,16 +518,15 @@ void PopulateMetricListRowCombo(HWND,
     SendMessageA(row.combo, CB_SETMINVISIBLE, 10, 0);
 }
 
-int MetricListRowIndexFromControlId(int controlId, int baseId) {
-    return controlId - baseId;
-}
+int MetricListRowIndexFromControlId(int controlId, int baseId) { return controlId - baseId; }
 
 bool IsMetricListRowControlId(int controlId, int baseId, size_t rowCount) {
     const int index = MetricListRowIndexFromControlId(controlId, baseId);
     return index >= 0 && index < static_cast<int>(rowCount);
 }
 
-template <typename Mutate> bool MutateMetricListOrderRows(LayoutEditDialogState* state, HWND hwnd, Mutate&& mutate) {
+template <typename Mutate>
+bool MutateMetricListOrderRows(LayoutEditDialogState* state, HWND hwnd, Mutate&& mutate) {
     if (state == nullptr || state->updatingControls) {
         return false;
     }
@@ -539,8 +554,11 @@ bool PopulateMetricListOrderSelection(LayoutEditDialogState* state, HWND hwnd) {
     std::vector<std::string> options = AvailableMetricDefinitionIds(config);
     for (const auto& metricRef : metricRefs) {
         const MetricDefinitionConfig* definition = FindMetricDefinition(config.layout.metrics, metricRef);
-        if (definition != nullptr && IsMetricListSupportedDisplayStyle(definition->style) &&
-            !ContainsString(options, metricRef)) {
+        if (
+            definition != nullptr &&
+            IsMetricListSupportedDisplayStyle(definition->style) &&
+            !ContainsString(options, metricRef)
+        ) {
             options.push_back(metricRef);
         }
     }
@@ -593,9 +611,8 @@ LayoutEditValidationResult ValidateDateTimeFormatSelection(LayoutEditDialogState
         return {false, FindLocalizedText(RES_STR("layout_edit.validation.choose_date_time_format"))};
     }
     const std::string format = Trim(ReadDialogControlText(hwnd, IDC_LAYOUT_EDIT_DATETIME_FORMAT_COMBO));
-    return !format.empty() ? LayoutEditValidationResult{true, ""}
-                           : LayoutEditValidationResult{
-                                 false, FindLocalizedText(RES_STR("layout_edit.validation.choose_date_time_format"))};
+    return !format.empty() ? LayoutEditValidationResult{true, ""} :
+        LayoutEditValidationResult{false, FindLocalizedText(RES_STR("layout_edit.validation.choose_date_time_format"))};
 }
 
 bool PreviewDateTimeFormatSelection(LayoutEditDialogState* state, HWND hwnd) {
@@ -608,8 +625,8 @@ bool PreviewDateTimeFormatSelection(LayoutEditDialogState* state, HWND hwnd) {
         return false;
     }
     const std::string format = Trim(ReadDialogControlText(hwnd, IDC_LAYOUT_EDIT_DATETIME_FORMAT_COMBO));
-    const bool applied = !format.empty() && state->dialog->Host().ApplyLayoutEditPreview(
-                                                LayoutEditFocusKey{*key}, LayoutEditValue{format});
+    const bool applied = !format.empty() &&
+        state->dialog->Host().ApplyLayoutEditPreview(LayoutEditFocusKey{*key}, LayoutEditValue{format});
     return applied;
 }
 
@@ -644,16 +661,19 @@ struct DescriptorLayoutEditEditorHandler {
 };
 
 constexpr std::array<DescriptorLayoutEditEditorHandler, 2> kDescriptorEditorHandlers{{
-    {LayoutEditEditorKind::MetricListOrder,
+    {
+        LayoutEditEditorKind::MetricListOrder,
         PopulateMetricListOrderSelection,
         ValidateMetricListOrderSelection,
         nullptr,
-        RevertNodeFieldSelection},
-    {LayoutEditEditorKind::DateTimeFormat,
+        RevertNodeFieldSelection
+    }, {
+        LayoutEditEditorKind::DateTimeFormat,
         PopulateDateTimeFormatSelection,
         ValidateDateTimeFormatSelection,
         PreviewDateTimeFormatSelection,
-        RevertNodeFieldSelection},
+        RevertNodeFieldSelection
+    },
 }};
 
 const DescriptorLayoutEditEditorHandler* FindDescriptorLayoutEditEditorHandler(LayoutEditEditorKind kind) {
@@ -676,7 +696,8 @@ bool PopulateDescriptorLayoutEditSelection(LayoutEditDialogState* state, HWND hw
 }
 
 void ShowLayoutEditSelectionEditor(
-    LayoutEditDialogState* state, HWND hwnd, LayoutEditEditorKind kind, bool metricBinding) {
+    LayoutEditDialogState* state, HWND hwnd, LayoutEditEditorKind kind, bool metricBinding
+) {
     if (kind != LayoutEditEditorKind::MetricListOrder) {
         DestroyMetricListOrderEditorControls(state);
     }
@@ -762,16 +783,20 @@ void PopulateLayoutEditSelection(LayoutEditDialogState* state, HWND hwnd) {
             SetDialogControlText(hwnd, IDC_LAYOUT_EDIT_FONT_FACE_LABEL, "Font name:");
             const auto font = FindLayoutEditTooltipFontValue(config, *parameter);
             PopulateFontFaceComboBox(
-                hwnd, font.has_value() && *font != nullptr ? std::string_view((**font).face) : std::string_view());
+                hwnd, font.has_value() && *font != nullptr ? std::string_view((**font).face) : std::string_view()
+            );
             const bool hasFont = font.has_value() && *font != nullptr;
             SetDialogControlIntegerOrEmpty(hwnd, IDC_LAYOUT_EDIT_FONT_SIZE_EDIT, hasFont ? (**font).size : 0, hasFont);
             SetDialogControlIntegerOrEmpty(
-                hwnd, IDC_LAYOUT_EDIT_FONT_WEIGHT_EDIT, hasFont ? (**font).weight : 0, hasFont);
+                hwnd, IDC_LAYOUT_EDIT_FONT_WEIGHT_EDIT, hasFont ? (**font).weight : 0, hasFont
+            );
             ShowLayoutEditSelectionEditor(state, hwnd, LayoutEditEditorKind::Font);
-            SetFontSamplePreview(state,
+            SetFontSamplePreview(
+                state,
                 hwnd,
                 std::optional<LayoutEditParameter>(*parameter),
-                font.has_value() && *font != nullptr ? *font : nullptr);
+                font.has_value() && *font != nullptr ? *font : nullptr
+            );
         } else if (state->selectedLeaf->valueFormat == configschema::ValueFormat::ColorHex) {
             const ColorConfig* value = FindColorRoleValue(config, *parameter);
             const unsigned int color = value != nullptr ? value->ToRgba() : 0x000000FFu;
@@ -780,9 +805,11 @@ void PopulateLayoutEditSelection(LayoutEditDialogState* state, HWND hwnd) {
         } else {
             const auto value = FindLayoutEditParameterNumericValue(config, *parameter);
             if (value.has_value()) {
-                SetDialogControlText(hwnd,
+                SetDialogControlText(
+                    hwnd,
                     IDC_LAYOUT_EDIT_VALUE_EDIT,
-                    FormatLayoutEditTooltipValue(*value, state->selectedLeaf->valueFormat));
+                    FormatLayoutEditTooltipValue(*value, state->selectedLeaf->valueFormat)
+                );
             } else {
                 SetDialogControlText(hwnd, IDC_LAYOUT_EDIT_VALUE_EDIT, "");
             }
@@ -795,22 +822,27 @@ void PopulateLayoutEditSelection(LayoutEditDialogState* state, HWND hwnd) {
     } else if (const auto* weightKey = std::get_if<LayoutWeightEditKey>(&state->selectedLeaf->focusKey)) {
         const auto values = FindWeightEditValues(config, *weightKey);
         SetDialogControlText(
-            hwnd, IDC_LAYOUT_EDIT_WEIGHT_FIRST_LABEL, BuildWeightEditorLabel(*state->selectedLeaf, true));
+            hwnd, IDC_LAYOUT_EDIT_WEIGHT_FIRST_LABEL, BuildWeightEditorLabel(*state->selectedLeaf, true)
+        );
         SetDialogControlText(
-            hwnd, IDC_LAYOUT_EDIT_WEIGHT_SECOND_LABEL, BuildWeightEditorLabel(*state->selectedLeaf, false));
+            hwnd, IDC_LAYOUT_EDIT_WEIGHT_SECOND_LABEL, BuildWeightEditorLabel(*state->selectedLeaf, false)
+        );
         SetDialogControlIntegerOrEmpty(
-            hwnd, IDC_LAYOUT_EDIT_WEIGHT_FIRST_EDIT, values.has_value() ? values->first : 0, values.has_value());
+            hwnd, IDC_LAYOUT_EDIT_WEIGHT_FIRST_EDIT, values.has_value() ? values->first : 0, values.has_value()
+        );
         SetDialogControlIntegerOrEmpty(
-            hwnd, IDC_LAYOUT_EDIT_WEIGHT_SECOND_EDIT, values.has_value() ? values->second : 0, values.has_value());
+            hwnd, IDC_LAYOUT_EDIT_WEIGHT_SECOND_EDIT, values.has_value() ? values->second : 0, values.has_value()
+        );
         ShowLayoutEditSelectionEditor(state, hwnd, LayoutEditEditorKind::Weights);
     } else if (const auto* cardTitleKey = std::get_if<LayoutCardTitleEditKey>(&state->selectedLeaf->focusKey)) {
         SetDialogControlText(hwnd, IDC_LAYOUT_EDIT_VALUE_EDIT, FindCardTitleValue(config, *cardTitleKey).value_or(""));
         ShowLayoutEditSelectionEditor(state, hwnd, LayoutEditEditorKind::Numeric);
-    } else if (PopulateDescriptorLayoutEditSelection(state, hwnd)) {
-    } else if (const auto* metricKey = std::get_if<LayoutMetricEditKey>(&state->selectedLeaf->focusKey)) {
+    } else if (PopulateDescriptorLayoutEditSelection(state, hwnd)) {}
+    else if (const auto* metricKey = std::get_if<LayoutMetricEditKey>(&state->selectedLeaf->focusKey)) {
         const MetricDefinitionConfig* definition = FindMetricDefinition(config.layout.metrics, metricKey->metricId);
         SetDialogControlText(
-            hwnd, IDC_LAYOUT_EDIT_METRIC_STYLE_VALUE, definition != nullptr ? EnumToString(definition->style) : "");
+            hwnd, IDC_LAYOUT_EDIT_METRIC_STYLE_VALUE, definition != nullptr ? EnumToString(definition->style) : ""
+        );
         const bool scaleEditable =
             definition != nullptr && !definition->telemetryScale && definition->style != MetricDisplayStyle::LabelOnly;
         const bool unitEditable = definition != nullptr && definition->style != MetricDisplayStyle::LabelOnly;
@@ -819,20 +851,23 @@ void PopulateLayoutEditSelection(LayoutEditDialogState* state, HWND hwnd) {
         } else if (definition->telemetryScale) {
             SetDialogControlText(hwnd, IDC_LAYOUT_EDIT_METRIC_SCALE_EDIT, "*");
         } else {
-            SetDialogControlText(hwnd,
+            SetDialogControlText(
+                hwnd,
                 IDC_LAYOUT_EDIT_METRIC_SCALE_EDIT,
-                FormatLayoutEditTooltipValue(definition->scale, configschema::ValueFormat::FloatingPoint));
+                FormatLayoutEditTooltipValue(definition->scale, configschema::ValueFormat::FloatingPoint)
+            );
         }
-        SetDialogControlText(hwnd,
+        SetDialogControlText(
+            hwnd,
             IDC_LAYOUT_EDIT_METRIC_UNIT_EDIT,
-            definition != nullptr && definition->style != MetricDisplayStyle::LabelOnly ? definition->unit : "");
+            definition != nullptr && definition->style != MetricDisplayStyle::LabelOnly ? definition->unit : ""
+        );
         SetDialogControlText(hwnd, IDC_LAYOUT_EDIT_METRIC_LABEL_EDIT, definition != nullptr ? definition->label : "");
         const bool showBinding = state->dialog->Host().ShouldShowMetricBoardBinding(*metricKey);
         const std::string selectedBinding =
             showBinding ? FindConfiguredBoardMetricBinding(config, *metricKey) : std::string();
-        std::vector<std::string> bindingOptions =
-            showBinding ? state->dialog->Host().AvailableBoardMetricSensorBindings(*metricKey)
-                        : std::vector<std::string>{};
+        std::vector<std::string> bindingOptions = showBinding ?
+            state->dialog->Host().AvailableBoardMetricSensorBindings(*metricKey) : std::vector<std::string>{};
         if (!selectedBinding.empty() && !ContainsString(bindingOptions, selectedBinding)) {
             bindingOptions.push_back(selectedBinding);
         }
@@ -854,8 +889,8 @@ LayoutEditValidationResult ValidateCurrentSelectionInput(LayoutEditDialogState* 
         return {true, ""};
     }
 
-    if (const auto* parameter = std::get_if<LayoutEditParameter>(&state->selectedLeaf->focusKey);
-        parameter != nullptr) {
+    if (const auto* parameter = std::get_if<LayoutEditParameter>(&state->selectedLeaf->focusKey); parameter != nullptr)
+    {
         (void)parameter;
         if (state->selectedLeaf->valueFormat == configschema::ValueFormat::FontSpec) {
             char faceBuffer[256] = {};
@@ -901,14 +936,11 @@ LayoutEditValidationResult ValidateCurrentSelectionInput(LayoutEditDialogState* 
         char valueBuffer[128] = {};
         GetDlgItemTextA(hwnd, IDC_LAYOUT_EDIT_VALUE_EDIT, valueBuffer, ARRAYSIZE(valueBuffer));
         if (state->selectedLeaf->valueFormat == configschema::ValueFormat::Integer) {
-            return TryParseDialogInteger(valueBuffer).has_value()
-                       ? LayoutEditValidationResult{true, ""}
-                       : LayoutEditValidationResult{
-                             false, FindLocalizedText(RES_STR("layout_edit.validation.whole_number"))};
+            return TryParseDialogInteger(valueBuffer).has_value() ? LayoutEditValidationResult{true, ""} :
+                LayoutEditValidationResult{false, FindLocalizedText(RES_STR("layout_edit.validation.whole_number"))};
         }
-        return TryParseDialogDouble(valueBuffer).has_value()
-                   ? LayoutEditValidationResult{true, ""}
-                   : LayoutEditValidationResult{false, FindLocalizedText(RES_STR("layout_edit.validation.number"))};
+        return TryParseDialogDouble(valueBuffer).has_value() ? LayoutEditValidationResult{true, ""} :
+            LayoutEditValidationResult{false, FindLocalizedText(RES_STR("layout_edit.validation.number"))};
     }
 
     if (std::holds_alternative<LayoutCardTitleEditKey>(state->selectedLeaf->focusKey)) {
@@ -927,13 +959,15 @@ LayoutEditValidationResult ValidateCurrentSelectionInput(LayoutEditDialogState* 
         return {true, ""};
     }
 
-    if (const DescriptorLayoutEditEditorHandler* handler = SelectedDescriptorLayoutEditEditorHandler(state);
-        handler != nullptr && handler->validate != nullptr) {
+    if (
+        const DescriptorLayoutEditEditorHandler* handler = SelectedDescriptorLayoutEditEditorHandler(state);
+        handler != nullptr && handler->validate != nullptr
+    ) {
         return handler->validate(state, hwnd);
     }
 
-    if (const auto* metricKey = std::get_if<LayoutMetricEditKey>(&state->selectedLeaf->focusKey);
-        metricKey != nullptr) {
+    if (const auto* metricKey = std::get_if<LayoutMetricEditKey>(&state->selectedLeaf->focusKey); metricKey != nullptr)
+    {
         const AppConfig& config = state->dialog->Host().CurrentConfig();
         const MetricDefinitionConfig* definition = FindMetricDefinition(config.layout.metrics, metricKey->metricId);
         if (definition == nullptr) {
@@ -968,13 +1002,19 @@ void RefreshLayoutEditValidationState(LayoutEditDialogState* state, HWND hwnd) {
     }
     const LayoutEditValidationResult validation = ValidateCurrentSelectionInput(state, hwnd);
     state->activeSelectionValid = validation.valid;
-    if (state->selectedLeaf == nullptr && !IsFontsSectionNode(state) && !IsThemeSectionNode(state) &&
-        !IsLayoutSectionNode(state)) {
+    if (
+        state->selectedLeaf == nullptr &&
+        !IsFontsSectionNode(state) &&
+        !IsThemeSectionNode(state) &&
+        !IsLayoutSectionNode(state)
+    ) {
         SetLayoutEditStatus(
-            state, hwnd, LayoutEditStatusKind::Info, FindLocalizedText(RES_STR("layout_edit.status.select_field")));
+            state, hwnd, LayoutEditStatusKind::Info, FindLocalizedText(RES_STR("layout_edit.status.select_field"))
+        );
     } else if (validation.valid) {
         SetLayoutEditStatus(
-            state, hwnd, LayoutEditStatusKind::Info, FindLocalizedText(RES_STR("layout_edit.status.previewing")));
+            state, hwnd, LayoutEditStatusKind::Info, FindLocalizedText(RES_STR("layout_edit.status.previewing"))
+        );
     } else {
         SetLayoutEditStatus(state, hwnd, LayoutEditStatusKind::Error, validation.message);
     }
@@ -998,9 +1038,11 @@ bool PreviewSelectedValue(LayoutEditDialogState* state, HWND hwnd) {
         const std::string title = buffer;
         return state->dialog->Host().ApplyCardTitlePreview(*cardTitleKey, title);
     }
-    if (state->selectedLeaf->valueFormat == configschema::ValueFormat::FontSpec ||
+    if (
+        state->selectedLeaf->valueFormat == configschema::ValueFormat::FontSpec ||
         state->selectedLeaf->valueFormat == configschema::ValueFormat::ColorHex ||
-        state->selectedLeaf->valueFormat == configschema::ValueFormat::String) {
+        state->selectedLeaf->valueFormat == configschema::ValueFormat::String
+    ) {
         return false;
     }
 
@@ -1094,8 +1136,10 @@ bool PreviewSelectedColor(LayoutEditDialogState* state, HWND hwnd) {
     }
     const auto* parameter = std::get_if<LayoutEditParameter>(&state->selectedLeaf->focusKey);
     const auto* themeColorKey = std::get_if<ThemeColorEditKey>(&state->selectedLeaf->focusKey);
-    if ((parameter == nullptr && themeColorKey == nullptr) ||
-        state->selectedLeaf->valueFormat != configschema::ValueFormat::ColorHex) {
+    if (
+        (parameter == nullptr && themeColorKey == nullptr) ||
+        state->selectedLeaf->valueFormat != configschema::ValueFormat::ColorHex
+    ) {
         return false;
     }
 
@@ -1109,11 +1153,12 @@ bool PreviewSelectedColor(LayoutEditDialogState* state, HWND hwnd) {
     if (derivedExpression) {
         const auto expression = ReadDerivedColorExpressionFromDialog(hwnd);
         applied = expression.has_value() &&
-                  state->dialog->Host().ApplyColorExpressionPreview(*parameter, FormatColorExpression(*expression));
+            state->dialog->Host().ApplyColorExpressionPreview(*parameter, FormatColorExpression(*expression));
     } else {
-        applied = color.has_value() &&
-                  (parameter != nullptr ? state->dialog->Host().ApplyColorPreview(*parameter, *color)
-                                        : state->dialog->Host().ApplyThemeColorPreview(*themeColorKey, *color));
+        applied = color.has_value() && (
+            parameter != nullptr ? state->dialog->Host().ApplyColorPreview(*parameter, *color) :
+                state->dialog->Host().ApplyThemeColorPreview(*themeColorKey, *color)
+        );
     }
     const AppConfig& config = state->dialog->Host().CurrentConfig();
     std::optional<unsigned int> resolvedColor;
@@ -1131,8 +1176,9 @@ bool PreviewSelectedColor(LayoutEditDialogState* state, HWND hwnd) {
 }
 
 bool IsDerivedColorSlider(int sliderId) {
-    return sliderId == IDC_LAYOUT_EDIT_COLOR_ROTATE_SLIDER || sliderId == IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_SLIDER ||
-           sliderId == IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_SLIDER;
+    return sliderId == IDC_LAYOUT_EDIT_COLOR_ROTATE_SLIDER ||
+        sliderId == IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_SLIDER ||
+        sliderId == IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_SLIDER;
 }
 
 void SyncDerivedColorSliderFromEdit(HWND hwnd, int editId) {
@@ -1172,12 +1218,15 @@ bool SetDerivedColorEditFromSlider(HWND hwnd, int sliderId) {
             return true;
         case IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_SLIDER:
             SetDialogControlText(
-                hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_EDIT, FormatDialogDouble(static_cast<double>(position) / 100.0));
+                hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_EDIT, FormatDialogDouble(static_cast<double>(position) / 100.0)
+            );
             return true;
         case IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_SLIDER:
-            SetDialogControlText(hwnd,
+            SetDialogControlText(
+                hwnd,
                 IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_EDIT,
-                FormatDialogAlphaByte(static_cast<unsigned int>(position)));
+                FormatDialogAlphaByte(static_cast<unsigned int>(position))
+            );
             return true;
         default:
             return false;
@@ -1212,13 +1261,15 @@ bool SetSelectedDialogColor(LayoutEditDialogState* state, HWND hwnd, unsigned in
     }
     const auto* parameter = std::get_if<LayoutEditParameter>(&state->selectedLeaf->focusKey);
     const auto* themeColorKey = std::get_if<ThemeColorEditKey>(&state->selectedLeaf->focusKey);
-    if ((parameter == nullptr && themeColorKey == nullptr) ||
-        state->selectedLeaf->valueFormat != configschema::ValueFormat::ColorHex) {
+    if (
+        (parameter == nullptr && themeColorKey == nullptr) ||
+        state->selectedLeaf->valueFormat != configschema::ValueFormat::ColorHex
+    ) {
         return false;
     }
 
-    const bool applied = parameter != nullptr ? state->dialog->Host().ApplyColorPreview(*parameter, color)
-                                              : state->dialog->Host().ApplyThemeColorPreview(*themeColorKey, color);
+    const bool applied = parameter != nullptr ? state->dialog->Host().ApplyColorPreview(*parameter, color) :
+        state->dialog->Host().ApplyThemeColorPreview(*themeColorKey, color);
     if (!applied) {
         return false;
     }
@@ -1283,10 +1334,9 @@ bool PreviewSelectedMetric(LayoutEditDialogState* state, HWND hwnd) {
     GetDlgItemTextA(hwnd, IDC_LAYOUT_EDIT_METRIC_LABEL_EDIT, labelBuffer, ARRAYSIZE(labelBuffer));
     const std::string unit = definition->style == MetricDisplayStyle::LabelOnly ? std::string() : unitBuffer;
     const std::string label = labelBuffer;
-    const std::optional<std::string> binding =
-        CurrentLayoutEditShowsMetricBinding(state)
-            ? std::optional<std::string>(Trim(ReadDialogControlText(hwnd, IDC_LAYOUT_EDIT_METRIC_BINDING_EDIT)))
-            : std::nullopt;
+    const std::optional<std::string> binding = CurrentLayoutEditShowsMetricBinding(state) ?
+        std::optional<std::string>(Trim(ReadDialogControlText(hwnd, IDC_LAYOUT_EDIT_METRIC_BINDING_EDIT))) :
+        std::nullopt;
     const bool applied = state->dialog->Host().ApplyMetricPreview(*key, scale, unit, label, binding);
     return applied;
 }
@@ -1301,9 +1351,12 @@ bool HandleMetricListOrderEditorCommand(LayoutEditDialogState* state, HWND hwnd,
         return false;
     }
 
-    if (IsMetricListRowControlId(
-            controlId, IDC_LAYOUT_EDIT_METRIC_LIST_ROW_COMBO_BASE, state->metricListRowControls.size()) &&
-        notificationCode == CBN_SELCHANGE) {
+    if (
+        IsMetricListRowControlId(
+            controlId, IDC_LAYOUT_EDIT_METRIC_LIST_ROW_COMBO_BASE, state->metricListRowControls.size()
+        ) &&
+        notificationCode == CBN_SELCHANGE
+    ) {
         const std::vector<std::string> metricRefs = ReadMetricListOrderDialogRows(state, hwnd);
         ApplyMetricListOrderRows(state, metricRefs);
         return true;
@@ -1324,7 +1377,8 @@ bool HandleMetricListOrderEditorCommand(LayoutEditDialogState* state, HWND hwnd,
     }
 
     if (IsMetricListRowControlId(
-            controlId, IDC_LAYOUT_EDIT_METRIC_LIST_ROW_UP_BASE, state->metricListRowControls.size())) {
+        controlId, IDC_LAYOUT_EDIT_METRIC_LIST_ROW_UP_BASE, state->metricListRowControls.size()
+    )) {
         const int rowIndex = MetricListRowIndexFromControlId(controlId, IDC_LAYOUT_EDIT_METRIC_LIST_ROW_UP_BASE);
         return MutateMetricListOrderRows(state, hwnd, [&](std::vector<std::string>& metricRefs) {
             if (rowIndex > 0 && rowIndex < static_cast<int>(metricRefs.size())) {
@@ -1333,7 +1387,8 @@ bool HandleMetricListOrderEditorCommand(LayoutEditDialogState* state, HWND hwnd,
         });
     }
     if (IsMetricListRowControlId(
-            controlId, IDC_LAYOUT_EDIT_METRIC_LIST_ROW_DOWN_BASE, state->metricListRowControls.size())) {
+        controlId, IDC_LAYOUT_EDIT_METRIC_LIST_ROW_DOWN_BASE, state->metricListRowControls.size()
+    )) {
         const int rowIndex = MetricListRowIndexFromControlId(controlId, IDC_LAYOUT_EDIT_METRIC_LIST_ROW_DOWN_BASE);
         return MutateMetricListOrderRows(state, hwnd, [&](std::vector<std::string>& metricRefs) {
             if (rowIndex >= 0 && rowIndex + 1 < static_cast<int>(metricRefs.size())) {
@@ -1343,7 +1398,8 @@ bool HandleMetricListOrderEditorCommand(LayoutEditDialogState* state, HWND hwnd,
         });
     }
     if (IsMetricListRowControlId(
-            controlId, IDC_LAYOUT_EDIT_METRIC_LIST_ROW_DELETE_BASE, state->metricListRowControls.size())) {
+        controlId, IDC_LAYOUT_EDIT_METRIC_LIST_ROW_DELETE_BASE, state->metricListRowControls.size()
+    )) {
         const int rowIndex = MetricListRowIndexFromControlId(controlId, IDC_LAYOUT_EDIT_METRIC_LIST_ROW_DELETE_BASE);
         return MutateMetricListOrderRows(state, hwnd, [&](std::vector<std::string>& metricRefs) {
             if (rowIndex >= 0 && rowIndex < static_cast<int>(metricRefs.size())) {
@@ -1386,8 +1442,8 @@ bool RevertSelectedLayoutEditField(LayoutEditDialogState* state, HWND hwnd) {
         return false;
     }
 
-    if (const auto* parameter = std::get_if<LayoutEditParameter>(&state->selectedLeaf->focusKey);
-        parameter != nullptr) {
+    if (const auto* parameter = std::get_if<LayoutEditParameter>(&state->selectedLeaf->focusKey); parameter != nullptr)
+    {
         if (state->selectedLeaf->valueFormat == configschema::ValueFormat::FontSpec) {
             const auto font = FindLayoutEditTooltipFontValue(state->originalConfig, *parameter);
             if (!font.has_value() || *font == nullptr) {
@@ -1405,9 +1461,9 @@ bool RevertSelectedLayoutEditField(LayoutEditDialogState* state, HWND hwnd) {
             if (color == nullptr) {
                 return false;
             }
-            const bool applied = !color->expression.empty() && !IsLiteralColorExpressionText(color->expression)
-                                     ? state->dialog->Host().ApplyColorExpressionPreview(*parameter, color->expression)
-                                     : state->dialog->Host().ApplyColorPreview(*parameter, color->ToRgba());
+            const bool applied = !color->expression.empty() && !IsLiteralColorExpressionText(color->expression) ?
+                state->dialog->Host().ApplyColorExpressionPreview(*parameter, color->expression) :
+                state->dialog->Host().ApplyColorPreview(*parameter, color->ToRgba());
             if (applied) {
                 PopulateLayoutEditSelection(state, hwnd);
                 RefreshLayoutEditValidationState(state, hwnd);
@@ -1428,8 +1484,8 @@ bool RevertSelectedLayoutEditField(LayoutEditDialogState* state, HWND hwnd) {
         }
     }
 
-    if (const auto* weightKey = std::get_if<LayoutWeightEditKey>(&state->selectedLeaf->focusKey);
-        weightKey != nullptr) {
+    if (const auto* weightKey = std::get_if<LayoutWeightEditKey>(&state->selectedLeaf->focusKey); weightKey != nullptr)
+    {
         const auto values = FindWeightEditValues(state->originalConfig, *weightKey);
         if (!values.has_value()) {
             return false;
@@ -1442,8 +1498,8 @@ bool RevertSelectedLayoutEditField(LayoutEditDialogState* state, HWND hwnd) {
         return applied;
     }
 
-    if (const auto* metricKey = std::get_if<LayoutMetricEditKey>(&state->selectedLeaf->focusKey);
-        metricKey != nullptr) {
+    if (const auto* metricKey = std::get_if<LayoutMetricEditKey>(&state->selectedLeaf->focusKey); metricKey != nullptr)
+    {
         const MetricDefinitionConfig* definition =
             FindMetricDefinition(state->originalConfig.layout.metrics, metricKey->metricId);
         if (definition == nullptr) {
@@ -1455,18 +1511,20 @@ bool RevertSelectedLayoutEditField(LayoutEditDialogState* state, HWND hwnd) {
             if (!target.has_value()) {
                 return false;
             }
-            const auto& bindings = target->kind == BoardMetricBindingKind::Temperature
-                                       ? state->originalConfig.layout.board.temperatureSensorNames
-                                       : state->originalConfig.layout.board.fanSensorNames;
+            const auto& bindings = target->kind == BoardMetricBindingKind::Temperature ?
+                state->originalConfig.layout.board.temperatureSensorNames :
+                state->originalConfig.layout.board.fanSensorNames;
             const auto it = bindings.find(target->logicalName);
-            binding = it != bindings.end() ? std::optional<std::string>(it->second)
-                                           : std::optional<std::string>(std::string());
+            binding = it != bindings.end() ? std::optional<std::string>(it->second) :
+                std::optional<std::string>(std::string());
         }
-        const bool applied = state->dialog->Host().ApplyMetricPreview(*metricKey,
+        const bool applied = state->dialog->Host().ApplyMetricPreview(
+            *metricKey,
             definition->telemetryScale ? std::nullopt : std::optional<double>(definition->scale),
             definition->style == MetricDisplayStyle::LabelOnly ? std::string() : definition->unit,
             definition->label,
-            binding);
+            binding
+        );
         if (applied) {
             PopulateLayoutEditSelection(state, hwnd);
             RefreshLayoutEditValidationState(state, hwnd);
@@ -1474,8 +1532,10 @@ bool RevertSelectedLayoutEditField(LayoutEditDialogState* state, HWND hwnd) {
         return applied;
     }
 
-    if (const auto* cardTitleKey = std::get_if<LayoutCardTitleEditKey>(&state->selectedLeaf->focusKey);
-        cardTitleKey != nullptr) {
+    if (
+        const auto* cardTitleKey = std::get_if<LayoutCardTitleEditKey>(&state->selectedLeaf->focusKey);
+        cardTitleKey != nullptr
+    ) {
         const std::string title = FindCardTitleValue(state->originalConfig, *cardTitleKey).value_or("");
         const bool applied = state->dialog->Host().ApplyCardTitlePreview(*cardTitleKey, title);
         if (applied) {
@@ -1485,8 +1545,10 @@ bool RevertSelectedLayoutEditField(LayoutEditDialogState* state, HWND hwnd) {
         return applied;
     }
 
-    if (const auto* themeColorKey = std::get_if<ThemeColorEditKey>(&state->selectedLeaf->focusKey);
-        themeColorKey != nullptr) {
+    if (
+        const auto* themeColorKey = std::get_if<ThemeColorEditKey>(&state->selectedLeaf->focusKey);
+        themeColorKey != nullptr
+    ) {
         const ColorConfig* color = FindThemeColorValue(state->originalConfig, *themeColorKey);
         if (color == nullptr) {
             return false;
@@ -1499,8 +1561,10 @@ bool RevertSelectedLayoutEditField(LayoutEditDialogState* state, HWND hwnd) {
         return applied;
     }
 
-    if (const DescriptorLayoutEditEditorHandler* handler = SelectedDescriptorLayoutEditEditorHandler(state);
-        handler != nullptr && handler->revert != nullptr) {
+    if (
+        const DescriptorLayoutEditEditorHandler* handler = SelectedDescriptorLayoutEditEditorHandler(state);
+        handler != nullptr && handler->revert != nullptr
+    ) {
         return handler->revert(state, hwnd);
     }
 

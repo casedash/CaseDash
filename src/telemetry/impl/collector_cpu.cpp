@@ -25,11 +25,9 @@ void UpdateMemory(RealTelemetryCollectorState& state) {
         state.snapshot_.cpu.memory.totalGb,
         state.snapshot_.cpu.memory.usedGb
     );
-    state.retainedHistoryStore_.PushSample(
-        state.snapshot_,
-        RetainedHistoryKey::CpuRam,
-        state.snapshot_.cpu.memory.usedGb
-    );
+    state
+        .retainedHistoryStore_
+        .PushSample(state.snapshot_, RetainedHistoryKey::CpuRam, state.snapshot_.cpu.memory.usedGb);
 }
 
 }  // namespace
@@ -41,15 +39,11 @@ void InitializeCpuCollector(RealTelemetryCollectorState& state) {
     state.trace_.WriteFmt(TracePrefix::Telemetry, RES_STR("cpu_name value=\"%s\""), state.snapshot_.cpu.name.c_str());
 
     const PDH_STATUS queryStatus = PdhOpenQueryA(nullptr, 0, &state.cpu_.query);
-    state.trace_.WriteFmt(
-        TracePrefix::Telemetry,
-        RES_STR("pdh_open cpu_query status=%ld"),
-        static_cast<long>(queryStatus)
-    );
+    state
+        .trace_
+        .WriteFmt(TracePrefix::Telemetry, RES_STR("pdh_open cpu_query status=%ld"), static_cast<long>(queryStatus));
     const PDH_STATUS loadStatus = AddCounterCompat(
-        state.cpu_.query,
-        "\\Processor Information(_Total)\\% Processor Utility",
-        &state.cpu_.loadCounter
+        state.cpu_.query, "\\Processor Information(_Total)\\% Processor Utility", &state.cpu_.loadCounter
     );
     state.trace_.WriteFmt(
         TracePrefix::Telemetry,
@@ -66,9 +60,7 @@ void InitializeCpuCollector(RealTelemetryCollectorState& state) {
         );
     }
     const PDH_STATUS frequencyStatus = AddCounterCompat(
-        state.cpu_.query,
-        "\\Processor Information(_Total)\\Processor Frequency",
-        &state.cpu_.frequencyCounter
+        state.cpu_.query, "\\Processor Information(_Total)\\Processor Frequency", &state.cpu_.frequencyCounter
     );
     state.trace_.WriteFmt(
         TracePrefix::Telemetry,
@@ -77,9 +69,7 @@ void InitializeCpuCollector(RealTelemetryCollectorState& state) {
     );
     const PDH_STATUS collectStatus = PdhCollectQueryData(state.cpu_.query);
     state.trace_.WriteFmt(
-        TracePrefix::Telemetry,
-        RES_STR("pdh_collect cpu_query status=%ld"),
-        static_cast<long>(collectStatus)
+        TracePrefix::Telemetry, RES_STR("pdh_collect cpu_query status=%ld"), static_cast<long>(collectStatus)
     );
 }
 
@@ -107,11 +97,9 @@ void UpdateCpuMetrics(RealTelemetryCollectorState& state) {
         static_cast<long>(loadStatus),
         state.snapshot_.cpu.loadPercent
     );
-    state.retainedHistoryStore_.PushSample(
-        state.snapshot_,
-        RetainedHistoryKey::CpuLoad,
-        state.snapshot_.cpu.loadPercent
-    );
+    state
+        .retainedHistoryStore_
+        .PushSample(state.snapshot_, RetainedHistoryKey::CpuLoad, state.snapshot_.cpu.loadPercent);
 
     PDH_STATUS clockStatus = PDH_INVALID_DATA;
     if (state.cpu_.frequencyCounter != nullptr) {
@@ -131,11 +119,9 @@ void UpdateCpuMetrics(RealTelemetryCollectorState& state) {
             valueText.c_str()
         );
     }
-    state.retainedHistoryStore_.PushSample(
-        state.snapshot_,
-        RetainedHistoryKey::CpuClock,
-        state.snapshot_.cpu.clock.value.value_or(0.0)
-    );
+    state
+        .retainedHistoryStore_
+        .PushSample(state.snapshot_, RetainedHistoryKey::CpuClock, state.snapshot_.cpu.clock.value.value_or(0.0));
 
     UpdateMemory(state);
 }

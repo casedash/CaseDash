@@ -3,13 +3,9 @@
 #include <algorithm>
 #include <cmath>
 
-bool IsFiniteDouble(double value) {
-    return std::isfinite(value);
-}
+bool IsFiniteDouble(double value) { return std::isfinite(value); }
 
-double FiniteOr(double value, double fallback) {
-    return IsFiniteDouble(value) ? value : fallback;
-}
+double FiniteOr(double value, double fallback) { return IsFiniteDouble(value) ? value : fallback; }
 
 double FiniteNonNegativeOr(double value, double fallback) {
     const double safeFallback = IsFiniteDouble(fallback) ? fallback : 0.0;

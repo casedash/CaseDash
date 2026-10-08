@@ -135,7 +135,8 @@ TEST(LayoutEditTooltip, BuildsMetricListOrderTooltipLineForCardLayout) {
     config.layout.cards.back().layout.parameter = "cpu.ram,cpu.clock,board.temp.cpu";
 
     const auto line = BuildMetricListOrderTooltipLine(
-        config, LayoutNodeFieldEditKey{"cpu", {}, WidgetClass::MetricList, LayoutNodeField::Parameter}, 1);
+        config, LayoutNodeFieldEditKey{"cpu", {}, WidgetClass::MetricList, LayoutNodeField::Parameter}, 1
+    );
 
     ASSERT_TRUE(line.has_value());
     EXPECT_EQ(*line, "[card.cpu] layout = metric_list(cpu.clock)");
@@ -148,7 +149,8 @@ TEST(LayoutEditTooltip, BuildsMetricListOrderTooltipLineForDashboardLayout) {
     config.layout.structure.cards.parameter = "network.upload,network.download";
 
     const auto line = BuildMetricListOrderTooltipLine(
-        config, LayoutNodeFieldEditKey{"", {}, WidgetClass::MetricList, LayoutNodeField::Parameter}, 0);
+        config, LayoutNodeFieldEditKey{"", {}, WidgetClass::MetricList, LayoutNodeField::Parameter}, 0
+    );
 
     ASSERT_TRUE(line.has_value());
     EXPECT_EQ(*line, "[layout.main] cards = metric_list(network.upload)");
@@ -162,12 +164,16 @@ TEST(LayoutEditTooltip, RejectsMetricListOrderTooltipLineWhenRowIndexIsInvalid) 
     config.layout.cards.back().layout.name = "metric_list";
     config.layout.cards.back().layout.parameter = "cpu.ram,cpu.clock";
 
-    EXPECT_FALSE(BuildMetricListOrderTooltipLine(
-        config, LayoutNodeFieldEditKey{"cpu", {}, WidgetClass::MetricList, LayoutNodeField::Parameter}, -1)
-            .has_value());
-    EXPECT_FALSE(BuildMetricListOrderTooltipLine(
-        config, LayoutNodeFieldEditKey{"cpu", {}, WidgetClass::MetricList, LayoutNodeField::Parameter}, 2)
-            .has_value());
+    EXPECT_FALSE(
+        BuildMetricListOrderTooltipLine(
+            config, LayoutNodeFieldEditKey{"cpu", {}, WidgetClass::MetricList, LayoutNodeField::Parameter}, -1
+        ).has_value()
+    );
+    EXPECT_FALSE(
+        BuildMetricListOrderTooltipLine(
+            config, LayoutNodeFieldEditKey{"cpu", {}, WidgetClass::MetricList, LayoutNodeField::Parameter}, 2
+        ).has_value()
+    );
 }
 
 TEST(LayoutEditTooltip, BuildsMetricListAddRowTooltipLineForCardLayout) {
@@ -179,7 +185,8 @@ TEST(LayoutEditTooltip, BuildsMetricListAddRowTooltipLineForCardLayout) {
     config.layout.cards.back().layout.parameter = "cpu.ram,cpu.clock";
 
     const auto line = BuildMetricListAddRowTooltipLine(
-        config, LayoutNodeFieldEditKey{"cpu", {}, WidgetClass::MetricList, LayoutNodeField::Parameter});
+        config, LayoutNodeFieldEditKey{"cpu", {}, WidgetClass::MetricList, LayoutNodeField::Parameter}
+    );
 
     ASSERT_TRUE(line.has_value());
     EXPECT_EQ(*line, "[card.cpu] layout = metric_list()");
@@ -195,9 +202,11 @@ TEST(LayoutEditTooltip, BuildsDateTimeFormatTooltipLineForCardLayout) {
     config.layout.cards.push_back(card);
 
     const auto timeLine = BuildDateTimeFormatTooltipLine(
-        config, LayoutNodeFieldEditKey{"time", {0}, WidgetClass::ClockTime, LayoutNodeField::Parameter});
+        config, LayoutNodeFieldEditKey{"time", {0}, WidgetClass::ClockTime, LayoutNodeField::Parameter}
+    );
     const auto dateLine = BuildDateTimeFormatTooltipLine(
-        config, LayoutNodeFieldEditKey{"time", {1}, WidgetClass::ClockDate, LayoutNodeField::Parameter});
+        config, LayoutNodeFieldEditKey{"time", {1}, WidgetClass::ClockDate, LayoutNodeField::Parameter}
+    );
 
     ASSERT_TRUE(timeLine.has_value());
     EXPECT_EQ(*timeLine, "[card.time] layout = clock_time(HH:MM)");
@@ -212,7 +221,8 @@ TEST(LayoutEditTooltip, BuildsDateTimeFormatTooltipLineForDashboardLayout) {
     config.layout.structure.cards.parameter = "hh:MM AM";
 
     const auto line = BuildDateTimeFormatTooltipLine(
-        config, LayoutNodeFieldEditKey{"", {}, WidgetClass::ClockTime, LayoutNodeField::Parameter});
+        config, LayoutNodeFieldEditKey{"", {}, WidgetClass::ClockTime, LayoutNodeField::Parameter}
+    );
 
     ASSERT_TRUE(line.has_value());
     EXPECT_EQ(*line, "[layout.main] cards = clock_time(hh:MM AM)");
@@ -313,7 +323,8 @@ TEST(LayoutEditParameter, AppliesFullFontValueThroughMetadata) {
     config.layout.fonts.label = UiFontConfig{"Segoe UI", 17, 600};
 
     ASSERT_TRUE(
-        ApplyLayoutEditParameterFontValue(config, LayoutEditParameter::FontLabel, UiFontConfig{"Bahnschrift", 0, 450}));
+        ApplyLayoutEditParameterFontValue(config, LayoutEditParameter::FontLabel, UiFontConfig{"Bahnschrift", 0, 450})
+    );
 
     EXPECT_EQ(config.layout.fonts.label.face, "Bahnschrift");
     EXPECT_EQ(config.layout.fonts.label.size, 1);
@@ -325,7 +336,8 @@ TEST(LayoutEditParameter, ClampsFullFontWeightThroughMetadata) {
     config.layout.fonts.label = UiFontConfig{"Segoe UI", 17, 600};
 
     ASSERT_TRUE(
-        ApplyLayoutEditParameterFontValue(config, LayoutEditParameter::FontLabel, UiFontConfig{"Bahnschrift", 12, 0}));
+        ApplyLayoutEditParameterFontValue(config, LayoutEditParameter::FontLabel, UiFontConfig{"Bahnschrift", 12, 0})
+    );
 
     EXPECT_EQ(config.layout.fonts.label.face, "Bahnschrift");
     EXPECT_EQ(config.layout.fonts.label.size, 12);
@@ -333,24 +345,42 @@ TEST(LayoutEditParameter, ClampsFullFontWeightThroughMetadata) {
 }
 
 TEST(LayoutEditParameter, PrioritizesSmallHandlesBeforeGuidesAndRingCircles) {
-    EXPECT_LT(GetLayoutEditParameterHitPriority(LayoutEditParameter::GaugeSegmentCount),
-        GetLayoutEditParameterHitPriority(LayoutEditParameter::GaugeOuterPadding));
-    EXPECT_LT(GetLayoutEditParameterHitPriority(LayoutEditParameter::FontLabel),
-        GetLayoutEditParameterHitPriority(LayoutEditParameter::MetricListLabelWidth));
-    EXPECT_LT(GetLayoutEditParameterHitPriority(LayoutEditParameter::ThroughputLeaderDiameter),
-        GetLayoutEditParameterHitPriority(LayoutEditParameter::ThroughputAxisPadding));
-    EXPECT_LT(GetLayoutEditParameterHitPriority(LayoutEditParameter::CardBorder),
-        GetLayoutEditParameterHitPriority(LayoutEditParameter::CardPadding));
-    EXPECT_LT(GetLayoutEditParameterHitPriority(LayoutEditParameter::DashboardOuterMargin),
-        GetLayoutEditParameterHitPriority(LayoutEditParameter::TextBottomGap));
-    EXPECT_LT(GetLayoutEditParameterHitPriority(LayoutEditParameter::CardRowGap),
-        GetLayoutEditParameterHitPriority(LayoutEditParameter::TextBottomGap));
-    EXPECT_LT(GetLayoutEditParameterHitPriority(LayoutEditParameter::CardColumnGap),
-        GetLayoutEditParameterHitPriority(LayoutEditParameter::CardHeaderContentGap));
-    EXPECT_LT(GetLayoutEditParameterHitPriority(LayoutEditParameter::CardRowGap),
-        GetLayoutEditParameterHitPriority(LayoutEditParameter::CardHeaderContentGap));
-    EXPECT_LT(GetLayoutEditParameterHitPriority(LayoutEditParameter::DashboardColumnGap),
-        GetLayoutEditParameterHitPriority(LayoutEditParameter::MetricListRowGap));
+    EXPECT_LT(
+        GetLayoutEditParameterHitPriority(LayoutEditParameter::GaugeSegmentCount),
+        GetLayoutEditParameterHitPriority(LayoutEditParameter::GaugeOuterPadding)
+    );
+    EXPECT_LT(
+        GetLayoutEditParameterHitPriority(LayoutEditParameter::FontLabel),
+        GetLayoutEditParameterHitPriority(LayoutEditParameter::MetricListLabelWidth)
+    );
+    EXPECT_LT(
+        GetLayoutEditParameterHitPriority(LayoutEditParameter::ThroughputLeaderDiameter),
+        GetLayoutEditParameterHitPriority(LayoutEditParameter::ThroughputAxisPadding)
+    );
+    EXPECT_LT(
+        GetLayoutEditParameterHitPriority(LayoutEditParameter::CardBorder),
+        GetLayoutEditParameterHitPriority(LayoutEditParameter::CardPadding)
+    );
+    EXPECT_LT(
+        GetLayoutEditParameterHitPriority(LayoutEditParameter::DashboardOuterMargin),
+        GetLayoutEditParameterHitPriority(LayoutEditParameter::TextBottomGap)
+    );
+    EXPECT_LT(
+        GetLayoutEditParameterHitPriority(LayoutEditParameter::CardRowGap),
+        GetLayoutEditParameterHitPriority(LayoutEditParameter::TextBottomGap)
+    );
+    EXPECT_LT(
+        GetLayoutEditParameterHitPriority(LayoutEditParameter::CardColumnGap),
+        GetLayoutEditParameterHitPriority(LayoutEditParameter::CardHeaderContentGap)
+    );
+    EXPECT_LT(
+        GetLayoutEditParameterHitPriority(LayoutEditParameter::CardRowGap),
+        GetLayoutEditParameterHitPriority(LayoutEditParameter::CardHeaderContentGap)
+    );
+    EXPECT_LT(
+        GetLayoutEditParameterHitPriority(LayoutEditParameter::DashboardColumnGap),
+        GetLayoutEditParameterHitPriority(LayoutEditParameter::MetricListRowGap)
+    );
 }
 
 TEST(LayoutEditParameter, MetadataTableMatchesEnumOrder) {

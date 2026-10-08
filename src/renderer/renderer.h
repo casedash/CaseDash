@@ -78,36 +78,44 @@ public:
     virtual bool DrawWindow(int width, int height, const DrawCallback& draw) = 0;
     virtual bool DrawWindowRetained(int width, int height, const DrawCallback& draw) = 0;
     virtual bool DrawWindowDirty(
-        int width, int height, std::span<const RenderRect> dirtyRects, const DirtyDrawCallback& draw) = 0;
+        int width, int height, std::span<const RenderRect> dirtyRects, const DirtyDrawCallback& draw
+    ) = 0;
     virtual bool DrawOffscreen(int width, int height, const DrawCallback& draw) = 0;
     virtual bool DrawToBitmap(
-        RenderBitmap& bitmap, int width, int height, RenderBitmapClear clear, const DrawCallback& draw) = 0;
+        RenderBitmap& bitmap, int width, int height, RenderBitmapClear clear, const DrawCallback& draw
+    ) = 0;
     virtual bool DrawToLiveLayerBitmap(
-        RenderBitmap& bitmap, int width, int height, RenderBitmapClear clear, const DrawCallback& draw) = 0;
+        RenderBitmap& bitmap, int width, int height, RenderBitmapClear clear, const DrawCallback& draw
+    ) = 0;
     virtual bool SavePng(const FilePath& imagePath, int width, int height, const DrawCallback& draw) = 0;
     virtual const std::string& LastError() const = 0;
     virtual const TextStyleMetrics& TextMetrics() const = 0;
     virtual int ScaleLogical(int value) const = 0;
     virtual int MeasureTextWidth(TextStyleId style, std::string_view text) const = 0;
     virtual TextLayoutResult MeasureTextBlock(
-        const RenderRect& rect, const std::string& text, TextStyleId style, const TextLayoutOptions& options) const = 0;
-    virtual void DrawText(const RenderRect& rect,
+        const RenderRect& rect, const std::string& text, TextStyleId style, const TextLayoutOptions& options
+    ) const = 0;
+    virtual void DrawText(
+        const RenderRect& rect,
         const std::string& text,
         TextStyleId style,
         RenderColorId color,
-        const TextLayoutOptions& options) const = 0;
-    virtual TextLayoutResult DrawTextBlock(const RenderRect& rect,
+        const TextLayoutOptions& options
+    ) const = 0;
+    virtual TextLayoutResult DrawTextBlock(
+        const RenderRect& rect,
         const std::string& text,
         TextStyleId style,
         RenderColorId color,
-        const TextLayoutOptions& options) = 0;
+        const TextLayoutOptions& options
+    ) = 0;
     virtual void PushClipRect(const RenderRect& rect) = 0;
     virtual void PopClipRect() = 0;
     virtual void PushTranslation(RenderPoint offset) = 0;
     virtual void PopTranslation() = 0;
     virtual bool DrawBitmap(const RenderBitmap& bitmap, RenderPoint origin) = 0;
-    virtual bool DrawBitmapRegion(
-        const RenderBitmap& bitmap, const RenderRect& sourceRect, RenderPoint targetOrigin) = 0;
+    virtual bool
+        DrawBitmapRegion(const RenderBitmap& bitmap, const RenderRect& sourceRect, RenderPoint targetOrigin) = 0;
     virtual bool DrawBitmapRegions(const RenderBitmap& bitmap, std::span<const RenderRect> sourceRects) = 0;
     virtual bool DrawIcon(std::string_view iconName, const RenderRect& rect) = 0;
     virtual bool FillSolidRect(const RenderRect& rect, RenderColorId color) = 0;

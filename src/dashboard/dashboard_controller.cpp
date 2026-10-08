@@ -34,9 +34,8 @@ constexpr char kPngFilter[] = "PNG image (*.png)\0*.png\0All files (*.*)\0*.*\0"
 constexpr char kIniFilter[] = "INI config (*.ini)\0*.ini\0All files (*.*)\0*.*\0";
 constexpr char kWriteBinaryMode[] = "wb";
 
-template <size_t Size> constexpr std::string_view StringViewWithTerminator(const char (&text)[Size]) {
-    return std::string_view(text, Size);
-}
+template <size_t Size>
+constexpr std::string_view StringViewWithTerminator(const char (&text)[Size]) { return std::string_view(text, Size); }
 
 ThemeConfig* FindThemeConfig(LayoutConfig& layout, const std::string& name) {
     for (ThemeConfig& theme : layout.themes) {
@@ -65,7 +64,8 @@ std::unique_ptr<DiagnosticsSession> CreateDiagnosticsSession(const DiagnosticsOp
 }
 
 bool SaveConfigElevated(
-    const FilePath& targetPath, const AppConfig& config, HWND owner, const ConfigParseContext& context) {
+    const FilePath& targetPath, const AppConfig& config, HWND owner, const ConfigParseContext& context
+) {
     const FilePath tempPath = CreateTempFilePath("stc");
     if (tempPath.empty() || targetPath.empty()) {
         return false;
@@ -75,9 +75,11 @@ bool SaveConfigElevated(
         return false;
     }
 
-    const std::string parameters = FormatText("/save-config %s /save-config-target %s",
+    const std::string parameters = FormatText(
+        "/save-config %s /save-config-target %s",
         QuoteCommandLineArgument(tempPath.string()).c_str(),
-        QuoteCommandLineArgument(targetPath.string()).c_str());
+        QuoteCommandLineArgument(targetPath.string()).c_str()
+    );
 
     DWORD exitCode = 1;
     const bool launched = RunElevatedSelfAndWait(owner, parameters, {}, SW_HIDE, &exitCode);
@@ -92,23 +94,29 @@ bool SaveRuntimeConfig(const FilePath& path, const AppConfig& config, HWND owner
     return SaveConfigElevated(path, config, owner, ConfigParseContext{TelemetryMetricCatalog()});
 }
 
-bool DisplayScalesEqual(double left, double right) {
-    return std::abs(left - right) <= 0.0001;
-}
+bool DisplayScalesEqual(double left, double right) { return std::abs(left - right) <= 0.0001; }
 
-void TraceDisplayPositionUpdate(Trace& trace,
+void TraceDisplayPositionUpdate(
+    Trace& trace,
     ResourceStringId source,
     const DisplayConfig& previous,
     const DisplayConfig& current,
-    const MonitorPlacementInfo* placement = nullptr) {
-    if (previous.monitorName == current.monitorName && previous.position == current.position &&
-        DisplayScalesEqual(previous.scale, current.scale)) {
+    const MonitorPlacementInfo* placement = nullptr
+) {
+    if (
+        previous.monitorName == current.monitorName &&
+        previous.position == current.position &&
+        DisplayScalesEqual(previous.scale, current.scale)
+    ) {
         return;
     }
 
-    trace.WriteFmt(TracePrefix::DisplayPlacement,
-        RES_STR("config_position source=\"%s\" monitor=\"%s\" old_monitor=\"%s\" position=%d,%d "
-                "old_position=%d,%d scale=%.6f old_scale=%.6f"),
+    trace.WriteFmt(
+        TracePrefix::DisplayPlacement,
+        RES_STR(
+            "config_position source=\"%s\" monitor=\"%s\" old_monitor=\"%s\" position=%d,%d "
+                "old_position=%d,%d scale=%.6f old_scale=%.6f"
+        ),
         ResourceStringText(source),
         current.monitorName.c_str(),
         previous.monitorName.c_str(),
@@ -117,17 +125,22 @@ void TraceDisplayPositionUpdate(Trace& trace,
         previous.position.x,
         previous.position.y,
         current.scale,
-        previous.scale);
+        previous.scale
+    );
     if (placement != nullptr) {
-        trace.WriteFmt(TracePrefix::DisplayPlacement,
-            RES_STR("config_position_detail source=\"%s\" physical_position=%ld,%ld dpi=%u device=\"%s\" "
-                    "config_monitor=\"%s\""),
+        trace.WriteFmt(
+            TracePrefix::DisplayPlacement,
+            RES_STR(
+                "config_position_detail source=\"%s\" physical_position=%ld,%ld dpi=%u device=\"%s\" "
+                    "config_monitor=\"%s\""
+            ),
             ResourceStringText(source),
             placement->physicalRelativePosition.x,
             placement->physicalRelativePosition.y,
             placement->dpi,
             placement->deviceName.c_str(),
-            placement->configMonitorName.c_str());
+            placement->configMonitorName.c_str()
+        );
     }
 }
 
@@ -139,8 +152,10 @@ double ClampGaugeSegmentGapForCurrentConfig(const AppConfig& config, double valu
     }
 
     const double minSegmentSweep = (std::min)(0.25, totalSweep / static_cast<double>(segmentCount));
-    const double maxSegmentGap = (std::max)(0.0,
-        (totalSweep - (minSegmentSweep * static_cast<double>(segmentCount))) / static_cast<double>(segmentCount - 1));
+    const double maxSegmentGap = (std::max)(
+        0.0,
+        (totalSweep - (minSegmentSweep * static_cast<double>(segmentCount))) / static_cast<double>(segmentCount - 1)
+    );
     return std::clamp(value, 0.0, maxSegmentGap);
 }
 
@@ -150,8 +165,10 @@ double ClampDriveUsageActivitySegmentGapForCurrentConfig(const AppConfig& config
         return 0.0;
     }
 
-    const int rowContentHeight = (std::max)(config.layout.fonts.label.size,
-        (std::max)(config.layout.fonts.smallText.size, config.layout.driveUsageList.barHeight));
+    const int rowContentHeight = (std::max)(
+        config.layout.fonts.label.size,
+        (std::max)(config.layout.fonts.smallText.size, config.layout.driveUsageList.barHeight)
+    );
     const int maxGap = (std::max)(0, (rowContentHeight - segmentCount) / (segmentCount - 1));
     return static_cast<double>(std::clamp((std::max)(0, static_cast<int>(std::lround(value))), 0, maxGap));
 }
@@ -225,13 +242,9 @@ ColorConfig* FindThemeColorConfig(ThemeConfig& theme, const std::string& tokenNa
 
 DashboardController::DashboardController() = default;
 
-DashboardSessionState& DashboardController::State() {
-    return state_;
-}
+DashboardSessionState& DashboardController::State() { return state_; }
 
-const DashboardSessionState& DashboardController::State() const {
-    return state_;
-}
+const DashboardSessionState& DashboardController::State() const { return state_; }
 
 void DashboardController::BeginLayoutEditSessionTracking() {
     state_.layoutEditSessionSavedLayout = std::make_unique<LayoutConfig>(state_.config.layout);
@@ -268,8 +281,8 @@ void DashboardController::SyncRenderer(DashboardShellHost& shell, bool showLayou
     }
 }
 
-__declspec(noinline) bool DashboardController::FinishConfigMutation(
-    DashboardShellHost& shell, bool refreshThemedIcons) {
+__declspec(noinline) bool DashboardController::FinishConfigMutation(DashboardShellHost& shell, bool refreshThemedIcons)
+{
     // Size: many cold config appliers end with this same UI refresh tail; keep it out of each caller.
     SyncRenderer(shell, state_.isEditingLayout, refreshThemedIcons);
     shell.InvalidateShell();
@@ -279,8 +292,10 @@ __declspec(noinline) bool DashboardController::FinishConfigMutation(
 
 bool DashboardController::ApplyConfiguredWallpaper(Trace& trace) {
     const bool applied = ::ApplyConfiguredWallpaper(NormalizeCommittedDisplayWallpaperConfig(state_.config), trace);
-    if (applied &&
-        (!state_.committedDisplayConfig.has_value() || state_.config.display == *state_.committedDisplayConfig)) {
+    if (
+        applied &&
+        (!state_.committedDisplayConfig.has_value() || state_.config.display == *state_.committedDisplayConfig)
+    ) {
         // Placement retry can run after live-only changes; only advance the committed snapshot when it still matches.
         RefreshCommittedDisplayConfig(state_.config);
     }
@@ -315,11 +330,12 @@ std::optional<AppConfig> DashboardController::CommittedWallpaperConfigToClear(co
 }
 
 bool DashboardController::CommitDisplayWallpaperTransition(
-    const AppConfig& nextConfig, Trace& trace, bool applyNextWallpaper) {
+    const AppConfig& nextConfig, Trace& trace, bool applyNextWallpaper
+) {
     const std::optional<AppConfig> previousWallpaperConfig = CommittedWallpaperConfigToClear(nextConfig);
     const bool nextApplied = !applyNextWallpaper || ::ApplyConfiguredWallpaper(nextConfig, trace);
-    const bool previousCleared = nextApplied && (!previousWallpaperConfig.has_value() ||
-                                                    ClearConfiguredWallpaper(*previousWallpaperConfig, trace));
+    const bool previousCleared = nextApplied &&
+        (!previousWallpaperConfig.has_value() || ClearConfiguredWallpaper(*previousWallpaperConfig, trace));
     if (!previousCleared) {
         return false;
     }
@@ -352,11 +368,13 @@ bool DashboardController::InitializeSession(DashboardShellHost& shell, const Dia
 
     std::string telemetryError;
     state_.telemetry = InitializeTelemetryRuntimeInstance(
-        state_.config, diagnosticsOptions, shell.TraceLog(), &shell, &telemetryError);
+        state_.config, diagnosticsOptions, shell.TraceLog(), &shell, &telemetryError
+    );
     if (state_.telemetry == nullptr) {
         if (state_.diagnostics != nullptr) {
             state_.diagnostics->WriteTraceMarkerWithDetail(
-                TracePrefix::Diagnostics, RES_STR("telemetry_initialize_failed"), telemetryError);
+                TracePrefix::Diagnostics, RES_STR("telemetry_initialize_failed"), telemetryError
+            );
         }
         state_.lastError = FormatTelemetryInitializeError(telemetryError);
         return false;
@@ -385,8 +403,10 @@ bool DashboardController::HandleTelemetryUpdate(DashboardShellHost& shell, const
     }
     state_.telemetryUpdate = update;
     ApplyResolvedTelemetrySelections(state_.config, state_.telemetryUpdate.resolvedSelections);
-    if (state_.diagnostics != nullptr &&
-        std::chrono::steady_clock::now() - state_.lastDiagnosticsOutput >= std::chrono::seconds(1)) {
+    if (
+        state_.diagnostics != nullptr &&
+        std::chrono::steady_clock::now() - state_.lastDiagnosticsOutput >= std::chrono::seconds(1)
+    ) {
         if (!WriteDiagnosticsOutputs(shell)) {
             return false;
         }
@@ -403,7 +423,8 @@ bool DashboardController::WriteDiagnosticsOutputs(DashboardShellHost& shell) {
     state_.diagnostics->WriteTraceMarker(TracePrefix::Diagnostics, RES_STR("write_outputs_begin"));
     const bool ok = state_.diagnostics->WriteOutputs(state_.telemetryUpdate.dump, state_.config);
     state_.diagnostics->WriteTraceMarker(
-        TracePrefix::Diagnostics, ok ? RES_STR("write_outputs_done") : RES_STR("write_outputs_failed"));
+        TracePrefix::Diagnostics, ok ? RES_STR("write_outputs_done") : RES_STR("write_outputs_failed")
+    );
     if (!ok && state_.diagnostics->ShouldShowDialogs() && !state_.diagnostics->LastError().empty()) {
         shell.ShowError(state_.diagnostics->LastError());
     }
@@ -443,20 +464,21 @@ void DashboardController::SaveScreenshotAs(DashboardShellHost& shell, const Diag
         return;
     }
     std::string errorText;
-    if (!SaveDumpScreenshot(*path,
-            state_.telemetryUpdate.dump.snapshot,
-            BuildCurrentConfigForSaving(),
-            shell.CurrentRenderScale(),
-            GetDiagnosticsRenderMode(diagnosticsOptions),
-            state_.isEditingLayout || diagnosticsOptions.editLayout,
-            GetSimilarityIndicatorMode(diagnosticsOptions),
-            diagnosticsOptions.editLayoutWidgetName,
-            shell.TraceLog(),
-            diagnosticsOptions.hoverPoint.has_value(),
-            diagnosticsOptions.hoverPoint.has_value()
-                ? RenderPoint{diagnosticsOptions.hoverPoint->x, diagnosticsOptions.hoverPoint->y}
-                : RenderPoint{},
-            &errorText)) {
+    if (!SaveDumpScreenshot(
+        *path,
+        state_.telemetryUpdate.dump.snapshot,
+        BuildCurrentConfigForSaving(),
+        shell.CurrentRenderScale(),
+        GetDiagnosticsRenderMode(diagnosticsOptions),
+        state_.isEditingLayout || diagnosticsOptions.editLayout,
+        GetSimilarityIndicatorMode(diagnosticsOptions),
+        diagnosticsOptions.editLayoutWidgetName,
+        shell.TraceLog(),
+        diagnosticsOptions.hoverPoint.has_value(),
+        diagnosticsOptions.hoverPoint.has_value() ?
+            RenderPoint{diagnosticsOptions.hoverPoint->x, diagnosticsOptions.hoverPoint->y} : RenderPoint{},
+        &errorText
+    )) {
         const std::string pathText = path->string();
         std::string message = FormatText("Failed to save screenshot:\n%s", pathText.c_str());
         if (!errorText.empty()) {
@@ -478,9 +500,7 @@ void DashboardController::SaveFullConfigAs(DashboardShellHost& shell) {
     }
 }
 
-bool DashboardController::IsAutoStartEnabled() const {
-    return IsAutoStartEnabledForCurrentExecutable();
-}
+bool DashboardController::IsAutoStartEnabled() const { return IsAutoStartEnabledForCurrentExecutable(); }
 
 void DashboardController::ToggleAutoStart(DashboardShellHost& shell) {
     const bool enable = !IsAutoStartEnabled();
@@ -498,19 +518,22 @@ bool DashboardController::ConfigureDisplay(DashboardShellHost& shell, const Disp
     AppConfig updatedConfig = BuildConfiguredDisplayConfig(state_.config, option);
     ApplyResolvedTelemetrySelections(updatedConfig, state_.telemetryUpdate.resolvedSelections);
     const std::optional<AppConfig> previousWallpaperConfig = CommittedWallpaperConfigToClear(updatedConfig);
-    if (!::ConfigureDisplay(updatedConfig,
-            state_.telemetryUpdate.dump,
-            option.targetScale,
-            option.writesWallpaper,
-            previousWallpaperConfig.has_value() ? &*previousWallpaperConfig : nullptr,
-            shell.TraceLog(),
-            shell.WindowHandle())) {
+    if (!::ConfigureDisplay(
+        updatedConfig,
+        state_.telemetryUpdate.dump,
+        option.targetScale,
+        option.writesWallpaper,
+        previousWallpaperConfig.has_value() ? &*previousWallpaperConfig : nullptr,
+        shell.TraceLog(),
+        shell.WindowHandle()
+    )) {
         shell.ShowError("Failed to configure the selected display.");
         return false;
     }
 
     TraceDisplayPositionUpdate(
-        shell.TraceLog(), RES_STR("configure_display"), previousConfig.display, updatedConfig.display);
+        shell.TraceLog(), RES_STR("configure_display"), previousConfig.display, updatedConfig.display
+    );
     state_.config = std::move(updatedConfig);
     RefreshCommittedDisplayConfig(state_.config);
     SyncRenderer(shell, state_.isEditingLayout);
@@ -521,7 +544,8 @@ bool DashboardController::ConfigureDisplay(DashboardShellHost& shell, const Disp
 }
 
 bool DashboardController::SwitchLayout(
-    DashboardShellHost& shell, const std::string& layoutName, bool diagnosticsEditLayout) {
+    DashboardShellHost& shell, const std::string& layoutName, bool diagnosticsEditLayout
+) {
     const std::string previousLayoutName = state_.config.display.layout;
     if (!SelectLayout(state_.config, layoutName)) {
         return false;
@@ -543,7 +567,8 @@ bool DashboardController::SwitchLayout(
 }
 
 bool DashboardController::SwitchTheme(
-    DashboardShellHost& shell, const std::string& themeName, bool diagnosticsEditLayout) {
+    DashboardShellHost& shell, const std::string& themeName, bool diagnosticsEditLayout
+) {
     if (FindThemeConfig(state_.config.layout, themeName) == nullptr) {
         return false;
     }
@@ -570,7 +595,8 @@ bool DashboardController::SetDisplayScale(DashboardShellHost& shell, double scal
     state_.config.display.position.y = ScalePhysicalToLogical(placement.physicalRelativePosition.y, targetScale);
     state_.config.display.scale = HasExplicitDisplayScale(requestedScale) ? requestedScale : 0.0;
     TraceDisplayPositionUpdate(
-        shell.TraceLog(), RES_STR("set_display_scale"), previousDisplay, state_.config.display, &placement);
+        shell.TraceLog(), RES_STR("set_display_scale"), previousDisplay, state_.config.display, &placement
+    );
     SyncRenderer(shell, state_.isEditingLayout);
     state_.placementWatchActive = true;
     shell.ApplyConfigPlacement();
@@ -646,7 +672,8 @@ void DashboardController::StartLayoutEditMode(DashboardShellHost& shell, LayoutE
 }
 
 void DashboardController::StopLayoutEditMode(
-    DashboardShellHost& shell, LayoutEditController& controller, bool diagnosticsEditLayout) {
+    DashboardShellHost& shell, LayoutEditController& controller, bool diagnosticsEditLayout
+) {
     if (!state_.isEditingLayout) {
         return;
     }
@@ -657,9 +684,10 @@ void DashboardController::StopLayoutEditMode(
 }
 
 bool DashboardController::HasUnsavedLayoutEditChanges() const {
-    return state_.isEditingLayout && state_.layoutEditSessionSavedLayout != nullptr &&
-           state_.hasUnsavedLayoutEditChanges &&
-           LayoutConfigHasDifferences(state_.config.layout, *state_.layoutEditSessionSavedLayout);
+    return state_.isEditingLayout &&
+        state_.layoutEditSessionSavedLayout != nullptr &&
+        state_.hasUnsavedLayoutEditChanges &&
+        LayoutConfigHasDifferences(state_.config.layout, *state_.layoutEditSessionSavedLayout);
 }
 
 bool DashboardController::RestoreLayoutEditSessionSavedLayout(DashboardShellHost& shell) {
@@ -685,7 +713,8 @@ bool DashboardController::RestoreLayoutEditSessionSavedLayout(DashboardShellHost
 }
 
 bool DashboardController::ApplyLayoutGuideWeights(
-    DashboardShellHost& shell, const LayoutEditLayoutTarget& target, const std::vector<int>& weights) {
+    DashboardShellHost& shell, const LayoutEditLayoutTarget& target, const std::vector<int>& weights
+) {
     if (!ApplyGuideWeights(state_.config, target, weights)) {
         return false;
     }
@@ -693,11 +722,13 @@ bool DashboardController::ApplyLayoutGuideWeights(
     return FinishConfigMutation(shell, false);
 }
 
-bool DashboardController::ApplyLayoutGuideAdjacentWeights(DashboardShellHost& shell,
+bool DashboardController::ApplyLayoutGuideAdjacentWeights(
+    DashboardShellHost& shell,
     const LayoutEditLayoutTarget& target,
     size_t separatorIndex,
     int firstWeight,
-    int secondWeight) {
+    int secondWeight
+) {
     if (!ApplyGuideAdjacentWeights(state_.config, target, separatorIndex, firstWeight, secondWeight)) {
         return false;
     }
@@ -705,7 +736,8 @@ bool DashboardController::ApplyLayoutGuideAdjacentWeights(DashboardShellHost& sh
 }
 
 bool DashboardController::ApplyMetricListOrder(
-    DashboardShellHost& shell, const LayoutEditWidgetIdentity& widget, const std::vector<std::string>& metricRefs) {
+    DashboardShellHost& shell, const LayoutEditWidgetIdentity& widget, const std::vector<std::string>& metricRefs
+) {
     if (!::ApplyMetricListOrder(state_.config, widget, metricRefs)) {
         return false;
     }
@@ -713,7 +745,8 @@ bool DashboardController::ApplyMetricListOrder(
 }
 
 bool DashboardController::ApplyContainerChildOrder(
-    DashboardShellHost& shell, const LayoutContainerChildOrderEditKey& key, int fromIndex, int toIndex) {
+    DashboardShellHost& shell, const LayoutContainerChildOrderEditKey& key, int fromIndex, int toIndex
+) {
     if (!::ApplyContainerChildOrder(state_.config, key, fromIndex, toIndex)) {
         return false;
     }
@@ -721,7 +754,8 @@ bool DashboardController::ApplyContainerChildOrder(
 }
 
 bool DashboardController::ApplyLayoutEditValue(
-    DashboardShellHost& shell, DashboardRenderer::LayoutEditParameter parameter, double value) {
+    DashboardShellHost& shell, DashboardRenderer::LayoutEditParameter parameter, double value
+) {
     double nextValue = value;
     if (parameter == DashboardRenderer::LayoutEditParameter::GaugeSegmentGapDegrees) {
         nextValue = ClampGaugeSegmentGapForCurrentConfig(state_.config, nextValue);
@@ -735,7 +769,8 @@ bool DashboardController::ApplyLayoutEditValue(
 }
 
 bool DashboardController::ApplyLayoutEditFont(
-    DashboardShellHost& shell, DashboardRenderer::LayoutEditParameter parameter, const UiFontConfig& value) {
+    DashboardShellHost& shell, DashboardRenderer::LayoutEditParameter parameter, const UiFontConfig& value
+) {
     if (!ApplyLayoutEditParameterFontValue(state_.config, parameter, value)) {
         return false;
     }
@@ -753,7 +788,8 @@ bool DashboardController::ApplyLayoutEditFontSet(DashboardShellHost& shell, cons
 }
 
 bool DashboardController::ApplyLayoutEditColor(
-    DashboardShellHost& shell, DashboardRenderer::LayoutEditParameter parameter, unsigned int value) {
+    DashboardShellHost& shell, DashboardRenderer::LayoutEditParameter parameter, unsigned int value
+) {
     if (!ApplyLayoutEditParameterColorValue(state_.config, parameter, value)) {
         return false;
     }
@@ -762,7 +798,8 @@ bool DashboardController::ApplyLayoutEditColor(
 }
 
 bool DashboardController::ApplyLayoutEditColorExpression(
-    DashboardShellHost& shell, DashboardRenderer::LayoutEditParameter parameter, const std::string& expression) {
+    DashboardShellHost& shell, DashboardRenderer::LayoutEditParameter parameter, const std::string& expression
+) {
     ColorConfig* target = FindLayoutColorConfig(state_.config.layout.colors, parameter);
     if (target == nullptr) {
         return false;
@@ -782,7 +819,8 @@ bool DashboardController::ApplyLayoutEditTheme(DashboardShellHost& shell, const 
 }
 
 bool DashboardController::ApplyLayoutEditThemeColor(
-    DashboardShellHost& shell, const ThemeColorEditKey& key, unsigned int value) {
+    DashboardShellHost& shell, const ThemeColorEditKey& key, unsigned int value
+) {
     ThemeConfig* theme = FindThemeConfig(state_.config.layout, key.themeName);
     if (theme == nullptr) {
         return false;
@@ -797,7 +835,8 @@ bool DashboardController::ApplyLayoutEditThemeColor(
 }
 
 bool DashboardController::ApplyLayoutEditCardTitle(
-    DashboardShellHost& shell, const LayoutCardTitleEditKey& key, const std::string& title) {
+    DashboardShellHost& shell, const LayoutCardTitleEditKey& key, const std::string& title
+) {
     LayoutCardConfig* card = FindCardConfig(state_.config.layout, key.cardId);
     if (card == nullptr) {
         return false;
@@ -811,7 +850,8 @@ void DashboardController::ApplyConfigSnapshot(DashboardShellHost& shell, const A
     const DisplayConfig previousDisplay = state_.config.display;
     state_.config = config;
     TraceDisplayPositionUpdate(
-        shell.TraceLog(), RES_STR("apply_config_snapshot"), previousDisplay, state_.config.display);
+        shell.TraceLog(), RES_STR("apply_config_snapshot"), previousDisplay, state_.config.display
+    );
     if (state_.telemetry != nullptr) {
         const TelemetrySettings nextSettings = ExtractTelemetrySettings(state_.config);
         if (previousSettings != nextSettings) {
@@ -823,11 +863,13 @@ void DashboardController::ApplyConfigSnapshot(DashboardShellHost& shell, const A
     FinishConfigMutation(shell);
 }
 
-std::optional<int> DashboardController::EvaluateLayoutWidgetExtentForWeights(DashboardShellHost& shell,
+std::optional<int> DashboardController::EvaluateLayoutWidgetExtentForWeights(
+    DashboardShellHost& shell,
     const LayoutEditLayoutTarget& target,
     const std::vector<int>& weights,
     const LayoutEditWidgetIdentity& widget,
-    LayoutGuideAxis axis) {
+    LayoutGuideAxis axis
+) {
     DashboardRenderer& renderer = shell.Renderer();
     if (!renderer.ApplyLayoutGuideWeightsPreview(target.editCardId, target.nodePath, weights)) {
         return std::nullopt;
@@ -851,7 +893,8 @@ void DashboardController::UpdateConfigFromMovePlacement(DashboardShellHost& shel
     state_.config.display.position.x = placement.relativePosition.x;
     state_.config.display.position.y = placement.relativePosition.y;
     TraceDisplayPositionUpdate(
-        shell.TraceLog(), RES_STR("move_complete"), previousDisplay, state_.config.display, &placement);
+        shell.TraceLog(), RES_STR("move_complete"), previousDisplay, state_.config.display, &placement
+    );
 }
 
 void DashboardController::UpdateConfigFromResizePlacement(DashboardShellHost& shell) {
@@ -864,7 +907,8 @@ void DashboardController::UpdateConfigFromResizePlacement(DashboardShellHost& sh
     }
     state_.config.display = nextDisplay;
     TraceDisplayPositionUpdate(
-        shell.TraceLog(), RES_STR("resize_complete"), previousDisplay, state_.config.display, &placement);
+        shell.TraceLog(), RES_STR("resize_complete"), previousDisplay, state_.config.display, &placement
+    );
 }
 
 bool DashboardController::SaveCurrentConfig(DashboardShellHost& shell) {

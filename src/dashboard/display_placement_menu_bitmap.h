@@ -15,10 +15,12 @@ struct DisplayPlacementMenuBitmapPixel {
 
 DisplayPlacementMenuBitmapPixel OpaqueDisplayPlacementMenuBitmapPixel(COLORREF color);
 int ResolveNativeMenuBitmapSize(UINT dpi);
-void PaintDisplayPlacementMenuBitmapPixels(DisplayPlacementMenuBitmapPixel* pixels,
+void PaintDisplayPlacementMenuBitmapPixels(
+    DisplayPlacementMenuBitmapPixel* pixels,
     int bitmapSize,
     const DisplayMenuOption& option,
     COLORREF menuColor,
     COLORREF menuTextColor,
-    COLORREF highlightColor);
+    COLORREF highlightColor
+);
 HBITMAP CreateDisplayPlacementMenuBitmap(const DisplayMenuOption& option, UINT dpi);

@@ -6,9 +6,7 @@
 
 namespace {
 
-std::string FormatMilliseconds(double value) {
-    return FormatDoubleFixed(value, 3);
-}
+std::string FormatMilliseconds(double value) { return FormatDoubleFixed(value, 3); }
 
 double DurationMilliseconds(std::chrono::nanoseconds value) {
     return std::chrono::duration<double, std::milli>(value).count();
@@ -64,21 +62,24 @@ void LayoutEditTraceSession::End(Trace& trace, ResourceStringId reason) {
             return;
         }
         const double averageMs = DurationMilliseconds(stats.total) / static_cast<double>(stats.samples);
-        AppendFormat(text,
+        AppendFormat(
+            text,
             RES_STR(" avg_%s_ms=%s %s_samples=%zu"),
             name,
             FormatMilliseconds(averageMs).c_str(),
             name,
-            stats.samples);
+            stats.samples
+        );
     };
 
     const auto elapsed = std::chrono::steady_clock::now() - startedAt_;
-    std::string summary = FormatText(RES_STR("end kind=\"%s\" detail=\"%s\" reason=\"%s\" elapsed_ms=%s"),
+    std::string summary = FormatText(
+        RES_STR("end kind=\"%s\" detail=\"%s\" reason=\"%s\" elapsed_ms=%s"),
         kind_.c_str(),
         detail_.c_str(),
         ResourceStringText(reason),
-        FormatMilliseconds(DurationMilliseconds(std::chrono::duration_cast<std::chrono::nanoseconds>(elapsed)))
-            .c_str());
+        FormatMilliseconds(DurationMilliseconds(std::chrono::duration_cast<std::chrono::nanoseconds>(elapsed))).c_str()
+    );
     appendAverage(summary, "snap", snap_);
     appendAverage(summary, "apply", apply_);
     appendAverage(summary, "paint_total", paintTotal_);

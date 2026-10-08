@@ -10,15 +10,15 @@ namespace {
 
 RenderColor ToRenderColor(ColorConfig color) {
     const unsigned int rgb = color.ToRgb();
-    return RenderColor{static_cast<std::uint8_t>((rgb >> 16) & 0xFFu),
+    return RenderColor{
+        static_cast<std::uint8_t>((rgb >> 16) & 0xFFu),
         static_cast<std::uint8_t>((rgb >> 8) & 0xFFu),
         static_cast<std::uint8_t>(rgb & 0xFFu),
-        color.Alpha()};
+        color.Alpha()
+    };
 }
 
-std::size_t ColorSlot(RenderColorId id) {
-    return static_cast<std::size_t>(id);
-}
+std::size_t ColorSlot(RenderColorId id) { return static_cast<std::size_t>(id); }
 
 }  // namespace
 

@@ -47,16 +47,15 @@ bool GpuAdapterStableOrderLess(const GpuAdapterInfo& lhs, const GpuAdapterInfo& 
             left.dedicatedVideoMemoryBytes,
             left.adapterIndex,
             left.adapterName
-        ) <
-            std::tie(
-                right.vendorId,
-                right.deviceId,
-                right.subSysId,
-                right.revision,
-                right.dedicatedVideoMemoryBytes,
-                right.adapterIndex,
-                right.adapterName
-            );
+        ) < std::tie(
+            right.vendorId,
+            right.deviceId,
+            right.subSysId,
+            right.revision,
+            right.dedicatedVideoMemoryBytes,
+            right.adapterIndex,
+            right.adapterName
+        );
     };
     if (lhsHasPciAddress && rhsHasPciAddress) {
         const auto lhsPci = std::tie(lhs.pciDomain, lhs.pciBus, lhs.pciDevice, lhs.pciFunction);

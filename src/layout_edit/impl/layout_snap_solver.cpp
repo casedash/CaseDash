@@ -35,12 +35,14 @@ void StableSortSnapCandidates(std::vector<SnapCandidate>& candidates) {
 
 }  // namespace
 
-bool FindNearestSnapWeight(int currentWeight,
+bool FindNearestSnapWeight(
+    int currentWeight,
     int combinedWeight,
     int threshold,
     const std::vector<SnapCandidate>& candidates,
     const ExtentEvaluator& evaluateExtent,
-    int& snappedWeight) {
+    int& snappedWeight
+) {
     if (combinedWeight <= 1 || threshold <= 0) {
         return false;
     }

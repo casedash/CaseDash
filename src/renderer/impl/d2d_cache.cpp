@@ -21,8 +21,9 @@ void D2DCache::AttachTarget(ID2D1RenderTarget* target) {
     ownerTarget_ = target;
 }
 
-ID2D1SolidColorBrush* D2DCache::SolidBrush(
-    ID2D1RenderTarget* target, const RendererPalette& palette, RenderColorId colorId) {
+ID2D1SolidColorBrush*
+    D2DCache::SolidBrush(ID2D1RenderTarget* target, const RendererPalette& palette, RenderColorId colorId)
+{
     if (target == nullptr) {
         return nullptr;
     }

@@ -12,8 +12,9 @@ std::string_view FieldKey(const RuntimeConfigFieldDescriptor& field) {
     return std::string_view(field.key, field.keyLength);
 }
 
-const RuntimeConfigFieldDescriptor* FindField(
-    std::span<const RuntimeConfigFieldDescriptor> fields, std::string_view key) {
+const RuntimeConfigFieldDescriptor*
+    FindField(std::span<const RuntimeConfigFieldDescriptor> fields, std::string_view key)
+{
     for (const RuntimeConfigFieldDescriptor& field : fields) {
         if (FieldKey(field) == key) {
             return &field;
@@ -43,9 +44,9 @@ std::span<const RuntimeConfigFieldDescriptor> FieldsForSection(std::string_view 
 }  // namespace
 
 TEST(ConfigMeta, GeneratesRepresentativeRuntimeFieldTables) {
-    EXPECT_EQ(FieldKeys(FieldsForSection("fonts")),
-        (std::vector<std::string_view>{
-            "title", "big", "value", "label", "text", "small", "footer", "clock_time", "clock_date"}));
+    EXPECT_EQ(FieldKeys(FieldsForSection("fonts")), (std::vector<std::string_view>{
+        "title", "big", "value", "label", "text", "small", "footer", "clock_time", "clock_date"
+    }));
     const RuntimeConfigFieldDescriptor* smallFont = FindField(FieldsForSection("fonts"), "small");
     ASSERT_NE(smallFont, nullptr);
     EXPECT_EQ(smallFont->kind, RuntimeConfigFieldValueKind::FontSpec);
@@ -55,10 +56,13 @@ TEST(ConfigMeta, GeneratesRepresentativeRuntimeFieldTables) {
     ASSERT_NE(foregroundColor, nullptr);
     EXPECT_EQ(foregroundColor->kind, RuntimeConfigFieldValueKind::HexColor);
 
-    EXPECT_EQ(FieldKeys(FieldsForSection("theme.")),
-        (std::vector<std::string_view>{"description", "background", "foreground", "accent", "guide"}));
     EXPECT_EQ(
-        FieldKeys(FieldsForSection("layout.")), (std::vector<std::string_view>{"description", "window", "cards"}));
+        FieldKeys(FieldsForSection("theme.")),
+        (std::vector<std::string_view>{"description", "background", "foreground", "accent", "guide"})
+    );
+    EXPECT_EQ(
+        FieldKeys(FieldsForSection("layout.")), (std::vector<std::string_view>{"description", "window", "cards"})
+    );
     EXPECT_EQ(FieldKeys(FieldsForSection("card.")), (std::vector<std::string_view>{"title", "icon", "layout"}));
 }
 
@@ -71,14 +75,16 @@ TEST(ConfigMeta, GeneratesLayoutEditMetadataFromRootOffsets) {
     EXPECT_EQ(fontSmall.valueKind, RuntimeConfigFieldValueKind::FontSpec);
     EXPECT_EQ(fontSmall.policy, RuntimeConfigFieldPolicy::FontSize);
     EXPECT_EQ(
-        static_cast<std::ptrdiff_t>(fontSmall.rootOffset), AppConfigOffset(config, &config.layout.fonts.smallText));
+        static_cast<std::ptrdiff_t>(fontSmall.rootOffset), AppConfigOffset(config, &config.layout.fonts.smallText)
+    );
 
     const LayoutEditConfigFieldMetadata& cardBorder = GetLayoutEditConfigFieldMetadata(LayoutEditParameter::CardBorder);
     EXPECT_EQ(std::string_view(cardBorder.sectionName), "card_style");
     EXPECT_EQ(std::string_view(cardBorder.parameterName), "card_border");
     EXPECT_EQ(cardBorder.valueKind, RuntimeConfigFieldValueKind::Int);
-    EXPECT_EQ(static_cast<std::ptrdiff_t>(cardBorder.rootOffset),
-        AppConfigOffset(config, &config.layout.cardStyle.cardBorder));
+    EXPECT_EQ(
+        static_cast<std::ptrdiff_t>(cardBorder.rootOffset), AppConfigOffset(config, &config.layout.cardStyle.cardBorder)
+    );
 
     ASSERT_EQ(FindLayoutEditParameterByConfigField("layout", "cards"), std::nullopt);
     EXPECT_EQ(FindLayoutEditParameterByConfigField("fonts", "small"), LayoutEditParameter::FontSmall);

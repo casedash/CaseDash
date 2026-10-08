@@ -31,8 +31,10 @@ RenderRect CenteredSquare(RenderPoint center, int size) {
 RenderPoint TransformPoint(RenderPoint point, const RenderRect& source, const RenderRect& dest) {
     const double scaleX = source.Width() == 0 ? 1.0 : static_cast<double>(dest.Width()) / source.Width();
     const double scaleY = source.Height() == 0 ? 1.0 : static_cast<double>(dest.Height()) / source.Height();
-    return RenderPoint{dest.left + static_cast<int>((point.x - source.left) * scaleX + 0.5),
-        dest.top + static_cast<int>((point.y - source.top) * scaleY + 0.5)};
+    return RenderPoint{
+        dest.left + static_cast<int>((point.x - source.left) * scaleX + 0.5),
+        dest.top + static_cast<int>((point.y - source.top) * scaleY + 0.5)
+    };
 }
 
 RenderRect TransformRect(const RenderRect& rect, const RenderRect& source, const RenderRect& dest) {
@@ -41,9 +43,7 @@ RenderRect TransformRect(const RenderRect& rect, const RenderRect& source, const
     return RenderRect{topLeft.x, topLeft.y, bottomRight.x, bottomRight.y};
 }
 
-int ScaleNonNegative(DashboardRenderer& renderer, int value) {
-    return std::max(0, renderer.ScaleLogical(value));
-}
+int ScaleNonNegative(DashboardRenderer& renderer, int value) { return std::max(0, renderer.ScaleLogical(value)); }
 
 int ScaleAtLeast(DashboardRenderer& renderer, int value, int minimum) {
     return std::max(minimum, renderer.ScaleLogical(value));
@@ -90,8 +90,9 @@ struct PackedNode {
 };
 
 const LayoutCardConfig* FindCardConfig(const AppConfig& config, const std::string& id) {
-    const auto it = std::find_if(
-        config.layout.cards.begin(), config.layout.cards.end(), [&](const auto& card) { return card.id == id; });
+    const auto it = std::find_if(config.layout.cards.begin(), config.layout.cards.end(), [&](const auto& card) {
+        return card.id == id;
+    });
     return it != config.layout.cards.end() ? &(*it) : nullptr;
 }
 
@@ -120,7 +121,8 @@ PackedNode MeasurePackedNode(const LayoutNodeConfig& node, DashboardRenderer& re
 
     const bool horizontal = node.name == "columns";
     const int gap = renderer.ScaleLogical(
-        horizontal ? renderer.Config().layout.dashboard.columnGap : renderer.Config().layout.dashboard.rowGap);
+        horizontal ? renderer.Config().layout.dashboard.columnGap : renderer.Config().layout.dashboard.rowGap
+    );
     std::vector<PackedNode> children;
     children.reserve(node.children.size());
     for (const LayoutNodeConfig& child : node.children) {
@@ -151,28 +153,34 @@ PackedNode MeasurePackedNode(const LayoutNodeConfig& node, DashboardRenderer& re
 }
 
 bool SameLayoutGuideIdentity(const LayoutEditGuide& lhs, const LayoutEditGuide& rhs) {
-    return lhs.renderCardId == rhs.renderCardId && lhs.editCardId == rhs.editCardId && lhs.nodePath == rhs.nodePath &&
-           lhs.separatorIndex == rhs.separatorIndex;
+    return lhs.renderCardId == rhs.renderCardId &&
+        lhs.editCardId == rhs.editCardId &&
+        lhs.nodePath == rhs.nodePath &&
+        lhs.separatorIndex == rhs.separatorIndex;
 }
 
 bool SameGapAnchorIdentity(const LayoutEditGapAnchor& lhs, const LayoutEditGapAnchorKey& rhs) {
-    return lhs.key.widget.kind == rhs.widget.kind && lhs.key.widget.renderCardId == rhs.widget.renderCardId &&
-           lhs.key.widget.editCardId == rhs.widget.editCardId && lhs.key.parameter == rhs.parameter &&
-           lhs.key.nodePath == rhs.nodePath;
+    return lhs.key.widget.kind == rhs.widget.kind &&
+        lhs.key.widget.renderCardId == rhs.widget.renderCardId &&
+        lhs.key.widget.editCardId == rhs.widget.editCardId &&
+        lhs.key.parameter == rhs.parameter &&
+        lhs.key.nodePath == rhs.nodePath;
 }
 
 bool SameEditableAnchorIdentity(const LayoutEditAnchorRegion& lhs, const LayoutEditAnchorKey& rhs) {
     return MatchesEditableAnchorKey(lhs.key, rhs);
 }
 
-void AddPackedDashboardGuides(PackedOverview& overview,
+void AddPackedDashboardGuides(
+    PackedOverview& overview,
     DashboardRenderer& renderer,
     const LayoutGuideSheetConfig& guideSheet,
     const LayoutNodeConfig& node,
     const RenderRect& rect,
     const std::vector<RenderRect>& childRects,
     int gap,
-    const std::vector<size_t>& nodePath) {
+    const std::vector<size_t>& nodePath
+) {
     if (node.children.size() < 2) {
         return;
     }
@@ -191,15 +199,18 @@ void AddPackedDashboardGuides(PackedOverview& overview,
             horizontal ? childRect.left + childRect.Width() / 2 : childRect.right - (reorderWidth / 2) - reorderInset;
         const int centerY =
             horizontal ? childRect.top + (reorderHeight / 2) + reorderInset : childRect.top + childRect.Height() / 2;
-        const RenderRect anchorRect{centerX - reorderWidth / 2,
+        const RenderRect anchorRect{
+            centerX - reorderWidth / 2,
             centerY - reorderHeight / 2,
             centerX - reorderWidth / 2 + reorderWidth,
-            centerY - reorderHeight / 2 + reorderHeight};
+            centerY - reorderHeight / 2 + reorderHeight
+        };
         LayoutEditAnchorRegion anchor;
         anchor.key = LayoutEditAnchorKey{
             LayoutEditWidgetIdentity{"", "", nodePath, LayoutEditWidgetIdentity::Kind::DashboardChrome},
             LayoutContainerChildOrderEditKey{"", nodePath},
-            static_cast<int>(i)};
+            static_cast<int>(i)
+        };
         anchor.targetRect = childRect;
         anchor.anchorRect = anchorRect;
         anchor.anchorHitRect = anchorRect.Inflate(hitInset, hitInset);
@@ -213,9 +224,10 @@ void AddPackedDashboardGuides(PackedOverview& overview,
 
     const LayoutEditParameter gapParameter =
         horizontal ? LayoutEditParameter::DashboardColumnGap : LayoutEditParameter::DashboardRowGap;
-    const bool gapAnchorAlreadyRegistered = std::any_of(overview.gapAnchors.begin(),
-        overview.gapAnchors.end(),
-        [&](const auto& anchor) { return anchor.key.parameter == gapParameter; });
+    const bool gapAnchorAlreadyRegistered =
+        std::any_of(overview.gapAnchors.begin(), overview.gapAnchors.end(), [&](const auto& anchor) {
+            return anchor.key.parameter == gapParameter;
+        });
     if (!gapAnchorAlreadyRegistered) {
         LayoutEditGapAnchor anchor;
         anchor.axis = horizontal ? LayoutGuideAxis::Horizontal : LayoutGuideAxis::Vertical;
@@ -268,12 +280,14 @@ void AddPackedDashboardGuides(PackedOverview& overview,
     }
 }
 
-void AppendPackedCards(const LayoutNodeConfig& node,
+void AppendPackedCards(
+    const LayoutNodeConfig& node,
     DashboardRenderer& renderer,
     const LayoutGuideSheetConfig& guideSheet,
     const RenderRect& rect,
     const std::vector<size_t>& nodePath,
-    PackedOverview& overview) {
+    PackedOverview& overview
+) {
     if (node.children.empty() || node.cardReference) {
         const LayoutCardConfig* card = FindCardConfig(renderer.Config(), node.name);
         if (card == nullptr) {
@@ -292,7 +306,8 @@ void AppendPackedCards(const LayoutNodeConfig& node,
 
     const bool horizontal = node.name == "columns";
     const int gap = renderer.ScaleLogical(
-        horizontal ? renderer.Config().layout.dashboard.columnGap : renderer.Config().layout.dashboard.rowGap);
+        horizontal ? renderer.Config().layout.dashboard.columnGap : renderer.Config().layout.dashboard.rowGap
+    );
     std::vector<PackedNode> measured;
     measured.reserve(node.children.size());
     for (const LayoutNodeConfig& child : node.children) {
@@ -352,48 +367,59 @@ PackedOverview BuildPackedOverview(DashboardRenderer& renderer, const LayoutGuid
     outerMarginAnchor.drawEnd = RenderPoint{outerMargin, outerMargin};
     outerMarginAnchor.dragAxis = AnchorDragAxis::Horizontal;
     outerMarginAnchor.handleRect = MakeOverviewSquareAnchorRect(
-        outerMargin, outerMargin, ScaleAtLeast(renderer, sheetStyle.overviewGapHandleSize, 1));
-    outerMarginAnchor.hitRect =
-        outerMarginAnchor.handleRect.Inflate(ScaleAtLeast(renderer, sheetStyle.overviewGuideHitInset, 1),
-            ScaleAtLeast(renderer, sheetStyle.overviewGuideHitInset, 1));
+        outerMargin, outerMargin, ScaleAtLeast(renderer, sheetStyle.overviewGapHandleSize, 1)
+    );
+    outerMarginAnchor.hitRect = outerMarginAnchor.handleRect.Inflate(
+        ScaleAtLeast(renderer, sheetStyle.overviewGuideHitInset, 1),
+        ScaleAtLeast(renderer, sheetStyle.overviewGuideHitInset, 1)
+    );
     outerMarginAnchor.value = renderer.Config().layout.dashboard.outerMargin;
     overview.gapAnchors.push_back(std::move(outerMarginAnchor));
-    AppendPackedCards(renderer.Config().layout.structure.cards,
+    AppendPackedCards(
+        renderer.Config().layout.structure.cards,
         renderer,
         guideSheet,
         RenderRect{outerMargin, outerMargin, outerMargin + root.width, outerMargin + root.height},
         {},
-        overview);
+        overview
+    );
     return overview;
 }
 
 LayoutEditActiveRegions CollectActiveRegionsFromPackedOverview(const PackedOverview& overview) {
     LayoutEditActiveRegions regions;
-    size_t activeRegionCount = overview.cards.size() * 2 + overview.guides.size() + overview.gapAnchors.size() +
-                               overview.reorderAnchors.size() * 2;
+    size_t activeRegionCount = overview.cards.size() * 2 +
+        overview.guides.size() +
+        overview.gapAnchors.size() +
+        overview.reorderAnchors.size() * 2;
     for (const PackedOverviewCard& card : overview.cards) {
-        activeRegionCount += card.chromeArtifacts.widgetGuides.size() + card.chromeArtifacts.anchorRegions.size() * 2 +
-                             card.chromeArtifacts.colorRegions.size();
+        activeRegionCount += card.chromeArtifacts.widgetGuides.size() +
+            card.chromeArtifacts.anchorRegions.size() * 2 +
+            card.chromeArtifacts.colorRegions.size();
     }
     regions.Reserve(activeRegionCount);
-    const auto appendRegion =
-        [&](const RenderRect& box, LayoutEditActiveRegionKind kind, LayoutEditActiveRegionPayload payload) {
-            if (box.IsEmpty()) {
-                return;
-            }
-            regions.Add(LayoutEditActiveRegion{box, kind, std::move(payload)});
-        };
+    const auto appendRegion = [&](
+        const RenderRect& box, LayoutEditActiveRegionKind kind, LayoutEditActiveRegionPayload payload
+    ) {
+        if (box.IsEmpty()) {
+            return;
+        }
+        regions.Add(LayoutEditActiveRegion{box, kind, std::move(payload)});
+    };
 
     for (const PackedOverviewCard& card : overview.cards) {
-        LayoutEditCardRegion cardRegion{card.id,
+        LayoutEditCardRegion cardRegion{
+            card.id,
             {},
             card.rect,
             card.chromeArtifacts.chromeLayout.titleRect,
-            card.chromeArtifacts.chromeLayout.hasHeader};
+            card.chromeArtifacts.chromeLayout.hasHeader
+        };
         appendRegion(card.rect, LayoutEditActiveRegionKind::Card, cardRegion);
         if (card.chromeArtifacts.chromeLayout.hasHeader) {
             appendRegion(
-                card.chromeArtifacts.chromeLayout.titleRect, LayoutEditActiveRegionKind::CardHeader, cardRegion);
+                card.chromeArtifacts.chromeLayout.titleRect, LayoutEditActiveRegionKind::CardHeader, cardRegion
+            );
         }
         for (const LayoutEditWidgetGuide& guide : card.chromeArtifacts.widgetGuides) {
             appendRegion(guide.hitRect, LayoutEditActiveRegionKind::WidgetGuide, guide);
@@ -420,7 +446,8 @@ LayoutEditActiveRegions CollectActiveRegionsFromPackedOverview(const PackedOverv
 }
 
 void DrawDottedOverviewRect(
-    DashboardRenderer& renderer, const LayoutGuideSheetConfig& guideSheet, const RenderRect& rect) {
+    DashboardRenderer& renderer, const LayoutGuideSheetConfig& guideSheet, const RenderRect& rect
+) {
     if (rect.IsEmpty()) {
         return;
     }
@@ -433,13 +460,15 @@ void DrawDottedOverviewRect(
     const auto drawHorizontal = [&](int y, int left, int right) {
         for (int x = left; x < right; x += dotLength + gapLength) {
             renderer.Renderer().FillSolidRect(
-                RenderRect{x, y, std::min(x + dotLength, right), y + strokeWidth}, RenderColorId::LayoutGuide);
+                RenderRect{x, y, std::min(x + dotLength, right), y + strokeWidth}, RenderColorId::LayoutGuide
+            );
         }
     };
     const auto drawVertical = [&](int x, int top, int bottom) {
         for (int y = top; y < bottom; y += dotLength + gapLength) {
             renderer.Renderer().FillSolidRect(
-                RenderRect{x, y, x + strokeWidth, std::min(y + dotLength, bottom)}, RenderColorId::LayoutGuide);
+                RenderRect{x, y, x + strokeWidth, std::min(y + dotLength, bottom)}, RenderColorId::LayoutGuide
+            );
         }
     };
     drawHorizontal(drawRect.top, drawRect.left, drawRect.right);
@@ -448,15 +477,18 @@ void DrawDottedOverviewRect(
     drawVertical(std::max(drawRect.left, drawRect.right - strokeWidth), drawRect.top, drawRect.bottom);
 }
 
-void DrawOverviewArtifact(DashboardRenderer& renderer,
+void DrawOverviewArtifact(
+    DashboardRenderer& renderer,
     const LayoutGuideSheetConfig& guideSheet,
     const LayoutGuideSheetPlacementCallout& callout,
     const RenderRect& sourceRect,
-    const RenderRect& destRect) {
+    const RenderRect& destRect
+) {
     const RenderRect target = TransformRect(
         callout.hoverArtifactTargetRect.has_value() ? *callout.hoverArtifactTargetRect : callout.targetRect,
         sourceRect,
-        destRect);
+        destRect
+    );
     const LayoutGuideSheetConfig& sheetStyle = guideSheet;
     RenderRect anchor;
     const bool hasAnchor = callout.hoverAnchorRect.has_value();
@@ -466,15 +498,19 @@ void DrawOverviewArtifact(DashboardRenderer& renderer,
     const RenderPoint center = target.Center();
     const auto drawGuideLine = [&](LayoutGuideAxis axis) {
         if (axis == LayoutGuideAxis::Vertical) {
-            renderer.Renderer().DrawSolidLine(RenderPoint{center.x, target.top},
-                RenderPoint{center.x, target.bottom},
-                RenderStroke::Solid(RenderColorId::LayoutGuide,
-                    static_cast<float>(ScaleAtLeast(renderer, sheetStyle.overviewGuideStrokeWidth, 1))));
+            renderer.Renderer().DrawSolidLine(
+                RenderPoint{center.x, target.top}, RenderPoint{center.x, target.bottom}, RenderStroke::Solid(
+                    RenderColorId::LayoutGuide,
+                    static_cast<float>(ScaleAtLeast(renderer, sheetStyle.overviewGuideStrokeWidth, 1))
+                )
+            );
         } else {
-            renderer.Renderer().DrawSolidLine(RenderPoint{target.left, center.y},
-                RenderPoint{target.right, center.y},
-                RenderStroke::Solid(RenderColorId::LayoutGuide,
-                    static_cast<float>(ScaleAtLeast(renderer, sheetStyle.overviewGuideStrokeWidth, 1))));
+            renderer.Renderer().DrawSolidLine(
+                RenderPoint{target.left, center.y}, RenderPoint{target.right, center.y}, RenderStroke::Solid(
+                    RenderColorId::LayoutGuide,
+                    static_cast<float>(ScaleAtLeast(renderer, sheetStyle.overviewGuideStrokeWidth, 1))
+                )
+            );
         }
     };
     if (callout.hoverLayoutGuide.has_value()) {
@@ -492,22 +528,30 @@ void DrawOverviewArtifact(DashboardRenderer& renderer,
         const RenderRect handle = TransformRect(gapAnchor.handleRect, sourceRect, destRect);
         const int capHalf = ScaleAtLeast(renderer, sheetStyle.overviewGapHandleSize, 1);
         const float strokeWidth = static_cast<float>(ScaleAtLeast(renderer, sheetStyle.overviewGuideStrokeWidth, 1));
-        renderer.Renderer().DrawSolidLine(
-            drawStart, drawEnd, RenderStroke::Solid(RenderColorId::LayoutGuide, strokeWidth));
+        renderer
+            .Renderer().DrawSolidLine(drawStart, drawEnd, RenderStroke::Solid(RenderColorId::LayoutGuide, strokeWidth));
         if (gapAnchor.axis == LayoutGuideAxis::Vertical) {
-            renderer.Renderer().DrawSolidLine(RenderPoint{drawStart.x - capHalf, drawStart.y},
+            renderer.Renderer().DrawSolidLine(
+                RenderPoint{drawStart.x - capHalf, drawStart.y},
                 RenderPoint{drawStart.x + capHalf, drawStart.y},
-                RenderStroke::Solid(RenderColorId::LayoutGuide, strokeWidth));
-            renderer.Renderer().DrawSolidLine(RenderPoint{drawEnd.x - capHalf, drawEnd.y},
+                RenderStroke::Solid(RenderColorId::LayoutGuide, strokeWidth)
+            );
+            renderer.Renderer().DrawSolidLine(
+                RenderPoint{drawEnd.x - capHalf, drawEnd.y},
                 RenderPoint{drawEnd.x + capHalf, drawEnd.y},
-                RenderStroke::Solid(RenderColorId::LayoutGuide, strokeWidth));
+                RenderStroke::Solid(RenderColorId::LayoutGuide, strokeWidth)
+            );
         } else {
-            renderer.Renderer().DrawSolidLine(RenderPoint{drawStart.x, drawStart.y - capHalf},
+            renderer.Renderer().DrawSolidLine(
+                RenderPoint{drawStart.x, drawStart.y - capHalf},
                 RenderPoint{drawStart.x, drawStart.y + capHalf},
-                RenderStroke::Solid(RenderColorId::LayoutGuide, strokeWidth));
-            renderer.Renderer().DrawSolidLine(RenderPoint{drawEnd.x, drawEnd.y - capHalf},
+                RenderStroke::Solid(RenderColorId::LayoutGuide, strokeWidth)
+            );
+            renderer.Renderer().DrawSolidLine(
+                RenderPoint{drawEnd.x, drawEnd.y - capHalf},
                 RenderPoint{drawEnd.x, drawEnd.y + capHalf},
-                RenderStroke::Solid(RenderColorId::LayoutGuide, strokeWidth));
+                RenderStroke::Solid(RenderColorId::LayoutGuide, strokeWidth)
+            );
         }
         renderer.Renderer().FillSolidRect(handle, RenderColorId::LayoutGuide);
         return;
@@ -516,51 +560,57 @@ void DrawOverviewArtifact(DashboardRenderer& renderer,
         if (callout.hoverAnchorDrawTargetOutline) {
             DrawDottedOverviewRect(renderer, guideSheet, target);
         }
-        const int size = std::max(1,
-            std::min(std::max(target.Width(), target.Height()),
-                ScaleAtLeast(renderer, sheetStyle.overviewAnchorMaxSize, 1)));
+        const int size = std::max(1, std::min(
+            std::max(target.Width(), target.Height()), ScaleAtLeast(renderer, sheetStyle.overviewAnchorMaxSize, 1)
+        ));
         const RenderRect centeredHandle{
-            center.x - size / 2, center.y - size / 2, center.x - size / 2 + size, center.y - size / 2 + size};
+            center.x - size / 2, center.y - size / 2, center.x - size / 2 + size, center.y - size / 2 + size
+        };
         const RenderRect handle = hasAnchor ? anchor : centeredHandle;
         const AnchorShape shape = callout.hoverAnchorShape.value_or(AnchorShape::Circle);
-        DrawLayoutEditAnchorShape(renderer.Renderer(),
+        DrawLayoutEditAnchorShape(
+            renderer.Renderer(),
             shape,
             handle,
             RenderColorId::LayoutGuide,
             static_cast<float>(ScaleAtLeast(renderer, sheetStyle.overviewGuideStrokeWidth, 1)),
             ScaleAtLeast(renderer, 1, 1),
             false,
-            false);
+            false
+        );
         return;
     }
-    renderer.Renderer().DrawSolidRect(target,
-        RenderStroke::Solid(RenderColorId::LayoutGuide,
-            static_cast<float>(ScaleAtLeast(renderer, sheetStyle.overviewGuideStrokeWidth, 1))));
+    renderer.Renderer().DrawSolidRect(target, RenderStroke::Solid(
+        RenderColorId::LayoutGuide, static_cast<float>(ScaleAtLeast(renderer, sheetStyle.overviewGuideStrokeWidth, 1))
+    ));
 }
 
 }  // namespace
 
 LayoutGuideSheetRenderer::LayoutGuideSheetRenderer(
-    DashboardRenderer& dashboardRenderer, const LayoutGuideSheetConfig& guideSheet)
-    : dashboardRenderer_(dashboardRenderer), guideSheet_(guideSheet) {}
+    DashboardRenderer& dashboardRenderer, const LayoutGuideSheetConfig& guideSheet
+) : dashboardRenderer_(dashboardRenderer), guideSheet_(guideSheet) {}
 
 LayoutEditActiveRegions LayoutGuideSheetRenderer::CollectOverviewActiveRegions(const SystemSnapshot& snapshot) {
     PackedOverview overview = BuildPackedOverview(dashboardRenderer_, guideSheet_);
     const MetricSource& metrics = dashboardRenderer_.ResolveMetrics(snapshot);
     for (PackedOverviewCard& card : overview.cards) {
         card.chromeArtifacts = BuildLayoutGuideSheetCardChromeArtifacts(
-            dashboardRenderer_, card.id, card.rect, &metrics, card.suppressTitle);
+            dashboardRenderer_, card.id, card.rect, &metrics, card.suppressTitle
+        );
     }
     return CollectActiveRegionsFromPackedOverview(overview);
 }
 
-bool LayoutGuideSheetRenderer::SavePng(const FilePath& imagePath,
+bool LayoutGuideSheetRenderer::SavePng(
+    const FilePath& imagePath,
     const SystemSnapshot& snapshot,
     std::vector<LayoutGuideSheetCalloutRequest>& callouts,
     const std::vector<std::string>& selectedCardIds,
     std::vector<std::string>* traceDetails,
     std::string* errorText,
-    LayoutGuideSheetRenderStats* stats) {
+    LayoutGuideSheetRenderStats* stats
+) {
     return Render(
         snapshot,
         callouts,
@@ -570,15 +620,18 @@ bool LayoutGuideSheetRenderer::SavePng(const FilePath& imagePath,
         },
         traceDetails,
         errorText,
-        stats);
+        stats
+    );
 }
 
-bool LayoutGuideSheetRenderer::RenderOffscreen(const SystemSnapshot& snapshot,
+bool LayoutGuideSheetRenderer::RenderOffscreen(
+    const SystemSnapshot& snapshot,
     std::vector<LayoutGuideSheetCalloutRequest>& callouts,
     const std::vector<std::string>& selectedCardIds,
     std::vector<std::string>* traceDetails,
     std::string* errorText,
-    LayoutGuideSheetRenderStats* stats) {
+    LayoutGuideSheetRenderStats* stats
+) {
     return Render(
         snapshot,
         callouts,
@@ -588,18 +641,22 @@ bool LayoutGuideSheetRenderer::RenderOffscreen(const SystemSnapshot& snapshot,
         },
         traceDetails,
         errorText,
-        stats);
+        stats
+    );
 }
 
-bool LayoutGuideSheetRenderer::Render(const SystemSnapshot& snapshot,
+bool LayoutGuideSheetRenderer::Render(
+    const SystemSnapshot& snapshot,
     std::vector<LayoutGuideSheetCalloutRequest>& callouts,
     const std::vector<std::string>& selectedCardIds,
     const SurfaceRenderer& renderSurface,
     std::vector<std::string>* traceDetails,
     std::string* errorText,
-    LayoutGuideSheetRenderStats* stats) {
-    const auto recordStats = [&](std::chrono::nanoseconds LayoutGuideSheetRenderStats::* field,
-                                 std::chrono::steady_clock::time_point start) {
+    LayoutGuideSheetRenderStats* stats
+) {
+    const auto recordStats = [&](
+        std::chrono::nanoseconds LayoutGuideSheetRenderStats::* field, std::chrono::steady_clock::time_point start
+    ) {
         if (stats != nullptr) {
             (*stats).*field += std::chrono::steady_clock::now() - start;
         }
@@ -638,7 +695,8 @@ bool LayoutGuideSheetRenderer::Render(const SystemSnapshot& snapshot,
     PackedOverview overview = BuildPackedOverview(dashboardRenderer_, guideSheet_);
     for (PackedOverviewCard& card : overview.cards) {
         card.chromeArtifacts = BuildLayoutGuideSheetCardChromeArtifacts(
-            dashboardRenderer_, card.id, card.rect, nullptr, card.suppressTitle);
+            dashboardRenderer_, card.id, card.rect, nullptr, card.suppressTitle
+        );
     }
     for (const std::string& selectedCardId : selectedCardIds) {
         const auto cardIt =
@@ -679,21 +737,19 @@ bool LayoutGuideSheetRenderer::Render(const SystemSnapshot& snapshot,
         const bool constrained = constrainedWidth > 0;
         const int parameterWidth =
             std::max(1, dashboardRenderer_.Renderer().MeasureTextWidth(TextStyleId::Small, callout.parameterLine));
-        const int descriptionWidth =
-            callout.descriptionLine.empty()
-                ? 0
-                : std::max(
-                      1, dashboardRenderer_.Renderer().MeasureTextWidth(TextStyleId::Small, callout.descriptionLine));
+        const int descriptionWidth = callout.descriptionLine.empty() ? 0 :
+            std::max(1, dashboardRenderer_.Renderer().MeasureTextWidth(TextStyleId::Small, callout.descriptionLine));
         const int contentWidth = std::max(parameterWidth, descriptionWidth);
         const int bubbleWidth = constrained ? constrainedWidth : contentWidth + bubblePaddingX * 2;
         const int constrainedContentWidth = std::max(1, bubbleWidth - bubblePaddingX * 2);
         int descriptionHeight = callout.descriptionLine.empty() ? 0 : textLineHeight;
         if (constrained && !callout.descriptionLine.empty()) {
-            const TextLayoutResult wrappedDescription =
-                dashboardRenderer_.Renderer().MeasureTextBlock(RenderRect{0, 0, constrainedContentWidth, 10000},
-                    callout.descriptionLine,
-                    TextStyleId::Small,
-                    TextLayoutOptions::Wrapped(TextHorizontalAlign::Leading, TextVerticalAlign::Top, true, false));
+            const TextLayoutResult wrappedDescription = dashboardRenderer_.Renderer().MeasureTextBlock(
+                RenderRect{0, 0, constrainedContentWidth, 10000},
+                callout.descriptionLine,
+                TextStyleId::Small,
+                TextLayoutOptions::Wrapped(TextHorizontalAlign::Leading, TextVerticalAlign::Top, true, false)
+            );
             descriptionHeight = std::max(textLineHeight, wrappedDescription.textRect.Height());
         }
         const int bubbleHeight =
@@ -705,8 +761,8 @@ bool LayoutGuideSheetRenderer::Render(const SystemSnapshot& snapshot,
         measureCalloutBubble(callout);
     }
 
-    cardPlacements.insert(
-        cardPlacements.begin(), CardPlacement{kLayoutGuideSheetOverviewSourceId, overview.rect, {}, true});
+    cardPlacements
+        .insert(cardPlacements.begin(), CardPlacement{kLayoutGuideSheetOverviewSourceId, overview.rect, {}, true});
     for (Callout& callout : callouts) {
         if (callout.sourceCardId != kLayoutGuideSheetOverviewSourceId) {
             continue;
@@ -721,25 +777,32 @@ bool LayoutGuideSheetRenderer::Render(const SystemSnapshot& snapshot,
             }
             continue;
         }
-        if (callout.hoverGapAnchorKey.has_value() &&
-            callout.hoverGapAnchorKey->widget.kind == LayoutEditWidgetIdentity::Kind::DashboardChrome) {
+        if (
+            callout.hoverGapAnchorKey.has_value() &&
+            callout.hoverGapAnchorKey->widget.kind == LayoutEditWidgetIdentity::Kind::DashboardChrome
+        ) {
             const auto anchorIt = std::find_if(
                 overview.gapAnchors.begin(), overview.gapAnchors.end(), [&](const LayoutEditGapAnchor& anchor) {
                     return SameGapAnchorIdentity(anchor, *callout.hoverGapAnchorKey);
-                });
+                }
+            );
             if (anchorIt != overview.gapAnchors.end()) {
                 callout.targetRect = anchorIt->handleRect;
                 callout.hoverGapAnchor = *anchorIt;
             }
             continue;
         }
-        if (callout.hoverAnchorKey.has_value() &&
-            callout.hoverAnchorKey->widget.kind == LayoutEditWidgetIdentity::Kind::DashboardChrome) {
-            const auto anchorIt = std::find_if(overview.reorderAnchors.begin(),
+        if (
+            callout.hoverAnchorKey.has_value() &&
+            callout.hoverAnchorKey->widget.kind == LayoutEditWidgetIdentity::Kind::DashboardChrome
+        ) {
+            const auto anchorIt = std::find_if(
+                overview.reorderAnchors.begin(),
                 overview.reorderAnchors.end(),
                 [&](const LayoutEditAnchorRegion& anchor) {
                     return SameEditableAnchorIdentity(anchor, *callout.hoverAnchorKey);
-                });
+                }
+            );
             if (anchorIt != overview.reorderAnchors.end()) {
                 callout.hoverArtifactTargetRect =
                     anchorIt->targetRect.IsEmpty() ? anchorIt->anchorRect : anchorIt->targetRect;
@@ -751,24 +814,28 @@ bool LayoutGuideSheetRenderer::Render(const SystemSnapshot& snapshot,
             continue;
         }
         const std::string* cardId = nullptr;
-        if (callout.hoverAnchorKey.has_value() &&
-            callout.hoverAnchorKey->widget.kind == LayoutEditWidgetIdentity::Kind::CardChrome) {
+        if (
+            callout.hoverAnchorKey.has_value() &&
+            callout.hoverAnchorKey->widget.kind == LayoutEditWidgetIdentity::Kind::CardChrome
+        ) {
             cardId = &callout.hoverAnchorKey->widget.renderCardId;
-        } else if (callout.hoverWidgetGuide.has_value() &&
-                   callout.hoverWidgetGuide->widget.kind == LayoutEditWidgetIdentity::Kind::CardChrome) {
+        } else if (
+            callout.hoverWidgetGuide.has_value() &&
+            callout.hoverWidgetGuide->widget.kind == LayoutEditWidgetIdentity::Kind::CardChrome
+        ) {
             cardId = &callout.hoverWidgetGuide->widget.renderCardId;
         } else if (callout.hoverColorParameter.has_value()) {
             const auto cardIt = std::find_if(cards.begin(), cards.end(), [&](const LayoutGuideSheetCardSummary& card) {
                 const bool overlapsTitle = card.chromeLayout.titleRect.IsEmpty() == false &&
-                                           callout.targetRect.left < card.chromeLayout.titleRect.right &&
-                                           callout.targetRect.right > card.chromeLayout.titleRect.left &&
-                                           callout.targetRect.top < card.chromeLayout.titleRect.bottom &&
-                                           callout.targetRect.bottom > card.chromeLayout.titleRect.top;
+                    callout.targetRect.left < card.chromeLayout.titleRect.right &&
+                    callout.targetRect.right > card.chromeLayout.titleRect.left &&
+                    callout.targetRect.top < card.chromeLayout.titleRect.bottom &&
+                    callout.targetRect.bottom > card.chromeLayout.titleRect.top;
                 const bool overlapsIcon = card.chromeLayout.iconRect.IsEmpty() == false &&
-                                          callout.targetRect.left < card.chromeLayout.iconRect.right &&
-                                          callout.targetRect.right > card.chromeLayout.iconRect.left &&
-                                          callout.targetRect.top < card.chromeLayout.iconRect.bottom &&
-                                          callout.targetRect.bottom > card.chromeLayout.iconRect.top;
+                    callout.targetRect.left < card.chromeLayout.iconRect.right &&
+                    callout.targetRect.right > card.chromeLayout.iconRect.left &&
+                    callout.targetRect.top < card.chromeLayout.iconRect.bottom &&
+                    callout.targetRect.bottom > card.chromeLayout.iconRect.top;
                 return card.chromeLayout.hasHeader && (overlapsTitle || overlapsIcon);
             });
             if (cardIt != cards.end()) {
@@ -776,11 +843,12 @@ bool LayoutGuideSheetRenderer::Render(const SystemSnapshot& snapshot,
             }
         } else {
             const auto cardIt = std::find_if(cards.begin(), cards.end(), [&](const LayoutGuideSheetCardSummary& card) {
-                return card.chromeLayout.hasHeader && card.chromeLayout.titleRect.IsEmpty() == false &&
-                       callout.targetRect.left < card.chromeLayout.titleRect.right &&
-                       callout.targetRect.right > card.chromeLayout.titleRect.left &&
-                       callout.targetRect.top < card.chromeLayout.titleRect.bottom &&
-                       callout.targetRect.bottom > card.chromeLayout.titleRect.top;
+                return card.chromeLayout.hasHeader &&
+                    card.chromeLayout.titleRect.IsEmpty() == false &&
+                    callout.targetRect.left < card.chromeLayout.titleRect.right &&
+                    callout.targetRect.right > card.chromeLayout.titleRect.left &&
+                    callout.targetRect.top < card.chromeLayout.titleRect.bottom &&
+                    callout.targetRect.bottom > card.chromeLayout.titleRect.top;
             });
             if (cardIt != cards.end()) {
                 cardId = &cardIt->id;
@@ -789,15 +857,18 @@ bool LayoutGuideSheetRenderer::Render(const SystemSnapshot& snapshot,
         if (cardId != nullptr) {
             const auto sourceCard =
                 std::find_if(cards.begin(), cards.end(), [&](const auto& card) { return card.id == *cardId; });
-            const auto packedCard = std::find_if(
-                overview.cards.begin(), overview.cards.end(), [&](const auto& card) { return card.id == *cardId; });
+            const auto packedCard = std::find_if(overview.cards.begin(), overview.cards.end(), [&](const auto& card) {
+                return card.id == *cardId;
+            });
             if (sourceCard != cards.end() && packedCard != overview.cards.end()) {
                 if (callout.hoverAnchorKey.has_value()) {
-                    const auto anchorIt = std::find_if(packedCard->chromeArtifacts.anchorRegions.begin(),
+                    const auto anchorIt = std::find_if(
+                        packedCard->chromeArtifacts.anchorRegions.begin(),
                         packedCard->chromeArtifacts.anchorRegions.end(),
                         [&](const LayoutEditAnchorRegion& region) {
                             return MatchesEditableAnchorKey(region.key, *callout.hoverAnchorKey);
-                        });
+                        }
+                    );
                     if (anchorIt != packedCard->chromeArtifacts.anchorRegions.end()) {
                         callout.hoverArtifactTargetRect =
                             anchorIt->targetRect.IsEmpty() ? anchorIt->anchorRect : anchorIt->targetRect;
@@ -810,22 +881,26 @@ bool LayoutGuideSheetRenderer::Render(const SystemSnapshot& snapshot,
                         callout.targetRect = TransformRect(callout.targetRect, sourceCard->rect, packedCard->rect);
                     }
                 } else if (callout.hoverWidgetGuide.has_value()) {
-                    const auto guideIt = std::find_if(packedCard->chromeArtifacts.widgetGuides.begin(),
+                    const auto guideIt = std::find_if(
+                        packedCard->chromeArtifacts.widgetGuides.begin(),
                         packedCard->chromeArtifacts.widgetGuides.end(),
                         [&](const LayoutEditWidgetGuide& guide) {
                             return MatchesWidgetEditGuide(guide, *callout.hoverWidgetGuide);
-                        });
+                        }
+                    );
                     if (guideIt != packedCard->chromeArtifacts.widgetGuides.end()) {
                         callout.targetRect = guideIt->hitRect;
                     } else {
                         callout.targetRect = TransformRect(callout.targetRect, sourceCard->rect, packedCard->rect);
                     }
                 } else if (callout.hoverColorParameter.has_value()) {
-                    const auto colorIt = std::find_if(packedCard->chromeArtifacts.colorRegions.begin(),
+                    const auto colorIt = std::find_if(
+                        packedCard->chromeArtifacts.colorRegions.begin(),
                         packedCard->chromeArtifacts.colorRegions.end(),
                         [&](const LayoutEditColorRegion& region) {
                             return region.parameter == *callout.hoverColorParameter;
-                        });
+                        }
+                    );
                     if (colorIt != packedCard->chromeArtifacts.colorRegions.end()) {
                         callout.targetRect = colorIt->targetRect;
                     } else {
@@ -853,19 +928,22 @@ bool LayoutGuideSheetRenderer::Render(const SystemSnapshot& snapshot,
     }
     recordStats(&LayoutGuideSheetRenderStats::measure, measureStart);
 
-    const LayoutGuideSheetPlacementStyle placementStyle{sheetMargin,
+    const LayoutGuideSheetPlacementStyle placementStyle{
+        sheetMargin,
         calloutGap,
         ScaleNonNegative(dashboardRenderer_, sheetStyle.calloutRowGap),
         ScaleNonNegative(dashboardRenderer_, sheetStyle.blockGap),
         targetSafeRadius,
-        gaugeRingThickness};
+        gaugeRingThickness
+    };
     const auto placementStart = std::chrono::steady_clock::now();
     const LayoutGuideSheetPlacementResult placementResult = PlaceLayoutGuideSheetCallouts(
         cardPlacements,
         callouts,
         placementStyle,
         [&](Callout& callout, int width) { measureCalloutBubble(callout, width); },
-        traceDetails);
+        traceDetails
+    );
     recordStats(&LayoutGuideSheetRenderStats::placement, placementStart);
     const int sheetWidth = placementResult.sheetWidth;
     const int sheetHeight = placementResult.sheetHeight;
@@ -873,25 +951,28 @@ bool LayoutGuideSheetRenderer::Render(const SystemSnapshot& snapshot,
     const auto drawStart = std::chrono::steady_clock::now();
 
     const bool saved = renderSurface(sheetWidth, sheetHeight, [&] {
-        dashboardRenderer_.Renderer().FillSolidRect(
-            RenderRect{0, 0, sheetWidth, sheetHeight}, RenderColorId::Background);
+        dashboardRenderer_
+            .Renderer().FillSolidRect(RenderRect{0, 0, sheetWidth, sheetHeight}, RenderColorId::Background);
         BeginLayoutGuideSheetDynamicArtifacts(dashboardRenderer_, overlayState);
         const MetricSource& metrics = dashboardRenderer_.ResolveMetrics(snapshot);
         for (const CardPlacement& placement : cardPlacements) {
             if (placement.overview) {
                 dashboardRenderer_.Renderer().FillSolidRect(placement.destRect, RenderColorId::Background);
-                dashboardRenderer_.Renderer().DrawSolidRect(placement.destRect,
-                    RenderStroke::Solid(RenderColorId::PanelBorder,
-                        static_cast<float>(ScaleAtLeast(dashboardRenderer_, sheetStyle.overviewBorderWidth, 1))));
+                dashboardRenderer_.Renderer().DrawSolidRect(placement.destRect, RenderStroke::Solid(
+                    RenderColorId::PanelBorder,
+                    static_cast<float>(ScaleAtLeast(dashboardRenderer_, sheetStyle.overviewBorderWidth, 1))
+                ));
                 for (const PackedOverviewCard& card : overview.cards) {
                     const RenderRect cardRect = TransformRect(card.rect, placement.sourceRect, placement.destRect);
                     BuildLayoutGuideSheetCardChromeArtifacts(
-                        dashboardRenderer_, card.id, cardRect, &metrics, card.suppressTitle);
+                        dashboardRenderer_, card.id, cardRect, &metrics, card.suppressTitle
+                    );
                 }
                 continue;
             }
             DrawLayoutGuideSheetCard(
-                dashboardRenderer_, placement.id, placement.sourceRect, placement.destRect, metrics);
+                dashboardRenderer_, placement.id, placement.sourceRect, placement.destRect, metrics
+            );
         }
         ResolveLayoutGuideSheetDynamicArtifactCollisions(dashboardRenderer_);
         DashboardOverlayState drawOverlayState;
@@ -910,7 +991,8 @@ bool LayoutGuideSheetRenderer::Render(const SystemSnapshot& snapshot,
                         continue;
                     }
                     DrawOverviewArtifact(
-                        dashboardRenderer_, guideSheet_, callout, placement.sourceRect, placement.destRect);
+                        dashboardRenderer_, guideSheet_, callout, placement.sourceRect, placement.destRect
+                    );
                 }
                 continue;
             }
@@ -919,15 +1001,18 @@ bool LayoutGuideSheetRenderer::Render(const SystemSnapshot& snapshot,
             drawOverlayState.hoveredLayoutEditGuide.reset();
             drawOverlayState.hoveredGapEditAnchor.reset();
             DrawLayoutGuideSheetOverlay(
-                dashboardRenderer_, drawOverlayState, placement.sourceRect, placement.destRect, metrics);
+                dashboardRenderer_, drawOverlayState, placement.sourceRect, placement.destRect, metrics
+            );
             for (const Callout& callout : callouts) {
                 if (callout.sourceCardId != placement.id) {
                     continue;
                 }
                 drawOverlayState.hoveredEditableAnchor = callout.hoverAnchorKey;
                 drawOverlayState.hoveredEditableWidget.reset();
-                if (callout.hoverAnchorKey.has_value() &&
-                    callout.hoverAnchorKey->widget.kind == LayoutEditWidgetIdentity::Kind::Widget) {
+                if (
+                    callout.hoverAnchorKey.has_value() &&
+                    callout.hoverAnchorKey->widget.kind == LayoutEditWidgetIdentity::Kind::Widget
+                ) {
                     drawOverlayState.hoveredEditableWidget = callout.hoverAnchorKey->widget;
                 }
                 if (callout.hoverWidgetGuide.has_value()) {
@@ -936,49 +1021,58 @@ bool LayoutGuideSheetRenderer::Render(const SystemSnapshot& snapshot,
                 drawOverlayState.hoveredLayoutEditGuide = callout.hoverLayoutGuide;
                 drawOverlayState.hoveredGapEditAnchor = callout.hoverGapAnchorKey;
                 DrawLayoutGuideSheetOverlay(
-                    dashboardRenderer_, drawOverlayState, placement.sourceRect, placement.destRect, metrics);
+                    dashboardRenderer_, drawOverlayState, placement.sourceRect, placement.destRect, metrics
+                );
             }
         }
         EndLayoutGuideSheetDynamicArtifacts(dashboardRenderer_);
         for (const Callout& callout : callouts) {
-            dashboardRenderer_.Renderer().DrawSolidLine(callout.targetAttachment,
-                callout.bubbleAttachment,
-                RenderStroke::Solid(RenderColorId::LayoutGuideCalloutLeader,
-                    static_cast<float>(ScaleAtLeast(dashboardRenderer_, sheetStyle.leaderStrokeWidth, 1))));
+            dashboardRenderer_
+                .Renderer().DrawSolidLine(callout.targetAttachment, callout.bubbleAttachment, RenderStroke::Solid(
+                    RenderColorId::LayoutGuideCalloutLeader,
+                    static_cast<float>(ScaleAtLeast(dashboardRenderer_, sheetStyle.leaderStrokeWidth, 1))
+                ));
         }
         for (const Callout& callout : callouts) {
-            dashboardRenderer_.Renderer().FillSolidRoundedRect(
-                callout.bubbleRect, bubbleRadius, RenderColorId::LayoutGuideCalloutFill);
-            dashboardRenderer_.Renderer().DrawSolidRoundedRect(callout.bubbleRect,
-                bubbleRadius,
-                RenderStroke::Solid(RenderColorId::LayoutGuideCalloutBorder,
-                    static_cast<float>(ScaleAtLeast(dashboardRenderer_, sheetStyle.calloutBorderWidth, 1))));
+            dashboardRenderer_
+                .Renderer()
+                .FillSolidRoundedRect(callout.bubbleRect, bubbleRadius, RenderColorId::LayoutGuideCalloutFill);
+            dashboardRenderer_.Renderer().DrawSolidRoundedRect(callout.bubbleRect, bubbleRadius, RenderStroke::Solid(
+                RenderColorId::LayoutGuideCalloutBorder,
+                static_cast<float>(ScaleAtLeast(dashboardRenderer_, sheetStyle.calloutBorderWidth, 1))
+            ));
             if (leaderEndpointDiameter > 0) {
                 dashboardRenderer_.Renderer().FillSolidEllipse(
                     CenteredSquare(callout.bubbleAttachment, leaderEndpointDiameter),
-                    RenderColorId::LayoutGuideCalloutLeader);
+                    RenderColorId::LayoutGuideCalloutLeader
+                );
             }
-            const RenderRect textRect{callout.bubbleRect.left + bubblePaddingX,
+            const RenderRect textRect{
+                callout.bubbleRect.left + bubblePaddingX,
                 callout.bubbleRect.top + bubblePaddingY,
                 callout.bubbleRect.right - bubblePaddingX,
-                callout.bubbleRect.bottom - bubblePaddingY};
+                callout.bubbleRect.bottom - bubblePaddingY
+            };
             const RenderRect parameterRect{textRect.left, textRect.top, textRect.right, textRect.top + textLineHeight};
-            dashboardRenderer_.Renderer().DrawTextBlock(parameterRect,
+            dashboardRenderer_.Renderer().DrawTextBlock(
+                parameterRect,
                 callout.parameterLine,
                 TextStyleId::Small,
                 RenderColorId::LayoutGuideCalloutParameter,
-                TextLayoutOptions::SingleLine(TextHorizontalAlign::Leading, TextVerticalAlign::Top, true, true));
+                TextLayoutOptions::SingleLine(TextHorizontalAlign::Leading, TextVerticalAlign::Top, true, true)
+            );
             if (!callout.descriptionLine.empty()) {
-                const RenderRect descriptionRect{
-                    textRect.left, parameterRect.bottom + lineGap, textRect.right, textRect.bottom};
-                dashboardRenderer_.Renderer().DrawTextBlock(descriptionRect,
+                const RenderRect
+                    descriptionRect{textRect.left, parameterRect.bottom + lineGap, textRect.right, textRect.bottom};
+                dashboardRenderer_.Renderer().DrawTextBlock(
+                    descriptionRect,
                     callout.descriptionLine,
                     TextStyleId::Small,
                     RenderColorId::LayoutGuideCalloutDescription,
-                    callout.wrapDescription
-                        ? TextLayoutOptions::Wrapped(TextHorizontalAlign::Leading, TextVerticalAlign::Top, true, false)
-                        : TextLayoutOptions::SingleLine(
-                              TextHorizontalAlign::Leading, TextVerticalAlign::Top, true, true));
+                    callout.wrapDescription ?
+                        TextLayoutOptions::Wrapped(TextHorizontalAlign::Leading, TextVerticalAlign::Top, true, false) :
+                        TextLayoutOptions::SingleLine(TextHorizontalAlign::Leading, TextVerticalAlign::Top, true, true)
+                );
             }
         }
     });

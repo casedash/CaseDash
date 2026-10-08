@@ -53,9 +53,7 @@ public:
     Handle(const Handle&) = delete;
     Handle& operator=(const Handle&) = delete;
 
-    HANDLE Get() const {
-        return handle_;
-    }
+    HANDLE Get() const { return handle_; }
 
 private:
     HANDLE handle_ = INVALID_HANDLE_VALUE;
@@ -69,17 +67,14 @@ FpsTelemetrySampleOptions OptionsForAdapter(const std::optional<GpuAdapterInfo>&
     return options;
 }
 
-const FpsTelemetrySampleOptions& EffectiveOptions(
-    const FpsTelemetrySampleOptions& requested,
-    const FpsTelemetrySampleOptions& fallback
-) {
+const FpsTelemetrySampleOptions&
+    EffectiveOptions(const FpsTelemetrySampleOptions& requested, const FpsTelemetrySampleOptions& fallback)
+{
     return requested.gpuAdapterLuidToken.empty() ? fallback : requested;
 }
 
-std::optional<FpsTelemetrySample> QueryServiceSample(
-    const FpsTelemetrySampleOptions& options,
-    std::string& diagnostics
-) {
+std::optional<FpsTelemetrySample> QueryServiceSample(const FpsTelemetrySampleOptions& options, std::string& diagnostics)
+{
     diagnostics.clear();
     if (!WaitNamedPipeA(kFpsServicePipeName, kPipeConnectTimeoutMs)) {
         diagnostics =
@@ -88,18 +83,11 @@ std::optional<FpsTelemetrySample> QueryServiceSample(
     }
 
     Handle pipe(CreateFileA(
-        kFpsServicePipeName,
-        GENERIC_READ | GENERIC_WRITE,
-        0,
-        nullptr,
-        OPEN_EXISTING,
-        FILE_ATTRIBUTE_NORMAL,
-        nullptr
+        kFpsServicePipeName, GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr
     ));
     if (pipe.Get() == INVALID_HANDLE_VALUE) {
         diagnostics = FormatText(
-            RES_STR("Failed to connect to CashDash service pipe: %s"),
-            FormatWin32Error(GetLastError()).c_str()
+            RES_STR("Failed to connect to CashDash service pipe: %s"), FormatWin32Error(GetLastError()).c_str()
         );
         return std::nullopt;
     }
@@ -111,8 +99,7 @@ std::optional<FpsTelemetrySample> QueryServiceSample(
         written != request.size()
     ) {
         diagnostics = FormatText(
-            RES_STR("Failed to write CashDash service request: %s"),
-            FormatWin32Error(GetLastError()).c_str()
+            RES_STR("Failed to write CashDash service request: %s"), FormatWin32Error(GetLastError()).c_str()
         );
         return std::nullopt;
     }
@@ -149,12 +136,8 @@ std::optional<FpsTelemetrySample> QueryServiceSample(
 
 class FpsServiceClientProvider final : public FpsTelemetryProvider {
 public:
-    FpsServiceClientProvider(
-        Trace& trace,
-        FpsTelemetrySampleOptions defaultOptions
-    ) :
-        trace_(trace),
-        defaultOptions_(std::move(defaultOptions)) {}
+    FpsServiceClientProvider(Trace& trace, FpsTelemetrySampleOptions defaultOptions) :
+        trace_(trace), defaultOptions_(std::move(defaultOptions)) {}
 
     bool Initialize() override {
         if (initialized_) {
@@ -167,9 +150,7 @@ public:
             diagnostics_ =
                 diagnostics.empty() ? ResourceStringText(RES_STR("FPS service did not return a sample.")) : diagnostics;
             trace_.WriteFmt(
-                TracePrefix::FpsServiceClient,
-                RES_STR("initialize_failed diagnostics=\"%s\""),
-                diagnostics_.c_str()
+                TracePrefix::FpsServiceClient, RES_STR("initialize_failed diagnostics=\"%s\""), diagnostics_.c_str()
             );
             return false;
         }
@@ -179,9 +160,7 @@ public:
             sample->diagnostics;
         initialized_ = true;
         trace_.WriteFmt(
-            TracePrefix::FpsServiceClient,
-            RES_STR("initialize_done diagnostics=\"%s\""),
-            diagnostics_.c_str()
+            TracePrefix::FpsServiceClient, RES_STR("initialize_done diagnostics=\"%s\""), diagnostics_.c_str()
         );
         return true;
     }
@@ -216,21 +195,16 @@ private:
     bool initialized_ = false;
 };
 
-std::unique_ptr<FpsTelemetryProvider> CreateFpsServiceClientProvider(
-    Trace& trace,
-    const FpsTelemetrySampleOptions& defaultOptions
-) {
+std::unique_ptr<FpsTelemetryProvider>
+    CreateFpsServiceClientProvider(Trace& trace, const FpsTelemetrySampleOptions& defaultOptions)
+{
     return std::make_unique<FpsServiceClientProvider>(trace, defaultOptions);
 }
 
 class FpsHybridProvider final : public FpsTelemetryProvider {
 public:
-    FpsHybridProvider(
-        Trace& trace,
-        FpsTelemetrySampleOptions defaultOptions
-    ) :
-        trace_(trace),
-        defaultOptions_(std::move(defaultOptions)) {}
+    FpsHybridProvider(Trace& trace, FpsTelemetrySampleOptions defaultOptions) :
+        trace_(trace), defaultOptions_(std::move(defaultOptions)) {}
 
     bool Initialize() override {
         if (TryInitializeServiceProvider()) {
@@ -291,9 +265,8 @@ private:
 
 }  // namespace
 
-std::unique_ptr<FpsTelemetryProvider> CreatePresentedFpsProvider(
-    Trace& trace,
-    const std::optional<GpuAdapterInfo>& adapter
-) {
+std::unique_ptr<FpsTelemetryProvider>
+    CreatePresentedFpsProvider(Trace& trace, const std::optional<GpuAdapterInfo>& adapter)
+{
     return std::make_unique<FpsHybridProvider>(trace, OptionsForAdapter(adapter));
 }

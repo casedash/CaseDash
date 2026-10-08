@@ -72,12 +72,13 @@ public:
     std::optional<int> FindLayoutWidgetExtent(const LayoutEditWidgetIdentity& widget, LayoutGuideAxis axis) const;
     std::optional<LayoutEditWidgetIdentity> FindFirstLayoutEditPreviewWidget(const std::string& widgetTypeName) const;
     bool ApplyLayoutGuideWeightsPreview(
-        const std::string& editCardId, const std::vector<size_t>& nodePath, const std::vector<int>& weights);
+        const std::string& editCardId, const std::vector<size_t>& nodePath, const std::vector<int>& weights
+    );
     const MetricDefinitionConfig* FindConfiguredMetricDefinition(std::string_view metricRef) const override;
     const std::string& ResolveConfiguredMetricSampleValueText(std::string_view metricRef) const override;
     LayoutEditActiveRegions CollectLayoutEditActiveRegions(const DashboardOverlayState& overlayState) const;
-    LayoutEditHoverResolution ResolveLayoutEditHover(
-        const DashboardOverlayState& overlayState, RenderPoint clientPoint) const;
+    LayoutEditHoverResolution
+        ResolveLayoutEditHover(const DashboardOverlayState& overlayState, RenderPoint clientPoint) const;
 
     bool Initialize(HWND hwnd = nullptr);
     void Shutdown();
@@ -87,7 +88,8 @@ public:
     bool DrawWindowSynchronously(const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState);
     bool SaveSnapshotPng(const FilePath& imagePath, const SystemSnapshot& snapshot);
     bool SaveSnapshotPng(
-        const FilePath& imagePath, const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState);
+        const FilePath& imagePath, const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState
+    );
     bool RenderSnapshotOffscreen(const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState);
     bool PrimeLayoutEditDynamicRegions(const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState);
     bool HasActiveDashboardAnimation() const;
@@ -99,46 +101,57 @@ public:
     RenderMode CurrentRenderMode() const override;
     WidgetEditArtifactRegistrar& EditArtifacts() override;
     LayoutEditAnchorBinding MakeEditableTextBinding(
-        const WidgetLayout& widget, LayoutEditParameter parameter, int anchorId, int value) const override;
-    LayoutEditAnchorBinding MakeMetricTextBinding(
-        const WidgetLayout& widget, std::string_view metricId, int anchorId) const override;
+        const WidgetLayout& widget, LayoutEditParameter parameter, int anchorId, int value
+    ) const override;
+    LayoutEditAnchorBinding
+        MakeMetricTextBinding(const WidgetLayout& widget, std::string_view metricId, int anchorId) const override;
     int ScaleLogical(int value) const;
-    std::optional<MetricListReorderOverlayState> ActiveMetricListReorderDrag(
-        const LayoutEditWidgetIdentity& widget) const override;
-    void AddWidgetAnimation(WidgetAnimationPtr animation,
+    std::optional<MetricListReorderOverlayState>
+        ActiveMetricListReorderDrag(const LayoutEditWidgetIdentity& widget) const override;
+    void AddWidgetAnimation(
+        WidgetAnimationPtr animation,
         WidgetAnimationStatePtr targetState,
-        std::optional<RenderRect> clipRect = std::nullopt) override;
+        std::optional<RenderRect> clipRect = std::nullopt
+    ) override;
 
 private:
     friend class DashboardLayoutResolver;
     friend class DashboardLayoutEditOverlayRenderer;
     friend class DashboardRendererBenchmarkAccess;
     friend class LayoutGuideSheetRenderer;
-    friend std::vector<LayoutGuideSheetCardSummary> CollectLayoutGuideSheetCardSummaries(
-        const DashboardRenderer& renderer);
+    friend std::vector<LayoutGuideSheetCardSummary>
+        CollectLayoutGuideSheetCardSummaries(const DashboardRenderer& renderer);
     friend bool SaveLayoutGuideSheetSurfacePng(
-        DashboardRenderer& renderer, const FilePath& imagePath, int width, int height, Renderer::DrawCallback draw);
+        DashboardRenderer& renderer, const FilePath& imagePath, int width, int height, Renderer::DrawCallback draw
+    );
     friend bool RenderLayoutGuideSheetSurfaceOffscreen(
-        DashboardRenderer& renderer, int width, int height, Renderer::DrawCallback draw);
-    friend void BeginLayoutGuideSheetDynamicArtifacts(
-        DashboardRenderer& renderer, const DashboardOverlayState& overlayState);
+        DashboardRenderer& renderer, int width, int height, Renderer::DrawCallback draw
+    );
+    friend void
+        BeginLayoutGuideSheetDynamicArtifacts(DashboardRenderer& renderer, const DashboardOverlayState& overlayState);
     friend void ResolveLayoutGuideSheetDynamicArtifactCollisions(DashboardRenderer& renderer);
     friend void EndLayoutGuideSheetDynamicArtifacts(DashboardRenderer& renderer);
-    friend void DrawLayoutGuideSheetCard(DashboardRenderer& renderer,
+    friend void DrawLayoutGuideSheetCard(
+        DashboardRenderer& renderer,
         const std::string& cardId,
         const RenderRect& sourceRect,
         const RenderRect& destRect,
-        const MetricSource& metrics);
-    friend void DrawLayoutGuideSheetOverlay(DashboardRenderer& renderer,
+        const MetricSource& metrics
+    );
+    friend void DrawLayoutGuideSheetOverlay(
+        DashboardRenderer& renderer,
         const DashboardOverlayState& overlayState,
         const RenderRect& sourceRect,
         const RenderRect& destRect,
-        const MetricSource& metrics);
-    friend LayoutGuideSheetCardChromeArtifacts BuildLayoutGuideSheetCardChromeArtifacts(DashboardRenderer& renderer,
+        const MetricSource& metrics
+    );
+    friend LayoutGuideSheetCardChromeArtifacts BuildLayoutGuideSheetCardChromeArtifacts(
+        DashboardRenderer& renderer,
         const std::string& cardId,
         const RenderRect& rect,
         const MetricSource* metrics,
-        bool suppressTitle);
+        bool suppressTitle
+    );
 
     struct PresentationBuildOptions {
         bool useLiveLayerBitmaps = false;
@@ -149,30 +162,37 @@ private:
     void DrawResolvedWidget(const WidgetLayout& widget, const MetricSource& metrics);
     void DrawResolvedWidgetOverlay(const WidgetLayout& widget, const MetricSource& metrics);
     const LayoutCardConfig* FindCardConfigById(const std::string& id) const;
-    void AddLayoutEditGuide(const LayoutNodeConfig& node,
+    void AddLayoutEditGuide(
+        const LayoutNodeConfig& node,
         const RenderRect& rect,
         const std::vector<RenderRect>& childRects,
         int gap,
         const std::string& renderCardId,
         const std::string& editCardId,
         const std::vector<size_t>& nodePath,
-        const std::vector<LayoutEditOverlayOwner>& overlayOwners);
-    void ResolveNodeWidgetsInternal(const LayoutNodeConfig& node,
+        const std::vector<LayoutEditOverlayOwner>& overlayOwners
+    );
+    void ResolveNodeWidgetsInternal(
+        const LayoutNodeConfig& node,
         const RenderRect& rect,
         std::vector<WidgetLayout>& widgets,
         std::vector<std::string>& cardReferenceStack,
         const std::string& renderCardId,
         const std::string& editCardId,
         const std::vector<size_t>& nodePath,
-        bool instantiateWidgets);
+        bool instantiateWidgets
+    );
     void BuildWidgetEditGuides();
     void BuildStaticEditableAnchors();
-    bool BuildPresentationFrame(const SystemSnapshot& snapshot,
+    bool BuildPresentationFrame(
+        const SystemSnapshot& snapshot,
         const DashboardOverlayState& overlayState,
         DashboardPresentationFrame& frame,
-        PresentationBuildOptions options);
+        PresentationBuildOptions options
+    );
     bool DrawWindowInternal(
-        const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState, bool waitForPresentation);
+        const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState, bool waitForPresentation
+    );
     void DrawFrame(const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState);
     void DrawSnapshotLayer(const DashboardOverlayState& overlayState, const MetricSource& metrics);
     void DrawOverlayLayerStatic(const DashboardOverlayState& overlayState, const MetricSource& metrics);
@@ -186,24 +206,30 @@ private:
     std::uint64_t ResolveSurfaceVersion();
     std::string SnapshotOverlaySignature(const DashboardOverlayState& overlayState) const;
     bool ShouldUpdateSnapshotLayer(
-        const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState, std::uint64_t surfaceVersion) const;
+        const SystemSnapshot& snapshot, const DashboardOverlayState& overlayState, std::uint64_t surfaceVersion
+    ) const;
     void MarkSnapshotLayerUpdated(
-        const SystemSnapshot& snapshot, const std::string& overlaySignature, std::uint64_t surfaceVersion);
+        const SystemSnapshot& snapshot, const std::string& overlaySignature, std::uint64_t surfaceVersion
+    );
     bool CanReuseLiveLayerBitmaps(PresentationBuildOptions options) const;
-    bool DrawLayerBitmap(RenderBitmap& bitmap,
+    bool DrawLayerBitmap(
+        RenderBitmap& bitmap,
         int width,
         int height,
         RenderBitmapClear clear,
         Renderer::DrawCallback draw,
-        PresentationBuildOptions options);
+        PresentationBuildOptions options
+    );
     void ClearReusableLayerBitmaps();
     RenderBitmap AcquireLiveLayerBitmap(int width, int height) const;
     void RecycleFrameLayers(DashboardPresentationFrame frame) const;
     bool ResolveLayout(bool includeWidgetState = true);
-    void ResolveNodeWidgets(const LayoutNodeConfig& node,
+    void ResolveNodeWidgets(
+        const LayoutNodeConfig& node,
         const RenderRect& rect,
         std::vector<WidgetLayout>& widgets,
-        bool instantiateWidgets = true);
+        bool instantiateWidgets = true
+    );
     bool SupportsLayoutSimilarityIndicator(const WidgetLayout& widget) const;
     std::vector<const WidgetLayout*> CollectSimilarityIndicatorWidgets(LayoutGuideAxis axis) const;
     int WidgetExtentForAxis(const WidgetLayout& widget, LayoutGuideAxis axis) const;
@@ -219,6 +245,7 @@ private:
     void WriteTrace(ResourceStringId text) const;
     void WriteTraceFmt(const char* format, ...) const;
     void WriteTraceFmt(ResourceStringId format, ...) const;
+
     AppConfig config_;
     Trace& trace_;
     std::unique_ptr<::Renderer> renderer_;

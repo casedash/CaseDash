@@ -5,13 +5,11 @@
 #include "telemetry/metrics.h"
 #include "widget/widget_host.h"
 
-void TextWidget::Initialize(const LayoutNodeConfig& node) {
-    metric_ = node.parameter;
-}
+void TextWidget::Initialize(const LayoutNodeConfig& node) { metric_ = node.parameter; }
 
 int TextWidget::PreferredHeight(const WidgetHost& renderer) const {
     return renderer.Renderer().TextMetrics().text +
-           (std::max)(0, renderer.Renderer().ScaleLogical(renderer.Config().layout.text.bottomGap));
+        (std::max)(0, renderer.Renderer().ScaleLogical(renderer.Config().layout.text.bottomGap));
 }
 
 void TextWidget::BuildEditGuides(WidgetHost& renderer, const WidgetLayout& widget) const {
@@ -34,13 +32,17 @@ void TextWidget::BuildEditGuides(WidgetHost& renderer, const WidgetLayout& widge
 
 void TextWidget::Draw(WidgetHost& renderer, const WidgetLayout& widget, const MetricSource& metrics) const {
     const std::string text = metrics.ResolveText(metric_);
-    const WidgetHost::TextLayoutResult textLayout = renderer.Renderer().DrawTextBlock(widget.rect,
+    const WidgetHost::TextLayoutResult textLayout = renderer.Renderer().DrawTextBlock(
+        widget.rect,
         text,
         TextStyleId::Text,
         RenderColorId::Foreground,
-        TextLayoutOptions::SingleLine(TextHorizontalAlign::Leading, TextVerticalAlign::Top, true, true));
+        TextLayoutOptions::SingleLine(TextHorizontalAlign::Leading, TextVerticalAlign::Top, true, true)
+    );
     const auto binding = renderer.MakeEditableTextBinding(
-        widget, WidgetHost::LayoutEditParameter::FontText, 0, renderer.Config().layout.fonts.text.size);
-    renderer.EditArtifacts().RegisterDynamicTextAnchor(
-        textLayout, binding, WidgetHost::LayoutEditParameter::ColorForeground);
+        widget, WidgetHost::LayoutEditParameter::FontText, 0, renderer.Config().layout.fonts.text.size
+    );
+    renderer
+        .EditArtifacts()
+        .RegisterDynamicTextAnchor(textLayout, binding, WidgetHost::LayoutEditParameter::ColorForeground);
 }

@@ -27,13 +27,9 @@ class WidgetPillBarAnimation final : public WidgetAnimation {
 public:
     WidgetPillBarAnimation(AnimationDataKey key, RenderRect rect) : key_(std::move(key)), rect_(rect) {}
 
-    const AnimationDataKey& Key() const override {
-        return key_;
-    }
+    const AnimationDataKey& Key() const override { return key_; }
 
-    RenderRect DirtyBounds() const override {
-        return rect_;
-    }
+    RenderRect DirtyBounds() const override { return rect_; }
 
     void Draw(Renderer& renderer, const WidgetAnimationState& state) const override {
         DrawWidgetPillBarAnimated(renderer, rect_, ScalarFillSampleFromState(state));
@@ -50,8 +46,9 @@ void DrawWidgetPillBarTrack(Renderer& renderer, const RenderRect& rect) {
     FillPill(renderer, rect, RenderColorId::Track);
 }
 
-std::optional<RenderRect> WidgetPillBarPeakMarkerRect(
-    const Renderer& renderer, const RenderRect& rect, const ScalarFillSample& sample) {
+std::optional<RenderRect>
+    WidgetPillBarPeakMarkerRect(const Renderer& renderer, const RenderRect& rect, const ScalarFillSample& sample)
+{
     const int width = rect.Width();
     const int height = rect.Height();
     if (width <= 0 || height <= 0 || !sample.peakRatio.has_value()) {
@@ -67,8 +64,9 @@ std::optional<RenderRect> WidgetPillBarPeakMarkerRect(
     return RenderRect{markerLeft, rect.top, markerLeft + markerWidth, rect.bottom};
 }
 
-std::optional<RenderRect> DrawWidgetPillBarAnimated(
-    Renderer& renderer, const RenderRect& rect, const ScalarFillSample& sample) {
+std::optional<RenderRect>
+    DrawWidgetPillBarAnimated(Renderer& renderer, const RenderRect& rect, const ScalarFillSample& sample)
+{
     const int width = rect.Width();
     const int height = rect.Height();
     if (width <= 0 || height <= 0 || !sample.valueRatio.has_value()) {
@@ -90,7 +88,8 @@ std::optional<RenderRect> DrawWidgetPillBarAnimated(
 }
 
 std::optional<RenderRect> DrawWidgetPillBar(
-    WidgetHost& renderer, const RenderRect& rect, double ratio, std::optional<double> peakRatio, bool drawFill) {
+    WidgetHost& renderer, const RenderRect& rect, double ratio, std::optional<double> peakRatio, bool drawFill
+) {
     if (!drawFill) {
         DrawWidgetPillBarTrack(renderer.Renderer(), rect);
         return std::nullopt;
@@ -102,8 +101,9 @@ std::optional<RenderRect> DrawWidgetPillBar(
     return DrawWidgetPillBar(renderer, rect, sample);
 }
 
-std::optional<RenderRect> DrawWidgetPillBar(
-    WidgetHost& renderer, const RenderRect& rect, const ScalarFillSample& sample) {
+std::optional<RenderRect>
+    DrawWidgetPillBar(WidgetHost& renderer, const RenderRect& rect, const ScalarFillSample& sample)
+{
     DrawWidgetPillBarTrack(renderer.Renderer(), rect);
     return DrawWidgetPillBarAnimated(renderer.Renderer(), rect, sample);
 }

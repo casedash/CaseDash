@@ -60,9 +60,7 @@ void ReplaceLocalizationCatalogForTesting(LocalizationCatalogMap catalog) {
     g_localizationCatalogInitialized = true;
 }
 
-const LocalizationCatalogMap& LocalizationCatalog() {
-    return g_localizationCatalog;
-}
+const LocalizationCatalogMap& LocalizationCatalog() { return g_localizationCatalog; }
 
 std::string FindLocalizedText(std::string_view key) {
     const LocalizationCatalogMap& catalog = LocalizationCatalog();

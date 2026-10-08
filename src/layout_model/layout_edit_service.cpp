@@ -81,23 +81,28 @@ bool ApplyGuideWeights(AppConfig& config, const LayoutEditLayoutTarget& target, 
 }
 
 bool ApplyGuideAdjacentWeights(
-    AppConfig& config, const LayoutEditLayoutTarget& target, size_t separatorIndex, int firstWeight, int secondWeight) {
+    AppConfig& config, const LayoutEditLayoutTarget& target, size_t separatorIndex, int firstWeight, int secondWeight
+) {
     bool updated = false;
     if (target.editCardId.empty()) {
-        updated = ApplyAdjacentWeightsToNode(FindLayoutNodeByPath(config.layout.structure.cards, target.nodePath),
+        updated = ApplyAdjacentWeightsToNode(
+            FindLayoutNodeByPath(config.layout.structure.cards, target.nodePath),
             separatorIndex,
             firstWeight,
-            secondWeight);
+            secondWeight
+        );
         if (!updated) {
             return false;
         }
         if (LayoutSectionConfig* namedLayout = FindNamedLayoutByName(config, config.display.layout)) {
             ApplyAdjacentWeightsToNode(
-                FindLayoutNodeByPath(namedLayout->cards, target.nodePath), separatorIndex, firstWeight, secondWeight);
+                FindLayoutNodeByPath(namedLayout->cards, target.nodePath), separatorIndex, firstWeight, secondWeight
+            );
         }
     } else if (LayoutCardConfig* card = FindCardLayoutById(config.layout, target.editCardId)) {
         updated = ApplyAdjacentWeightsToNode(
-            FindLayoutNodeByPath(card->layout, target.nodePath), separatorIndex, firstWeight, secondWeight);
+            FindLayoutNodeByPath(card->layout, target.nodePath), separatorIndex, firstWeight, secondWeight
+        );
     }
 
     return updated;

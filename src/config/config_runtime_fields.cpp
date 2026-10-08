@@ -86,9 +86,7 @@ void ParseFontSpec(UiFontConfig& font, const std::string& value) {
     font.weight = ParseIntOrDefault(parts[2], font.weight);
 }
 
-std::string FormatHexColor(ColorConfig color) {
-    return FormatRgbaColorText(color.ToRgba());
-}
+std::string FormatHexColor(ColorConfig color) { return FormatRgbaColorText(color.ToRgba()); }
 
 std::string FormatColorConfigValue(const ColorConfig& color) {
     return !color.expression.empty() ? color.expression : FormatHexColor(color);
@@ -98,9 +96,7 @@ bool ColorConfigPersistedValueEquals(const ColorConfig& color, const ColorConfig
     return FormatColorConfigValue(color) == FormatColorConfigValue(compareColor);
 }
 
-std::string FormatLogicalSize(const LogicalSizeConfig& size) {
-    return FormatText("%d,%d", size.width, size.height);
-}
+std::string FormatLogicalSize(const LogicalSizeConfig& size) { return FormatText("%d,%d", size.width, size.height); }
 
 std::string FormatFontSpec(const UiFontConfig& font) {
     return FormatText("%s,%d,%d", font.face.c_str(), font.size, font.weight);
@@ -219,26 +215,27 @@ bool RuntimeConfigFieldEquals(const RuntimeConfigFieldDescriptor& field, const v
         case RuntimeConfigFieldValueKind::Double:
             return *reinterpret_cast<const double*>(address) == *reinterpret_cast<const double*>(compareAddress);
         case RuntimeConfigFieldValueKind::String:
-            return *reinterpret_cast<const std::string*>(address) ==
-                   *reinterpret_cast<const std::string*>(compareAddress);
+            return
+                *reinterpret_cast<const std::string*>(address) == *reinterpret_cast<const std::string*>(compareAddress);
         case RuntimeConfigFieldValueKind::StringList:
             return *reinterpret_cast<const std::vector<std::string>*>(address) ==
-                   *reinterpret_cast<const std::vector<std::string>*>(compareAddress);
+                *reinterpret_cast<const std::vector<std::string>*>(compareAddress);
         case RuntimeConfigFieldValueKind::LogicalPoint:
             return *reinterpret_cast<const LogicalPointConfig*>(address) ==
-                   *reinterpret_cast<const LogicalPointConfig*>(compareAddress);
+                *reinterpret_cast<const LogicalPointConfig*>(compareAddress);
         case RuntimeConfigFieldValueKind::LogicalSize:
             return *reinterpret_cast<const LogicalSizeConfig*>(address) ==
-                   *reinterpret_cast<const LogicalSizeConfig*>(compareAddress);
+                *reinterpret_cast<const LogicalSizeConfig*>(compareAddress);
         case RuntimeConfigFieldValueKind::HexColor:
             return ColorConfigPersistedValueEquals(
-                *reinterpret_cast<const ColorConfig*>(address), *reinterpret_cast<const ColorConfig*>(compareAddress));
+                *reinterpret_cast<const ColorConfig*>(address), *reinterpret_cast<const ColorConfig*>(compareAddress)
+            );
         case RuntimeConfigFieldValueKind::FontSpec:
             return *reinterpret_cast<const UiFontConfig*>(address) ==
-                   *reinterpret_cast<const UiFontConfig*>(compareAddress);
+                *reinterpret_cast<const UiFontConfig*>(compareAddress);
         case RuntimeConfigFieldValueKind::LayoutExpression:
             return *reinterpret_cast<const LayoutNodeConfig*>(address) ==
-                   *reinterpret_cast<const LayoutNodeConfig*>(compareAddress);
+                *reinterpret_cast<const LayoutNodeConfig*>(compareAddress);
     }
     return false;
 }
@@ -249,8 +246,10 @@ std::span<const RuntimeConfigFieldDescriptor> RuntimeConfigFields(const RuntimeC
 
 const RuntimeConfigSectionDescriptor* FindRuntimeConfigSectionByName(std::string_view sectionName) {
     for (const RuntimeConfigSectionDescriptor& section : RuntimeConfigSectionDescriptors()) {
-        if (section.kind != RuntimeConfigSectionKind::Dynamic &&
-            std::string_view(section.name, section.nameLength) == sectionName) {
+        if (
+            section.kind != RuntimeConfigSectionKind::Dynamic &&
+            std::string_view(section.name, section.nameLength) == sectionName
+        ) {
             return &section;
         }
     }

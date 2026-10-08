@@ -44,19 +44,22 @@ bool LoadHeadlessLayoutGuideSheetConfigText(std::string* configText, std::string
     return true;
 }
 
-bool WriteHeadlessDiagnosticsExtraOutputs(void* context,
+bool WriteHeadlessDiagnosticsExtraOutputs(
+    void* context,
     const DiagnosticsOptions& options,
     const TelemetryDump& dump,
     const AppConfig& config,
     double scale,
     Trace& trace,
-    std::string* errorText) {
+    std::string* errorText
+) {
     if (!options.layoutGuideSheet) {
         return true;
     }
 
     const FilePath imagePath = ResolveDiagnosticsOutputPath(
-        GetWorkingDirectory(), options.layoutGuideSheetPath, kDefaultLayoutGuideSheetFileName);
+        GetWorkingDirectory(), options.layoutGuideSheetPath, kDefaultLayoutGuideSheetFileName
+    );
     std::string saveError;
     auto& outputContext = *static_cast<HeadlessLayoutGuideSheetOutputContext*>(context);
     LayoutGuideSheetConfig resolvedGuideSheet = *outputContext.guideSheet;
@@ -76,8 +79,8 @@ bool WriteHeadlessDiagnosticsExtraOutputs(void* context,
 
 }  // namespace
 
-HeadlessLayoutGuideSheetOutputContext::HeadlessLayoutGuideSheetOutputContext()
-    : guideSheet(std::make_unique<LayoutGuideSheetConfig>()) {}
+HeadlessLayoutGuideSheetOutputContext::HeadlessLayoutGuideSheetOutputContext() :
+    guideSheet(std::make_unique<LayoutGuideSheetConfig>()) {}
 
 HeadlessLayoutGuideSheetOutputContext::~HeadlessLayoutGuideSheetOutputContext() = default;
 

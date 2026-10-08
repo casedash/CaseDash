@@ -3,6 +3,7 @@
 #include <string_view>
 
 struct HWND__;
+
 using HWND = HWND__*;
 using UINT = unsigned int;
 

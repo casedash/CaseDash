@@ -17,29 +17,21 @@ class TestLayoutEditHost : public LayoutEditHost {
 public:
     TestLayoutEditHost() {
         config_.layout.structure.cards.name = "rows";
-        config_.layout.structure.cards.children = {LayoutNodeConfig{.name = "card", .cardReference = true},
-            LayoutNodeConfig{.name = "card", .cardReference = true}};
+        config_.layout.structure.cards.children = {
+            LayoutNodeConfig{.name = "card", .cardReference = true},
+            LayoutNodeConfig{.name = "card", .cardReference = true}
+        };
     }
 
-    const AppConfig& LayoutEditConfig() const override {
-        return config_;
-    }
+    const AppConfig& LayoutEditConfig() const override { return config_; }
 
-    DashboardOverlayState& LayoutDashboardOverlayState() override {
-        return overlayState_;
-    }
+    DashboardOverlayState& LayoutDashboardOverlayState() override { return overlayState_; }
 
-    LayoutEditActiveRegions CollectLayoutEditActiveRegions() const override {
-        return regions_;
-    }
+    LayoutEditActiveRegions CollectLayoutEditActiveRegions() const override { return regions_; }
 
-    double LayoutEditRenderScale() const override {
-        return 1.0;
-    }
+    double LayoutEditRenderScale() const override { return 1.0; }
 
-    int LayoutEditSimilarityThreshold() const override {
-        return 0;
-    }
+    int LayoutEditSimilarityThreshold() const override { return 0; }
 
     void SetLayoutGuideDragActive(bool) override {}
 
@@ -47,9 +39,7 @@ public:
 
     void RebuildLayoutEditArtifacts() override {}
 
-    bool ApplyLayoutGuideWeights(const LayoutEditLayoutTarget&, const std::vector<int>&) override {
-        return false;
-    }
+    bool ApplyLayoutGuideWeights(const LayoutEditLayoutTarget&, const std::vector<int>&) override { return false; }
 
     bool ApplyMetricListOrder(const LayoutEditWidgetIdentity&, const std::vector<std::string>&) override {
         return false;
@@ -60,20 +50,15 @@ public:
         return true;
     }
 
-    std::optional<int> EvaluateLayoutWidgetExtentForWeights(const LayoutEditLayoutTarget&,
-        const std::vector<int>&,
-        const LayoutEditWidgetIdentity&,
-        LayoutGuideAxis) override {
+    std::optional<int> EvaluateLayoutWidgetExtentForWeights(
+        const LayoutEditLayoutTarget&, const std::vector<int>&, const LayoutEditWidgetIdentity&, LayoutGuideAxis
+    ) override {
         return std::nullopt;
     }
 
-    bool ApplyLayoutEditValue(LayoutEditParameter, double) override {
-        return false;
-    }
+    bool ApplyLayoutEditValue(LayoutEditParameter, double) override { return false; }
 
-    void InvalidateLayoutEdit() override {
-        ++invalidateCount;
-    }
+    void InvalidateLayoutEdit() override { ++invalidateCount; }
 
     void BeginLayoutEditTraceSession(ResourceStringId, const std::string&) override {}
 
@@ -83,10 +68,11 @@ public:
 
     void AddContainerChildReorderAnchor(int index, RenderRect childRect, RenderRect anchorRect) {
         LayoutEditAnchorRegion region;
-        region.key =
-            LayoutEditAnchorKey{LayoutEditWidgetIdentity{"", "", {}, LayoutEditWidgetIdentity::Kind::DashboardChrome},
-                LayoutContainerChildOrderEditKey{"", {}},
-                index};
+        region.key = LayoutEditAnchorKey{
+            LayoutEditWidgetIdentity{"", "", {}, LayoutEditWidgetIdentity::Kind::DashboardChrome},
+            LayoutContainerChildOrderEditKey{"", {}},
+            index
+        };
         region.targetRect = childRect;
         region.anchorRect = anchorRect;
         region.anchorHitPadding = 4;
@@ -98,9 +84,10 @@ public:
         region.showWhenWidgetHovered = true;
         region.drawTargetOutline = false;
         regions_.Add(
-            LayoutEditActiveRegion{region.anchorHitRect, LayoutEditActiveRegionKind::StaticEditAnchorHandle, region});
-        regions_.Add(
-            LayoutEditActiveRegion{region.targetRect, LayoutEditActiveRegionKind::StaticEditAnchorTarget, region});
+            LayoutEditActiveRegion{region.anchorHitRect, LayoutEditActiveRegionKind::StaticEditAnchorHandle, region}
+        );
+        regions_
+            .Add(LayoutEditActiveRegion{region.targetRect, LayoutEditActiveRegionKind::StaticEditAnchorTarget, region});
     }
 
     std::vector<ContainerOrderCall> containerOrderCalls;

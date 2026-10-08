@@ -38,18 +38,21 @@ bool SetHresultError(std::string* errorText, ResourceStringId prefix, HRESULT hr
 
 bool SetPrefixedHresultError(std::string* errorText, std::string_view prefix, ResourceStringId suffix, HRESULT hr) {
     if (errorText != nullptr) {
-        AssignFormat(*errorText,
+        AssignFormat(
+            *errorText,
             RES_STR("%.*s%s hr="),
             static_cast<int>(prefix.size()),
             prefix.data(),
-            ResourceStringText(suffix));
+            ResourceStringText(suffix)
+        );
         AppendHresult(*errorText, hr);
     }
     return false;
 }
 
 bool SetPrefixedHresultPathError(
-    std::string* errorText, std::string_view prefix, ResourceStringId suffix, HRESULT hr, const FilePath& imagePath) {
+    std::string* errorText, std::string_view prefix, ResourceStringId suffix, HRESULT hr, const FilePath& imagePath
+) {
     if (errorText != nullptr) {
         SetPrefixedHresultError(errorText, prefix, suffix, hr);
         AppendFormat(*errorText, RES_STR(" path=\"%s\""), imagePath.string().c_str());
@@ -68,7 +71,8 @@ const WICPixelFormatGUID& WicPixelFormat(PngPixelFormat pixelFormat) {
 }
 
 bool SaveBgraPngWithInitializedCom(
-    const FilePath& imagePath, int width, int height, const std::vector<std::uint8_t>& bgra, std::string* errorText) {
+    const FilePath& imagePath, int width, int height, const std::vector<std::uint8_t>& bgra, std::string* errorText
+) {
     Microsoft::WRL::ComPtr<IWICImagingFactory> factory;
     HRESULT hr =
         CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(factory.GetAddressOf()));
@@ -81,29 +85,33 @@ bool SaveBgraPngWithInitializedCom(
     const UINT bitmapHeight = static_cast<UINT>(height);
     const UINT stride = bitmapWidth * 4u;
     const UINT byteCount = static_cast<UINT>(bgra.size());
-    hr = factory->CreateBitmapFromMemory(bitmapWidth,
+    hr = factory->CreateBitmapFromMemory(
+        bitmapWidth,
         bitmapHeight,
         GUID_WICPixelFormat32bppBGRA,
         stride,
         byteCount,
         const_cast<BYTE*>(bgra.data()),
-        source.GetAddressOf());
+        source.GetAddressOf()
+    );
     if (FAILED(hr) || source == nullptr) {
         return SetHresultError(errorText, RES_STR("png_wic_bitmap_failed"), hr);
     }
 
-    return SaveWicBitmapSourcePng(
-        factory.Get(), source.Get(), imagePath, PngPixelFormat::BgraWithAlpha, "png", errorText);
+    return
+        SaveWicBitmapSourcePng(factory.Get(), source.Get(), imagePath, PngPixelFormat::BgraWithAlpha, "png", errorText);
 }
 
 }  // namespace
 
-bool SaveWicBitmapSourcePng(IWICImagingFactory* factory,
+bool SaveWicBitmapSourcePng(
+    IWICImagingFactory* factory,
     IWICBitmapSource* source,
     const FilePath& imagePath,
     PngPixelFormat pixelFormat,
     std::string_view errorPrefix,
-    std::string* errorText) {
+    std::string* errorText
+) {
     const std::string prefix(errorPrefix);
     if (factory == nullptr || source == nullptr) {
         return SetError(errorText, FormatText(RES_STR("%s_wic_unavailable"), prefix.c_str()));
@@ -124,8 +132,8 @@ bool SaveWicBitmapSourcePng(IWICImagingFactory* factory,
         if (FAILED(hr) || converter == nullptr) {
             return SetPrefixedHresultError(errorText, errorPrefix, RES_STR("_converter_failed"), hr);
         }
-        hr = converter->Initialize(
-            source, targetPixelFormat, WICBitmapDitherTypeNone, nullptr, 0.0, WICBitmapPaletteTypeCustom);
+        hr = converter
+            ->Initialize(source, targetPixelFormat, WICBitmapDitherTypeNone, nullptr, 0.0, WICBitmapPaletteTypeCustom);
         if (FAILED(hr)) {
             return SetPrefixedHresultError(errorText, errorPrefix, RES_STR("_converter_init_failed"), hr);
         }
@@ -188,7 +196,8 @@ bool SaveWicBitmapSourcePng(IWICImagingFactory* factory,
 }
 
 bool SaveBgraPng(
-    const FilePath& imagePath, int width, int height, const std::vector<std::uint8_t>& bgra, std::string* errorText) {
+    const FilePath& imagePath, int width, int height, const std::vector<std::uint8_t>& bgra, std::string* errorText
+) {
     if (width <= 0 || height <= 0) {
         return SetError(errorText, RES_STR("png_invalid_size"));
     }

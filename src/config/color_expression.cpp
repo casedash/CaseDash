@@ -22,9 +22,7 @@ double ParseDoubleOrDefault(const std::string& value, double fallback) {
     return parsed;
 }
 
-std::string FormatDouble(double value) {
-    return FormatDoubleGeneral(value, 12);
-}
+std::string FormatDouble(double value) { return FormatDoubleGeneral(value, 12); }
 
 std::string FormatAlphaByte(unsigned int alpha) {
     constexpr char kHex[] = "0123456789ABCDEF";
@@ -109,7 +107,8 @@ std::string FormatColorExpression(const ColorExpression& expression) {
     }
     if (expression.mix.has_value()) {
         options.push_back(
-            FormatText("mix: %s %s", FormatDouble(expression.mix->amount).c_str(), expression.mix->target.c_str()));
+            FormatText("mix: %s %s", FormatDouble(expression.mix->amount).c_str(), expression.mix->target.c_str())
+        );
     }
     if (expression.alpha.has_value()) {
         options.push_back(FormatText("alpha: %s", FormatAlphaByte(*expression.alpha).c_str()));

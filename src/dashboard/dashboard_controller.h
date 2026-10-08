@@ -35,9 +35,7 @@ class DashboardShellHost : public TelemetryUpdateSink {
 public:
     virtual ~DashboardShellHost() = default;
 
-    void OnTelemetryUpdate(const TelemetryUpdate& update) override {
-        EnqueueTelemetryUpdate(update);
-    }
+    void OnTelemetryUpdate(const TelemetryUpdate& update) override { EnqueueTelemetryUpdate(update); }
 
     virtual HWND WindowHandle() const = 0;
     virtual Trace& TraceLog() = 0;
@@ -59,7 +57,8 @@ public:
     virtual MonitorPlacementInfo GetWindowPlacementInfo() const = 0;
     virtual MonitorPlacementInfo GetWindowPlacementInfoForScale(double scale) const = 0;
     virtual std::optional<FilePath> PromptDiagnosticsSavePath(
-        std::string_view defaultFileName, std::string_view filter, std::string_view defaultExtension) const = 0;
+        std::string_view defaultFileName, std::string_view filter, std::string_view defaultExtension
+    ) const = 0;
     virtual void ShowError(std::string_view message) const = 0;
 };
 
@@ -90,36 +89,47 @@ public:
     bool HasUnsavedLayoutEditChanges() const;
     bool RestoreLayoutEditSessionSavedLayout(DashboardShellHost& shell);
     bool ApplyLayoutGuideWeights(
-        DashboardShellHost& shell, const LayoutEditLayoutTarget& target, const std::vector<int>& weights);
-    bool ApplyLayoutGuideAdjacentWeights(DashboardShellHost& shell,
+        DashboardShellHost& shell, const LayoutEditLayoutTarget& target, const std::vector<int>& weights
+    );
+    bool ApplyLayoutGuideAdjacentWeights(
+        DashboardShellHost& shell,
         const LayoutEditLayoutTarget& target,
         size_t separatorIndex,
         int firstWeight,
-        int secondWeight);
+        int secondWeight
+    );
     bool ApplyMetricListOrder(
-        DashboardShellHost& shell, const LayoutEditWidgetIdentity& widget, const std::vector<std::string>& metricRefs);
+        DashboardShellHost& shell, const LayoutEditWidgetIdentity& widget, const std::vector<std::string>& metricRefs
+    );
     bool ApplyContainerChildOrder(
-        DashboardShellHost& shell, const LayoutContainerChildOrderEditKey& key, int fromIndex, int toIndex);
-    bool ApplyLayoutEditValue(
-        DashboardShellHost& shell, DashboardRenderer::LayoutEditParameter parameter, double value);
+        DashboardShellHost& shell, const LayoutContainerChildOrderEditKey& key, int fromIndex, int toIndex
+    );
+    bool
+        ApplyLayoutEditValue(DashboardShellHost& shell, DashboardRenderer::LayoutEditParameter parameter, double value);
     bool ApplyLayoutEditFont(
-        DashboardShellHost& shell, DashboardRenderer::LayoutEditParameter parameter, const UiFontConfig& value);
+        DashboardShellHost& shell, DashboardRenderer::LayoutEditParameter parameter, const UiFontConfig& value
+    );
     bool ApplyLayoutEditFontFamily(DashboardShellHost& shell, const std::string& family);
     bool ApplyLayoutEditFontSet(DashboardShellHost& shell, const FontsConfig& fonts);
     bool ApplyLayoutEditColor(
-        DashboardShellHost& shell, DashboardRenderer::LayoutEditParameter parameter, unsigned int value);
+        DashboardShellHost& shell, DashboardRenderer::LayoutEditParameter parameter, unsigned int value
+    );
     bool ApplyLayoutEditColorExpression(
-        DashboardShellHost& shell, DashboardRenderer::LayoutEditParameter parameter, const std::string& expression);
+        DashboardShellHost& shell, DashboardRenderer::LayoutEditParameter parameter, const std::string& expression
+    );
     bool ApplyLayoutEditTheme(DashboardShellHost& shell, const std::string& themeName);
     bool ApplyLayoutEditThemeColor(DashboardShellHost& shell, const ThemeColorEditKey& key, unsigned int value);
     bool ApplyLayoutEditCardTitle(
-        DashboardShellHost& shell, const LayoutCardTitleEditKey& key, const std::string& title);
+        DashboardShellHost& shell, const LayoutCardTitleEditKey& key, const std::string& title
+    );
     void ApplyConfigSnapshot(DashboardShellHost& shell, const AppConfig& config);
-    std::optional<int> EvaluateLayoutWidgetExtentForWeights(DashboardShellHost& shell,
+    std::optional<int> EvaluateLayoutWidgetExtentForWeights(
+        DashboardShellHost& shell,
         const LayoutEditLayoutTarget& target,
         const std::vector<int>& weights,
         const LayoutEditWidgetIdentity& widget,
-        LayoutGuideAxis axis);
+        LayoutGuideAxis axis
+    );
     AppConfig BuildCurrentConfigForSaving() const;
     void UpdateConfigFromMovePlacement(DashboardShellHost& shell);
     void UpdateConfigFromResizePlacement(DashboardShellHost& shell);

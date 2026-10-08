@@ -24,13 +24,9 @@ void BringOwnerToFront(HWND owner) {
     SetForegroundWindow(owner);
 }
 
-bool IsAccessDenied(DWORD status) {
-    return status == ERROR_ACCESS_DENIED;
-}
+bool IsAccessDenied(DWORD status) { return status == ERROR_ACCESS_DENIED; }
 
-bool IsAccessDenied(LSTATUS status) {
-    return status == ERROR_ACCESS_DENIED;
-}
+bool IsAccessDenied(LSTATUS status) { return status == ERROR_ACCESS_DENIED; }
 
 void CleanupAutoStartRegistration() {
     (void)WriteAutoStartRegistryValue(false);
@@ -58,8 +54,10 @@ AutoStartUpdateResult EnableAutoStartRegistration() {
 AutoStartUpdateResult DisableAutoStartRegistration() {
     const LSTATUS registryStatus = WriteAutoStartRegistryValue(false);
     const DWORD serviceStatus = StopAndDeleteFpsService();
-    return {registryStatus == ERROR_SUCCESS && serviceStatus == ERROR_SUCCESS,
-        IsAccessDenied(registryStatus) || IsAccessDenied(serviceStatus)};
+    return {
+        registryStatus == ERROR_SUCCESS && serviceStatus == ERROR_SUCCESS,
+        IsAccessDenied(registryStatus) || IsAccessDenied(serviceStatus)
+    };
 }
 
 }  // namespace
@@ -101,13 +99,14 @@ bool IsAutoStartEnabledForCurrentExecutable() {
         return false;
     }
     return NormalizeCommandPath(*registeredCommand) == NormalizeCommandPath(executablePath->string()) &&
-           IsFpsServiceRunningForCurrentExecutable();
+        IsFpsServiceRunningForCurrentExecutable();
 }
 
 LSTATUS WriteAutoStartRegistryValue(bool enabled) {
     HKEY key = nullptr;
     DWORD disposition = 0;
-    const LSTATUS createStatus = RegCreateKeyExA(HKEY_LOCAL_MACHINE,
+    const LSTATUS createStatus = RegCreateKeyExA(
+        HKEY_LOCAL_MACHINE,
         kAutoStartRunSubKey,
         0,
         nullptr,
@@ -115,7 +114,8 @@ LSTATUS WriteAutoStartRegistryValue(bool enabled) {
         KEY_SET_VALUE,
         nullptr,
         &key,
-        &disposition);
+        &disposition
+    );
     if (createStatus != ERROR_SUCCESS) {
         return createStatus;
     }
@@ -128,12 +128,14 @@ LSTATUS WriteAutoStartRegistryValue(bool enabled) {
             return ERROR_FILE_NOT_FOUND;
         }
         const std::string command = QuoteCommandLineArgument(executablePath->string());
-        result = RegSetValueExA(key,
+        result = RegSetValueExA(
+            key,
             kAutoStartValueName,
             0,
             REG_SZ,
             reinterpret_cast<const BYTE*>(command.c_str()),
-            static_cast<DWORD>(command.size() + 1));
+            static_cast<DWORD>(command.size() + 1)
+        );
     } else {
         result = RegDeleteValueA(key, kAutoStartValueName);
         if (result == ERROR_FILE_NOT_FOUND) {

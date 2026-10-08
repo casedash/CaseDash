@@ -18,9 +18,7 @@ const void* RenderThreadPoolTestResourceTypeToken() {
 
 class RenderThreadPoolTestResource final : public RenderBitmapResource {
 public:
-    const void* TypeToken() const override {
-        return RenderThreadPoolTestResourceTypeToken();
-    }
+    const void* TypeToken() const override { return RenderThreadPoolTestResourceTypeToken(); }
 };
 
 RenderBitmap LiveLayerBitmap(int width, int height) {
@@ -36,13 +34,9 @@ class RenderThreadTestAnimation final : public WidgetAnimation {
 public:
     explicit RenderThreadTestAnimation(RenderRect dirtyBounds) : dirtyBounds_(dirtyBounds) {}
 
-    const AnimationDataKey& Key() const override {
-        return key_;
-    }
+    const AnimationDataKey& Key() const override { return key_; }
 
-    RenderRect DirtyBounds() const override {
-        return dirtyBounds_;
-    }
+    RenderRect DirtyBounds() const override { return dirtyBounds_; }
 
     void Draw(Renderer& renderer, const WidgetAnimationState&) const override {
         renderer.FillSolidRect(dirtyBounds_, RenderColorId::Accent);
@@ -55,9 +49,7 @@ private:
 
 class RenderThreadTestRenderer final : public Renderer {
 public:
-    bool SetStyle(const RendererStyle&) override {
-        return true;
-    }
+    bool SetStyle(const RendererStyle&) override { return true; }
 
     void AttachWindow(HWND) override {}
 
@@ -88,15 +80,16 @@ public:
         return true;
     }
 
-    bool DrawToBitmap(
-        RenderBitmap& bitmap, int width, int height, RenderBitmapClear, const DrawCallback& draw) override {
+    bool DrawToBitmap(RenderBitmap& bitmap, int width, int height, RenderBitmapClear, const DrawCallback& draw) override
+    {
         bitmap = LiveLayerBitmap(width, height);
         draw();
         return true;
     }
 
     bool DrawToLiveLayerBitmap(
-        RenderBitmap& bitmap, int width, int height, RenderBitmapClear clear, const DrawCallback& draw) override {
+        RenderBitmap& bitmap, int width, int height, RenderBitmapClear clear, const DrawCallback& draw
+    ) override {
         return DrawToBitmap(bitmap, width, height, clear, draw);
     }
 
@@ -105,38 +98,31 @@ public:
         return true;
     }
 
-    const std::string& LastError() const override {
-        return empty_;
-    }
+    const std::string& LastError() const override { return empty_; }
 
-    const TextStyleMetrics& TextMetrics() const override {
-        return textMetrics_;
-    }
+    const TextStyleMetrics& TextMetrics() const override { return textMetrics_; }
 
-    int ScaleLogical(int value) const override {
-        return value;
-    }
+    int ScaleLogical(int value) const override { return value; }
 
-    int MeasureTextWidth(TextStyleId, std::string_view text) const override {
-        return static_cast<int>(text.size());
-    }
+    int MeasureTextWidth(TextStyleId, std::string_view text) const override { return static_cast<int>(text.size()); }
 
     TextLayoutResult MeasureTextBlock(
-        const RenderRect& rect, const std::string&, TextStyleId, const TextLayoutOptions&) const override {
+        const RenderRect& rect, const std::string&, TextStyleId, const TextLayoutOptions&
+    ) const override {
         return TextLayoutResult{rect};
     }
 
     void DrawText(
-        const RenderRect&, const std::string&, TextStyleId, RenderColorId, const TextLayoutOptions&) const override {}
+        const RenderRect&, const std::string&, TextStyleId, RenderColorId, const TextLayoutOptions&
+    ) const override {}
 
     TextLayoutResult DrawTextBlock(
-        const RenderRect& rect, const std::string&, TextStyleId, RenderColorId, const TextLayoutOptions&) override {
+        const RenderRect& rect, const std::string&, TextStyleId, RenderColorId, const TextLayoutOptions&
+    ) override {
         return TextLayoutResult{rect};
     }
 
-    void PushClipRect(const RenderRect& rect) override {
-        pushedClipRects.push_back(rect);
-    }
+    void PushClipRect(const RenderRect& rect) override { pushedClipRects.push_back(rect); }
 
     void PopClipRect() override {}
 
@@ -144,73 +130,39 @@ public:
 
     void PopTranslation() override {}
 
-    bool DrawBitmap(const RenderBitmap&, RenderPoint) override {
-        return true;
-    }
+    bool DrawBitmap(const RenderBitmap&, RenderPoint) override { return true; }
 
-    bool DrawBitmapRegion(const RenderBitmap&, const RenderRect&, RenderPoint) override {
-        return true;
-    }
+    bool DrawBitmapRegion(const RenderBitmap&, const RenderRect&, RenderPoint) override { return true; }
 
-    bool DrawBitmapRegions(const RenderBitmap&, std::span<const RenderRect>) override {
-        return true;
-    }
+    bool DrawBitmapRegions(const RenderBitmap&, std::span<const RenderRect>) override { return true; }
 
-    bool DrawIcon(std::string_view, const RenderRect&) override {
-        return true;
-    }
+    bool DrawIcon(std::string_view, const RenderRect&) override { return true; }
 
-    bool FillSolidRect(const RenderRect&, RenderColorId) override {
-        return true;
-    }
+    bool FillSolidRect(const RenderRect&, RenderColorId) override { return true; }
 
-    bool FillSolidRoundedRect(const RenderRect&, int, RenderColorId) override {
-        return true;
-    }
+    bool FillSolidRoundedRect(const RenderRect&, int, RenderColorId) override { return true; }
 
-    bool FillSolidEllipse(const RenderRect&, RenderColorId) override {
-        return true;
-    }
+    bool FillSolidEllipse(const RenderRect&, RenderColorId) override { return true; }
 
-    bool FillSolidDiamond(const RenderRect&, RenderColorId) override {
-        return true;
-    }
+    bool FillSolidDiamond(const RenderRect&, RenderColorId) override { return true; }
 
-    bool DrawSolidRect(const RenderRect&, const RenderStroke&) override {
-        return true;
-    }
+    bool DrawSolidRect(const RenderRect&, const RenderStroke&) override { return true; }
 
-    bool DrawSolidRoundedRect(const RenderRect&, int, const RenderStroke&) override {
-        return true;
-    }
+    bool DrawSolidRoundedRect(const RenderRect&, int, const RenderStroke&) override { return true; }
 
-    bool DrawSolidEllipse(const RenderRect&, const RenderStroke&) override {
-        return true;
-    }
+    bool DrawSolidEllipse(const RenderRect&, const RenderStroke&) override { return true; }
 
-    bool DrawSolidLine(RenderPoint, RenderPoint, const RenderStroke&) override {
-        return true;
-    }
+    bool DrawSolidLine(RenderPoint, RenderPoint, const RenderStroke&) override { return true; }
 
-    bool DrawArc(const RenderArc&, const RenderStroke&) override {
-        return true;
-    }
+    bool DrawArc(const RenderArc&, const RenderStroke&) override { return true; }
 
-    bool DrawArcs(std::span<const RenderArc>, const RenderStroke&) override {
-        return true;
-    }
+    bool DrawArcs(std::span<const RenderArc>, const RenderStroke&) override { return true; }
 
-    bool DrawPolyline(std::span<const RenderPoint>, const RenderStroke&) override {
-        return true;
-    }
+    bool DrawPolyline(std::span<const RenderPoint>, const RenderStroke&) override { return true; }
 
-    bool FillPath(const RenderPath&, RenderColorId) override {
-        return true;
-    }
+    bool FillPath(const RenderPath&, RenderColorId) override { return true; }
 
-    bool FillPaths(std::span<const RenderPath>, RenderColorId) override {
-        return true;
-    }
+    bool FillPaths(std::span<const RenderPath>, RenderColorId) override { return true; }
 
     void ClearRecords() {
         pushedClipRects.clear();

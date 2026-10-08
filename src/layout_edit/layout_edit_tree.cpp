@@ -78,31 +78,34 @@ std::vector<TemplateSectionSlot> ParseTemplateSections(std::string_view text) {
     return sections;
 }
 
-std::string ChildDisplayName(const LayoutNodeConfig& node) {
-    return node.name.empty() ? "unknown" : node.name;
-}
+std::string ChildDisplayName(const LayoutNodeConfig& node) { return node.name.empty() ? "unknown" : node.name; }
 
 std::string SectionLocationText(std::string_view sectionName) {
     return FormatText("[%.*s]", static_cast<int>(sectionName.size()), sectionName.data());
 }
 
 std::string MemberLocationText(std::string_view sectionName, std::string_view memberName) {
-    return FormatText("[%.*s] %.*s",
+    return FormatText(
+        "[%.*s] %.*s",
         static_cast<int>(sectionName.size()),
         sectionName.data(),
         static_cast<int>(memberName.size()),
-        memberName.data());
+        memberName.data()
+    );
 }
 
-std::string ContainerLocationText(
-    std::string_view sectionName, std::string_view memberName, std::string_view containerName) {
-    return FormatText("[%.*s] %.*s %.*s(...)",
+std::string
+    ContainerLocationText(std::string_view sectionName, std::string_view memberName, std::string_view containerName)
+{
+    return FormatText(
+        "[%.*s] %.*s %.*s(...)",
         static_cast<int>(sectionName.size()),
         sectionName.data(),
         static_cast<int>(memberName.size()),
         memberName.data(),
         static_cast<int>(containerName.size()),
-        containerName.data());
+        containerName.data()
+    );
 }
 
 std::optional<LayoutEditSelectionHighlight> SectionSelectionHighlight(std::string_view sectionName) {
@@ -148,13 +151,14 @@ std::string ContainerDescriptionKey(std::string_view containerName) {
 }
 
 bool IsFixedHeightRowChild(const LayoutNodeConfig& node) {
-    return node.name == "text" || node.name == "network_footer" || node.name == "vertical_spacer" ||
-           node.name == "clock_time" || node.name == "clock_date";
+    return node.name == "text" ||
+        node.name == "network_footer" ||
+        node.name == "vertical_spacer" ||
+        node.name == "clock_time" ||
+        node.name == "clock_date";
 }
 
-bool IsVerticalSpringRowChild(const LayoutNodeConfig& node) {
-    return node.name == "vertical_spring";
-}
+bool IsVerticalSpringRowChild(const LayoutNodeConfig& node) { return node.name == "vertical_spring"; }
 
 bool SeparatorIsEditable(const LayoutNodeConfig& node, size_t separatorIndex) {
     if (separatorIndex + 1 >= node.children.size()) {
@@ -164,9 +168,9 @@ bool SeparatorIsEditable(const LayoutNodeConfig& node, size_t separatorIndex) {
         return true;
     }
     return !IsFixedHeightRowChild(node.children[separatorIndex]) &&
-           !IsVerticalSpringRowChild(node.children[separatorIndex]) &&
-           !IsFixedHeightRowChild(node.children[separatorIndex + 1]) &&
-           !IsVerticalSpringRowChild(node.children[separatorIndex + 1]);
+        !IsVerticalSpringRowChild(node.children[separatorIndex]) &&
+        !IsFixedHeightRowChild(node.children[separatorIndex + 1]) &&
+        !IsVerticalSpringRowChild(node.children[separatorIndex + 1]);
 }
 
 const LayoutCardConfig* FindCardConfig(const LayoutConfig& layout, std::string_view cardId) {
@@ -187,15 +191,19 @@ bool ContainsString(const std::vector<std::string>& values, const std::string& v
     return false;
 }
 
-void CollectReachableCardLayoutCards(const LayoutConfig& layout,
+void CollectReachableCardLayoutCards(
+    const LayoutConfig& layout,
     const LayoutNodeConfig& node,
     std::vector<std::string>& orderedCards,
-    std::vector<std::string>& recursionStack);
+    std::vector<std::string>& recursionStack
+);
 
-void CollectReachableCardById(const LayoutConfig& layout,
+void CollectReachableCardById(
+    const LayoutConfig& layout,
     const std::string& cardId,
     std::vector<std::string>& orderedCards,
-    std::vector<std::string>& recursionStack) {
+    std::vector<std::string>& recursionStack
+) {
     if (ContainsString(recursionStack, cardId)) {
         return;
     }
@@ -213,10 +221,12 @@ void CollectReachableCardById(const LayoutConfig& layout,
     recursionStack.pop_back();
 }
 
-void CollectReachableDashboardCards(const LayoutConfig& layout,
+void CollectReachableDashboardCards(
+    const LayoutConfig& layout,
     const LayoutNodeConfig& node,
     std::vector<std::string>& orderedCards,
-    std::vector<std::string>& recursionStack) {
+    std::vector<std::string>& recursionStack
+) {
     if (node.name == "rows" || node.name == "columns") {
         for (const auto& child : node.children) {
             CollectReachableDashboardCards(layout, child, orderedCards, recursionStack);
@@ -229,10 +239,12 @@ void CollectReachableDashboardCards(const LayoutConfig& layout,
     }
 }
 
-void CollectReachableCardLayoutCards(const LayoutConfig& layout,
+void CollectReachableCardLayoutCards(
+    const LayoutConfig& layout,
     const LayoutNodeConfig& node,
     std::vector<std::string>& orderedCards,
-    std::vector<std::string>& recursionStack) {
+    std::vector<std::string>& recursionStack
+) {
     if (node.cardReference) {
         CollectReachableCardById(layout, node.name, orderedCards, recursionStack);
         return;
@@ -286,12 +298,14 @@ void MoveLayoutEditTreeNode(LayoutEditTreeNode& target, LayoutEditTreeNode&& sou
     target.children = std::move(source.children);
 }
 
-bool BuildNodeFieldLeaf(const std::string& sectionName,
+bool BuildNodeFieldLeaf(
+    const std::string& sectionName,
     const std::string& memberName,
     const std::string& editCardId,
     const std::vector<size_t>& nodePath,
     WidgetClass widgetClass,
-    LayoutEditTreeNode& leafNode) {
+    LayoutEditTreeNode& leafNode
+) {
     const auto key = LayoutNodeFieldEditKeyForWidgetParameter(editCardId, nodePath, widgetClass);
     if (!key.has_value()) {
         return false;
@@ -305,37 +319,37 @@ bool BuildNodeFieldLeaf(const std::string& sectionName,
     leafNode.label = std::string(descriptor->label);
     leafNode.locationText = MemberLocationText(sectionName, memberName);
     leafNode.descriptionKey = std::string(descriptor->descriptionKey);
-    leafNode.leaf.emplace(LayoutEditTreeLeaf{
-        *key,
-        sectionName,
-        memberName,
-        leafNode.descriptionKey,
-        descriptor->valueFormat,
-    });
+    leafNode
+        .leaf
+        .emplace(LayoutEditTreeLeaf{*key, sectionName, memberName, leafNode.descriptionKey, descriptor->valueFormat});
     leafNode.selectionHighlight.emplace(leafNode.leaf->focusKey);
     return true;
 }
 
-bool BuildDescriptorBackedWidgetLeaf(const std::string& sectionName,
+bool BuildDescriptorBackedWidgetLeaf(
+    const std::string& sectionName,
     const std::string& memberName,
     const std::string& editCardId,
     const LayoutNodeConfig& node,
     const std::vector<size_t>& nodePath,
-    LayoutEditTreeNode& leafNode) {
+    LayoutEditTreeNode& leafNode
+) {
     if (node.cardReference) {
         return false;
     }
     const auto widgetClass = node.name.empty() ? std::nullopt : EnumFromString<WidgetClass>(node.name);
     return widgetClass.has_value() &&
-           BuildNodeFieldLeaf(sectionName, memberName, editCardId, nodePath, *widgetClass, leafNode);
+        BuildNodeFieldLeaf(sectionName, memberName, editCardId, nodePath, *widgetClass, leafNode);
 }
 
-bool BuildContainerNode(const std::string& sectionName,
+bool BuildContainerNode(
+    const std::string& sectionName,
     const std::string& memberName,
     const std::string& editCardId,
     const LayoutNodeConfig& node,
     const std::vector<size_t>& nodePath,
-    LayoutEditTreeNode& treeNode) {
+    LayoutEditTreeNode& treeNode
+) {
     // Size: out-param builders avoid optional<LayoutEditTreeNode> temporaries for large nodes.
     if (node.name != "rows" && node.name != "columns") {
         return false;
@@ -367,7 +381,8 @@ bool BuildContainerNode(const std::string& sectionName,
             LayoutEditTreeNode leafNode;
             leafNode.kind = LayoutEditTreeNodeKind::Leaf;
             leafNode.label = FormatText(
-                "%s, %s", ChildDisplayName(node.children[i]).c_str(), ChildDisplayName(node.children[i + 1]).c_str());
+                "%s, %s", ChildDisplayName(node.children[i]).c_str(), ChildDisplayName(node.children[i + 1]).c_str()
+            );
             leafNode.locationText = MemberLocationText(sectionName, memberName);
             leafNode.descriptionKey = "layout_edit.layout_guide";
             leafNode.leaf.emplace(LayoutEditTreeLeaf{
@@ -395,12 +410,14 @@ bool BuildContainerNode(const std::string& sectionName,
     return true;
 }
 
-bool BuildStructureGroup(const std::string& sectionName,
+bool BuildStructureGroup(
+    const std::string& sectionName,
     const std::string& memberName,
     const std::string& editCardId,
     const std::optional<LayoutEditSelectionHighlight>& selectionHighlight,
     const LayoutNodeConfig& node,
-    LayoutEditTreeNode& groupNode) {
+    LayoutEditTreeNode& groupNode
+) {
     groupNode.kind = LayoutEditTreeNodeKind::Group;
     groupNode.label = memberName;
     groupNode.locationText = MemberLocationText(sectionName, memberName);
@@ -492,11 +509,7 @@ bool BuildStaticSectionNode(const AppConfig& config, const TemplateSectionSlot& 
         leafNode.locationText = MemberLocationText(descriptor->sectionName, descriptor->memberName);
         leafNode.descriptionKey = descriptor->configKey;
         leafNode.leaf.emplace(LayoutEditTreeLeaf{
-            *parameter,
-            descriptor->sectionName,
-            descriptor->memberName,
-            descriptor->configKey,
-            descriptor->valueFormat,
+            *parameter, descriptor->sectionName, descriptor->memberName, descriptor->configKey, descriptor->valueFormat,
         });
         leafNode.selectionHighlight.emplace(leafNode.leaf->focusKey);
         sectionNode.children.push_back(std::move(leafNode));
@@ -519,7 +532,8 @@ bool BuildActiveLayoutSectionNode(const AppConfig& config, LayoutEditTreeNode& s
     sectionNode.selectionHighlight.emplace(LayoutEditSelectionHighlightSpecial::DashboardBounds);
     LayoutEditTreeNode groupNode;
     if (BuildStructureGroup(
-            sectionNode.label, "cards", "", sectionNode.selectionHighlight, config.layout.structure.cards, groupNode)) {
+        sectionNode.label, "cards", "", sectionNode.selectionHighlight, config.layout.structure.cards, groupNode
+    )) {
         sectionNode.children.push_back(std::move(groupNode));
     }
     return true;
@@ -571,8 +585,9 @@ bool BuildCardSectionNode(const LayoutCardConfig& card, bool includeTitleLeaf, L
     sectionNode.locationText = SectionLocationText(sectionNode.label);
     sectionNode.descriptionKey = SectionDescriptionKey(sectionNode.label);
     sectionNode.initiallyExpanded = true;
-    sectionNode.selectionHighlight.emplace(
-        LayoutEditWidgetIdentity{card.id, card.id, {}, LayoutEditWidgetIdentity::Kind::CardChrome});
+    sectionNode
+        .selectionHighlight
+        .emplace(LayoutEditWidgetIdentity{card.id, card.id, {}, LayoutEditWidgetIdentity::Kind::CardChrome});
     if (includeTitleLeaf) {
         LayoutEditTreeNode titleLeaf;
         titleLeaf.kind = LayoutEditTreeNodeKind::Leaf;
@@ -591,14 +606,16 @@ bool BuildCardSectionNode(const LayoutCardConfig& card, bool includeTitleLeaf, L
     }
     LayoutEditTreeNode groupNode;
     if (BuildStructureGroup(
-            sectionNode.label, "layout", card.id, sectionNode.selectionHighlight, card.layout, groupNode)) {
+        sectionNode.label, "layout", card.id, sectionNode.selectionHighlight, card.layout, groupNode
+    )) {
         sectionNode.children.push_back(std::move(groupNode));
     }
     return true;
 }
 
-const LayoutEditTreeLeaf* FindLayoutEditTreeLeafRecursive(
-    const std::vector<LayoutEditTreeNode>& nodes, const LayoutEditFocusKey& focusKey) {
+const LayoutEditTreeLeaf*
+    FindLayoutEditTreeLeafRecursive(const std::vector<LayoutEditTreeNode>& nodes, const LayoutEditFocusKey& focusKey)
+{
     for (const auto& node : nodes) {
         if (node.leaf.has_value() && MatchesLayoutEditFocusKey(node.leaf->focusKey, focusKey)) {
             return &(*node.leaf);
@@ -622,8 +639,9 @@ bool NodeMatchesFilter(const LayoutEditTreeNode& node, std::string_view loweredQ
     return loweredLocation.find(loweredQuery) != std::string::npos;
 }
 
-std::vector<LayoutEditTreeNode> FilterNodes(
-    const std::vector<LayoutEditTreeNode>& nodes, std::string_view loweredQuery, bool forceExpand) {
+std::vector<LayoutEditTreeNode>
+    FilterNodes(const std::vector<LayoutEditTreeNode>& nodes, std::string_view loweredQuery, bool forceExpand)
+{
     std::vector<LayoutEditTreeNode> filtered;
     for (const auto& node : nodes) {
         LayoutEditTreeNode candidate = node;

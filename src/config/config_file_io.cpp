@@ -9,9 +9,7 @@ namespace {
 constexpr char kReadBinaryMode[] = "rb";
 constexpr char kWriteBinaryMode[] = "wb";
 
-bool HasValidUtf8Encoding(const std::string& text) {
-    return IsValidUtf8(text);
-}
+bool HasValidUtf8Encoding(const std::string& text) { return IsValidUtf8(text); }
 
 }  // namespace
 
@@ -37,8 +35,12 @@ std::string ReadConfigFile(const FilePath& path) {
         }
     }
     fclose(input);
-    if (text.size() >= 3 && static_cast<unsigned char>(text[0]) == 0xEF &&
-        static_cast<unsigned char>(text[1]) == 0xBB && static_cast<unsigned char>(text[2]) == 0xBF) {
+    if (
+        text.size() >= 3 &&
+        static_cast<unsigned char>(text[0]) == 0xEF &&
+        static_cast<unsigned char>(text[1]) == 0xBB &&
+        static_cast<unsigned char>(text[2]) == 0xBF
+    ) {
         text.erase(0, 3);
     }
     if (!HasValidUtf8Encoding(text)) {

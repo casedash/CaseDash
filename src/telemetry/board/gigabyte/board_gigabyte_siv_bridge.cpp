@@ -87,11 +87,8 @@ public:
     bool loaded = false;
 };
 
-bool InitializeGigabyteRuntime(
-    GigabyteRuntimeContext^ context,
-    const char* sivDirectory,
-    GigabyteSivCaptureSink& sink
-) {
+bool InitializeGigabyteRuntime(GigabyteRuntimeContext^ context, const char* sivDirectory, GigabyteSivCaptureSink& sink)
+{
     if (context->loaded) {
         return true;
     }
@@ -116,7 +113,7 @@ bool InitializeGigabyteRuntime(
             Environment::CurrentDirectory = context->sivDirectory;
 
             array<String^>^ preloadFiles = Directory::GetFiles(context->sivDirectory, "Gigabyte*.dll");
-            for each(String^ filePath in preloadFiles) {
+            for each (String^ filePath in preloadFiles) {
                 try {
                     Assembly::LoadFrom(filePath);
                     pin_ptr<const wchar_t> pinnedFilePath = PtrToStringChars(filePath);
@@ -126,26 +123,20 @@ bool InitializeGigabyteRuntime(
 
             context->engineAssembly = Assembly::LoadFrom(context->engineAssemblyPath);
             context->commonAssembly = Assembly::LoadFrom(context->commonAssemblyPath);
-            context->monitorType = context->engineAssembly->GetType(
-                "Gigabyte.Engine.EnvironmentControl.HardwareMonitor.HardwareMonitorControlModule",
-                true
-            );
-            context->sourceType = context->commonAssembly->GetType(
-                "Gigabyte.EnvironmentControl.Common.HardwareMonitor.HardwareMonitorSourceTypes",
-                true
-            );
-            context->sensorType = context->commonAssembly->GetType(
-                "Gigabyte.EnvironmentControl.Common.HardwareMonitor.SensorTypes",
-                true
-            );
-            context->sensorDataType = context->commonAssembly->GetType(
-                "Gigabyte.EnvironmentControl.Common.HardwareMonitor.HardwareMonitoredData",
-                true
-            );
-            context->collectionType = context->commonAssembly->GetType(
-                "Gigabyte.EnvironmentControl.Common.HardwareMonitor.HardwareMonitoredDataCollection",
-                true
-            );
+            context->monitorType = context
+                ->engineAssembly
+                ->GetType("Gigabyte.Engine.EnvironmentControl.HardwareMonitor.HardwareMonitorControlModule", true);
+            context->sourceType = context
+                ->commonAssembly
+                ->GetType("Gigabyte.EnvironmentControl.Common.HardwareMonitor.HardwareMonitorSourceTypes", true);
+            context->sensorType = context
+                ->commonAssembly->GetType("Gigabyte.EnvironmentControl.Common.HardwareMonitor.SensorTypes", true);
+            context->sensorDataType = context
+                ->commonAssembly
+                ->GetType("Gigabyte.EnvironmentControl.Common.HardwareMonitor.HardwareMonitoredData", true);
+            context->collectionType = context
+                ->commonAssembly
+                ->GetType("Gigabyte.EnvironmentControl.Common.HardwareMonitor.HardwareMonitoredDataCollection", true);
             context->initializeMethod =
                 context->monitorType->GetMethod("Initialize", gcnew array<Type^>{context->sourceType});
             context->getCurrentMethod = context->monitorType->GetMethod(
@@ -193,10 +184,7 @@ bool InitializeGigabyteRuntime(
 }
 
 void CollectManagedSensors(
-    GigabyteRuntimeContext^ context,
-    array<Object^>^ args,
-    bool collectFans,
-    GigabyteSivCaptureSink& sink
+    GigabyteRuntimeContext^ context, array<Object^>^ args, bool collectFans, GigabyteSivCaptureSink& sink
 ) {
     // Gigabyte SIV expects a live collection instance here even though the
     // parameter is passed by reference; a null out value faults inside SIV.
@@ -207,7 +195,7 @@ void CollectManagedSensors(
         throw gcnew InvalidOperationException("Gigabyte sensor collection did not implement IEnumerable.");
     }
 
-    for each(Object^ sensor in enumerable) {
+    for each (Object^ sensor in enumerable) {
         String^ title = dynamic_cast<String^>(context->titleProperty->GetValue(sensor, nullptr));
         Object^ valueObject = context->valueProperty->GetValue(sensor, nullptr);
         const double numericValue = static_cast<double>(safe_cast<float>(valueObject));

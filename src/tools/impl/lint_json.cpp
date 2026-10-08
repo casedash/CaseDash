@@ -10,8 +10,7 @@ namespace {
 
 class JsonParser {
 public:
-    explicit JsonParser(std::string_view text) :
-        text_(text) {}
+    explicit JsonParser(std::string_view text) : text_(text) {}
 
     JsonValue Parse() {
         SkipWhitespace();
@@ -245,7 +244,8 @@ private:
 
     [[noreturn]] void Fail(const char* message) const {
         throw std::runtime_error(
-            std::string(message) + " at byte " + std::to_string(static_cast<unsigned long long>(position_)));
+            std::string(message) + " at byte " + std::to_string(static_cast<unsigned long long>(position_))
+        );
     }
 
     std::string_view text_;
@@ -256,53 +256,29 @@ private:
 
 JsonValue::JsonValue() = default;
 
-JsonValue::JsonValue(bool value) :
-    type_(Type::Bool),
-    boolValue_(value) {}
+JsonValue::JsonValue(bool value) : type_(Type::Bool), boolValue_(value) {}
 
-JsonValue::JsonValue(double value) :
-    type_(Type::Number),
-    numberValue_(value) {}
+JsonValue::JsonValue(double value) : type_(Type::Number), numberValue_(value) {}
 
-JsonValue::JsonValue(std::string value) :
-    type_(Type::String),
-    stringValue_(std::move(value)) {}
+JsonValue::JsonValue(std::string value) : type_(Type::String), stringValue_(std::move(value)) {}
 
-JsonValue::JsonValue(Array value) :
-    type_(Type::Array),
-    arrayValue_(std::move(value)) {}
+JsonValue::JsonValue(Array value) : type_(Type::Array), arrayValue_(std::move(value)) {}
 
-JsonValue::JsonValue(Object value) :
-    type_(Type::Object),
-    objectValue_(std::move(value)) {}
+JsonValue::JsonValue(Object value) : type_(Type::Object), objectValue_(std::move(value)) {}
 
-JsonValue::Type JsonValue::type() const {
-    return type_;
-}
+JsonValue::Type JsonValue::type() const { return type_; }
 
-bool JsonValue::IsNull() const {
-    return type_ == Type::Null;
-}
+bool JsonValue::IsNull() const { return type_ == Type::Null; }
 
-bool JsonValue::IsBool() const {
-    return type_ == Type::Bool;
-}
+bool JsonValue::IsBool() const { return type_ == Type::Bool; }
 
-bool JsonValue::IsNumber() const {
-    return type_ == Type::Number;
-}
+bool JsonValue::IsNumber() const { return type_ == Type::Number; }
 
-bool JsonValue::IsString() const {
-    return type_ == Type::String;
-}
+bool JsonValue::IsString() const { return type_ == Type::String; }
 
-bool JsonValue::IsArray() const {
-    return type_ == Type::Array;
-}
+bool JsonValue::IsArray() const { return type_ == Type::Array; }
 
-bool JsonValue::IsObject() const {
-    return type_ == Type::Object;
-}
+bool JsonValue::IsObject() const { return type_ == Type::Object; }
 
 bool JsonValue::AsBool() const {
     if (!IsBool()) {
@@ -355,9 +331,7 @@ const JsonValue& JsonValue::At(std::string_view key) const {
     return *value;
 }
 
-JsonValue ParseJson(std::string_view text) {
-    return JsonParser(text).Parse();
-}
+JsonValue ParseJson(std::string_view text) { return JsonParser(text).Parse(); }
 
 std::string JsonEscape(std::string_view text) {
     std::string escaped;

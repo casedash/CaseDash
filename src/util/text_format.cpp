@@ -34,9 +34,7 @@ std::string FormatTextV(const char* format, va_list args) {
     return text;
 }
 
-std::string FormatTextV(ResourceStringId format, va_list args) {
-    return FormatTextV(ResourceStringText(format), args);
-}
+std::string FormatTextV(ResourceStringId format, va_list args) { return FormatTextV(ResourceStringText(format), args); }
 
 std::string FormatText(const char* format, ...) {
     va_list args;

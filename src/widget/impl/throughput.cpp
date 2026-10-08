@@ -27,8 +27,8 @@ constexpr double kPlotEpsilon = 0.000001;
 void FillCircle(Renderer& renderer, int centerX, int centerY, int diameter, RenderColorId color) {
     const int radius = diameter / 2;
     renderer.FillSolidEllipse(
-        RenderRect{centerX - radius, centerY - radius, centerX - radius + diameter, centerY - radius + diameter},
-        color);
+        RenderRect{centerX - radius, centerY - radius, centerX - radius + diameter, centerY - radius + diameter}, color
+    );
 }
 
 RenderRect MakeAnchorRect(int centerX, int centerY, int representedDiameter, int extraDiameter) {
@@ -40,9 +40,11 @@ RenderRect MakeAnchorRect(int centerX, int centerY, int representedDiameter, int
 ThroughputGraphLayout ComputeGraphLayout(const WidgetHost& renderer, const RenderRect& rect) {
     ThroughputGraphLayout layout;
     layout.graphRect = rect;
-    layout.axisWidth = std::max(1,
+    layout.axisWidth = std::max(
+        1,
         renderer.Renderer().MeasureTextWidth(TextStyleId::Small, "1000") +
-            std::max(0, renderer.Renderer().ScaleLogical(renderer.Config().layout.throughput.axisPadding)));
+            std::max(0, renderer.Renderer().ScaleLogical(renderer.Config().layout.throughput.axisPadding))
+    );
     layout.labelBandHeight = renderer.Renderer().TextMetrics().smallText;
     layout.graphTop = std::min(rect.bottom - 1, rect.top + layout.labelBandHeight);
     layout.graphLeft = rect.left + layout.axisWidth;
@@ -147,18 +149,23 @@ void AppendLeaderPoint(std::vector<PlotPoint>& points, int graphRight, double le
         points.pop_back();
     }
     const PlotPoint leaderPoint{static_cast<double>(graphRight), leaderY};
-    if (!points.empty() && std::abs(points.back().x - leaderPoint.x) <= kPlotEpsilon &&
-        std::abs(points.back().y - leaderPoint.y) <= kPlotEpsilon) {
+    if (
+        !points.empty() &&
+        std::abs(points.back().x - leaderPoint.x) <= kPlotEpsilon &&
+        std::abs(points.back().y - leaderPoint.y) <= kPlotEpsilon
+    ) {
         return;
     }
     points.push_back(leaderPoint);
 }
 
-void DrawGraphSnapshot(WidgetHost& renderer,
+void DrawGraphSnapshot(
+    WidgetHost& renderer,
     const RenderRect& rect,
     const ThroughputGraphLayout& layout,
     double maxValue,
-    const std::optional<LayoutEditAnchorBinding>& maxLabelEditable) {
+    const std::optional<LayoutEditAnchorBinding>& maxLabelEditable
+) {
     renderer.Renderer().FillSolidRect(rect, RenderColorId::GraphBackground);
     maxValue = FiniteNonNegativeOr(maxValue, 10.0);
     if (maxValue <= 0.0) {
@@ -167,19 +174,23 @@ void DrawGraphSnapshot(WidgetHost& renderer,
     const std::string maxLabel = FormatText("%.0f", maxValue);
     RenderRect maxRect{rect.left, rect.top, rect.left + layout.axisWidth, layout.graphTop};
     if (renderer.CurrentRenderMode() != WidgetHost::RenderMode::Blank) {
-        const WidgetHost::TextLayoutResult maxLabelLayout = renderer.Renderer().DrawTextBlock(maxRect,
+        const WidgetHost::TextLayoutResult maxLabelLayout = renderer.Renderer().DrawTextBlock(
+            maxRect,
             maxLabel,
             TextStyleId::Small,
             RenderColorId::MutedText,
-            TextLayoutOptions::SingleLine(TextHorizontalAlign::Center, TextVerticalAlign::Center));
+            TextLayoutOptions::SingleLine(TextHorizontalAlign::Center, TextVerticalAlign::Center)
+        );
         if (maxLabelEditable.has_value()) {
             renderer.EditArtifacts().RegisterDynamicTextAnchor(
-                maxLabelLayout, *maxLabelEditable, WidgetHost::LayoutEditParameter::ColorMutedText);
+                maxLabelLayout, *maxLabelEditable, WidgetHost::LayoutEditParameter::ColorMutedText
+            );
         }
     }
 }
 
-void DrawGraphAnimated(Renderer& renderer,
+void DrawGraphAnimated(
+    Renderer& renderer,
     const RenderRect& rect,
     const ThroughputGraphLayout& layout,
     const std::vector<double>& history,
@@ -190,15 +201,15 @@ void DrawGraphAnimated(Renderer& renderer,
     double plotShiftSamples,
     double timeMarkerIntervalSamples,
     size_t bodySampleCount,
-    bool drawValues) {
+    bool drawValues
+) {
     maxValue = FiniteNonNegativeOr(maxValue, 10.0);
     if (maxValue <= 0.0) {
         maxValue = 10.0;
     }
     const double guideStep = IsFiniteDouble(guideStepMbps) && guideStepMbps > 0.0 ? guideStepMbps : 5.0;
-    const double markerInterval = IsFiniteDouble(timeMarkerIntervalSamples) && timeMarkerIntervalSamples > 0.0
-                                      ? timeMarkerIntervalSamples
-                                      : kThroughputTimeMarkerIntervalSamples;
+    const double markerInterval = IsFiniteDouble(timeMarkerIntervalSamples) && timeMarkerIntervalSamples > 0.0 ?
+        timeMarkerIntervalSamples : kThroughputTimeMarkerIntervalSamples;
     const double plotShift = FiniteNonNegativeOr(plotShiftSamples);
     const size_t historyDenominator = PlotIntervalCount(bodySampleCount);
     const double markerOffset = NormalizeMarkerOffsetSamples(timeMarkerOffsetSamples, markerInterval);
@@ -207,22 +218,28 @@ void DrawGraphAnimated(Renderer& renderer,
         const double ratio = ClampFinite(tick / maxValue, 0.0, 1.0);
         const int centerY = layout.graphBottom - static_cast<int>(std::round(ratio * layout.plotHeight));
         const int lineTop = centerY - (layout.guideStrokeWidth / 2);
-        RenderRect lineRect{layout.graphLeft,
+        RenderRect lineRect{
+            layout.graphLeft,
             std::max(layout.plotTop, lineTop),
             layout.graphRight,
-            std::min(layout.graphBottom + 1, lineTop + layout.guideStrokeWidth)};
+            std::min(layout.graphBottom + 1, lineTop + layout.guideStrokeWidth)
+        };
         renderer.FillSolidRect(lineRect, markerColor);
     }
 
     if (!history.empty()) {
         const double visibleDenominator = static_cast<double>(historyDenominator);
-        for (double sampleOffset = markerOffset; sampleOffset <= visibleDenominator + kPlotEpsilon;
-            sampleOffset += markerInterval) {
+        for (
+            double sampleOffset = markerOffset;
+            sampleOffset <= visibleDenominator + kPlotEpsilon;
+            sampleOffset += markerInterval
+        ) {
             const int centerX =
                 layout.graphRight - static_cast<int>(std::round(sampleOffset * layout.plotWidth / visibleDenominator));
             const int lineLeft = centerX - (layout.guideStrokeWidth / 2);
             RenderRect lineRect{
-                lineLeft, rect.top, std::min(layout.graphRight + 1, lineLeft + layout.guideStrokeWidth), rect.bottom};
+                lineLeft, rect.top, std::min(layout.graphRight + 1, lineLeft + layout.guideStrokeWidth), rect.bottom
+            };
             renderer.FillSolidRect(lineRect, markerColor);
         }
     }
@@ -233,11 +250,14 @@ void DrawGraphAnimated(Renderer& renderer,
     const int horizontalAxisCenterY = rect.bottom - 1;
     const int horizontalAxisTop = horizontalAxisCenterY - (layout.guideStrokeWidth / 2);
     RenderRect verticalAxisRect{
-        verticalAxisLeft, rect.top, std::min(rect.right, verticalAxisLeft + layout.guideStrokeWidth), rect.bottom};
-    RenderRect horizontalAxisRect{rect.left + layout.axisWidth,
+        verticalAxisLeft, rect.top, std::min(rect.right, verticalAxisLeft + layout.guideStrokeWidth), rect.bottom
+    };
+    RenderRect horizontalAxisRect{
+        rect.left + layout.axisWidth,
         horizontalAxisTop,
         rect.right,
-        std::min(rect.bottom, horizontalAxisTop + layout.guideStrokeWidth)};
+        std::min(rect.bottom, horizontalAxisTop + layout.guideStrokeWidth)
+    };
     renderer.FillSolidRect(verticalAxisRect, axisColor);
     renderer.FillSolidRect(horizontalAxisRect, axisColor);
 
@@ -252,7 +272,7 @@ void DrawGraphAnimated(Renderer& renderer,
         const double valueRatio = ClampFinite(FiniteNonNegativeOr(history[i]) / maxValue, 0.0, 1.0);
         const double sampleX = static_cast<double>(i) - plotShift;
         const double x = static_cast<double>(layout.graphLeft) +
-                         (sampleX * static_cast<double>(layout.plotWidth) / static_cast<double>(historyDenominator));
+            (sampleX * static_cast<double>(layout.plotWidth) / static_cast<double>(historyDenominator));
         const double y =
             static_cast<double>(layout.graphBottom) - std::round(valueRatio * static_cast<double>(layout.plotHeight));
         plotPoints.push_back(PlotPoint{x, y});
@@ -267,30 +287,35 @@ void DrawGraphAnimated(Renderer& renderer,
         ClipPlotPointsToGraph(plotPoints, layout.graphLeft, layout.graphRight);
     if (clippedPlotPoints.size() >= 2) {
         renderer.DrawPolyline(
-            clippedPlotPoints, RenderStroke::Solid(plotColor, static_cast<float>(layout.plotStrokeWidth)));
+            clippedPlotPoints, RenderStroke::Solid(plotColor, static_cast<float>(layout.plotStrokeWidth))
+        );
     }
 
     if (!history.empty() && layout.leaderDiameter > 0) {
         const double leaderY =
             PlotYAtX(plotPoints, layout.graphRight).value_or(static_cast<double>(layout.graphBottom));
         FillCircle(
-            renderer, layout.graphRight, static_cast<int>(std::round(leaderY)), layout.leaderDiameter, plotColor);
+            renderer, layout.graphRight, static_cast<int>(std::round(leaderY)), layout.leaderDiameter, plotColor
+        );
     }
 }
 
 class ThroughputChartAnimation final : public WidgetAnimation {
 public:
-    ThroughputChartAnimation(AnimationDataKey key,
+    ThroughputChartAnimation(
+        AnimationDataKey key,
         RenderRect rect,
         ThroughputGraphLayout layout,
         double timeMarkerIntervalSamples,
-        bool drawValues)
-        : key_(std::move(key)), rect_(rect), layout_(layout), timeMarkerIntervalSamples_(timeMarkerIntervalSamples),
-          drawValues_(drawValues) {}
+        bool drawValues
+    ) :
+        key_(std::move(key)),
+        rect_(rect),
+        layout_(layout),
+        timeMarkerIntervalSamples_(timeMarkerIntervalSamples),
+        drawValues_(drawValues) {}
 
-    const AnimationDataKey& Key() const override {
-        return key_;
-    }
+    const AnimationDataKey& Key() const override { return key_; }
 
     RenderRect DirtyBounds() const override {
         RenderRect bounds = rect_;
@@ -303,7 +328,8 @@ public:
 
     void Draw(Renderer& renderer, const WidgetAnimationState& state) const override {
         const ThroughputChartSample& sample = ThroughputChartSampleFromState(state);
-        DrawGraphAnimated(renderer,
+        DrawGraphAnimated(
+            renderer,
             rect_,
             layout_,
             sample.samples,
@@ -314,7 +340,8 @@ public:
             sample.plotShiftSamples,
             timeMarkerIntervalSamples_,
             sample.bodySampleCount,
-            drawValues_);
+            drawValues_
+        );
     }
 
 private:
@@ -328,15 +355,14 @@ private:
 int EffectiveThroughputPreferredHeight(const WidgetHost& renderer) {
     const int headerHeight = renderer.Renderer().TextMetrics().smallText;
     const int graphLabelHeight = renderer.Renderer().TextMetrics().smallText;
-    return headerHeight + std::max(0, renderer.Renderer().ScaleLogical(renderer.Config().layout.throughput.headerGap)) +
-           graphLabelHeight;
+    return headerHeight +
+        std::max(0, renderer.Renderer().ScaleLogical(renderer.Config().layout.throughput.headerGap)) +
+        graphLabelHeight;
 }
 
 }  // namespace
 
-void ThroughputWidget::Initialize(const LayoutNodeConfig& node) {
-    metric_ = node.parameter;
-}
+void ThroughputWidget::Initialize(const LayoutNodeConfig& node) { metric_ = node.parameter; }
 
 int ThroughputWidget::PreferredHeight(const WidgetHost& renderer) const {
     return EffectiveThroughputPreferredHeight(renderer);
@@ -346,12 +372,16 @@ void ThroughputWidget::ResolveLayoutState(const WidgetHost& renderer, const Rend
     const int lineHeight = renderer.Renderer().TextMetrics().smallText;
     layoutState_.valueRect =
         RenderRect{rect.left, rect.top, rect.right, (std::min)(rect.bottom, rect.top + lineHeight)};
-    layoutState_.graphRect = RenderRect{rect.left,
-        (std::min)(rect.bottom,
+    layoutState_.graphRect = RenderRect{
+        rect.left,
+        (std::min)(
+            rect.bottom,
             layoutState_.valueRect.bottom +
-                (std::max)(0, renderer.Renderer().ScaleLogical(renderer.Config().layout.throughput.headerGap))),
+                (std::max)(0, renderer.Renderer().ScaleLogical(renderer.Config().layout.throughput.headerGap))
+        ),
         rect.right,
-        rect.bottom};
+        rect.bottom
+    };
     ThroughputGraphLayout graphLayout = ComputeGraphLayout(renderer, layoutState_.graphRect);
     graphLayout.valueRect = layoutState_.valueRect;
     const int anchorPadding = std::max(1, renderer.Renderer().ScaleLogical(1));
@@ -359,12 +389,14 @@ void ThroughputWidget::ResolveLayoutState(const WidgetHost& renderer, const Rend
     graphLayout.leaderAnchorCenterY =
         graphLayout.plotTop + (std::max)(0, (graphLayout.graphBottom - graphLayout.plotTop) / 2);
     graphLayout.leaderAnchorRect = MakeAnchorRect(
-        graphLayout.leaderAnchorCenterX, graphLayout.leaderAnchorCenterY, graphLayout.leaderDiameter, anchorPadding);
+        graphLayout.leaderAnchorCenterX, graphLayout.leaderAnchorCenterY, graphLayout.leaderDiameter, anchorPadding
+    );
     graphLayout.plotAnchorCenterX = graphLayout.graphLeft;
     graphLayout.plotAnchorCenterY =
         graphLayout.plotTop + (std::max)(0, (graphLayout.graphBottom - graphLayout.plotTop) / 2);
     graphLayout.plotAnchorRect = MakeAnchorRect(
-        graphLayout.plotAnchorCenterX, graphLayout.plotAnchorCenterY, graphLayout.plotStrokeWidth, anchorPadding);
+        graphLayout.plotAnchorCenterX, graphLayout.plotAnchorCenterY, graphLayout.plotStrokeWidth, anchorPadding
+    );
     graphLayout.guideAnchorRect =
         MakeAnchorRect(graphLayout.guideCenterX, graphLayout.guideCenterY, graphLayout.guideStrokeWidth, anchorPadding);
     layoutState_ = graphLayout;
@@ -372,33 +404,46 @@ void ThroughputWidget::ResolveLayoutState(const WidgetHost& renderer, const Rend
 
 void ThroughputWidget::Draw(WidgetHost& renderer, const WidgetLayout& widget, const MetricSource& metrics) const {
     const ThroughputMetric& metric = metrics.ResolveThroughput(metric_);
-    renderer.Renderer().DrawText(layoutState_.valueRect,
+    renderer.Renderer().DrawText(
+        layoutState_.valueRect,
         metric.label,
         TextStyleId::Small,
         RenderColorId::MutedText,
-        TextLayoutOptions::SingleLine(TextHorizontalAlign::Leading, TextVerticalAlign::Center));
+        TextLayoutOptions::SingleLine(TextHorizontalAlign::Leading, TextVerticalAlign::Center)
+    );
     const int labelWidth = renderer.Renderer().MeasureTextWidth(TextStyleId::Small, metric.label);
-    renderer.EditArtifacts().RegisterDynamicColorEditRegion(
-        WidgetHost::LayoutEditParameter::ColorAccent, layoutState_.graphRect);
+    renderer
+        .EditArtifacts()
+        .RegisterDynamicColorEditRegion(WidgetHost::LayoutEditParameter::ColorAccent, layoutState_.graphRect);
     RenderRect numberRect{
-        (std::min)(layoutState_.valueRect.right,
-            layoutState_.valueRect.left + labelWidth +
-                (std::max)(0, renderer.Renderer().ScaleLogical(renderer.Config().layout.throughput.headerGap))),
+        (std::min)(
+            layoutState_.valueRect.right,
+            layoutState_.valueRect.left +
+                labelWidth +
+                (std::max)(0, renderer.Renderer().ScaleLogical(renderer.Config().layout.throughput.headerGap))
+        ),
         layoutState_.valueRect.top,
         layoutState_.valueRect.right,
-        layoutState_.valueRect.bottom};
+        layoutState_.valueRect.bottom
+    };
     if (renderer.CurrentRenderMode() != WidgetHost::RenderMode::Blank) {
-        const WidgetHost::TextLayoutResult numberLayout = renderer.Renderer().DrawTextBlock(numberRect,
+        const WidgetHost::TextLayoutResult numberLayout = renderer.Renderer().DrawTextBlock(
+            numberRect,
             metric.valueText,
             TextStyleId::Small,
             RenderColorId::Foreground,
-            TextLayoutOptions::SingleLine(TextHorizontalAlign::Trailing, TextVerticalAlign::Center));
-        renderer.EditArtifacts().RegisterDynamicTextAnchor(numberLayout,
-            renderer.MakeEditableTextBinding(
-                widget, WidgetHost::LayoutEditParameter::FontSmall, 1, renderer.Config().layout.fonts.smallText.size),
-            WidgetHost::LayoutEditParameter::ColorForeground);
+            TextLayoutOptions::SingleLine(TextHorizontalAlign::Trailing, TextVerticalAlign::Center)
+        );
         renderer.EditArtifacts().RegisterDynamicTextAnchor(
-            numberLayout, renderer.MakeMetricTextBinding(widget, metric_, 101));
+            numberLayout,
+            renderer.MakeEditableTextBinding(
+                widget, WidgetHost::LayoutEditParameter::FontSmall, 1, renderer.Config().layout.fonts.smallText.size
+            ),
+            WidgetHost::LayoutEditParameter::ColorForeground
+        );
+        renderer
+            .EditArtifacts()
+            .RegisterDynamicTextAnchor(numberLayout, renderer.MakeMetricTextBinding(widget, metric_, 101));
     }
     const ThroughputGraphLayout& layout = layoutState_;
     ThroughputChartSample targetSample;
@@ -410,37 +455,42 @@ void ThroughputWidget::Draw(WidgetHost& renderer, const WidgetLayout& widget, co
     targetSample.guideStepMbps = metric.guideStepMbps;
     targetSample.bodySampleCount = metric.history.size();
     const bool drawValues = renderer.CurrentRenderMode() != WidgetHost::RenderMode::Blank;
-    DrawGraphSnapshot(renderer,
-        layout.graphRect,
-        layout,
-        targetSample.maxGraph,
-        renderer.MakeEditableTextBinding(
-            widget, WidgetHost::LayoutEditParameter::FontSmall, 2, renderer.Config().layout.fonts.smallText.size));
+    DrawGraphSnapshot(renderer, layout.graphRect, layout, targetSample.maxGraph, renderer.MakeEditableTextBinding(
+        widget, WidgetHost::LayoutEditParameter::FontSmall, 2, renderer.Config().layout.fonts.smallText.size
+    ));
     renderer.AddWidgetAnimation(
         std::make_unique<ThroughputChartAnimation>(
-            AnimationDataKey{metric_, {}}, layout.graphRect, layout, metric.timeMarkerIntervalSamples, drawValues),
-        MakeThroughputChartAnimationState(targetSample));
+            AnimationDataKey{metric_, {}}, layout.graphRect, layout, metric.timeMarkerIntervalSamples, drawValues
+        ),
+        MakeThroughputChartAnimationState(targetSample)
+    );
 }
 
 void ThroughputWidget::BuildStaticAnchors(WidgetHost& renderer, const WidgetLayout& widget) const {
     const ThroughputGraphLayout& layout = layoutState_;
     renderer.EditArtifacts().RegisterStaticEditAnchor(LayoutEditAnchorRegistration{
-        .key = LayoutEditAnchorKey{LayoutEditWidgetIdentity{widget.cardId, widget.editCardId, widget.nodePath},
+        .key = LayoutEditAnchorKey{
+            LayoutEditWidgetIdentity{widget.cardId, widget.editCardId, widget.nodePath},
             WidgetHost::LayoutEditParameter::ThroughputLeaderDiameter,
-            0},
+            0
+        },
         .targetRect = layout.leaderAnchorRect,
         .anchorRect = layout.leaderAnchorRect,
         .shape = AnchorShape::Circle,
         .value = renderer.Config().layout.throughput.leaderDiameter,
         .drag = LayoutEditAnchorDrag::RadialDistance(
-            RenderPoint{layout.leaderAnchorCenterX, layout.leaderAnchorCenterY}, 2.0),
+            RenderPoint{layout.leaderAnchorCenterX, layout.leaderAnchorCenterY}, 2.0
+        ),
         .visibility = LayoutEditAnchorVisibility::WhenWidgetHovered,
-        .targetOutline = LayoutEditTargetOutline::Hidden});
+        .targetOutline = LayoutEditTargetOutline::Hidden
+    });
 
     renderer.EditArtifacts().RegisterStaticEditAnchor(LayoutEditAnchorRegistration{
-        .key = LayoutEditAnchorKey{LayoutEditWidgetIdentity{widget.cardId, widget.editCardId, widget.nodePath},
+        .key = LayoutEditAnchorKey{
+            LayoutEditWidgetIdentity{widget.cardId, widget.editCardId, widget.nodePath},
             WidgetHost::LayoutEditParameter::ThroughputPlotStrokeWidth,
-            0},
+            0
+        },
         .targetRect = layout.plotAnchorRect,
         .anchorRect = layout.plotAnchorRect,
         .shape = AnchorShape::Circle,
@@ -448,34 +498,43 @@ void ThroughputWidget::BuildStaticAnchors(WidgetHost& renderer, const WidgetLayo
         .drag =
             LayoutEditAnchorDrag::RadialDistance(RenderPoint{layout.plotAnchorCenterX, layout.plotAnchorCenterY}, 2.0),
         .visibility = LayoutEditAnchorVisibility::WhenWidgetHovered,
-        .targetOutline = LayoutEditTargetOutline::Hidden});
+        .targetOutline = LayoutEditTargetOutline::Hidden
+    });
 
     renderer.EditArtifacts().RegisterStaticEditAnchor(LayoutEditAnchorRegistration{
-        .key = LayoutEditAnchorKey{LayoutEditWidgetIdentity{widget.cardId, widget.editCardId, widget.nodePath},
+        .key = LayoutEditAnchorKey{
+            LayoutEditWidgetIdentity{widget.cardId, widget.editCardId, widget.nodePath},
             WidgetHost::LayoutEditParameter::ThroughputGuideStrokeWidth,
-            0},
+            0
+        },
         .targetRect = layout.guideAnchorRect,
         .anchorRect = layout.guideAnchorRect,
         .shape = AnchorShape::Circle,
         .value = renderer.Config().layout.throughput.guideStrokeWidth,
         .drag = LayoutEditAnchorDrag::RadialDistance(RenderPoint{layout.guideCenterX, layout.guideCenterY}, 2.0),
         .visibility = LayoutEditAnchorVisibility::WhenWidgetHovered,
-        .targetOutline = LayoutEditTargetOutline::Hidden});
+        .targetOutline = LayoutEditTargetOutline::Hidden
+    });
 
     const MetricDefinitionConfig* definition = renderer.FindConfiguredMetricDefinition(metric_);
     if (definition != nullptr && !definition->label.empty()) {
-        renderer.EditArtifacts().RegisterStaticTextAnchor(layoutState_.valueRect,
+        renderer.EditArtifacts().RegisterStaticTextAnchor(
+            layoutState_.valueRect,
             definition->label,
             TextStyleId::Small,
             TextLayoutOptions::SingleLine(TextHorizontalAlign::Leading, TextVerticalAlign::Center),
             renderer.MakeEditableTextBinding(
-                widget, WidgetHost::LayoutEditParameter::FontSmall, 0, renderer.Config().layout.fonts.smallText.size),
-            WidgetHost::LayoutEditParameter::ColorMutedText);
-        renderer.EditArtifacts().RegisterStaticTextAnchor(layoutState_.valueRect,
+                widget, WidgetHost::LayoutEditParameter::FontSmall, 0, renderer.Config().layout.fonts.smallText.size
+            ),
+            WidgetHost::LayoutEditParameter::ColorMutedText
+        );
+        renderer.EditArtifacts().RegisterStaticTextAnchor(
+            layoutState_.valueRect,
             definition->label,
             TextStyleId::Small,
             TextLayoutOptions::SingleLine(TextHorizontalAlign::Leading, TextVerticalAlign::Center),
-            renderer.MakeMetricTextBinding(widget, metric_, 100));
+            renderer.MakeMetricTextBinding(widget, metric_, 100)
+        );
     }
 }
 
@@ -483,9 +542,11 @@ void ThroughputWidget::BuildEditGuides(WidgetHost& renderer, const WidgetLayout&
     const int hitInset = (std::max)(3, renderer.Renderer().ScaleLogical(4));
 
     LayoutEditWidgetGuide guide;
-    const int x = std::clamp(static_cast<int>(layoutState_.graphRect.left) + layoutState_.axisWidth,
+    const int x = std::clamp(
+        static_cast<int>(layoutState_.graphRect.left) + layoutState_.axisWidth,
         static_cast<int>(widget.rect.left),
-        static_cast<int>(widget.rect.right));
+        static_cast<int>(widget.rect.right)
+    );
     guide.axis = LayoutGuideAxis::Vertical;
     guide.widget = LayoutEditWidgetIdentity{widget.cardId, widget.editCardId, widget.nodePath};
     guide.parameter = WidgetHost::LayoutEditParameter::ThroughputAxisPadding;
@@ -499,9 +560,11 @@ void ThroughputWidget::BuildEditGuides(WidgetHost& renderer, const WidgetLayout&
     guide.dragDirection = 1;
     renderer.EditArtifacts().RegisterWidgetEditGuide(guide);
 
-    const int y = std::clamp(static_cast<int>(layoutState_.graphRect.top),
+    const int y = std::clamp(
+        static_cast<int>(layoutState_.graphRect.top),
         static_cast<int>(widget.rect.top),
-        static_cast<int>(widget.rect.bottom));
+        static_cast<int>(widget.rect.bottom)
+    );
     guide = {};
     guide.axis = LayoutGuideAxis::Horizontal;
     guide.widget = LayoutEditWidgetIdentity{widget.cardId, widget.editCardId, widget.nodePath};

@@ -57,20 +57,23 @@ struct DashboardTitlebarControlLayout {
     RECT titleTextRect{};
 };
 
-DashboardTitlebarFrameMargins DashboardTitlebarFrameMarginsFromAdjustedRect(
-    const RECT& adjustedRect, int clientWidth, int clientHeight);
-DashboardTitlebarGeometry ResolveDashboardTitlebarFrameGeometry(
-    const RECT& dashboardClientRect, DashboardTitlebarFrameMargins margins);
+DashboardTitlebarFrameMargins
+    DashboardTitlebarFrameMarginsFromAdjustedRect(const RECT& adjustedRect, int clientWidth, int clientHeight);
+DashboardTitlebarGeometry
+    ResolveDashboardTitlebarFrameGeometry(const RECT& dashboardClientRect, DashboardTitlebarFrameMargins margins);
 DashboardTitlebarGeometry ResolveDashboardTitlebarGeometry(
-    const RECT& dashboardClientRect, const RECT& monitorRect, DashboardTitlebarFrameMargins margins);
+    const RECT& dashboardClientRect, const RECT& monitorRect, DashboardTitlebarFrameMargins margins
+);
 DashboardTitlebarResizeHitRects ResolveDashboardTitlebarResizeHitRects(const RECT& clientRect, int hitSize);
-DashboardTitlebarControlLayout ResolveDashboardTitlebarControlLayout(
-    const RECT& clientRect, const DashboardTitlebarControlMetrics& metrics);
+DashboardTitlebarControlLayout
+    ResolveDashboardTitlebarControlLayout(const RECT& clientRect, const DashboardTitlebarControlMetrics& metrics);
 const char* DashboardTitlebarTooltipLocalizationKey(DashboardTitlebarTooltipControl control);
-DashboardTitlebarTooltipTarget ResolveDashboardTitlebarTooltipTarget(POINT clientPoint,
+DashboardTitlebarTooltipTarget ResolveDashboardTitlebarTooltipTarget(
+    POINT clientPoint,
     const RECT& appMenuRect,
     const RECT& layoutComboRect,
     const RECT& themeComboRect,
     const RECT& editLayoutRect,
     const RECT& displayRect,
-    const RECT& closeRect);
+    const RECT& closeRect
+);

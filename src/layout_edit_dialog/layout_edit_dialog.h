@@ -35,11 +35,13 @@ public:
     virtual bool ApplyColorPreview(LayoutEditParameter parameter, unsigned int value) = 0;
     virtual bool ApplyColorExpressionPreview(LayoutEditParameter parameter, const std::string& expression) = 0;
     virtual bool ApplyThemeColorPreview(const ThemeColorEditKey& key, unsigned int value) = 0;
-    virtual bool ApplyMetricPreview(const LayoutMetricEditKey& key,
+    virtual bool ApplyMetricPreview(
+        const LayoutMetricEditKey& key,
         const std::optional<double>& scale,
         const std::string& unit,
         const std::string& label,
-        const std::optional<std::string>& binding) = 0;
+        const std::optional<std::string>& binding
+    ) = 0;
     virtual bool ApplyCardTitlePreview(const LayoutCardTitleEditKey& key, const std::string& title) = 0;
     virtual bool ApplyLayoutEditPreview(const LayoutEditFocusKey& key, const LayoutEditValue& value) = 0;
     virtual bool ApplyWeightPreview(const LayoutWeightEditKey& key, int firstWeight, int secondWeight) = 0;

@@ -2,6 +2,4 @@
 
 #include "util/text_format.h"
 
-std::string FormatRgbaColorText(unsigned int value) {
-    return FormatText("#%08X", value);
-}
+std::string FormatRgbaColorText(unsigned int value) { return FormatText("#%08X", value); }

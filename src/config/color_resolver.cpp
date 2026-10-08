@@ -10,9 +10,7 @@
 
 namespace {
 
-std::string FormatHexColor(ColorConfig color) {
-    return FormatRgbaColorText(color.ToRgba());
-}
+std::string FormatHexColor(ColorConfig color) { return FormatRgbaColorText(color.ToRgba()); }
 
 std::optional<unsigned int> HexNibble(char ch) {
     if (ch >= '0' && ch <= '9') {
@@ -46,9 +44,7 @@ ColorConfig ParseHexColorOrDefault(const std::string& value, ColorConfig fallbac
     return ColorConfig::FromRgba(rgba);
 }
 
-ColorBytes ToColorBytes(ColorConfig color) {
-    return ColorBytesFromRgba(color.ToRgba());
-}
+ColorBytes ToColorBytes(ColorConfig color) { return ColorBytesFromRgba(color.ToRgba()); }
 
 ColorConfig FromColorBytes(ColorBytes color, const std::string& expression) {
     ColorConfig result = ColorConfig::FromRgba(RgbaFromColorBytes(color));
@@ -72,8 +68,8 @@ const RuntimeConfigSectionDescriptor& RequiredSection(std::string_view name) {
 
 std::optional<ColorConfig> FindThemeToken(const ThemeConfig& theme, std::string_view name) {
     for (const RuntimeConfigFieldDescriptor& field : RuntimeConfigFields(RequiredSection("theme."))) {
-        if (field.kind == RuntimeConfigFieldValueKind::HexColor &&
-            std::string_view(field.key, field.keyLength) == name) {
+        if (field.kind == RuntimeConfigFieldValueKind::HexColor && std::string_view(field.key, field.keyLength) == name)
+        {
             return *reinterpret_cast<const ColorConfig*>(reinterpret_cast<const char*>(&theme) + field.offset);
         }
     }
@@ -167,10 +163,11 @@ std::optional<ColorConfig> FindThemeColorToken(const ThemeConfig& theme, std::st
 }
 
 std::optional<ColorConfig> FindConfigColorFieldByKey(
-    std::span<const RuntimeConfigFieldDescriptor> fields, const void* owner, std::string_view name) {
+    std::span<const RuntimeConfigFieldDescriptor> fields, const void* owner, std::string_view name
+) {
     for (const RuntimeConfigFieldDescriptor& field : fields) {
-        if (field.kind == RuntimeConfigFieldValueKind::HexColor &&
-            std::string_view(field.key, field.keyLength) == name) {
+        if (field.kind == RuntimeConfigFieldValueKind::HexColor && std::string_view(field.key, field.keyLength) == name)
+        {
             return ColorField(owner, field);
         }
     }
@@ -178,7 +175,8 @@ std::optional<ColorConfig> FindConfigColorFieldByKey(
 }
 
 void ResolveConfigColorFieldsInPlace(
-    std::span<const RuntimeConfigFieldDescriptor> fields, void* owner, ConfigColorLookup lookup) {
+    std::span<const RuntimeConfigFieldDescriptor> fields, void* owner, ConfigColorLookup lookup
+) {
     for (const RuntimeConfigFieldDescriptor& field : fields) {
         if (field.kind == RuntimeConfigFieldValueKind::HexColor) {
             ResolveColorInPlace(MutableColorField(owner, field), lookup);

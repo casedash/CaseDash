@@ -32,10 +32,8 @@ struct DumpFieldDescriptor {
 
 using DumpValues = std::vector<std::pair<std::string, std::string>>;
 
-#define DUMP_FIELD(key, kind, field)                                                                                   \
-    DumpFieldDescriptor {                                                                                              \
-        key, static_cast<std::uint32_t>(offsetof(TelemetryDump, field)), kind                                          \
-    }
+#define DUMP_FIELD(key, kind, field) \
+    DumpFieldDescriptor{key, static_cast<std::uint32_t>(offsetof(TelemetryDump, field)), kind}
 
 // Size: fixed metadata avoids function-local vector construction/destruction code.
 constexpr DumpFieldDescriptor kFlatDumpFields[] = {
@@ -75,15 +73,18 @@ constexpr DumpFieldDescriptor kFlatDumpFields[] = {
     DUMP_FIELD("time.second", DumpFieldKind::SystemTimeWord, snapshot.now.wSecond),
     DUMP_FIELD("time.milliseconds", DumpFieldKind::SystemTimeWord, snapshot.now.wMilliseconds),
 };
+
 constexpr size_t kFlatDumpFieldCount = sizeof(kFlatDumpFields) / sizeof(kFlatDumpFields[0]);
 
 #undef DUMP_FIELD
 
-template <typename Field> Field& DumpField(TelemetryDump& dump, const DumpFieldDescriptor& field) {
+template <typename Field>
+Field& DumpField(TelemetryDump& dump, const DumpFieldDescriptor& field) {
     return *reinterpret_cast<Field*>(reinterpret_cast<char*>(&dump) + field.offset);
 }
 
-template <typename Field> const Field& DumpField(const TelemetryDump& dump, const DumpFieldDescriptor& field) {
+template <typename Field>
+const Field& DumpField(const TelemetryDump& dump, const DumpFieldDescriptor& field) {
     return *reinterpret_cast<const Field*>(reinterpret_cast<const char*>(&dump) + field.offset);
 }
 
@@ -187,12 +188,14 @@ void WriteDouble(std::string& output, const std::string& key, double value, int 
     WriteLine(output, key, FormatText("%.*f", precision, value));
 }
 
-template <typename T> void WriteInteger(std::string& output, const std::string& key, T value) {
+template <typename T>
+void WriteInteger(std::string& output, const std::string& key, T value) {
     WriteLine(output, key, FormatText("%lld", static_cast<long long>(value)));
 }
 
 void WriteOptionalDouble(
-    std::string& output, const std::string& key, const std::optional<double>& value, int precision = 6) {
+    std::string& output, const std::string& key, const std::optional<double>& value, int precision = 6
+) {
     if (!value.has_value()) {
         WriteLine(output, key, "null");
         return;
@@ -211,13 +214,9 @@ void WriteDoubleArray(std::string& output, const std::string& key, const std::ve
     AppendFormat(output, "]\n");
 }
 
-std::string_view ScalarMetricUnitDumpText(ScalarMetricUnit unit) {
-    return EnumToString(unit);
-}
+std::string_view ScalarMetricUnitDumpText(ScalarMetricUnit unit) { return EnumToString(unit); }
 
-bool ParseDumpScalarMetricUnit(std::string_view text, ScalarMetricUnit& unit) {
-    return TryEnumFromString(text, unit);
-}
+bool ParseDumpScalarMetricUnit(std::string_view text, ScalarMetricUnit& unit) { return TryEnumFromString(text, unit); }
 
 void WriteScalarMetricUnit(std::string& output, const std::string& key, ScalarMetricUnit unit) {
     WriteString(output, key, std::string(ScalarMetricUnitDumpText(unit)));
@@ -256,7 +255,8 @@ void WriteFlatDumpFields(std::string& output, const TelemetryDump& dump, size_t 
 }
 
 void WriteNamedScalarMetrics(
-    std::string& output, const std::string& prefix, const std::vector<NamedScalarMetric>& metrics) {
+    std::string& output, const std::string& prefix, const std::vector<NamedScalarMetric>& metrics
+) {
     WriteInteger(output, DumpKey(prefix, ".count"), metrics.size());
     for (size_t i = 0; i < metrics.size(); ++i) {
         const std::string metricPrefix = FormatText("%s.%zu", prefix.c_str(), i);
@@ -268,18 +268,20 @@ void WriteNamedScalarMetrics(
 }
 
 void WriteRetainedHistories(
-    std::string& output, const std::string& prefix, const std::vector<RetainedHistorySeries>& histories) {
+    std::string& output, const std::string& prefix, const std::vector<RetainedHistorySeries>& histories
+) {
     WriteInteger(output, DumpKey(prefix, ".count"), histories.size());
     for (size_t i = 0; i < histories.size(); ++i) {
         const std::string historyPrefix = FormatText("%s.%zu", prefix.c_str(), i);
         WriteString(output, DumpKey(historyPrefix, ".series_ref"), histories[i].seriesRef);
         WriteDoubleArray(output, DumpKey(historyPrefix, ".samples"), histories[i].samples);
         WriteDoubleArray(
-            output, DumpKey(historyPrefix, ".throughput_live_samples"), histories[i].throughputLiveSamples);
+            output, DumpKey(historyPrefix, ".throughput_live_samples"), histories[i].throughputLiveSamples
+        );
         WriteDouble(output, DumpKey(historyPrefix, ".throughput_bucket_total"), histories[i].throughputBucketTotal, 6);
-        WriteInteger(output,
-            DumpKey(historyPrefix, ".throughput_bucket_sample_count"),
-            histories[i].throughputBucketSampleCount);
+        WriteInteger(
+            output, DumpKey(historyPrefix, ".throughput_bucket_sample_count"), histories[i].throughputBucketSampleCount
+        );
     }
 }
 
@@ -390,8 +392,8 @@ bool LoadUnsigned(const DumpValues& values, const std::string& key, T& field, st
         return true;
     }
     unsigned long long parsed = 0;
-    if (!ParseStrictUnsigned(text, parsed) ||
-        parsed > static_cast<unsigned long long>((std::numeric_limits<T>::max)())) {
+    if (!ParseStrictUnsigned(text, parsed) || parsed > static_cast<unsigned long long>((std::numeric_limits<T>::max)()))
+    {
         SetInvalidKeyError(error, "integer", key);
         return false;
     }
@@ -400,7 +402,8 @@ bool LoadUnsigned(const DumpValues& values, const std::string& key, T& field, st
 }
 
 bool LoadOptionalDouble(
-    const DumpValues& values, const std::string& key, std::optional<double>& field, std::string* error) {
+    const DumpValues& values, const std::string& key, std::optional<double>& field, std::string* error
+) {
     std::string text;
     if (!TryGetValue(values, key, text)) {
         return true;
@@ -418,8 +421,8 @@ bool LoadOptionalDouble(
     return true;
 }
 
-bool LoadScalarMetricUnit(
-    const DumpValues& values, const std::string& key, ScalarMetricUnit& field, std::string* error) {
+bool LoadScalarMetricUnit(const DumpValues& values, const std::string& key, ScalarMetricUnit& field, std::string* error)
+{
     std::string text;
     if (!TryGetValue(values, key, text)) {
         return true;
@@ -433,7 +436,8 @@ bool LoadScalarMetricUnit(
 }
 
 bool LoadScalarMetricIssue(
-    const DumpValues& values, const std::string& key, ScalarMetricIssue& field, std::string* error) {
+    const DumpValues& values, const std::string& key, ScalarMetricIssue& field, std::string* error
+) {
     std::string text;
     if (!TryGetValue(values, key, text)) {
         return true;
@@ -447,7 +451,8 @@ bool LoadScalarMetricIssue(
 }
 
 bool LoadDoubleArrayField(
-    const DumpValues& values, const std::string& key, std::vector<double>& field, std::string* error) {
+    const DumpValues& values, const std::string& key, std::vector<double>& field, std::string* error
+) {
     std::string text;
     if (!TryGetValue(values, key, text)) {
         return true;
@@ -501,7 +506,8 @@ bool LoadFlatDumpFields(const DumpValues& values, TelemetryDump& dump, size_t be
 }
 
 bool LoadNamedScalarMetrics(
-    const DumpValues& values, const std::string& prefix, std::vector<NamedScalarMetric>& field, std::string* error) {
+    const DumpValues& values, const std::string& prefix, std::vector<NamedScalarMetric>& field, std::string* error
+) {
     size_t count = 0;
     if (!LoadUnsigned(values, DumpKey(prefix, ".count"), count, error)) {
         return false;
@@ -512,10 +518,12 @@ bool LoadNamedScalarMetrics(
     for (size_t i = 0; i < count; ++i) {
         NamedScalarMetric metric;
         const std::string metricPrefix = FormatText("%s.%zu", prefix.c_str(), i);
-        if (!LoadString(values, DumpKey(metricPrefix, ".name"), metric.name, error) ||
+        if (
+            !LoadString(values, DumpKey(metricPrefix, ".name"), metric.name, error) ||
             !LoadOptionalDouble(values, DumpKey(metricPrefix, ".value"), metric.metric.value, error) ||
             !LoadScalarMetricUnit(values, DumpKey(metricPrefix, ".unit"), metric.metric.unit, error) ||
-            !LoadScalarMetricIssue(values, DumpKey(metricPrefix, ".issue"), metric.metric.issue, error)) {
+            !LoadScalarMetricIssue(values, DumpKey(metricPrefix, ".issue"), metric.metric.issue, error)
+        ) {
             return false;
         }
         field.push_back(std::move(metric));
@@ -523,10 +531,9 @@ bool LoadNamedScalarMetrics(
     return true;
 }
 
-bool LoadRetainedHistories(const DumpValues& values,
-    const std::string& prefix,
-    std::vector<RetainedHistorySeries>& field,
-    std::string* error) {
+bool LoadRetainedHistories(
+    const DumpValues& values, const std::string& prefix, std::vector<RetainedHistorySeries>& field, std::string* error
+) {
     size_t count = 0;
     if (!LoadUnsigned(values, DumpKey(prefix, ".count"), count, error)) {
         return false;
@@ -537,16 +544,22 @@ bool LoadRetainedHistories(const DumpValues& values,
     for (size_t i = 0; i < count; ++i) {
         RetainedHistorySeries history;
         const std::string historyPrefix = FormatText("%s.%zu", prefix.c_str(), i);
-        if (!LoadString(values, DumpKey(historyPrefix, ".series_ref"), history.seriesRef, error) ||
+        if (
+            !LoadString(values, DumpKey(historyPrefix, ".series_ref"), history.seriesRef, error) ||
             !LoadDoubleArrayField(values, DumpKey(historyPrefix, ".samples"), history.samples, error) ||
             !LoadDoubleArrayField(
-                values, DumpKey(historyPrefix, ".throughput_live_samples"), history.throughputLiveSamples, error) ||
+                values, DumpKey(historyPrefix, ".throughput_live_samples"), history.throughputLiveSamples, error
+            ) ||
             !LoadDouble(
-                values, DumpKey(historyPrefix, ".throughput_bucket_total"), history.throughputBucketTotal, error) ||
-            !LoadUnsigned(values,
+                values, DumpKey(historyPrefix, ".throughput_bucket_total"), history.throughputBucketTotal, error
+            ) ||
+            !LoadUnsigned(
+                values,
                 DumpKey(historyPrefix, ".throughput_bucket_sample_count"),
                 history.throughputBucketSampleCount,
-                error)) {
+                error
+            )
+        ) {
             return false;
         }
         field.push_back(std::move(history));
@@ -620,7 +633,8 @@ bool LoadTelemetryDump(std::string_view input, TelemetryDump& dump, std::string*
             return false;
         }
         SetDumpValue(
-            values, TrimDumpWhitespace(trimmed.substr(0, equals)), TrimDumpWhitespace(trimmed.substr(equals + 1)));
+            values, TrimDumpWhitespace(trimmed.substr(0, equals)), TrimDumpWhitespace(trimmed.substr(equals + 1))
+        );
         if (lineEnd == input.size()) {
             break;
         }
@@ -635,11 +649,13 @@ bool LoadTelemetryDump(std::string_view input, TelemetryDump& dump, std::string*
         return false;
     }
 
-    if (!LoadFlatDumpFields(values, parsed, 0, 6, error) ||
+    if (
+        !LoadFlatDumpFields(values, parsed, 0, 6, error) ||
         !LoadNamedScalarMetrics(values, "board.temperatures", parsed.snapshot.boardTemperatures, error) ||
         !LoadNamedScalarMetrics(values, "board.fans", parsed.snapshot.boardFans, error) ||
         !LoadRetainedHistories(values, "retained_histories", parsed.snapshot.retainedHistories, error) ||
-        !LoadFlatDumpFields(values, parsed, 6, 26, error)) {
+        !LoadFlatDumpFields(values, parsed, 6, 26, error)
+    ) {
         return false;
     }
 
@@ -652,11 +668,13 @@ bool LoadTelemetryDump(std::string_view input, TelemetryDump& dump, std::string*
     for (size_t i = 0; i < driveCount; ++i) {
         DriveInfo drive;
         const std::string prefix = FormatText("drives.%zu", i);
-        if (!LoadString(values, DumpKey(prefix, ".label"), drive.label, error) ||
+        if (
+            !LoadString(values, DumpKey(prefix, ".label"), drive.label, error) ||
             !LoadDouble(values, DumpKey(prefix, ".used_percent"), drive.usedPercent, error) ||
             !LoadDouble(values, DumpKey(prefix, ".free_gb"), drive.freeGb, error) ||
             !LoadDouble(values, DumpKey(prefix, ".read_mbps"), drive.readMbps, error) ||
-            !LoadDouble(values, DumpKey(prefix, ".write_mbps"), drive.writeMbps, error)) {
+            !LoadDouble(values, DumpKey(prefix, ".write_mbps"), drive.writeMbps, error)
+        ) {
             return false;
         }
         parsed.snapshot.drives.push_back(std::move(drive));

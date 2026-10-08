@@ -7,9 +7,7 @@ double ScaleFromDpi(UINT dpi) {
     return RoundDisplayScale(static_cast<double>(std::max(kDefaultDpi, dpi)) / static_cast<double>(kDefaultDpi));
 }
 
-bool HasExplicitDisplayScale(double scale) {
-    return std::isfinite(scale) && scale > 0.0;
-}
+bool HasExplicitDisplayScale(double scale) { return std::isfinite(scale) && scale > 0.0; }
 
 double RoundDisplayScale(double scale) {
     if (!std::isfinite(scale)) {

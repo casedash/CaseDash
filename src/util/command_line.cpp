@@ -12,9 +12,7 @@
 
 namespace {
 
-char LowerAscii(char ch) {
-    return ch >= 'A' && ch <= 'Z' ? static_cast<char>(ch - 'A' + 'a') : ch;
-}
+char LowerAscii(char ch) { return ch >= 'A' && ch <= 'Z' ? static_cast<char>(ch - 'A' + 'a') : ch; }
 
 bool EqualsAsciiInsensitive(std::string_view left, std::string_view right) {
     if (left.size() != right.size()) {
@@ -103,12 +101,16 @@ std::optional<std::string> GetSwitchValue(const CommandLineArguments& arguments,
     return std::nullopt;
 }
 
-std::optional<CommandLineColonSwitchValue> GetColonSwitchValueWithIndex(
-    const CommandLineArguments& arguments, std::string_view target) {
+std::optional<CommandLineColonSwitchValue>
+    GetColonSwitchValueWithIndex(const CommandLineArguments& arguments, std::string_view target)
+{
     for (size_t i = 1; i < arguments.size(); ++i) {
         const std::string& argument = arguments[i];
-        if (argument.size() > target.size() && StartsWithAsciiInsensitive(argument, target) &&
-            argument[target.size()] == ':') {
+        if (
+            argument.size() > target.size() &&
+            StartsWithAsciiInsensitive(argument, target) &&
+            argument[target.size()] == ':'
+        ) {
             return CommandLineColonSwitchValue{i, std::string_view(argument).substr(target.size() + 1)};
         }
     }

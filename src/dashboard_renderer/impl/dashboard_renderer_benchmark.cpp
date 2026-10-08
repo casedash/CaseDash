@@ -3,13 +3,11 @@
 #include <utility>
 
 bool DashboardRendererBenchmarkAccess::BuildAnimationFrame(
-    DashboardRenderer& renderer, const SystemSnapshot& snapshot, DashboardPresentationFrame& frame) {
+    DashboardRenderer& renderer, const SystemSnapshot& snapshot, DashboardPresentationFrame& frame
+) {
     renderer.lastError_.clear();
     DashboardOverlayState overlayState;
-    const DashboardRenderer::PresentationBuildOptions options{
-        true,
-        true,
-    };
+    const DashboardRenderer::PresentationBuildOptions options{true, true};
     const bool built = renderer.BuildPresentationFrame(snapshot, overlayState, frame, options);
     if (!built) {
         return false;
@@ -19,13 +17,11 @@ bool DashboardRendererBenchmarkAccess::BuildAnimationFrame(
 }
 
 bool DashboardRendererBenchmarkAccess::BuildSnapshotHandoffFrame(
-    DashboardRenderer& renderer, const SystemSnapshot& snapshot, DashboardPresentationFrame& frame) {
+    DashboardRenderer& renderer, const SystemSnapshot& snapshot, DashboardPresentationFrame& frame
+) {
     renderer.lastError_.clear();
     DashboardOverlayState overlayState;
-    const DashboardRenderer::PresentationBuildOptions options{
-        renderer.presentationHwnd_ != nullptr,
-        false,
-    };
+    const DashboardRenderer::PresentationBuildOptions options{renderer.presentationHwnd_ != nullptr, false};
     const bool built = renderer.BuildPresentationFrame(snapshot, overlayState, frame, options);
     if (!built) {
         return false;
@@ -34,11 +30,12 @@ bool DashboardRendererBenchmarkAccess::BuildSnapshotHandoffFrame(
 }
 
 bool DashboardRendererBenchmarkAccess::PublishSnapshotHandoffFrame(
-    DashboardRenderer& renderer, DashboardPresentationFrame frame) {
+    DashboardRenderer& renderer, DashboardPresentationFrame frame
+) {
     renderer.lastError_.clear();
-    const bool published = renderer.presentationHwnd_ == nullptr
-                               ? renderer.presentation_->PresentFrameSynchronously(std::move(frame))
-                               : renderer.presentation_->PublishFrame(std::move(frame));
+    const bool published = renderer.presentationHwnd_ == nullptr ?
+        renderer.presentation_->PresentFrameSynchronously(std::move(frame)) :
+        renderer.presentation_->PublishFrame(std::move(frame));
     if (!published) {
         renderer.lastError_ = renderer.presentation_->LastError();
     }

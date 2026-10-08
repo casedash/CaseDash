@@ -181,9 +181,7 @@ std::string TopLevelPackage(const std::string& moduleName) {
     return slash == std::string::npos ? moduleName : moduleName.substr(0, slash);
 }
 
-bool IsPackagePrivateModule(const std::string& moduleName) {
-    return Split(moduleName, '/').size() > 2;
-}
+bool IsPackagePrivateModule(const std::string& moduleName) { return Split(moduleName, '/').size() > 2; }
 
 std::string ModuleDirectory(const std::string& moduleName) {
     const size_t slash = moduleName.find_last_of('/');
@@ -191,9 +189,7 @@ std::string ModuleDirectory(const std::string& moduleName) {
 }
 
 std::string FormatAllowedPackageDependencies(
-    const std::string& package,
-    const std::set<std::string>& dependencies,
-    const std::set<std::string>& universal
+    const std::string& package, const std::set<std::string>& dependencies, const std::set<std::string>& universal
 ) {
     std::set<std::string> allowed = dependencies;
     if (universal.find(package) == universal.end()) {
@@ -215,9 +211,7 @@ std::string FormatAllowedPackageDependencies(
     return text + " modules";
 }
 
-bool IsIdentifierChar(char ch) {
-    return ch == '_' || std::isalnum(static_cast<unsigned char>(ch)) != 0;
-}
+bool IsIdentifierChar(char ch) { return ch == '_' || std::isalnum(static_cast<unsigned char>(ch)) != 0; }
 
 int SkipQuotedLiteral(const std::string& text, int index, char quote) {
     ++index;
@@ -358,9 +352,10 @@ std::vector<int> FindUndocumentedWideLiteralLines(const std::string& text) {
             )) {
                 ++literalIndex;
             }
-            if (literalIndex < static_cast<int>(text.size()) && (
-                text[static_cast<size_t>(literalIndex)] == '"' || text[static_cast<size_t>(literalIndex)] == '\''
-            )) {
+            if (
+                literalIndex < static_cast<int>(text.size()) &&
+                (text[static_cast<size_t>(literalIndex)] == '"' || text[static_cast<size_t>(literalIndex)] == '\'')
+            ) {
                 const bool raw = literalIndex > 0 && text.substr(static_cast<size_t>(literalIndex - 1), 2) == "R\"";
                 const int end = raw ? SkipRawStringLiteral(text, literalIndex - 1) :
                     SkipQuotedLiteral(text, literalIndex, text[static_cast<size_t>(literalIndex)]);
@@ -401,9 +396,7 @@ public:
         context_(std::move(context)),
         roots_(ConfigStrings(config, "roots")),
         headerSuffixes_(RequireSuffixGroup(
-            context_.suffixGroups,
-            "architecture.header_suffix_group",
-            config.At("header_suffix_group").AsString()
+            context_.suffixGroups, "architecture.header_suffix_group", config.At("header_suffix_group").AsString()
         )),
         implementationSuffixes_(RequireSuffixGroup(
             context_.suffixGroups,
@@ -534,9 +527,9 @@ private:
                 brace = record.strippedText.find('{', brace + 1);
                 continue;
             }
-            const int line = static_cast<int>(
-                std::count(record.strippedText.begin(), record.strippedText.begin() + brace, '\n')
-            ) + 1;
+            const int line =
+                static_cast<int>(std::count(record.strippedText.begin(), record.strippedText.begin() + brace, '\n')) +
+                    1;
             violations_.push_back({
                 record.relative + ":" + std::to_string(line),
                 "header-body",
@@ -560,8 +553,7 @@ private:
                     record.relative + ":1",
                     "missing-header",
                     record.relative +
-                        " has no matching header " +
-                        expected +
+                        " has no matching header " + expected +
                         "; add one or allowlist the translation unit."
                 });
             }
@@ -607,12 +599,9 @@ private:
                 definition.relpath + ":" + std::to_string(definition.line),
                 "impl-mismatch",
                 definition.name +
-                    " is declared from " +
-                    ownerHeader +
-                    " but implemented in " +
-                    definition.relpath +
-                    "; expected " +
-                    expectedCpp +
+                    " is declared from " + ownerHeader +
+                    " but implemented in " + definition.relpath +
+                    "; expected " + expectedCpp +
                     "."
             });
         }
@@ -652,9 +641,7 @@ public:
         context_(std::move(context)),
         roots_(ConfigStrings(config, "roots")),
         suffixes_(RequireSuffixGroup(
-            context_.suffixGroups,
-            "include_style.suffix_group",
-            config.At("suffix_group").AsString()
+            context_.suffixGroups, "include_style.suffix_group", config.At("suffix_group").AsString()
         )),
         trackedOnly_(config.Find("tracked_only") != nullptr && config.At("tracked_only").AsBool()),
         nolintPattern_(MakeRegex(config.At("nolint_pattern").AsString())),
@@ -671,9 +658,8 @@ public:
         }
         for (int index = 0; index < static_cast<int>(record.lines.size()); ++index) {
             if (std::regex_search(record.lines[static_cast<size_t>(index)], nolintPattern_)) {
-                violations_.push_back(
-                    {record.relative + ":" + std::to_string(index + 1), "include-style", nolintMessage_}
-                );
+                violations_
+                    .push_back({record.relative + ":" + std::to_string(index + 1), "include-style", nolintMessage_});
             }
         }
 
@@ -692,14 +678,10 @@ public:
             violations_.push_back({
                 record.relative + ":" + std::to_string(include.line),
                 "include-style",
-                "Project header \"" +
-                    include.text +
-                    "\" resolves to " +
-                    RelativePath(resolved->first, context_.projectRoot) +
-                    "; use \"" +
-                    expected +
-                    "\" from the " +
-                    resolved->second +
+                "Project header \"" + include.text +
+                    "\" resolves to " + RelativePath(resolved->first, context_.projectRoot) +
+                    "; use \"" + expected +
+                    "\" from the " + resolved->second +
                     " include root instead of a relative or local shorthand path."
             });
         }
@@ -788,9 +770,7 @@ struct Module {
     int cppFiles = 0;
     int cppLoc = 0;
 
-    int TotalLoc() const {
-        return headerLoc + cppLoc;
-    }
+    int TotalLoc() const { return headerLoc + cppLoc; }
 };
 
 struct IncludeUse {
@@ -826,9 +806,7 @@ struct PackageLocSummary {
     int cppFiles = 0;
     int cppLoc = 0;
 
-    int TotalLoc() const {
-        return headerLoc + cppLoc;
-    }
+    int TotalLoc() const { return headerLoc + cppLoc; }
 };
 
 class SourceDependencyChecker final : public Checker {
@@ -839,9 +817,7 @@ public:
         sourceRootName_(roots_.empty() ? "" : roots_[0]),
         sourceRoot_(AbsolutePath((FilePath(context_.projectRoot) / sourceRootName_).string())),
         suffixes_(RequireSuffixGroup(
-            context_.suffixGroups,
-            "source_dependencies.suffix_group",
-            config.At("suffix_group").AsString()
+            context_.suffixGroups, "source_dependencies.suffix_group", config.At("suffix_group").AsString()
         )),
         headerSuffixes_(RequireSuffixGroup(
             context_.suffixGroups,
@@ -1257,14 +1233,10 @@ private:
             const auto summary = summaries.find(package);
             const int totalLoc = summary == summaries.end() ? 0 : summary->second.TotalLoc();
             lines.push_back(
-                "  " +
-                    std::to_string(index + 1) +
-                    ". " +
-                    FormatCount(totalLoc) +
-                    " LOC: " +
-                    package +
-                    " -> " +
-                    dependencies
+                "  " + std::to_string(index + 1) +
+                    ". " + FormatCount(totalLoc) +
+                    " LOC: " + package +
+                    " -> " + dependencies
             );
         }
         return lines;
@@ -1337,9 +1309,7 @@ public:
         context_(std::move(context)),
         roots_(ConfigStrings(config, "roots")),
         suffixes_(RequireSuffixGroup(
-            context_.suffixGroups,
-            "source_policy.suffix_group",
-            config.At("suffix_group").AsString()
+            context_.suffixGroups, "source_policy.suffix_group", config.At("suffix_group").AsString()
         )),
         guardrailsDoc_(config.Find("guardrails_doc") != nullptr ? config.At("guardrails_doc").AsString() : ""),
         wideLiteralMessage_(config.At("wide_literals").At("message").AsString())

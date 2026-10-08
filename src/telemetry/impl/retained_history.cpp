@@ -8,9 +8,7 @@ namespace {
 
 constexpr size_t kMaxCachedHistoryIndex = 0xffffu - 1u;
 
-size_t HistoryKeyIndex(RetainedHistoryKey key) {
-    return static_cast<size_t>(key);
-}
+size_t HistoryKeyIndex(RetainedHistoryKey key) { return static_cast<size_t>(key); }
 
 RetainedHistorySeries CreateRetainedHistorySeries(std::string_view seriesRef, bool throughput) {
     RetainedHistorySeries history;
@@ -61,8 +59,7 @@ void PushThroughputSample(RetainedHistorySeries& history, double value) {
     ++history.throughputBucketSampleCount;
     if (history.throughputBucketSampleCount >= kThroughputHistorySmoothingSamples) {
         PushHistorySample(
-            history.samples,
-            history.throughputBucketTotal / static_cast<double>(history.throughputBucketSampleCount)
+            history.samples, history.throughputBucketTotal / static_cast<double>(history.throughputBucketSampleCount)
         );
         history.throughputBucketTotal = 0.0;
         history.throughputBucketSampleCount = 0;
@@ -75,10 +72,7 @@ bool IsThroughputSeriesRef(std::string_view seriesRef) {
 }
 
 bool TryGetCachedHistoryIndex(
-    const SystemSnapshot& snapshot,
-    RetainedHistoryKey key,
-    std::string_view seriesRef,
-    size_t& index
+    const SystemSnapshot& snapshot, RetainedHistoryKey key, std::string_view seriesRef, size_t& index
 ) {
     const uint16_t encodedIndex = snapshot.retainedHistoryIndexByKey[HistoryKeyIndex(key)];
     if (encodedIndex == 0) {

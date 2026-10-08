@@ -44,8 +44,8 @@ void AddResourceString(std::vector<ResourceStringLookupEntry>& strings, const ch
     strings.push_back({resource_strings_detail::ResourceStringHash(text, length), text});
 }
 
-std::vector<ResourceStringLookupEntry> BuildResourceStringLookup(
-    const std::vector<ResourceStringLookupEntry>& strings) {
+std::vector<ResourceStringLookupEntry> BuildResourceStringLookup(const std::vector<ResourceStringLookupEntry>& strings)
+{
     std::vector<ResourceStringLookupEntry> lookup(ResourceStringLookupSize(strings.size()));
     const std::size_t mask = lookup.size() - 1;
     for (const ResourceStringLookupEntry& string : strings) {
@@ -75,7 +75,8 @@ ResourceStringCatalog LoadResourceStringCatalog() {
     }
     if (start != catalog.storage.data() + catalog.storage.size()) {
         AddResourceString(
-            strings, start, static_cast<std::size_t>(catalog.storage.data() + catalog.storage.size() - start));
+            strings, start, static_cast<std::size_t>(catalog.storage.data() + catalog.storage.size() - start)
+        );
     }
     catalog.lookup = BuildResourceStringLookup(strings);
     return catalog;

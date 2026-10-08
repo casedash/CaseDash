@@ -55,13 +55,7 @@ IconPalette PaletteFromConfig(const AppConfig& config) {
     const IconColor accent = ColorFromConfig(colors.accentColor);
     const IconColor panel = ColorFromConfig(colors.panelFillColor);
     const IconColor muted = ColorFromConfig(colors.mutedTextColor);
-    return IconPalette{
-        background,
-        panel,
-        foreground,
-        accent,
-        Mix(muted, foreground, 0.15),
-    };
+    return IconPalette{background, panel, foreground, accent, Mix(muted, foreground, 0.15)};
 }
 
 double RoundedRectDistance(double x, double y, double left, double top, double right, double bottom, double radius) {
@@ -117,7 +111,8 @@ bool AngleInSweep(double angle, double start, double sweep) {
 }
 
 bool InArcStroke(
-    double x, double y, double centerX, double centerY, double radius, double width, double start, double sweep) {
+    double x, double y, double centerX, double centerY, double radius, double width, double start, double sweep
+) {
     const double dx = x - centerX;
     const double dy = y - centerY;
     const double distance = std::sqrt(dx * dx + dy * dy);
@@ -177,11 +172,13 @@ IconColor RenderSample(double x, double y, const IconPalette& palette) {
     }
 
     constexpr double pulseWidth = 7.0;
-    if (InLineStroke(x, y, 62.0, 206.0, 194.0, 206.0, pulseWidth) ||
+    if (
+        InLineStroke(x, y, 62.0, 206.0, 194.0, 206.0, pulseWidth) ||
         InLineStroke(x, y, 94.0, 206.0, 109.0, 182.0, pulseWidth) ||
         InLineStroke(x, y, 109.0, 182.0, 126.0, 224.0, pulseWidth) ||
         InLineStroke(x, y, 126.0, 224.0, 146.0, 164.0, pulseWidth) ||
-        InLineStroke(x, y, 146.0, 164.0, 164.0, 206.0, pulseWidth)) {
+        InLineStroke(x, y, 146.0, 164.0, 164.0, 206.0, pulseWidth)
+    ) {
         Blend(color, palette.foreground);
     }
 
@@ -201,9 +198,7 @@ void StoreBgra(std::uint8_t* target, IconColor color) {
 
 }  // namespace
 
-bool IsValidAppIconSize(int size) {
-    return size >= kMinAppIconSize && size <= kMaxAppIconSize;
-}
+bool IsValidAppIconSize(int size) { return size >= kMinAppIconSize && size <= kMaxAppIconSize; }
 
 AppIconBitmap RenderAppIconBitmap(const AppConfig& config, int size) {
     const int iconSize = IsValidAppIconSize(size) ? size : kDefaultAppIconSize;
@@ -222,10 +217,12 @@ AppIconBitmap RenderAppIconBitmap(const AppConfig& config, int size) {
             double alpha = 0.0;
             for (int sy = 0; sy < kSupersample; ++sy) {
                 for (int sx = 0; sx < kSupersample; ++sx) {
-                    const double sampleX = (static_cast<double>(x) + (static_cast<double>(sx) + 0.5) / kSupersample) *
-                                           256.0 / static_cast<double>(iconSize);
-                    const double sampleY = (static_cast<double>(y) + (static_cast<double>(sy) + 0.5) / kSupersample) *
-                                           256.0 / static_cast<double>(iconSize);
+                    const double sampleX =
+                        (static_cast<double>(x) + (static_cast<double>(sx) + 0.5) / kSupersample) * 256.0 /
+                            static_cast<double>(iconSize);
+                    const double sampleY =
+                        (static_cast<double>(y) + (static_cast<double>(sy) + 0.5) / kSupersample) * 256.0 /
+                            static_cast<double>(iconSize);
                     const IconColor sample = RenderSample(sampleX, sampleY, palette);
                     premultipliedR += sample.r * sample.a * kSampleWeight;
                     premultipliedG += sample.g * sample.a * kSampleWeight;
@@ -235,16 +232,12 @@ AppIconBitmap RenderAppIconBitmap(const AppConfig& config, int size) {
             }
             IconColor pixel;
             if (alpha > 0.0) {
-                pixel = IconColor{
-                    premultipliedR / alpha,
-                    premultipliedG / alpha,
-                    premultipliedB / alpha,
-                    alpha,
-                };
+                pixel = IconColor{premultipliedR / alpha, premultipliedG / alpha, premultipliedB / alpha, alpha};
             }
             StoreBgra(
                 &bitmap.bgra[(static_cast<size_t>(y) * static_cast<size_t>(iconSize) + static_cast<size_t>(x)) * 4u],
-                pixel);
+                pixel
+            );
         }
     }
     return bitmap;

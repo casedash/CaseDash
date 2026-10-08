@@ -140,12 +140,16 @@ struct TextLayoutOptions {
     bool ellipsis = false;
     bool clip = true;
 
-    static TextLayoutOptions SingleLine(TextHorizontalAlign horizontal = TextHorizontalAlign::Leading,
+    static TextLayoutOptions SingleLine(
+        TextHorizontalAlign horizontal = TextHorizontalAlign::Leading,
         TextVerticalAlign vertical = TextVerticalAlign::Center,
         bool clip = true,
-        bool ellipsis = false);
-    static TextLayoutOptions Wrapped(TextHorizontalAlign horizontal = TextHorizontalAlign::Leading,
+        bool ellipsis = false
+    );
+    static TextLayoutOptions Wrapped(
+        TextHorizontalAlign horizontal = TextHorizontalAlign::Leading,
         TextVerticalAlign vertical = TextVerticalAlign::Top,
         bool clip = true,
-        bool ellipsis = false);
+        bool ellipsis = false
+    );
 };

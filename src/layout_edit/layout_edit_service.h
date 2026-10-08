@@ -21,7 +21,9 @@ std::vector<int> SeedGuideWeights(const LayoutEditGuide& guide, const LayoutNode
 bool ApplyLayoutNodeFieldValue(AppConfig& config, const LayoutNodeFieldEditKey& key, std::string_view value);
 bool ApplyLayoutEditValue(AppConfig& config, const LayoutEditFocusKey& key, const LayoutEditValue& value);
 bool ApplyMetricListOrder(
-    AppConfig& config, const LayoutEditWidgetIdentity& widget, const std::vector<std::string>& metricRefs);
+    AppConfig& config, const LayoutEditWidgetIdentity& widget, const std::vector<std::string>& metricRefs
+);
 bool ApplyContainerChildOrder(
-    AppConfig& config, const LayoutContainerChildOrderEditKey& key, int fromIndex, int toIndex);
+    AppConfig& config, const LayoutContainerChildOrderEditKey& key, int fromIndex, int toIndex
+);
 bool AppendMetricListRow(AppConfig& config, const LayoutEditWidgetIdentity& widget, std::string_view metricRef);

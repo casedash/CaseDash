@@ -10,40 +10,54 @@ namespace {
 
 MetricsSectionConfig BuildMetricsConfig() {
     MetricsSectionConfig metrics;
+    metrics
+        .definitions.push_back(MetricDefinitionConfig{"gpu.load", MetricDisplayStyle::Percent, true, 0.0, "%", "Load"});
+    metrics
+        .definitions
+        .push_back(MetricDefinitionConfig{"gpu.temp", MetricDisplayStyle::Scalar, false, 100.0, "C", "Temp"});
+    metrics
+        .definitions
+        .push_back(MetricDefinitionConfig{"gpu.clock", MetricDisplayStyle::Scalar, false, 3000.0, "MHz", "Clock"});
+    metrics
+        .definitions
+        .push_back(MetricDefinitionConfig{"gpu.fan", MetricDisplayStyle::Scalar, false, 3000.0, "RPM", "Fan"});
+    metrics
+        .definitions
+        .push_back(MetricDefinitionConfig{"gpu.fps", MetricDisplayStyle::Scalar, false, 240.0, "FPS", "FPS"});
+    metrics
+        .definitions.push_back(MetricDefinitionConfig{"cpu.load", MetricDisplayStyle::Percent, true, 0.0, "%", "Load"});
+    metrics
+        .definitions
+        .push_back(MetricDefinitionConfig{"cpu.clock", MetricDisplayStyle::Scalar, false, 5.0, "GHz", "Clock"});
+    metrics
+        .definitions.push_back(MetricDefinitionConfig{"cpu.ram", MetricDisplayStyle::Memory, true, 0.0, "GB", "RAM"});
+    metrics
+        .definitions
+        .push_back(MetricDefinitionConfig{"gpu.vram", MetricDisplayStyle::Memory, true, 0.0, "MB|GB", "VRAM"});
+    metrics
+        .definitions
+        .push_back(MetricDefinitionConfig{"board.temp.cpu", MetricDisplayStyle::Scalar, false, 100.0, "C", "Temp"});
     metrics.definitions.push_back(
-        MetricDefinitionConfig{"gpu.load", MetricDisplayStyle::Percent, true, 0.0, "%", "Load"});
+        MetricDefinitionConfig{"board.fan.system", MetricDisplayStyle::Scalar, false, 3000.0, "RPM", "System Fan"}
+    );
+    metrics
+        .definitions
+        .push_back(MetricDefinitionConfig{"network.upload", MetricDisplayStyle::Throughput, true, 0.0, "MB/s", "Up"});
     metrics.definitions.push_back(
-        MetricDefinitionConfig{"gpu.temp", MetricDisplayStyle::Scalar, false, 100.0, "C", "Temp"});
-    metrics.definitions.push_back(
-        MetricDefinitionConfig{"gpu.clock", MetricDisplayStyle::Scalar, false, 3000.0, "MHz", "Clock"});
-    metrics.definitions.push_back(
-        MetricDefinitionConfig{"gpu.fan", MetricDisplayStyle::Scalar, false, 3000.0, "RPM", "Fan"});
-    metrics.definitions.push_back(
-        MetricDefinitionConfig{"gpu.fps", MetricDisplayStyle::Scalar, false, 240.0, "FPS", "FPS"});
-    metrics.definitions.push_back(
-        MetricDefinitionConfig{"cpu.load", MetricDisplayStyle::Percent, true, 0.0, "%", "Load"});
-    metrics.definitions.push_back(
-        MetricDefinitionConfig{"cpu.clock", MetricDisplayStyle::Scalar, false, 5.0, "GHz", "Clock"});
-    metrics.definitions.push_back(
-        MetricDefinitionConfig{"cpu.ram", MetricDisplayStyle::Memory, true, 0.0, "GB", "RAM"});
-    metrics.definitions.push_back(
-        MetricDefinitionConfig{"gpu.vram", MetricDisplayStyle::Memory, true, 0.0, "MB|GB", "VRAM"});
-    metrics.definitions.push_back(
-        MetricDefinitionConfig{"board.temp.cpu", MetricDisplayStyle::Scalar, false, 100.0, "C", "Temp"});
-    metrics.definitions.push_back(
-        MetricDefinitionConfig{"board.fan.system", MetricDisplayStyle::Scalar, false, 3000.0, "RPM", "System Fan"});
-    metrics.definitions.push_back(
-        MetricDefinitionConfig{"network.upload", MetricDisplayStyle::Throughput, true, 0.0, "MB/s", "Up"});
-    metrics.definitions.push_back(
-        MetricDefinitionConfig{"network.download", MetricDisplayStyle::Throughput, true, 0.0, "MB/s", "Down"});
-    metrics.definitions.push_back(
-        MetricDefinitionConfig{"storage.read", MetricDisplayStyle::Throughput, true, 0.0, "MB/s", "Read"});
-    metrics.definitions.push_back(
-        MetricDefinitionConfig{"storage.write", MetricDisplayStyle::Throughput, true, 0.0, "MB/s", "Write"});
-    metrics.definitions.push_back(
-        MetricDefinitionConfig{"drive.usage", MetricDisplayStyle::Percent, false, 100.0, "%", "Usage"});
-    metrics.definitions.push_back(
-        MetricDefinitionConfig{"drive.free", MetricDisplayStyle::SizeAuto, true, 0.0, "GB|TB", "Free"});
+        MetricDefinitionConfig{"network.download", MetricDisplayStyle::Throughput, true, 0.0, "MB/s", "Down"}
+    );
+    metrics
+        .definitions
+        .push_back(MetricDefinitionConfig{"storage.read", MetricDisplayStyle::Throughput, true, 0.0, "MB/s", "Read"});
+    metrics
+        .definitions
+        .push_back(MetricDefinitionConfig{"storage.write", MetricDisplayStyle::Throughput, true, 0.0, "MB/s", "Write"});
+    metrics
+        .definitions
+        .push_back(MetricDefinitionConfig{"drive.usage", MetricDisplayStyle::Percent, false, 100.0, "%", "Usage"});
+    metrics
+        .definitions
+        .push_back(MetricDefinitionConfig{"drive.free", MetricDisplayStyle::SizeAuto, true, 0.0, "GB|TB", "Free"});
     return metrics;
 }
 
@@ -54,11 +68,13 @@ void AddHistorySeries(SystemSnapshot& snapshot, const std::string& metricRef, st
     snapshot.retainedHistories.push_back(std::move(series));
 }
 
-void AddThroughputHistorySeries(SystemSnapshot& snapshot,
+void AddThroughputHistorySeries(
+    SystemSnapshot& snapshot,
     const std::string& metricRef,
     const std::vector<double>& samples,
     std::initializer_list<double> liveSamples = {},
-    uint8_t bucketSampleCount = 0) {
+    uint8_t bucketSampleCount = 0
+) {
     RetainedHistorySeries series;
     series.seriesRef = metricRef;
     series.samples = samples;
@@ -67,13 +83,16 @@ void AddThroughputHistorySeries(SystemSnapshot& snapshot,
     snapshot.retainedHistories.push_back(std::move(series));
 }
 
-void AddThroughputHistorySeries(SystemSnapshot& snapshot,
+void AddThroughputHistorySeries(
+    SystemSnapshot& snapshot,
     const std::string& metricRef,
     std::initializer_list<double> samples,
     std::initializer_list<double> liveSamples = {},
-    uint8_t bucketSampleCount = 0) {
+    uint8_t bucketSampleCount = 0
+) {
     AddThroughputHistorySeries(
-        snapshot, metricRef, std::vector<double>(samples.begin(), samples.end()), liveSamples, bucketSampleCount);
+        snapshot, metricRef, std::vector<double>(samples.begin(), samples.end()), liveSamples, bucketSampleCount
+    );
 }
 
 }  // namespace
@@ -99,8 +118,9 @@ TEST(Metrics, ResolvesTextMetricsAndStaticTextTraitsFromBindingRegistry) {
 
 TEST(Metrics, KeepsDisplayOnlyDriveBindingsMetadataOnly) {
     MetricsSectionConfig metrics = BuildMetricsConfig();
-    metrics.definitions.push_back(
-        MetricDefinitionConfig{"drive.activity.read", MetricDisplayStyle::LabelOnly, true, 0.0, "", "R"});
+    metrics
+        .definitions
+        .push_back(MetricDefinitionConfig{"drive.activity.read", MetricDisplayStyle::LabelOnly, true, 0.0, "", "R"});
     SystemSnapshot snapshot;
 
     MetricSource source(snapshot, metrics);
@@ -293,7 +313,8 @@ TEST(Metrics, ResolvesBoardPermissionIssueAsAdminIndicator) {
     const MetricsSectionConfig metrics = BuildMetricsConfig();
     SystemSnapshot snapshot;
     snapshot.boardTemperatures.push_back(
-        {"cpu", ScalarMetric{std::nullopt, ScalarMetricUnit::Celsius, ScalarMetricIssue::PermissionRequired}});
+        {"cpu", ScalarMetric{std::nullopt, ScalarMetricUnit::Celsius, ScalarMetricIssue::PermissionRequired}}
+    );
 
     MetricSource source(snapshot, metrics);
 
@@ -308,7 +329,8 @@ TEST(Metrics, ResolvesBoardFanPermissionIssueAsAdminIndicator) {
     const MetricsSectionConfig metrics = BuildMetricsConfig();
     SystemSnapshot snapshot;
     snapshot.boardFans.push_back(
-        {"system", ScalarMetric{std::nullopt, ScalarMetricUnit::Rpm, ScalarMetricIssue::PermissionRequired}});
+        {"system", ScalarMetric{std::nullopt, ScalarMetricUnit::Rpm, ScalarMetricIssue::PermissionRequired}}
+    );
 
     MetricSource source(snapshot, metrics);
 
@@ -435,11 +457,13 @@ TEST(Metrics, KeepsThroughputGraphScaleStableAsAlternatingSpikeHistoryScrolls) {
 
     for (int scrollStep = 0; scrollStep < 4; ++scrollStep) {
         SystemSnapshot snapshot;
-        AddThroughputHistorySeries(snapshot,
+        AddThroughputHistorySeries(
+            snapshot,
             "network.upload",
             compactSpikeHistory,
             {kSpikeMbps, 0.0, kSpikeMbps, 0.0},
-            static_cast<uint8_t>(scrollStep));
+            static_cast<uint8_t>(scrollStep)
+        );
         AddThroughputHistorySeries(snapshot, "network.download", compactZeroHistory);
 
         MetricSource source(snapshot, metrics);
@@ -447,8 +471,10 @@ TEST(Metrics, KeepsThroughputGraphScaleStableAsAlternatingSpikeHistoryScrolls) {
 
         EXPECT_DOUBLE_EQ(upload.history.front(), kAveragedSpikeMbps) << "scroll step " << scrollStep;
         EXPECT_DOUBLE_EQ(upload.maxGraph, kAveragedSpikeMbps) << "scroll step " << scrollStep;
-        EXPECT_DOUBLE_EQ(upload.plotShiftSamples,
-            static_cast<double>(scrollStep) / static_cast<double>(kThroughputHistorySmoothingSamples))
+        EXPECT_DOUBLE_EQ(
+            upload.plotShiftSamples,
+            static_cast<double>(scrollStep) / static_cast<double>(kThroughputHistorySmoothingSamples)
+        )
             << "scroll step " << scrollStep;
     }
 }

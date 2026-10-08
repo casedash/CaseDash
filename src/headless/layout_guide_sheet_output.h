@@ -17,5 +17,6 @@ struct HeadlessLayoutGuideSheetOutputContext {
 };
 
 bool InitializeHeadlessLayoutGuideSheetOutput(
-    HeadlessLayoutGuideSheetOutputContext& context, std::string* errorText = nullptr);
+    HeadlessLayoutGuideSheetOutputContext& context, std::string* errorText = nullptr
+);
 DiagnosticsOutputHandlers CreateHeadlessDiagnosticsOutputHandlers(HeadlessLayoutGuideSheetOutputContext& context);

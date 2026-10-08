@@ -4,13 +4,9 @@
 
 namespace tools::lint {
 
-int FileRecord::LineCount() const {
-    return static_cast<int>(lines.size());
-}
+int FileRecord::LineCount() const { return static_cast<int>(lines.size()); }
 
-bool CheckResult::Failed() const {
-    return !findings.empty() || !errors.empty();
-}
+bool CheckResult::Failed() const { return !findings.empty() || !errors.empty(); }
 
 std::vector<std::string> ConfigStrings(const JsonValue& config, std::string_view key) {
     const JsonValue* value = config.Find(key);
@@ -31,9 +27,8 @@ std::set<std::string> RequireSuffixGroup(
 ) {
     const auto found = suffixGroups.find(std::string(groupName));
     if (found == suffixGroups.end()) {
-        throw std::runtime_error(
-            std::string(configPath) + " references unknown suffix group " + std::string(groupName)
-        );
+        throw
+            std::runtime_error(std::string(configPath) + " references unknown suffix group " + std::string(groupName));
     }
     return found->second;
 }

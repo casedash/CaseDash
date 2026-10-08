@@ -3,9 +3,7 @@
 #include "telemetry/metrics.h"
 #include "widget/widget_host.h"
 
-void ClockTimeWidget::Initialize(const LayoutNodeConfig& node) {
-    format_ = node.parameter;
-}
+void ClockTimeWidget::Initialize(const LayoutNodeConfig& node) { format_ = node.parameter; }
 
 int ClockTimeWidget::PreferredHeight(const WidgetHost& renderer) const {
     return renderer.Renderer().TextMetrics().clockTime;
@@ -17,17 +15,23 @@ void ClockTimeWidget::Draw(WidgetHost& renderer, const WidgetLayout& widget, con
     }
 
     const std::string text = !format_.empty() ? metrics.ResolveClockTime(format_) : std::string();
-    const WidgetHost::TextLayoutResult textLayout = renderer.Renderer().DrawTextBlock(widget.rect,
+    const WidgetHost::TextLayoutResult textLayout = renderer.Renderer().DrawTextBlock(
+        widget.rect,
         text,
         TextStyleId::ClockTime,
         RenderColorId::Foreground,
-        TextLayoutOptions::SingleLine(TextHorizontalAlign::Center, TextVerticalAlign::Center));
-    renderer.EditArtifacts().RegisterDynamicTextAnchor(textLayout,
+        TextLayoutOptions::SingleLine(TextHorizontalAlign::Center, TextVerticalAlign::Center)
+    );
+    renderer.EditArtifacts().RegisterDynamicTextAnchor(
+        textLayout,
         renderer.MakeEditableTextBinding(
-            widget, WidgetHost::LayoutEditParameter::FontClockTime, 0, renderer.Config().layout.fonts.clockTime.size),
-        WidgetHost::LayoutEditParameter::ColorForeground);
+            widget, WidgetHost::LayoutEditParameter::FontClockTime, 0, renderer.Config().layout.fonts.clockTime.size
+        ),
+        WidgetHost::LayoutEditParameter::ColorForeground
+    );
     renderer.EditArtifacts().RegisterDynamicCornerEditAnchor(
-        MakeLayoutNodeFieldEditAnchorKey(widget, WidgetClass::ClockTime), textLayout.textRect);
+        MakeLayoutNodeFieldEditAnchorKey(widget, WidgetClass::ClockTime), textLayout.textRect
+    );
 }
 
 void ClockTimeWidget::BuildStaticAnchors(WidgetHost&, const WidgetLayout&) const {}

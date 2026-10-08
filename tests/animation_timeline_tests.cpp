@@ -11,36 +11,35 @@
 namespace {
 
 using Clock = DashboardAnimationTimeline::Clock;
+
 constexpr auto kTimelineDuration = kTelemetryRefreshInterval;
 constexpr auto kTimelineHalf = kTimelineDuration / 2;
 constexpr auto kTimelineFifth = kTimelineDuration / 5;
 constexpr auto kTimelineTwoFifths = kTimelineFifth * 2;
 
-AnimationDataKey ScalarKey(std::string subject) {
-    return AnimationDataKey{std::move(subject), {}};
-}
+AnimationDataKey ScalarKey(std::string subject) { return AnimationDataKey{std::move(subject), {}}; }
 
-AnimationDataKey ThroughputKey(std::string subject) {
-    return AnimationDataKey{std::move(subject), {}};
-}
+AnimationDataKey ThroughputKey(std::string subject) { return AnimationDataKey{std::move(subject), {}}; }
 
-ScalarFillSample ScalarTarget(double value, double peak) {
-    return ScalarFillSample{value, peak};
-}
+ScalarFillSample ScalarTarget(double value, double peak) { return ScalarFillSample{value, peak}; }
 
-ScalarFillSample ResolveScalar(DashboardAnimationTimeline& timeline,
+ScalarFillSample ResolveScalar(
+    DashboardAnimationTimeline& timeline,
     const AnimationDataKey& key,
     const ScalarFillSample& target,
-    std::uint64_t targetVersion = 1) {
+    std::uint64_t targetVersion = 1
+) {
     WidgetAnimationStatePtr targetState = MakeScalarFillAnimationState(target);
     WidgetAnimationStatePtr sampled = timeline.Resolve(key, *targetState, targetVersion);
     return ScalarFillSampleFromState(*sampled);
 }
 
-ThroughputChartSample ResolveThroughput(DashboardAnimationTimeline& timeline,
+ThroughputChartSample ResolveThroughput(
+    DashboardAnimationTimeline& timeline,
     const AnimationDataKey& key,
     const ThroughputChartSample& target,
-    std::uint64_t targetVersion = 1) {
+    std::uint64_t targetVersion = 1
+) {
     WidgetAnimationStatePtr targetState = MakeThroughputChartAnimationState(target);
     WidgetAnimationStatePtr sampled = timeline.Resolve(key, *targetState, targetVersion);
     return ThroughputChartSampleFromState(*sampled);

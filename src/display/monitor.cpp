@@ -23,21 +23,13 @@ constexpr double kMinimumInteractiveResizeScale = 0.1;
 constexpr double kMaximumInteractiveResizeScale = 16.0;
 constexpr char kShcoreDllName[] = "Shcore.dll";
 
-int RectWidth(const RECT& rect) {
-    return rect.right - rect.left;
-}
+int RectWidth(const RECT& rect) { return rect.right - rect.left; }
 
-int RectHeight(const RECT& rect) {
-    return rect.bottom - rect.top;
-}
+int RectHeight(const RECT& rect) { return rect.bottom - rect.top; }
 
-bool AreScalesEqual(double left, double right) {
-    return std::abs(left - right) <= kMonitorFitEpsilon;
-}
+bool AreScalesEqual(double left, double right) { return std::abs(left - right) <= kMonitorFitEpsilon; }
 
-bool IsRectEmptyOrInvalid(const RECT& rect) {
-    return RectWidth(rect) <= 0 || RectHeight(rect) <= 0;
-}
+bool IsRectEmptyOrInvalid(const RECT& rect) { return RectWidth(rect) <= 0 || RectHeight(rect) <= 0; }
 
 bool ResizeCornerMovesRight(DisplayResizeCorner corner) {
     return corner == DisplayResizeCorner::TopRight || corner == DisplayResizeCorner::BottomRight;
@@ -54,8 +46,10 @@ RECT FitRectToAspectRatio(const RECT& bounds, int sourceWidth, int sourceHeight)
 
     const int boundsWidth = RectWidth(bounds);
     const int boundsHeight = RectHeight(bounds);
-    const double scale = std::min(static_cast<double>(boundsWidth) / static_cast<double>(sourceWidth),
-        static_cast<double>(boundsHeight) / static_cast<double>(sourceHeight));
+    const double scale = std::min(
+        static_cast<double>(boundsWidth) / static_cast<double>(sourceWidth),
+        static_cast<double>(boundsHeight) / static_cast<double>(sourceHeight)
+    );
     const int width =
         std::clamp(static_cast<int>(std::lround(static_cast<double>(sourceWidth) * scale)), 1, boundsWidth);
     const int height =
@@ -89,20 +83,23 @@ const char* DisplayPlacementModeLabel(DisplayPlacementMode mode) {
     return "";
 }
 
-bool DisplayMenuOptionMatchesCommittedConfig(const DisplayMenuOption& option,
+bool DisplayMenuOptionMatchesCommittedConfig(
+    const DisplayMenuOption& option,
     const DisplayConfig* committedDisplay,
-    const std::optional<TargetMonitorInfo>& committedMonitor) {
+    const std::optional<TargetMonitorInfo>& committedMonitor
+) {
     if (committedDisplay == nullptr || !committedMonitor.has_value()) {
         return false;
     }
     if (!RectsEqual(committedMonitor->rect, option.monitorRect)) {
         return false;
     }
-    const bool wallpaperMatches = option.writesWallpaper ? committedDisplay->wallpaper == kDefaultBlankWallpaperFileName
-                                                         : committedDisplay->wallpaper.empty();
-    return wallpaperMatches && committedDisplay->autohide == option.autohide &&
-           AreScalesEqual(ResolveDisplayScale(committedDisplay->scale, committedMonitor->dpi), option.targetScale) &&
-           committedDisplay->position == option.position;
+    const bool wallpaperMatches = option.writesWallpaper ?
+        committedDisplay->wallpaper == kDefaultBlankWallpaperFileName : committedDisplay->wallpaper.empty();
+    return wallpaperMatches &&
+        committedDisplay->autohide == option.autohide &&
+        AreScalesEqual(ResolveDisplayScale(committedDisplay->scale, committedMonitor->dpi), option.targetScale) &&
+        committedDisplay->position == option.position;
 }
 
 }  // namespace
@@ -111,7 +108,7 @@ bool RectsEqual(const RECT& lhs, const RECT& rhs) {
     return lhs.left == rhs.left && lhs.top == rhs.top && lhs.right == rhs.right && lhs.bottom == rhs.bottom;
 }
 
-using GetDpiForMonitorFn = HRESULT(WINAPI*)(HMONITOR, int, UINT*, UINT*);
+using GetDpiForMonitorFn = HRESULT (WINAPI *)(HMONITOR, int, UINT*, UINT*);
 
 UINT GetMonitorDpi(HMONITOR monitor) {
     if (monitor == nullptr) {
@@ -136,13 +133,13 @@ UINT GetMonitorDpi(HMONITOR monitor) {
     return kDefaultDpi;
 }
 
-double ResolveDisplayScale(const AppConfig& config, UINT dpi) {
-    return ResolveDisplayScale(config.display.scale, dpi);
-}
+double ResolveDisplayScale(const AppConfig& config, UINT dpi) { return ResolveDisplayScale(config.display.scale, dpi); }
 
 SIZE ComputeWindowSizeForScale(const AppConfig& config, double scale) {
-    return SIZE{ScaleLogicalToPhysical(config.layout.structure.window.width, scale),
-        ScaleLogicalToPhysical(config.layout.structure.window.height, scale)};
+    return SIZE{
+        ScaleLogicalToPhysical(config.layout.structure.window.width, scale),
+        ScaleLogicalToPhysical(config.layout.structure.window.height, scale)
+    };
 }
 
 SIZE ComputeWindowSizeForDpi(const AppConfig& config, UINT dpi) {
@@ -150,8 +147,12 @@ SIZE ComputeWindowSizeForDpi(const AppConfig& config, UINT dpi) {
 }
 
 double ComputeMonitorFittedScale(const AppConfig& config, LONG monitorWidth, LONG monitorHeight) {
-    if (config.layout.structure.window.width <= 0 || config.layout.structure.window.height <= 0 || monitorWidth <= 0 ||
-        monitorHeight <= 0) {
+    if (
+        config.layout.structure.window.width <= 0 ||
+        config.layout.structure.window.height <= 0 ||
+        monitorWidth <= 0 ||
+        monitorHeight <= 0
+    ) {
         return 0.0;
     }
 
@@ -174,21 +175,25 @@ double ComputeAspectResizeScale(SIZE layoutLogicalSize, POINT physicalExtent) {
     const double layoutHeight = static_cast<double>(layoutLogicalSize.cy);
     const double scale =
         (static_cast<double>(physicalExtent.x) * layoutWidth + static_cast<double>(physicalExtent.y) * layoutHeight) /
-        (layoutWidth * layoutWidth + layoutHeight * layoutHeight);
+            (layoutWidth * layoutWidth + layoutHeight * layoutHeight);
     return RoundDisplayScale(std::clamp(scale, kMinimumInteractiveResizeScale, kMaximumInteractiveResizeScale));
 }
 
 DisplayAspectResizeTarget ComputeAspectResizeDragTarget(
-    SIZE layoutLogicalSize, DisplayResizeCorner corner, POINT anchorScreenPoint, POINT draggedCornerScreenPoint) {
+    SIZE layoutLogicalSize, DisplayResizeCorner corner, POINT anchorScreenPoint, POINT draggedCornerScreenPoint
+) {
     const bool movesRight = ResizeCornerMovesRight(corner);
     const bool movesDown = ResizeCornerMovesDown(corner);
-    const POINT physicalExtent{movesRight ? draggedCornerScreenPoint.x - anchorScreenPoint.x
-                                          : anchorScreenPoint.x - draggedCornerScreenPoint.x,
-        movesDown ? draggedCornerScreenPoint.y - anchorScreenPoint.y
-                  : anchorScreenPoint.y - draggedCornerScreenPoint.y};
+    const POINT physicalExtent{
+        movesRight ? draggedCornerScreenPoint.x - anchorScreenPoint.x :
+            anchorScreenPoint.x - draggedCornerScreenPoint.x,
+        movesDown ? draggedCornerScreenPoint.y - anchorScreenPoint.y : anchorScreenPoint.y - draggedCornerScreenPoint.y
+    };
     const double targetScale = ComputeAspectResizeScale(layoutLogicalSize, physicalExtent);
-    const SIZE targetSize{ScaleLogicalToPhysical(layoutLogicalSize.cx, targetScale),
-        ScaleLogicalToPhysical(layoutLogicalSize.cy, targetScale)};
+    const SIZE targetSize{
+        ScaleLogicalToPhysical(layoutLogicalSize.cx, targetScale),
+        ScaleLogicalToPhysical(layoutLogicalSize.cy, targetScale)
+    };
 
     DisplayAspectResizeTarget target;
     target.targetScale = targetScale;
@@ -200,7 +205,8 @@ DisplayAspectResizeTarget ComputeAspectResizeDragTarget(
 }
 
 DisplayConfig BuildResizePlacementDisplayConfig(
-    const DisplayConfig& display, const MonitorPlacementInfo& placement, double targetScale) {
+    const DisplayConfig& display, const MonitorPlacementInfo& placement, double targetScale
+) {
     DisplayConfig result = display;
     result.monitorName = !placement.configMonitorName.empty() ? placement.configMonitorName : placement.deviceName;
     result.position.x = placement.relativePosition.x;
@@ -242,12 +248,15 @@ std::optional<DisplayPlacementMode> DisplayPlacementModeFromAutohideValue(std::s
 }
 
 bool IsEdgeDisplayPlacementMode(DisplayPlacementMode mode) {
-    return mode == DisplayPlacementMode::Top || mode == DisplayPlacementMode::Bottom ||
-           mode == DisplayPlacementMode::Left || mode == DisplayPlacementMode::Right;
+    return mode == DisplayPlacementMode::Top ||
+        mode == DisplayPlacementMode::Bottom ||
+        mode == DisplayPlacementMode::Left ||
+        mode == DisplayPlacementMode::Right;
 }
 
 std::optional<DisplayPlacementTarget> ComputeDisplayPlacementTarget(
-    const AppConfig& config, const DisplayMenuMonitorInfo& monitor, DisplayPlacementMode mode) {
+    const AppConfig& config, const DisplayMenuMonitorInfo& monitor, DisplayPlacementMode mode
+) {
     if (config.layout.structure.window.width <= 0 || config.layout.structure.window.height <= 0) {
         return std::nullopt;
     }
@@ -262,8 +271,9 @@ std::optional<DisplayPlacementTarget> ComputeDisplayPlacementTarget(
         static_cast<double>(monitorWidth) / static_cast<double>(config.layout.structure.window.width);
     const double rawHeightScale =
         static_cast<double>(monitorHeight) / static_cast<double>(config.layout.structure.window.height);
-    if (!std::isfinite(rawWidthScale) || !std::isfinite(rawHeightScale) || rawWidthScale <= 0.0 ||
-        rawHeightScale <= 0.0) {
+    if (
+        !std::isfinite(rawWidthScale) || !std::isfinite(rawHeightScale) || rawWidthScale <= 0.0 || rawHeightScale <= 0.0
+    ) {
         return std::nullopt;
     }
 
@@ -321,16 +331,20 @@ std::optional<DisplayPlacementTarget> ComputeDisplayPlacementTarget(
             break;
         }
         case DisplayPlacementMode::Bottom:
-            target.targetClientRect = RECT{monitor.rect.left,
+            target.targetClientRect = RECT{
+                monitor.rect.left,
                 monitor.rect.bottom - target.targetSize.cy,
                 monitor.rect.left + target.targetSize.cx,
-                monitor.rect.bottom};
+                monitor.rect.bottom
+            };
             break;
         case DisplayPlacementMode::Right:
-            target.targetClientRect = RECT{monitor.rect.right - target.targetSize.cx,
+            target.targetClientRect = RECT{
+                monitor.rect.right - target.targetSize.cx,
                 monitor.rect.top,
                 monitor.rect.right,
-                monitor.rect.top + target.targetSize.cy};
+                monitor.rect.top + target.targetSize.cy
+            };
             break;
     }
     return target;
@@ -345,8 +359,8 @@ std::optional<DisplayPlacementTarget> ResolveConfiguredAutohidePlacementTarget(c
     if (!monitor.has_value()) {
         return std::nullopt;
     }
-    const DisplayMenuMonitorInfo monitorInfo{
-        config.display.monitorName, config.display.monitorName, monitor->rect, monitor->dpi};
+    const DisplayMenuMonitorInfo
+        monitorInfo{config.display.monitorName, config.display.monitorName, monitor->rect, monitor->dpi};
     return ComputeDisplayPlacementTarget(config, monitorInfo, *mode);
 }
 
@@ -354,8 +368,9 @@ bool DisplayPlacementTargetMatchesRect(const DisplayPlacementTarget& target, con
     return RectsEqual(target.targetClientRect, rect);
 }
 
-DisplayPlacementSchematicGeometry ComputeDisplayPlacementSchematicGeometry(
-    const DisplayMenuOption& option, const RECT& bounds) {
+DisplayPlacementSchematicGeometry
+    ComputeDisplayPlacementSchematicGeometry(const DisplayMenuOption& option, const RECT& bounds)
+{
     DisplayPlacementSchematicGeometry geometry;
     const int monitorWidth = RectWidth(option.monitorRect);
     const int monitorHeight = RectHeight(option.monitorRect);
@@ -375,10 +390,12 @@ DisplayPlacementSchematicGeometry ComputeDisplayPlacementSchematicGeometry(
             geometry.caseDashRect.bottom = geometry.caseDashRect.top + height;
             if (height < displayHeight) {
                 geometry.hasDivider = true;
-                geometry.dividerRect = RECT{geometry.displayRect.left,
+                geometry.dividerRect = RECT{
+                    geometry.displayRect.left,
                     geometry.caseDashRect.bottom,
                     geometry.displayRect.right,
-                    geometry.caseDashRect.bottom + 1};
+                    geometry.caseDashRect.bottom + 1
+                };
             }
             return geometry;
         }
@@ -387,10 +404,12 @@ DisplayPlacementSchematicGeometry ComputeDisplayPlacementSchematicGeometry(
             geometry.caseDashRect.top = geometry.caseDashRect.bottom - height;
             if (height < displayHeight) {
                 geometry.hasDivider = true;
-                geometry.dividerRect = RECT{geometry.displayRect.left,
+                geometry.dividerRect = RECT{
+                    geometry.displayRect.left,
                     geometry.caseDashRect.top,
                     geometry.displayRect.right,
-                    geometry.caseDashRect.top + 1};
+                    geometry.caseDashRect.top + 1
+                };
             }
             return geometry;
         }
@@ -399,10 +418,12 @@ DisplayPlacementSchematicGeometry ComputeDisplayPlacementSchematicGeometry(
             geometry.caseDashRect.right = geometry.caseDashRect.left + width;
             if (width < displayWidth) {
                 geometry.hasDivider = true;
-                geometry.dividerRect = RECT{geometry.caseDashRect.right,
+                geometry.dividerRect = RECT{
+                    geometry.caseDashRect.right,
                     geometry.displayRect.top,
                     geometry.caseDashRect.right + 1,
-                    geometry.displayRect.bottom};
+                    geometry.displayRect.bottom
+                };
             }
             return geometry;
         }
@@ -411,10 +432,12 @@ DisplayPlacementSchematicGeometry ComputeDisplayPlacementSchematicGeometry(
             geometry.caseDashRect.left = geometry.caseDashRect.right - width;
             if (width < displayWidth) {
                 geometry.hasDivider = true;
-                geometry.dividerRect = RECT{geometry.caseDashRect.left,
+                geometry.dividerRect = RECT{
+                    geometry.caseDashRect.left,
                     geometry.displayRect.top,
                     geometry.caseDashRect.left + 1,
-                    geometry.displayRect.bottom};
+                    geometry.displayRect.bottom
+                };
             }
             return geometry;
         }
@@ -422,15 +445,21 @@ DisplayPlacementSchematicGeometry ComputeDisplayPlacementSchematicGeometry(
     return geometry;
 }
 
-size_t BuildDisplayMenuOptionsForMonitor(const AppConfig& config,
+size_t BuildDisplayMenuOptionsForMonitor(
+    const AppConfig& config,
     const DisplayMenuMonitorInfo& monitor,
     const DisplayConfig* committedDisplay,
     const std::optional<TargetMonitorInfo>& committedMonitor,
     bool startsSection,
     DisplayMenuOption* options,
-    size_t capacity) {
-    if (options == nullptr || capacity == 0 || config.layout.structure.window.width <= 0 ||
-        config.layout.structure.window.height <= 0) {
+    size_t capacity
+) {
+    if (
+        options == nullptr ||
+        capacity == 0 ||
+        config.layout.structure.window.width <= 0 ||
+        config.layout.structure.window.height <= 0
+    ) {
         return 0;
     }
 
@@ -444,8 +473,9 @@ size_t BuildDisplayMenuOptionsForMonitor(const AppConfig& config,
         static_cast<double>(monitorWidth) / static_cast<double>(config.layout.structure.window.width);
     const double rawHeightScale =
         static_cast<double>(monitorHeight) / static_cast<double>(config.layout.structure.window.height);
-    if (!std::isfinite(rawWidthScale) || !std::isfinite(rawHeightScale) || rawWidthScale <= 0.0 ||
-        rawHeightScale <= 0.0) {
+    if (
+        !std::isfinite(rawWidthScale) || !std::isfinite(rawHeightScale) || rawWidthScale <= 0.0 || rawHeightScale <= 0.0
+    ) {
         return 0;
     }
     const std::string labelName = !monitor.displayName.empty() ? monitor.displayName : monitor.configMonitorName;
@@ -494,14 +524,17 @@ size_t BuildDisplayMenuOptionsForMonitor(const AppConfig& config,
     return count;
 }
 
-size_t BuildDisplayMenuOptionsForMonitor(const AppConfig& config,
+size_t BuildDisplayMenuOptionsForMonitor(
+    const AppConfig& config,
     const DisplayMenuMonitorInfo& monitor,
     const std::optional<TargetMonitorInfo>& committedMonitor,
     bool startsSection,
     DisplayMenuOption* options,
-    size_t capacity) {
+    size_t capacity
+) {
     return BuildDisplayMenuOptionsForMonitor(
-        config, monitor, &config.display, committedMonitor, startsSection, options, capacity);
+        config, monitor, &config.display, committedMonitor, startsSection, options, capacity
+    );
 }
 
 AppConfig BuildConfiguredDisplayConfig(const AppConfig& config, const DisplayMenuOption& option) {
@@ -514,20 +547,23 @@ AppConfig BuildConfiguredDisplayConfig(const AppConfig& config, const DisplayMen
     return updatedConfig;
 }
 
-bool ShouldClearPreviousDisplayWallpaper(const AppConfig& previousConfig,
+bool ShouldClearPreviousDisplayWallpaper(
+    const AppConfig& previousConfig,
     const std::optional<TargetMonitorInfo>& previousMonitor,
-    const DisplayMenuOption& option) {
+    const DisplayMenuOption& option
+) {
     const std::optional<DisplayWallpaperOwner> previousOwner =
         ResolveCommittedDisplayWallpaperOwner(previousConfig, previousMonitor);
     const std::optional<DisplayWallpaperOwner> nextOwner =
-        option.writesWallpaper ? std::optional<DisplayWallpaperOwner>{DisplayWallpaperOwner{
-                                     option.configMonitorName, kDefaultBlankWallpaperFileName, option.monitorRect}}
-                               : std::nullopt;
+        option.writesWallpaper ? std::optional<DisplayWallpaperOwner>{
+            DisplayWallpaperOwner{option.configMonitorName, kDefaultBlankWallpaperFileName, option.monitorRect}
+        } : std::nullopt;
     return ShouldClearCommittedDisplayWallpaper(previousOwner, nextOwner);
 }
 
-std::optional<DisplayWallpaperOwner> ResolveCommittedDisplayWallpaperOwner(
-    const AppConfig& config, const std::optional<TargetMonitorInfo>& monitor) {
+std::optional<DisplayWallpaperOwner>
+    ResolveCommittedDisplayWallpaperOwner(const AppConfig& config, const std::optional<TargetMonitorInfo>& monitor)
+{
     if (config.display.wallpaper.empty() || !monitor.has_value() || config.display.position != LogicalPointConfig{}) {
         return std::nullopt;
     }
@@ -549,8 +585,9 @@ std::optional<DisplayWallpaperOwner> ResolveCommittedDisplayWallpaperOwner(const
     return ResolveCommittedDisplayWallpaperOwner(config, FindTargetMonitor(config.display.monitorName));
 }
 
-AppConfig NormalizeCommittedDisplayWallpaperConfig(
-    const AppConfig& config, const std::optional<TargetMonitorInfo>& monitor) {
+AppConfig
+    NormalizeCommittedDisplayWallpaperConfig(const AppConfig& config, const std::optional<TargetMonitorInfo>& monitor)
+{
     AppConfig normalized = config;
     if (!ResolveCommittedDisplayWallpaperOwner(normalized, monitor).has_value()) {
         normalized.display.wallpaper.clear();
@@ -563,7 +600,8 @@ AppConfig NormalizeCommittedDisplayWallpaperConfig(const AppConfig& config) {
 }
 
 bool ShouldClearCommittedDisplayWallpaper(
-    const std::optional<DisplayWallpaperOwner>& previousOwner, const std::optional<DisplayWallpaperOwner>& nextOwner) {
+    const std::optional<DisplayWallpaperOwner>& previousOwner, const std::optional<DisplayWallpaperOwner>& nextOwner
+) {
     if (!previousOwner.has_value()) {
         return false;
     }
@@ -595,8 +633,10 @@ MonitorIdentity GetMonitorIdentity(const std::string& deviceName) {
 
     std::vector<DISPLAYCONFIG_PATH_INFO> paths(pathCount);
     std::vector<DISPLAYCONFIG_MODE_INFO> modes(modeCount);
-    if (QueryDisplayConfig(QDC_ONLY_ACTIVE_PATHS, &pathCount, paths.data(), &modeCount, modes.data(), nullptr) !=
-        ERROR_SUCCESS) {
+    if (
+        QueryDisplayConfig(QDC_ONLY_ACTIVE_PATHS, &pathCount, paths.data(), &modeCount, modes.data(), nullptr) !=
+            ERROR_SUCCESS
+    ) {
         return identity;
     }
 
@@ -643,7 +683,8 @@ MonitorIdentity GetMonitorIdentity(const std::string& deviceName) {
 }
 
 size_t EnumerateDisplayMenuOptions(
-    const AppConfig& config, const DisplayConfig* committedDisplay, DisplayMenuOption* options, size_t capacity) {
+    const AppConfig& config, const DisplayConfig* committedDisplay, DisplayMenuOption* options, size_t capacity
+) {
     const std::optional<TargetMonitorInfo> committedMonitor =
         committedDisplay != nullptr ? FindTargetMonitor(committedDisplay->monitorName) : std::nullopt;
 
@@ -672,20 +713,25 @@ size_t EnumerateDisplayMenuOptions(
 
             const std::string deviceName = info.szDevice;
             const MonitorIdentity identity = GetMonitorIdentity(deviceName);
-            const DisplayMenuMonitorInfo monitorInfo{identity.displayName,
+            const DisplayMenuMonitorInfo monitorInfo{
+                identity.displayName,
                 !identity.configName.empty() ? identity.configName : deviceName,
                 info.rcMonitor,
-                GetMonitorDpi(monitor)};
-            context->count += BuildDisplayMenuOptionsForMonitor(*context->config,
+                GetMonitorDpi(monitor)
+            };
+            context->count += BuildDisplayMenuOptionsForMonitor(
+                *context->config,
                 monitorInfo,
                 context->committedDisplay,
                 *context->committedMonitor,
                 context->count > 0,
                 context->options + context->count,
-                context->capacity - context->count);
+                context->capacity - context->count
+            );
             return context->count < context->capacity;
         },
-        reinterpret_cast<LPARAM>(&context));
+        reinterpret_cast<LPARAM>(&context)
+    );
 
     return context.count;
 }
@@ -717,15 +763,18 @@ std::optional<TargetMonitorInfo> FindTargetMonitor(const std::string& requestedN
 
             const std::string deviceName = info.szDevice;
             const MonitorIdentity identity = GetMonitorIdentity(deviceName);
-            if (ContainsInsensitive(identity.displayName, context->requestedName) ||
+            if (
+                ContainsInsensitive(identity.displayName, context->requestedName) ||
                 ContainsInsensitive(identity.configName, context->requestedName) ||
-                ContainsInsensitive(deviceName, context->requestedName)) {
+                ContainsInsensitive(deviceName, context->requestedName)
+            ) {
                 context->result = TargetMonitorInfo{info.rcMonitor, GetMonitorDpi(monitor)};
                 return FALSE;
             }
             return TRUE;
         },
-        reinterpret_cast<LPARAM>(&context));
+        reinterpret_cast<LPARAM>(&context)
+    );
 
     return context.result;
 }
@@ -746,9 +795,11 @@ MonitorPlacementInfo GetMonitorPlacementForRect(const RECT& screenRect, double c
         info.physicalRelativePosition.x = screenRect.left - monitorInfo.rcMonitor.left;
         info.physicalRelativePosition.y = screenRect.top - monitorInfo.rcMonitor.top;
         info.relativePosition.x = ScalePhysicalToLogical(
-            screenRect.left - monitorInfo.rcMonitor.left, ResolveDisplayScale(configuredScale, info.dpi));
+            screenRect.left - monitorInfo.rcMonitor.left, ResolveDisplayScale(configuredScale, info.dpi)
+        );
         info.relativePosition.y = ScalePhysicalToLogical(
-            screenRect.top - monitorInfo.rcMonitor.top, ResolveDisplayScale(configuredScale, info.dpi));
+            screenRect.top - monitorInfo.rcMonitor.top, ResolveDisplayScale(configuredScale, info.dpi)
+        );
     }
     return info;
 }

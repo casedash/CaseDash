@@ -27,17 +27,21 @@ struct LayoutGuideSheetPipelineStats {
     size_t callouts = 0;
 };
 
-bool SaveLayoutGuideSheetPng(const FilePath& imagePath,
+bool SaveLayoutGuideSheetPng(
+    const FilePath& imagePath,
     const SystemSnapshot& snapshot,
     const AppConfig& config,
     const LayoutGuideSheetConfig& guideSheet,
     double scale,
     Trace& trace,
     std::string* errorText,
-    LayoutGuideSheetPipelineStats* stats = nullptr);
+    LayoutGuideSheetPipelineStats* stats = nullptr
+);
 
-bool RenderLayoutGuideSheetOffscreen(DashboardRenderer& renderer,
+bool RenderLayoutGuideSheetOffscreen(
+    DashboardRenderer& renderer,
     const SystemSnapshot& snapshot,
     const LayoutGuideSheetConfig& guideSheet,
     std::string* errorText = nullptr,
-    LayoutGuideSheetPipelineStats* stats = nullptr);
+    LayoutGuideSheetPipelineStats* stats = nullptr
+);

@@ -50,29 +50,23 @@ constexpr int kTitlebarComboVisibleRows = 8;
 constexpr int kTitlebarComboDropPaddingLogical = 6;
 constexpr int kDashboardResizeHandleLogical = 18;
 
-using AdjustWindowRectExForDpiFn = BOOL(WINAPI*)(LPRECT, DWORD, BOOL, DWORD, UINT);
+using AdjustWindowRectExForDpiFn = BOOL (WINAPI *)(LPRECT, DWORD, BOOL, DWORD, UINT);
 
-bool AreScalesEqual(double left, double right) {
-    return std::abs(left - right) < kScaleEpsilon;
-}
+bool AreScalesEqual(double left, double right) { return std::abs(left - right) < kScaleEpsilon; }
 
-int RectWidth(const RECT& rect) {
-    return rect.right - rect.left;
-}
+int RectWidth(const RECT& rect) { return rect.right - rect.left; }
 
-int RectHeight(const RECT& rect) {
-    return rect.bottom - rect.top;
-}
+int RectHeight(const RECT& rect) { return rect.bottom - rect.top; }
 
-bool IsRectUsable(const RECT& rect) {
-    return RectWidth(rect) > 0 && RectHeight(rect) > 0;
-}
+bool IsRectUsable(const RECT& rect) { return RectWidth(rect) > 0 && RectHeight(rect) > 0; }
 
-std::optional<FilePath> PromptSavePath(HWND owner,
+std::optional<FilePath> PromptSavePath(
+    HWND owner,
     const FilePath& initialDirectory,
     std::string_view defaultFileName,
     std::string_view filter,
-    std::string_view defaultExtension) {
+    std::string_view defaultExtension
+) {
     char fileBuffer[MAX_PATH] = {};
     const std::string defaultFileNameText(defaultFileName);
     strncpy_s(fileBuffer, defaultFileNameText.c_str(), _TRUNCATE);
@@ -251,7 +245,8 @@ HWND CreateAutohideSnapshotWindow(const RECT& rect, HBITMAP bitmap) {
         return nullptr;
     }
 
-    HWND snapshotHwnd = CreateWindowExA(WS_EX_LAYERED | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW | WS_EX_TOPMOST,
+    HWND snapshotHwnd = CreateWindowExA(
+        WS_EX_LAYERED | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW | WS_EX_TOPMOST,
         "STATIC",
         "",
         WS_POPUP,
@@ -262,7 +257,8 @@ HWND CreateAutohideSnapshotWindow(const RECT& rect, HBITMAP bitmap) {
         nullptr,
         nullptr,
         GetModuleHandleA(nullptr),
-        nullptr);
+        nullptr
+    );
     if (snapshotHwnd == nullptr) {
         return nullptr;
     }
@@ -295,13 +291,15 @@ HWND CreateAutohideSnapshotWindow(const RECT& rect, HBITMAP bitmap) {
         return nullptr;
     }
 
-    SetWindowPos(snapshotHwnd,
+    SetWindowPos(
+        snapshotHwnd,
         HWND_TOPMOST,
         rect.left,
         rect.top,
         width,
         height,
-        SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOREDRAW);
+        SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOREDRAW
+    );
     return snapshotHwnd;
 }
 
@@ -309,24 +307,21 @@ bool TitlebarRectsEqual(const RECT& left, const RECT& right) {
     return left.left == right.left && left.top == right.top && left.right == right.right && left.bottom == right.bottom;
 }
 
-bool TitlebarControlLayoutsEqual(
-    const DashboardTitlebarControlLayout& left, const DashboardTitlebarControlLayout& right) {
+bool
+    TitlebarControlLayoutsEqual(const DashboardTitlebarControlLayout& left, const DashboardTitlebarControlLayout& right)
+{
     return TitlebarRectsEqual(left.appMenuRect, right.appMenuRect) &&
-           TitlebarRectsEqual(left.themeComboRect, right.themeComboRect) &&
-           TitlebarRectsEqual(left.layoutComboRect, right.layoutComboRect) &&
-           TitlebarRectsEqual(left.editLayoutRect, right.editLayoutRect) &&
-           TitlebarRectsEqual(left.displayRect, right.displayRect) &&
-           TitlebarRectsEqual(left.closeRect, right.closeRect) &&
-           TitlebarRectsEqual(left.titleTextRect, right.titleTextRect);
+        TitlebarRectsEqual(left.themeComboRect, right.themeComboRect) &&
+        TitlebarRectsEqual(left.layoutComboRect, right.layoutComboRect) &&
+        TitlebarRectsEqual(left.editLayoutRect, right.editLayoutRect) &&
+        TitlebarRectsEqual(left.displayRect, right.displayRect) &&
+        TitlebarRectsEqual(left.closeRect, right.closeRect) &&
+        TitlebarRectsEqual(left.titleTextRect, right.titleTextRect);
 }
 
-int NativeTitlebarGlyphSize(UINT dpi) {
-    return std::max(8, ScaleLogicalToPhysical(10, dpi));
-}
+int NativeTitlebarGlyphSize(UINT dpi) { return std::max(8, ScaleLogicalToPhysical(10, dpi)); }
 
-int NativeTitlebarAppIconSize(UINT dpi) {
-    return std::max(16, ScaleLogicalToPhysical(16, dpi));
-}
+int NativeTitlebarAppIconSize(UINT dpi) { return std::max(16, ScaleLogicalToPhysical(16, dpi)); }
 
 std::string TitlebarThemeDisplayName(std::string_view name) {
     std::string result{name};
@@ -358,7 +353,8 @@ void FillRectWithColor(HDC hdc, const RECT& rect, COLORREF color) {
 COLORREF ColorConfigToColorRef(const ColorConfig& color) {
     const unsigned int rgb = color.ToRgb();
     return RGB(
-        static_cast<BYTE>((rgb >> 16) & 0xFFu), static_cast<BYTE>((rgb >> 8) & 0xFFu), static_cast<BYTE>(rgb & 0xFFu));
+        static_cast<BYTE>((rgb >> 16) & 0xFFu), static_cast<BYTE>((rgb >> 8) & 0xFFu), static_cast<BYTE>(rgb & 0xFFu)
+    );
 }
 
 const char* TraceTimingOperationName(LayoutEditHost::TracePhase phase) {
@@ -427,9 +423,13 @@ HICON CreateThemedAppIcon(const AppConfig& config, int size) {
 
 }  // namespace
 
-DashboardApp::DashboardApp(const DiagnosticsOptions& diagnosticsOptions, bool bringToFrontOnRun)
-    : renderer_(trace_), diagnosticsOptions_(diagnosticsOptions), layoutEditController_(*this),
-      shellUi_(std::make_unique<DashboardShellUi>(*this)), bringToFrontOnRun_(bringToFrontOnRun) {
+DashboardApp::DashboardApp(const DiagnosticsOptions& diagnosticsOptions, bool bringToFrontOnRun) :
+    renderer_(trace_),
+    diagnosticsOptions_(diagnosticsOptions),
+    layoutEditController_(*this),
+    shellUi_(std::make_unique<DashboardShellUi>(*this)),
+    bringToFrontOnRun_(bringToFrontOnRun)
+{
     renderer_.SetLiveAnimationEnabled(true);
 }
 
@@ -444,9 +444,7 @@ void DashboardApp::SetRenderConfig(const AppConfig& config) {
     SyncDashboardMoveOverlayState();
 }
 
-void DashboardApp::UpdateRendererScale(double scale) {
-    renderer_.SetRenderScale(scale);
-}
+void DashboardApp::UpdateRendererScale(double scale) { renderer_.SetRenderScale(scale); }
 
 UINT DashboardApp::CurrentWindowDpi() const {
     if (hwnd_ != nullptr) {
@@ -455,25 +453,17 @@ UINT DashboardApp::CurrentWindowDpi() const {
     return currentDpi_;
 }
 
-double DashboardApp::CurrentRenderScale() const {
-    return renderer_.RenderScale();
-}
+double DashboardApp::CurrentRenderScale() const { return renderer_.RenderScale(); }
 
 double DashboardApp::ResolveCurrentDisplayScale(UINT dpi) const {
     return ResolveDisplayScale(controller_.State().config, dpi);
 }
 
-bool DashboardApp::IsLayoutEditMode() const {
-    return controller_.State().isEditingLayout;
-}
+bool DashboardApp::IsLayoutEditMode() const { return controller_.State().isEditingLayout; }
 
-const AppConfig& DashboardApp::LayoutEditConfig() const {
-    return controller_.State().config;
-}
+const AppConfig& DashboardApp::LayoutEditConfig() const { return controller_.State().config; }
 
-DashboardOverlayState& DashboardApp::LayoutDashboardOverlayState() {
-    return rendererDashboardOverlayState_;
-}
+DashboardOverlayState& DashboardApp::LayoutDashboardOverlayState() { return rendererDashboardOverlayState_; }
 
 LayoutEditActiveRegions DashboardApp::CollectLayoutEditActiveRegions() const {
     return renderer_.CollectLayoutEditActiveRegions(rendererDashboardOverlayState_);
@@ -484,25 +474,17 @@ LayoutEditHoverResolution DashboardApp::ResolveLayoutEditHover(RenderPoint clien
     return renderer_.ResolveLayoutEditHover(rendererDashboardOverlayState_, clientPoint);
 }
 
-double DashboardApp::LayoutEditRenderScale() const {
-    return renderer_.RenderScale();
-}
+double DashboardApp::LayoutEditRenderScale() const { return renderer_.RenderScale(); }
 
-int DashboardApp::LayoutEditSimilarityThreshold() const {
-    return renderer_.LayoutSimilarityThreshold();
-}
+int DashboardApp::LayoutEditSimilarityThreshold() const { return renderer_.LayoutSimilarityThreshold(); }
 
-void DashboardApp::SetLayoutGuideDragActive(bool active) {
-    renderer_.SetLayoutGuideDragActive(active);
-}
+void DashboardApp::SetLayoutGuideDragActive(bool active) { renderer_.SetLayoutGuideDragActive(active); }
 
 void DashboardApp::SetLayoutEditInteractiveDragTraceActive(bool active) {
     renderer_.SetInteractiveDragTraceActive(active);
 }
 
-void DashboardApp::RebuildLayoutEditArtifacts() {
-    renderer_.RebuildEditArtifacts();
-}
+void DashboardApp::RebuildLayoutEditArtifacts() { renderer_.RebuildEditArtifacts(); }
 
 void DashboardApp::InvalidateLayoutEdit() {
     if (!layoutEditController_.HasActiveDrag()) {
@@ -511,13 +493,9 @@ void DashboardApp::InvalidateLayoutEdit() {
     InvalidateRect(hwnd_, nullptr, FALSE);
 }
 
-int DashboardApp::WindowWidth() const {
-    return renderer_.WindowWidth();
-}
+int DashboardApp::WindowWidth() const { return renderer_.WindowWidth(); }
 
-int DashboardApp::WindowHeight() const {
-    return renderer_.WindowHeight();
-}
+int DashboardApp::WindowHeight() const { return renderer_.WindowHeight(); }
 
 bool DashboardApp::Initialize(HINSTANCE instance) {
     lastError_.clear();
@@ -578,7 +556,8 @@ bool DashboardApp::Initialize(HINSTANCE instance) {
     placement.right = placement.left + WindowWidth();
     placement.bottom = placement.top + WindowHeight();
 
-    hwnd_ = CreateWindowExA(WS_EX_TOOLWINDOW,
+    hwnd_ = CreateWindowExA(
+        WS_EX_TOOLWINDOW,
         wc.lpszClassName,
         kAppTitle,
         WS_POPUP,
@@ -589,21 +568,20 @@ bool DashboardApp::Initialize(HINSTANCE instance) {
         nullptr,
         nullptr,
         instance,
-        this);
+        this
+    );
     if (hwnd_ == nullptr) {
         return false;
     }
     return CreateDashboardTooltip() && CreateNativeTitlebarProbe();
 }
 
-const std::string& DashboardApp::LastError() const {
-    return lastError_;
-}
+const std::string& DashboardApp::LastError() const { return lastError_; }
 
 void DashboardApp::ApplyConfigPlacement() {
     const AppConfig& config = controller_.State().config;
-    UINT targetDpi = hwnd_ != nullptr ? CurrentWindowDpi()
-                                      : GetMonitorDpi(MonitorFromPoint(POINT{100, 100}, MONITOR_DEFAULTTOPRIMARY));
+    UINT targetDpi = hwnd_ != nullptr ? CurrentWindowDpi() :
+        GetMonitorDpi(MonitorFromPoint(POINT{100, 100}, MONITOR_DEFAULTTOPRIMARY));
     double targetScale = ResolveCurrentDisplayScale(targetDpi);
     int left = 100 + ScaleLogicalToPhysical(config.display.position.x, targetScale);
     int top = 100 + ScaleLogicalToPhysical(config.display.position.y, targetScale);
@@ -632,18 +610,19 @@ void DashboardApp::ApplyConfigPlacement() {
         top = configuredPlacementTarget->targetClientRect.top;
     }
 
-    const SIZE targetSize = configuredPlacementTarget.has_value() ? configuredPlacementTarget->targetSize
-                                                                  : ComputeWindowSizeForScale(config, targetScale);
-    const RECT targetClientRect = configuredPlacementTarget.has_value()
-                                      ? configuredPlacementTarget->targetClientRect
-                                      : RECT{left, top, left + targetSize.cx, top + targetSize.cy};
+    const SIZE targetSize = configuredPlacementTarget.has_value() ? configuredPlacementTarget->targetSize :
+        ComputeWindowSizeForScale(config, targetScale);
+    const RECT targetClientRect = configuredPlacementTarget.has_value() ? configuredPlacementTarget->targetClientRect :
+        RECT{left, top, left + targetSize.cx, top + targetSize.cy};
     if (nativeTitlebarVisible_) {
         if (!IsRectUsable(targetMonitorRect)) {
             targetMonitorRect = GetMonitorPlacementForRect(targetClientRect, config.display.scale).monitorRect;
         }
-        const DashboardTitlebarGeometry targetTitlebarGeometry = ResolveDashboardTitlebarGeometry(targetClientRect,
+        const DashboardTitlebarGeometry targetTitlebarGeometry = ResolveDashboardTitlebarGeometry(
+            targetClientRect,
             targetMonitorRect,
-            ComputeNativeTitlebarFrameMarginsForDpi(targetSize.cx, targetSize.cy, targetDpi));
+            ComputeNativeTitlebarFrameMarginsForDpi(targetSize.cx, targetSize.cy, targetDpi)
+        );
         if (!targetTitlebarGeometry.canShow) {
             // Fullscreen and top-edge placements cannot carry the hover titlebar frame into the target rect.
             HideNativeTitlebar();
@@ -653,27 +632,36 @@ void DashboardApp::ApplyConfigPlacement() {
     const UINT currentDpi = CurrentWindowDpi();
     if (targetDpi != currentDpi) {
         const RECT targetWindowRect = ResolveWindowRectForDashboardClientRect(targetClientRect);
-        SetWindowPos(hwnd_,
+        SetWindowPos(
+            hwnd_,
             nullptr,
             targetWindowRect.left,
             targetWindowRect.top,
             0,
             0,
-            SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER);
+            SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER
+        );
     }
 
-    if ((CurrentWindowDpi() != targetDpi || currentDpi_ != targetDpi ||
-            !AreScalesEqual(CurrentRenderScale(), targetScale)) &&
-        !ApplyWindowDpi(targetDpi)) {
+    if (
+        (
+            CurrentWindowDpi() != targetDpi ||
+            currentDpi_ != targetDpi ||
+            !AreScalesEqual(CurrentRenderScale(), targetScale)
+        ) &&
+        !ApplyWindowDpi(targetDpi)
+    ) {
         return;
     }
     SetDashboardWindowGeometry(
-        left, top, targetSize.cx, targetSize.cy, SWP_NOACTIVATE | SWP_NOZORDER, "config_placement");
+        left, top, targetSize.cx, targetSize.cy, SWP_NOACTIVATE | SWP_NOZORDER, "config_placement"
+    );
     SyncAutohideState();
 }
 
 void DashboardApp::SetDashboardWindowGeometry(
-    int left, int top, int width, int height, UINT flags, std::string_view reason) {
+    int left, int top, int width, int height, UINT flags, std::string_view reason
+) {
     if (hwnd_ == nullptr) {
         return;
     }
@@ -688,13 +676,15 @@ void DashboardApp::SetDashboardWindowGeometry(
 
     const RECT targetClientRect{left, top, left + width, top + height};
     const RECT targetWindowRect = ResolveWindowRectForDashboardClientRect(targetClientRect);
-    SetWindowPos(hwnd_,
+    SetWindowPos(
+        hwnd_,
         nullptr,
         targetWindowRect.left,
         targetWindowRect.top,
         RectWidth(targetWindowRect),
         RectHeight(targetWindowRect),
-        flags);
+        flags
+    );
     if (sizeChanged) {
         RedrawDashboardSurfaceSynchronously();
     }
@@ -772,8 +762,10 @@ void DashboardApp::RetryConfigPlacementIfPending() {
     if (!controller_.State().placementWatchActive || hwnd_ == nullptr || controller_.State().isMoving) {
         return;
     }
-    if (controller_.State().config.display.monitorName.empty() ||
-        FindTargetMonitor(controller_.State().config.display.monitorName).has_value()) {
+    if (
+        controller_.State().config.display.monitorName.empty() ||
+        FindTargetMonitor(controller_.State().config.display.monitorName).has_value()
+    ) {
         ApplyConfigPlacement();
         ApplyConfiguredWallpaper();
         movePlacementInfo_ =
@@ -994,14 +986,17 @@ bool DashboardApp::AnimateAutohideSnapshot(bool show) {
     if (show) {
         ShowWindow(snapshotHwnd, SW_HIDE);
         animated = AnimateWindow(
-            snapshotHwnd, kAutohideAnimationDurationMs, AW_SLIDE | AutohideOpenAnimationDirection(autohideMode_));
+            snapshotHwnd, kAutohideAnimationDurationMs, AW_SLIDE | AutohideOpenAnimationDirection(autohideMode_)
+        );
         ShowWindow(hwnd_, SW_SHOWNOACTIVATE);
     } else {
         ShowWindow(snapshotHwnd, SW_SHOWNOACTIVATE);
         ShowWindow(hwnd_, SW_HIDE);
-        animated = AnimateWindow(snapshotHwnd,
+        animated = AnimateWindow(
+            snapshotHwnd,
             kAutohideAnimationDurationMs,
-            AW_HIDE | AW_SLIDE | AutohideCloseAnimationDirection(autohideMode_));
+            AW_HIDE | AW_SLIDE | AutohideCloseAnimationDirection(autohideMode_)
+        );
     }
 
     DestroyWindow(snapshotHwnd);
@@ -1047,13 +1042,12 @@ bool DashboardApp::InitializeFonts() {
     return renderer_.Initialize(hwnd_);
 }
 
-void DashboardApp::ReleaseFonts() {
-    renderer_.Shutdown();
-}
+void DashboardApp::ReleaseFonts() { renderer_.Shutdown(); }
 
 HICON DashboardApp::LoadAppIcon(int width, int height) {
     return static_cast<HICON>(
-        LoadImageA(instance_, MAKEINTRESOURCEA(IDI_APP_ICON), IMAGE_ICON, width, height, LR_DEFAULTCOLOR));
+        LoadImageA(instance_, MAKEINTRESOURCEA(IDI_APP_ICON), IMAGE_ICON, width, height, LR_DEFAULTCOLOR)
+    );
 }
 
 void DashboardApp::DestroyLoadedIcons(HICON largeIcon, HICON smallIcon) const {
@@ -1168,8 +1162,9 @@ RECT DashboardApp::DashboardClientScreenRect() const {
     return RECT{topLeft.x, topLeft.y, bottomRight.x, bottomRight.y};
 }
 
-DashboardTitlebarFrameMargins DashboardApp::ComputeNativeTitlebarFrameMarginsForDpi(
-    int clientWidth, int clientHeight, UINT dpi) const {
+DashboardTitlebarFrameMargins
+    DashboardApp::ComputeNativeTitlebarFrameMarginsForDpi(int clientWidth, int clientHeight, UINT dpi) const
+{
     RECT adjustedRect{0, 0, clientWidth, clientHeight};
     const DWORD exStyle =
         hwnd_ != nullptr ? static_cast<DWORD>(GetWindowLongPtrA(hwnd_, GWL_EXSTYLE)) : WS_EX_TOOLWINDOW;
@@ -1201,10 +1196,12 @@ RECT DashboardApp::ResolveWindowRectForDashboardClientRect(const RECT& dashboard
 
     const DashboardTitlebarFrameMargins margins =
         ComputeNativeTitlebarFrameMargins(RectWidth(dashboardClientRect), RectHeight(dashboardClientRect));
-    return RECT{dashboardClientRect.left - margins.left,
+    return RECT{
+        dashboardClientRect.left - margins.left,
         dashboardClientRect.top - margins.top,
         dashboardClientRect.right + margins.right,
-        dashboardClientRect.bottom + margins.bottom};
+        dashboardClientRect.bottom + margins.bottom
+    };
 }
 
 void DashboardApp::StartNativeTitlebarHoverTimer() {
@@ -1225,7 +1222,8 @@ void DashboardApp::StopNativeTitlebarHoverTimer() {
 }
 
 bool DashboardApp::CreateNativeTitlebarProbe() {
-    titlebarHoverProbeHwnd_ = CreateWindowExA(WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_LAYERED,
+    titlebarHoverProbeHwnd_ = CreateWindowExA(
+        WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_LAYERED,
         kTitlebarProbeWindowClassName,
         "",
         WS_POPUP | WS_CLIPCHILDREN,
@@ -1236,7 +1234,8 @@ bool DashboardApp::CreateNativeTitlebarProbe() {
         hwnd_,
         nullptr,
         instance_,
-        this);
+        this
+    );
     if (titlebarHoverProbeHwnd_ == nullptr) {
         return false;
     }
@@ -1265,8 +1264,9 @@ void DashboardApp::DestroyNativeTitlebarProbe() {
 }
 
 bool DashboardApp::ShouldSuppressNativeTitlebarRepaint() const {
-    return controller_.State().isMoving && placementInteractionMode_ == PlacementInteractionMode::Resize &&
-           nativeTitlebarVisible_;
+    return controller_.State().isMoving &&
+        placementInteractionMode_ == PlacementInteractionMode::Resize &&
+        nativeTitlebarVisible_;
 }
 
 void DashboardApp::RedrawNativeTitlebarNow() const {
@@ -1276,7 +1276,8 @@ void DashboardApp::RedrawNativeTitlebarNow() const {
 
     // Mouse-move storms can starve normal WM_PAINT delivery during live resize; present this frame now.
     RedrawWindow(
-        titlebarHoverProbeHwnd_, nullptr, nullptr, RDW_INVALIDATE | RDW_UPDATENOW | RDW_ALLCHILDREN | RDW_NOERASE);
+        titlebarHoverProbeHwnd_, nullptr, nullptr, RDW_INVALIDATE | RDW_UPDATENOW | RDW_ALLCHILDREN | RDW_NOERASE
+    );
     if (titlebarThemeComboHwnd_ != nullptr && IsWindowVisible(titlebarThemeComboHwnd_)) {
         RedrawWindow(titlebarThemeComboHwnd_, nullptr, nullptr, RDW_INVALIDATE | RDW_UPDATENOW | RDW_NOERASE);
     }
@@ -1302,8 +1303,11 @@ void DashboardApp::UpdateNativeTitlebarProbeRegion(int width, int height, bool r
         ClearNativeTitlebarProbeRegion(redraw);
         return;
     }
-    if (nativeTitlebarProbeRounded_ && nativeTitlebarProbeRegionWidth_ == width &&
-        nativeTitlebarProbeRegionHeight_ == height) {
+    if (
+        nativeTitlebarProbeRounded_ &&
+        nativeTitlebarProbeRegionWidth_ == width &&
+        nativeTitlebarProbeRegionHeight_ == height
+    ) {
         return;
     }
 
@@ -1325,8 +1329,11 @@ void DashboardApp::UpdateNativeTitlebarProbe() {
     if (titlebarHoverProbeHwnd_ == nullptr) {
         return;
     }
-    if (hwnd_ == nullptr || !IsWindowVisible(hwnd_) ||
-        (!nativeTitlebarVisible_ && (controller_.State().isMoving || layoutEditModalUiDepth_ > 0))) {
+    if (
+        hwnd_ == nullptr ||
+        !IsWindowVisible(hwnd_) ||
+        (!nativeTitlebarVisible_ && (controller_.State().isMoving || layoutEditModalUiDepth_ > 0))
+    ) {
         if (nativeTitlebarProbeVisible_) {
             ShowWindow(titlebarHoverProbeHwnd_, SW_HIDE);
         }
@@ -1380,13 +1387,15 @@ void DashboardApp::UpdateNativeTitlebarProbe() {
         if (suppressRepaint) {
             flags |= SWP_NOREDRAW | SWP_NOCOPYBITS;
         }
-        SetWindowPos(titlebarHoverProbeHwnd_,
+        SetWindowPos(
+            titlebarHoverProbeHwnd_,
             wasVisible ? nullptr : HWND_TOP,
             geometry.virtualHoverRect.left,
             geometry.virtualHoverRect.top,
             width,
             height,
-            flags);
+            flags
+        );
         nativeTitlebarProbeRect_ = geometry.virtualHoverRect;
         nativeTitlebarProbeRectValid_ = true;
     }
@@ -1428,13 +1437,15 @@ void DashboardApp::ShowNativeTitlebar(const DashboardTitlebarGeometry& geometry)
         nativeTitlebarProbeRectValid_ = false;
     }
 
-    SetWindowPos(hwnd_,
+    SetWindowPos(
+        hwnd_,
         nullptr,
         geometry.windowRect.left,
         geometry.windowRect.top,
         RectWidth(geometry.windowRect),
         RectHeight(geometry.windowRect),
-        SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+        SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED
+    );
     RedrawWindow(hwnd_, nullptr, nullptr, RDW_FRAME | RDW_INVALIDATE);
     UpdateNativeTitlebarProbe();
     StartNativeTitlebarHoverTimer();
@@ -1458,13 +1469,15 @@ void DashboardApp::HideNativeTitlebar() {
     HideTitlebarTooltip();
     ShowNativeTitlebarControls(false);
     ResetNativeTitlebarButtonState();
-    SetWindowPos(hwnd_,
+    SetWindowPos(
+        hwnd_,
         nullptr,
         clientRect.left,
         clientRect.top,
         RectWidth(clientRect),
         RectHeight(clientRect),
-        SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+        SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED
+    );
     RedrawWindow(hwnd_, nullptr, nullptr, RDW_FRAME | RDW_INVALIDATE);
     UpdateNativeTitlebarProbe();
 }
@@ -1478,7 +1491,8 @@ bool DashboardApp::CreateNativeTitlebarControls() {
     }
 
     auto createCombo = [&](int id) -> HWND {
-        HWND combo = CreateWindowExA(0,
+        HWND combo = CreateWindowExA(
+            0,
             WC_COMBOBOXA,
             "",
             WS_CHILD | WS_CLIPSIBLINGS | CBS_DROPDOWNLIST | CBS_HASSTRINGS | WS_VSCROLL,
@@ -1489,7 +1503,8 @@ bool DashboardApp::CreateNativeTitlebarControls() {
             titlebarHoverProbeHwnd_,
             reinterpret_cast<HMENU>(static_cast<INT_PTR>(id)),
             instance_,
-            nullptr);
+            nullptr
+        );
         if (combo != nullptr) {
             SendMessageA(combo, WM_SETFONT, reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)), TRUE);
             SendMessageA(combo, CB_SETMINVISIBLE, 8, 0);
@@ -1535,21 +1550,29 @@ void DashboardApp::SyncNativeTitlebarControls() {
     }
 
     const DashboardSessionState& state = controller_.State();
-    PopulateNativeTitlebarCombo(titlebarLayoutComboHwnd_,
+    PopulateNativeTitlebarCombo(
+        titlebarLayoutComboHwnd_,
         NativeTitlebarLayoutNames(),
         state.config.display.layout,
         nativeTitlebarLayoutItems_,
-        nativeTitlebarSelectedLayout_);
-    PopulateNativeTitlebarCombo(titlebarThemeComboHwnd_,
+        nativeTitlebarSelectedLayout_
+    );
+    PopulateNativeTitlebarCombo(
+        titlebarThemeComboHwnd_,
         NativeTitlebarThemeNames(),
         TitlebarThemeDisplayName(state.config.display.theme),
         nativeTitlebarThemeItems_,
-        nativeTitlebarSelectedTheme_);
+        nativeTitlebarSelectedTheme_
+    );
 }
 
 void DashboardApp::UpdateNativeTitlebarControls() {
-    if (!nativeTitlebarVisible_ || titlebarHoverProbeHwnd_ == nullptr || titlebarLayoutComboHwnd_ == nullptr ||
-        titlebarThemeComboHwnd_ == nullptr) {
+    if (
+        !nativeTitlebarVisible_ ||
+        titlebarHoverProbeHwnd_ == nullptr ||
+        titlebarLayoutComboHwnd_ == nullptr ||
+        titlebarThemeComboHwnd_ == nullptr
+    ) {
         ShowNativeTitlebarControls(false);
         return;
     }
@@ -1558,7 +1581,7 @@ void DashboardApp::UpdateNativeTitlebarControls() {
     nativeTitlebarControlsVisible_ = true;
     const DashboardTitlebarControlLayout layout = NativeTitlebarControlLayout();
     const bool layoutChanged = !nativeTitlebarLastControlLayoutValid_ ||
-                               !TitlebarControlLayoutsEqual(nativeTitlebarLastControlLayout_, layout);
+        !TitlebarControlLayoutsEqual(nativeTitlebarLastControlLayout_, layout);
     nativeTitlebarLastControlLayout_ = layout;
     nativeTitlebarLastControlLayoutValid_ = true;
 
@@ -1637,8 +1660,9 @@ int DashboardApp::NativeTitlebarComboWindowHeight(HWND combo, const RECT& closed
     const LRESULT itemCountResult = SendMessageA(combo, CB_GETCOUNT, 0, 0);
     const int itemCount = itemCountResult == CB_ERR ? 1 : static_cast<int>(itemCountResult);
     const int visibleRows = std::clamp(itemCount, 1, kTitlebarComboVisibleRows);
-    return closedHeight + static_cast<int>(itemHeight) * visibleRows +
-           ScaleLogicalToPhysical(kTitlebarComboDropPaddingLogical, CurrentWindowDpi());
+    return closedHeight +
+        static_cast<int>(itemHeight) * visibleRows +
+        ScaleLogicalToPhysical(kTitlebarComboDropPaddingLogical, CurrentWindowDpi());
 }
 
 void DashboardApp::PositionNativeTitlebarCombo(HWND combo, const RECT& closedRect) {
@@ -1668,7 +1692,8 @@ void DashboardApp::PositionNativeTitlebarCombo(HWND combo, const RECT& closedRec
             flags |= SWP_NOREDRAW | SWP_NOCOPYBITS;
         }
         SetWindowPos(
-            combo, nullptr, targetRect.left, targetRect.top, RectWidth(targetRect), RectHeight(targetRect), flags);
+            combo, nullptr, targetRect.left, targetRect.top, RectWidth(targetRect), RectHeight(targetRect), flags
+        );
         if (suppressRepaint) {
             InvalidateRect(titlebarHoverProbeHwnd_, nullptr, FALSE);
             InvalidateRect(combo, nullptr, FALSE);
@@ -1689,31 +1714,30 @@ DashboardTitlebarControlLayout DashboardApp::NativeTitlebarControlLayout() const
     GetClientRect(titlebarHoverProbeHwnd_, &clientRect);
     const int buttonWidth = std::max(RectHeight(clientRect), ScaleLogicalToPhysical(36, CurrentWindowDpi()));
     const int comboHeight = std::min(RectHeight(clientRect), NativeTitlebarComboClosedHeight(titlebarLayoutComboHwnd_));
-    const DashboardTitlebarControlMetrics metrics{buttonWidth,
+    const DashboardTitlebarControlMetrics metrics{
+        buttonWidth,
         ScaleLogicalToPhysical(kTitlebarControlGapLogical, CurrentWindowDpi()),
         ScaleLogicalToPhysical(kTitlebarHorizontalPaddingLogical, CurrentWindowDpi()),
         comboHeight,
         ScaleLogicalToPhysical(58, CurrentWindowDpi()),
         ScaleLogicalToPhysical(kTitlebarLayoutComboWidthLogical, CurrentWindowDpi()),
         ScaleLogicalToPhysical(76, CurrentWindowDpi()),
-        ScaleLogicalToPhysical(kTitlebarThemeComboWidthLogical, CurrentWindowDpi())};
+        ScaleLogicalToPhysical(kTitlebarThemeComboWidthLogical, CurrentWindowDpi())
+    };
     return ResolveDashboardTitlebarControlLayout(clientRect, metrics);
 }
 
-RECT DashboardApp::NativeTitlebarLayoutComboRect() const {
-    return NativeTitlebarControlLayout().layoutComboRect;
-}
+RECT DashboardApp::NativeTitlebarLayoutComboRect() const { return NativeTitlebarControlLayout().layoutComboRect; }
 
-RECT DashboardApp::NativeTitlebarThemeComboRect() const {
-    return NativeTitlebarControlLayout().themeComboRect;
-}
+RECT DashboardApp::NativeTitlebarThemeComboRect() const { return NativeTitlebarControlLayout().themeComboRect; }
 
 RECT DashboardApp::NativeTitlebarButtonRect(NativeTitlebarButton button) const {
     return NativeTitlebarButtonRect(button, NativeTitlebarControlLayout());
 }
 
 RECT DashboardApp::NativeTitlebarButtonRect(
-    NativeTitlebarButton button, const DashboardTitlebarControlLayout& layout) const {
+    NativeTitlebarButton button, const DashboardTitlebarControlLayout& layout
+) const {
     switch (button) {
         case NativeTitlebarButton::AppMenu:
             return layout.appMenuRect;
@@ -1729,11 +1753,13 @@ RECT DashboardApp::NativeTitlebarButtonRect(
     return {};
 }
 
-void DashboardApp::PopulateNativeTitlebarCombo(HWND combo,
+void DashboardApp::PopulateNativeTitlebarCombo(
+    HWND combo,
     const std::vector<std::string>& values,
     std::string_view selected,
     std::vector<std::string>& cache,
-    std::string& selectedCache) {
+    std::string& selectedCache
+) {
     if (combo == nullptr) {
         return;
     }
@@ -1795,8 +1821,9 @@ DashboardApp::NativeTitlebarButton DashboardApp::HitTestNativeTitlebarButton(POI
     return HitTestNativeTitlebarButton(clientPoint, NativeTitlebarControlLayout());
 }
 
-DashboardApp::NativeTitlebarButton DashboardApp::HitTestNativeTitlebarButton(
-    POINT clientPoint, const DashboardTitlebarControlLayout& layout) const {
+DashboardApp::NativeTitlebarButton
+    DashboardApp::HitTestNativeTitlebarButton(POINT clientPoint, const DashboardTitlebarControlLayout& layout) const
+{
     const RECT closeRect = NativeTitlebarButtonRect(NativeTitlebarButton::Close, layout);
     if (IsRectUsable(closeRect) && PtInRect(&closeRect, clientPoint) != FALSE) {
         return NativeTitlebarButton::Close;
@@ -1857,7 +1884,8 @@ void DashboardApp::PaintNativeTitlebarButton(HDC hdc, NativeTitlebarButton butto
 }
 
 void DashboardApp::PaintNativeTitlebarButton(
-    HDC hdc, NativeTitlebarButton button, const DashboardTitlebarControlLayout& layout) const {
+    HDC hdc, NativeTitlebarButton button, const DashboardTitlebarControlLayout& layout
+) const {
     const RECT buttonRect = NativeTitlebarButtonRect(button, layout);
     if (button == NativeTitlebarButton::None || !IsRectUsable(buttonRect)) {
         return;
@@ -1919,23 +1947,29 @@ void DashboardApp::PaintNativeTitlebarButton(
         const int screenHeight = std::max(9, ScaleLogicalToPhysical(10, CurrentWindowDpi()));
         const int centerX = (buttonRect.left + buttonRect.right) / 2;
         const int centerY = (buttonRect.top + buttonRect.bottom) / 2;
-        RECT screenRect{centerX - screenWidth / 2,
+        RECT screenRect{
+            centerX - screenWidth / 2,
             centerY - screenHeight / 2 - ScaleLogicalToPhysical(1, CurrentWindowDpi()),
             centerX + (screenWidth + 1) / 2,
-            centerY + (screenHeight + 1) / 2 - ScaleLogicalToPhysical(1, CurrentWindowDpi())};
+            centerY + (screenHeight + 1) / 2 - ScaleLogicalToPhysical(1, CurrentWindowDpi())
+        };
         HPEN pen = CreatePen(PS_SOLID, std::max(1, ScaleLogicalToPhysical(1, CurrentWindowDpi())), glyphColor);
         HGDIOBJ oldPen = SelectObject(hdc, pen);
         HGDIOBJ oldBrush = SelectObject(hdc, GetStockObject(NULL_BRUSH));
         Rectangle(hdc, screenRect.left, screenRect.top, screenRect.right, screenRect.bottom);
         MoveToEx(hdc, centerX, screenRect.bottom, nullptr);
         LineTo(hdc, centerX, screenRect.bottom + ScaleLogicalToPhysical(3, CurrentWindowDpi()));
-        MoveToEx(hdc,
+        MoveToEx(
+            hdc,
             centerX - ScaleLogicalToPhysical(4, CurrentWindowDpi()),
             screenRect.bottom + ScaleLogicalToPhysical(3, CurrentWindowDpi()),
-            nullptr);
-        LineTo(hdc,
+            nullptr
+        );
+        LineTo(
+            hdc,
             centerX + ScaleLogicalToPhysical(4, CurrentWindowDpi()) + 1,
-            screenRect.bottom + ScaleLogicalToPhysical(3, CurrentWindowDpi()));
+            screenRect.bottom + ScaleLogicalToPhysical(3, CurrentWindowDpi())
+        );
         if (oldBrush != nullptr) {
             SelectObject(hdc, oldBrush);
         }
@@ -1981,14 +2015,16 @@ void DashboardApp::RefreshNativeTitlebarChrome() {
     nativeTitlebarPalette_ = ResolveDashboardTitlebarPalette(hwnd_);
     const DashboardTitlebarChromeResult chromeResult = ApplyDashboardTitlebarChrome(hwnd_, nativeTitlebarVisible_);
     if (!DashboardTitlebarChromeSucceeded(chromeResult) && trace_.Enabled(TracePrefix::Diagnostics)) {
-        trace_.WriteFmt(TracePrefix::Diagnostics,
+        trace_.WriteFmt(
+            TracePrefix::Diagnostics,
             "titlebar_chrome corner=0x%08lx border=0x%08lx caption=0x%08lx text=0x%08lx dark=0x%08lx visible=%d",
             static_cast<unsigned long>(chromeResult.cornerPreference),
             static_cast<unsigned long>(chromeResult.borderColor),
             static_cast<unsigned long>(chromeResult.captionColor),
             static_cast<unsigned long>(chromeResult.textColor),
             static_cast<unsigned long>(chromeResult.darkMode),
-            nativeTitlebarVisible_ ? 1 : 0);
+            nativeTitlebarVisible_ ? 1 : 0
+        );
     }
     InvalidateNativeTitlebar();
 }
@@ -2033,13 +2069,15 @@ void DashboardApp::UpdateNativeTitlebarTooltip(POINT screenPoint) {
         return;
     }
     const DashboardTitlebarControlLayout layout = NativeTitlebarControlLayout();
-    const DashboardTitlebarTooltipTarget target = ResolveDashboardTitlebarTooltipTarget(probeClientPoint,
+    const DashboardTitlebarTooltipTarget target = ResolveDashboardTitlebarTooltipTarget(
+        probeClientPoint,
         layout.appMenuRect,
         layout.layoutComboRect,
         layout.themeComboRect,
         layout.editLayoutRect,
         layout.displayRect,
-        layout.closeRect);
+        layout.closeRect
+    );
     if (target.control == DashboardTitlebarTooltipControl::None || target.localizationKey[0] == '\0') {
         HideTitlebarTooltip();
         return;
@@ -2053,15 +2091,19 @@ void DashboardApp::UpdateNativeTitlebarTooltip(POINT screenPoint) {
 
     RECT tooltipRect = target.rect;
     MapWindowPoints(titlebarHoverProbeHwnd_, hwnd_, reinterpret_cast<POINT*>(&tooltipRect), 2);
-    if (dashboardTooltipOwner_ == DashboardTooltipOwner::Titlebar && nativeTitlebarTooltipControl_ == target.control &&
-        nativeTitlebarTooltipRectValid_ && TitlebarRectsEqual(nativeTitlebarTooltipRect_, tooltipRect)) {
+    if (
+        dashboardTooltipOwner_ == DashboardTooltipOwner::Titlebar &&
+        nativeTitlebarTooltipControl_ == target.control &&
+        nativeTitlebarTooltipRectValid_ &&
+        TitlebarRectsEqual(nativeTitlebarTooltipRect_, tooltipRect)
+    ) {
         return;
     }
 
     POINT tooltipScreenPoint{target.rect.left, target.rect.bottom + ScaleLogicalToPhysical(8, CurrentWindowDpi())};
     ClientToScreen(titlebarHoverProbeHwnd_, &tooltipScreenPoint);
-    dashboardTooltip_.ShowOrUpdate(
-        tooltipRect, tooltipScreenPoint, text, ScaleLogicalToPhysical(260, CurrentWindowDpi()));
+    dashboardTooltip_
+        .ShowOrUpdate(tooltipRect, tooltipScreenPoint, text, ScaleLogicalToPhysical(260, CurrentWindowDpi()));
     dashboardTooltipOwner_ = DashboardTooltipOwner::Titlebar;
     nativeTitlebarTooltipControl_ = target.control;
     nativeTitlebarTooltipRect_ = tooltipRect;
@@ -2122,9 +2164,12 @@ void DashboardApp::UpdateNativeTitlebarHoverFromCursor() {
         StopNativeTitlebarHoverTimer();
         return;
     }
-    if (hwnd_ == nullptr || !IsWindowVisible(hwnd_) ||
+    if (
+        hwnd_ == nullptr ||
+        !IsWindowVisible(hwnd_) ||
         (controller_.State().isMoving && !resizeActive && !placementKeepsTitlebarVisible) ||
-        layoutEditModalUiDepth_ > 0) {
+        layoutEditModalUiDepth_ > 0
+    ) {
         HideTitlebarTooltip();
         return;
     }
@@ -2177,8 +2222,10 @@ void DashboardApp::UpdateNativeTitlebarHoverFromCursor() {
 
         if (nativeTitlebarVisible_) {
             UpdateNativeTitlebarButtonHover(cursor);
-            const bool layoutEditCanOwnTooltip = cursorInClient && controller_.State().isEditingLayout &&
-                                                 shellUi_ != nullptr && !shellUi_->IsLayoutEditModalUiActive();
+            const bool layoutEditCanOwnTooltip = cursorInClient &&
+                controller_.State().isEditingLayout &&
+                shellUi_ != nullptr &&
+                !shellUi_->IsLayoutEditModalUiActive();
             if (cursorInTitlebarBand) {
                 UpdateNativeTitlebarTooltip(cursor);
             } else if (!layoutEditCanOwnTooltip) {
@@ -2206,12 +2253,11 @@ void DashboardApp::UpdateNativeTitlebarHoverFromCursor() {
     StopNativeTitlebarHoverTimer();
 }
 
-bool DashboardApp::WriteDiagnosticsOutputs() {
-    return controller_.WriteDiagnosticsOutputs(*this);
-}
+bool DashboardApp::WriteDiagnosticsOutputs() { return controller_.WriteDiagnosticsOutputs(*this); }
 
 std::optional<FilePath> DashboardApp::PromptDiagnosticsSavePath(
-    std::string_view defaultFileName, std::string_view filter, std::string_view defaultExtension) const {
+    std::string_view defaultFileName, std::string_view filter, std::string_view defaultExtension
+) const {
     return PromptSavePath(hwnd_, GetWorkingDirectory(), defaultFileName, filter, defaultExtension);
 }
 
@@ -2231,12 +2277,14 @@ void DashboardApp::BringOnTop() {
     }
     const BOOL foregroundSet = SetForegroundWindow(hwnd_);
     SetActiveWindow(hwnd_);
-    trace_.WriteFmt(TracePrefix::Diagnostics,
+    trace_.WriteFmt(
+        TracePrefix::Diagnostics,
         "bring_to_front hwnd=0x%p visible=%d iconic=%d foreground_set=%d",
         reinterpret_cast<void*>(hwnd_),
         IsWindowVisible(hwnd_) != FALSE,
         IsIconic(hwnd_) != FALSE,
-        foregroundSet != FALSE);
+        foregroundSet != FALSE
+    );
     UpdateNativeTitlebarProbe();
 }
 
@@ -2249,9 +2297,7 @@ void DashboardApp::ScheduleBringToFrontRetries() {
     SetTimer(hwnd_, kBringToFrontRetryTimerId, kBringToFrontRetryTimerMs, nullptr);
 }
 
-bool DashboardApp::ApplyConfiguredWallpaper() {
-    return controller_.ApplyConfiguredWallpaper(trace_);
-}
+bool DashboardApp::ApplyConfiguredWallpaper() { return controller_.ApplyConfiguredWallpaper(trace_); }
 
 bool DashboardApp::ApplyLayoutGuideWeights(const LayoutEditLayoutTarget& target, const std::vector<int>& weights) {
     const auto start = std::chrono::steady_clock::now();
@@ -2261,7 +2307,8 @@ bool DashboardApp::ApplyLayoutGuideWeights(const LayoutEditLayoutTarget& target,
 }
 
 bool DashboardApp::ApplyLayoutGuideAdjacentWeights(
-    const LayoutEditLayoutTarget& target, size_t separatorIndex, int firstWeight, int secondWeight) {
+    const LayoutEditLayoutTarget& target, size_t separatorIndex, int firstWeight, int secondWeight
+) {
     const auto start = std::chrono::steady_clock::now();
     const bool applied =
         controller_.ApplyLayoutGuideAdjacentWeights(*this, target, separatorIndex, firstWeight, secondWeight);
@@ -2270,7 +2317,8 @@ bool DashboardApp::ApplyLayoutGuideAdjacentWeights(
 }
 
 bool DashboardApp::ApplyMetricListOrder(
-    const LayoutEditWidgetIdentity& widget, const std::vector<std::string>& metricRefs) {
+    const LayoutEditWidgetIdentity& widget, const std::vector<std::string>& metricRefs
+) {
     const auto start = std::chrono::steady_clock::now();
     const bool applied = controller_.ApplyMetricListOrder(*this, widget, metricRefs);
     RecordLayoutEditTracePhase(TracePhase::Apply, std::chrono::steady_clock::now() - start);
@@ -2291,10 +2339,12 @@ bool DashboardApp::ApplyLayoutEditValue(LayoutEditParameter parameter, double va
     return applied;
 }
 
-std::optional<int> DashboardApp::EvaluateLayoutWidgetExtentForWeights(const LayoutEditLayoutTarget& target,
+std::optional<int> DashboardApp::EvaluateLayoutWidgetExtentForWeights(
+    const LayoutEditLayoutTarget& target,
     const std::vector<int>& weights,
     const LayoutEditWidgetIdentity& widget,
-    LayoutGuideAxis axis) {
+    LayoutGuideAxis axis
+) {
     return controller_.EvaluateLayoutWidgetExtentForWeights(*this, target, weights, widget, axis);
 }
 
@@ -2316,9 +2366,7 @@ void DashboardApp::RemoveTrayIcon() {
     }
 }
 
-void DashboardApp::StartMoveMode() {
-    StartMoveMode(false, POINT{}, true, false, false);
-}
+void DashboardApp::StartMoveMode() { StartMoveMode(false, POINT{}, true, false, false); }
 
 void DashboardApp::StartMoveModeAt(POINT cursorAnchorClientPoint) {
     StartMoveMode(true, cursorAnchorClientPoint, true, false, false);
@@ -2359,11 +2407,13 @@ void DashboardApp::StartResizeModeAt(POINT cursorClientPoint, DisplayResizeCorne
     RedrawMoveFrame();
 }
 
-void DashboardApp::StartMoveMode(bool hasCursorAnchorClientPoint,
+void DashboardApp::StartMoveMode(
+    bool hasCursorAnchorClientPoint,
     POINT cursorAnchorClientPoint,
     bool clampCursorAnchorClientPoint,
     bool placeOnRelease,
-    bool keepNativeTitlebarDuringMove) {
+    bool keepNativeTitlebarDuringMove
+) {
     if (controller_.State().isEditingLayout) {
         layoutEditController_.CancelInteraction();
     }
@@ -2411,11 +2461,11 @@ std::optional<DisplayPlacementTarget> DashboardApp::ResolveConfiguredDisplayPlac
         return std::nullopt;
     }
 
-    const DisplayMenuMonitorInfo monitorInfo{
-        config.display.monitorName, config.display.monitorName, monitor->rect, monitor->dpi};
+    const DisplayMenuMonitorInfo
+        monitorInfo{config.display.monitorName, config.display.monitorName, monitor->rect, monitor->dpi};
     const auto configMatchesTarget = [&config](const DisplayPlacementTarget& target) {
         return AreScalesEqual(ResolveDisplayScale(config.display.scale, target.dpi), target.targetScale) &&
-               config.display.position == target.position;
+            config.display.position == target.position;
     };
 
     if (config.display.autohide.empty()) {
@@ -2444,12 +2494,10 @@ std::optional<DisplayPlacementTarget> DashboardApp::ResolveConfiguredDisplayPlac
 bool DashboardApp::IsDashboardAtConfiguredDisplayPlacement() const {
     const std::optional<DisplayPlacementTarget> configuredTarget = ResolveConfiguredDisplayPlacementTarget();
     return configuredTarget.has_value() &&
-           DisplayPlacementTargetMatchesRect(*configuredTarget, DashboardClientScreenRect());
+        DisplayPlacementTargetMatchesRect(*configuredTarget, DashboardClientScreenRect());
 }
 
-bool DashboardApp::CanUseDashboardResizeHandles() const {
-    return !IsDashboardAtConfiguredDisplayPlacement();
-}
+bool DashboardApp::CanUseDashboardResizeHandles() const { return !IsDashboardAtConfiguredDisplayPlacement(); }
 
 RECT DashboardApp::DashboardResizeHandleRect(DisplayResizeCorner corner) const {
     const int width = WindowWidth();
@@ -2478,10 +2526,12 @@ std::optional<DisplayResizeCorner> DashboardApp::HitTestDashboardResizeHandle(Re
     }
 
     const POINT point{clientPoint.x, clientPoint.y};
-    const DisplayResizeCorner corners[] = {DisplayResizeCorner::TopLeft,
+    const DisplayResizeCorner corners[] = {
+        DisplayResizeCorner::TopLeft,
         DisplayResizeCorner::TopRight,
         DisplayResizeCorner::BottomLeft,
-        DisplayResizeCorner::BottomRight};
+        DisplayResizeCorner::BottomRight
+    };
     for (const DisplayResizeCorner corner : corners) {
         const RECT handleRect = DashboardResizeHandleRect(corner);
         if (IsRectUsable(handleRect) && PtInRect(&handleRect, point) != FALSE) {
@@ -2503,7 +2553,8 @@ std::optional<DisplayResizeCorner> DashboardApp::HitTestNativeTitlebarResizeHand
     }
 
     const DashboardTitlebarResizeHitRects hitRects = ResolveDashboardTitlebarResizeHitRects(
-        clientRect, ResolveDashboardTitlebarResizeCornerHitSize(CurrentWindowDpi()));
+        clientRect, ResolveDashboardTitlebarResizeCornerHitSize(CurrentWindowDpi())
+    );
     if (PtInRect(&hitRects.topLeft, clientPoint) != FALSE) {
         return DisplayResizeCorner::TopLeft;
     }
@@ -2571,7 +2622,8 @@ void DashboardApp::UpdateMoveTracking() {
     } else {
         int cursorOffset = ScaleLogicalToPhysical(24, CurrentWindowDpi());
         cursorOffset = std::max(
-            cursorOffset, renderer_.Renderer().TextMetrics().smallText + ScaleLogicalToPhysical(8, CurrentWindowDpi()));
+            cursorOffset, renderer_.Renderer().TextMetrics().smallText + ScaleLogicalToPhysical(8, CurrentWindowDpi())
+        );
 
         cursorClientOffset.x = WindowWidth() / 2;
         cursorClientOffset.y = cursorOffset;
@@ -2601,19 +2653,23 @@ void DashboardApp::UpdateResizeTracking() {
     }
 
     const POINT targetDraggedCorner{
-        cursor.x + resizeDraggedCornerCursorOffset_.x, cursor.y + resizeDraggedCornerCursorOffset_.y};
+        cursor.x + resizeDraggedCornerCursorOffset_.x, cursor.y + resizeDraggedCornerCursorOffset_.y
+    };
     const LogicalSizeConfig& window = controller_.State().config.layout.structure.window;
     const DisplayAspectResizeTarget target = ComputeAspectResizeDragTarget(
-        SIZE{window.width, window.height}, resizeCorner_, resizeAnchorScreenPoint_, targetDraggedCorner);
+        SIZE{window.width, window.height}, resizeCorner_, resizeAnchorScreenPoint_, targetDraggedCorner
+    );
     UpdateRendererScale(target.targetScale);
     movePlacementInfo_ = GetMonitorPlacementForRect(target.targetClientRect, target.targetScale);
     SyncDashboardMoveOverlayState();
-    SetDashboardWindowGeometry(target.targetClientRect.left,
+    SetDashboardWindowGeometry(
+        target.targetClientRect.left,
         target.targetClientRect.top,
         RectWidth(target.targetClientRect),
         RectHeight(target.targetClientRect),
         SWP_NOACTIVATE | SWP_NOZORDER,
-        "interactive_resize");
+        "interactive_resize"
+    );
     movePlacementInfo_ = GetMonitorPlacementForRect(DashboardClientScreenRect(), target.targetScale);
     SyncDashboardMoveOverlayState();
 }
@@ -2626,39 +2682,27 @@ void DashboardApp::SyncDashboardMoveOverlayState() {
     }
 
     overlayState.visible = true;
-    overlayState.mode = placementInteractionMode_ == PlacementInteractionMode::Resize
-                            ? DashboardPlacementOverlayMode::Resize
-                            : DashboardPlacementOverlayMode::Move;
+    overlayState.mode = placementInteractionMode_ == PlacementInteractionMode::Resize ?
+        DashboardPlacementOverlayMode::Resize : DashboardPlacementOverlayMode::Move;
     overlayState.placeOnRelease = stopMoveModeWhenLeftButtonReleased_;
     overlayState.monitorName = movePlacementInfo_.monitorName;
-    overlayState.relativePosition = RenderPoint{static_cast<int>(movePlacementInfo_.relativePosition.x),
-        static_cast<int>(movePlacementInfo_.relativePosition.y)};
-    overlayState.displayScale =
-        placementInteractionMode_ == PlacementInteractionMode::Resize
-            ? CurrentRenderScale()
-            : ResolveDisplayScale(controller_.State().config.display.scale, movePlacementInfo_.dpi);
+    overlayState.relativePosition = RenderPoint{
+        static_cast<int>(movePlacementInfo_.relativePosition.x), static_cast<int>(movePlacementInfo_.relativePosition.y)
+    };
+    overlayState.displayScale = placementInteractionMode_ == PlacementInteractionMode::Resize ? CurrentRenderScale() :
+        ResolveDisplayScale(controller_.State().config.display.scale, movePlacementInfo_.dpi);
     overlayState.monitorDefaultScale = ScaleFromDpi(movePlacementInfo_.dpi);
 }
 
-HWND DashboardApp::WindowHandle() const {
-    return hwnd_;
-}
+HWND DashboardApp::WindowHandle() const { return hwnd_; }
 
-Trace& DashboardApp::TraceLog() {
-    return trace_;
-}
+Trace& DashboardApp::TraceLog() { return trace_; }
 
-DashboardRenderer& DashboardApp::Renderer() {
-    return renderer_;
-}
+DashboardRenderer& DashboardApp::Renderer() { return renderer_; }
 
-const DashboardRenderer& DashboardApp::Renderer() const {
-    return renderer_;
-}
+const DashboardRenderer& DashboardApp::Renderer() const { return renderer_; }
 
-DashboardOverlayState& DashboardApp::RendererDashboardOverlayState() {
-    return rendererDashboardOverlayState_;
-}
+DashboardOverlayState& DashboardApp::RendererDashboardOverlayState() { return rendererDashboardOverlayState_; }
 
 const DashboardOverlayState& DashboardApp::RendererDashboardOverlayState() const {
     return rendererDashboardOverlayState_;
@@ -2709,9 +2753,7 @@ MonitorPlacementInfo DashboardApp::GetWindowPlacementInfoForScale(double scale) 
     return hwnd_ != nullptr ? GetMonitorPlacementForRect(DashboardClientScreenRect(), scale) : movePlacementInfo_;
 }
 
-void DashboardApp::ShowError(std::string_view message) const {
-    ShowAppMessageBox(hwnd_, message, MB_ICONERROR);
-}
+void DashboardApp::ShowError(std::string_view message) const { ShowAppMessageBox(hwnd_, message, MB_ICONERROR); }
 
 bool DashboardApp::CreateDashboardTooltip() {
     return dashboardTooltip_.Create(hwnd_, instance_, ScaleLogicalToPhysical(360, CurrentWindowDpi()));
@@ -2764,8 +2806,12 @@ void DashboardApp::SetLayoutEditTooltipRefreshSuppressed(bool suppressed) {
 }
 
 bool DashboardApp::ShouldIgnoreCoveredLayoutEditPointer(POINT screenPoint, bool allowDuringDrag) const {
-    if (shellUi_ == nullptr || !controller_.State().isEditingLayout || controller_.State().isMoving ||
-        shellUi_->IsLayoutEditModalUiActive()) {
+    if (
+        shellUi_ == nullptr ||
+        !controller_.State().isEditingLayout ||
+        controller_.State().isMoving ||
+        shellUi_->IsLayoutEditModalUiActive()
+    ) {
         return false;
     }
     if (allowDuringDrag && layoutEditController_.HasActiveDrag()) {
@@ -2775,8 +2821,13 @@ bool DashboardApp::ShouldIgnoreCoveredLayoutEditPointer(POINT screenPoint, bool 
 }
 
 void DashboardApp::SuspendCoveredLayoutEditHover() {
-    if (!controller_.State().isEditingLayout || controller_.State().isMoving || shellUi_ == nullptr ||
-        shellUi_->IsLayoutEditModalUiActive() || layoutEditController_.HasActiveDrag()) {
+    if (
+        !controller_.State().isEditingLayout ||
+        controller_.State().isMoving ||
+        shellUi_ == nullptr ||
+        shellUi_->IsLayoutEditModalUiActive() ||
+        layoutEditController_.HasActiveDrag()
+    ) {
         HideLayoutEditTooltip();
         return;
     }
@@ -2824,8 +2875,8 @@ void DashboardApp::UpdateLayoutEditTooltip() {
     const RECT tooltipRect = RectFromPoint(clientPoint, tooltipRadius);
     POINT tooltipScreenPoint{clientPoint.x + tooltipOffsetX, clientPoint.y + tooltipOffsetY};
     ClientToScreen(hwnd_, &tooltipScreenPoint);
-    dashboardTooltip_.ShowOrUpdate(
-        tooltipRect, tooltipScreenPoint, tooltipText, ScaleLogicalToPhysical(360, CurrentWindowDpi()));
+    dashboardTooltip_
+        .ShowOrUpdate(tooltipRect, tooltipScreenPoint, tooltipText, ScaleLogicalToPhysical(360, CurrentWindowDpi()));
     dashboardTooltipOwner_ = DashboardTooltipOwner::LayoutEdit;
     dashboardTooltip_.RelayMouseMessage(WM_MOUSEMOVE, 0, MAKELPARAM(clientPoint.x, clientPoint.y));
 }
@@ -2835,8 +2886,12 @@ void DashboardApp::RefreshLayoutEditHoverFromCursor() {
         HideLayoutEditTooltip();
         return;
     }
-    if (!controller_.State().isEditingLayout || controller_.State().isMoving || shellUi_ == nullptr ||
-        shellUi_->IsLayoutEditModalUiActive()) {
+    if (
+        !controller_.State().isEditingLayout ||
+        controller_.State().isMoving ||
+        shellUi_ == nullptr ||
+        shellUi_->IsLayoutEditModalUiActive()
+    ) {
         HideLayoutEditTooltip();
         return;
     }
@@ -2962,8 +3017,8 @@ LRESULT CALLBACK DashboardApp::TitlebarProbeWndProcSetup(HWND hwnd, UINT message
 
 LRESULT CALLBACK DashboardApp::TitlebarProbeWndProcThunk(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
     auto* app = reinterpret_cast<DashboardApp*>(GetWindowLongPtrA(hwnd, GWLP_USERDATA));
-    return app != nullptr ? app->HandleTitlebarProbeMessage(hwnd, message, wParam, lParam)
-                          : DefWindowProcA(hwnd, message, wParam, lParam);
+    return app != nullptr ? app->HandleTitlebarProbeMessage(hwnd, message, wParam, lParam) :
+        DefWindowProcA(hwnd, message, wParam, lParam);
 }
 
 LRESULT DashboardApp::HandleTitlebarProbeMessage(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
@@ -3179,8 +3234,10 @@ LRESULT DashboardApp::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam) 
         case WM_MOUSEACTIVATE:
             if (LOWORD(lParam) == HTCLIENT) {
                 POINT screenPoint{};
-                if (GetCursorPos(&screenPoint) &&
-                    (shellUi_ == nullptr || !shellUi_->ShouldDashboardIgnoreMouse(screenPoint))) {
+                if (
+                    GetCursorPos(&screenPoint) &&
+                    (shellUi_ == nullptr || !shellUi_->ShouldDashboardIgnoreMouse(screenPoint))
+                ) {
                     BringOnTop();
                     return MA_ACTIVATE;
                 }
@@ -3197,8 +3254,12 @@ LRESULT DashboardApp::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam) 
             UpdateNativeTitlebarHoverFromCursor();
             break;
         case WM_NCLBUTTONDOWN:
-            if (wParam == HTCAPTION && nativeTitlebarVisible_ && shellUi_ != nullptr &&
-                !shellUi_->IsLayoutEditModalUiActive()) {
+            if (
+                wParam == HTCAPTION &&
+                nativeTitlebarVisible_ &&
+                shellUi_ != nullptr &&
+                !shellUi_->IsLayoutEditModalUiActive()
+            ) {
                 StartMoveModeFromNativeTitlebar(POINT{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)});
                 return 0;
             }
@@ -3271,7 +3332,8 @@ LRESULT DashboardApp::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam) 
                 if (layoutEditController_.HandleLButtonDown(hwnd_, clientPoint)) {
                     LayoutEditController::TooltipTarget target;
                     shellUi_->SyncLayoutEditDialogSelection(
-                        layoutEditController_.CurrentTooltipTarget(target) ? &target : nullptr, false);
+                        layoutEditController_.CurrentTooltipTarget(target) ? &target : nullptr, false
+                    );
                     UpdateLayoutEditTooltip();
                     RedrawLayoutEditDragFrame();
                     return 0;
@@ -3297,8 +3359,8 @@ LRESULT DashboardApp::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam) 
                     layoutEditController_.CurrentTooltipTarget(layoutEditTarget) ? &layoutEditTarget : nullptr;
             }
             const POINT cursorAnchorPoint{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
-            shellUi_->InvokeDefaultAction(
-                DashboardShellUi::MenuSource::AppWindow, layoutEditTargetPtr, &cursorAnchorPoint);
+            shellUi_
+                ->InvokeDefaultAction(DashboardShellUi::MenuSource::AppWindow, layoutEditTargetPtr, &cursorAnchorPoint);
             if (controller_.State().isMoving) {
                 suppressMoveStopOnNextLeftButtonUp_ = true;
             }
@@ -3364,7 +3426,8 @@ LRESULT DashboardApp::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam) 
                 if (layoutEditController_.HandleLButtonUp(clientPoint)) {
                     LayoutEditController::TooltipTarget target;
                     shellUi_->SyncLayoutEditDialogSelection(
-                        layoutEditController_.CurrentTooltipTarget(target) ? &target : nullptr, false);
+                        layoutEditController_.CurrentTooltipTarget(target) ? &target : nullptr, false
+                    );
                     UpdateLayoutEditTooltip();
                     return 0;
                 }
@@ -3392,8 +3455,11 @@ LRESULT DashboardApp::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam) 
             }
             break;
         case WM_CAPTURECHANGED:
-            if (state.isMoving && placementInteractionMode_ == PlacementInteractionMode::Resize &&
-                reinterpret_cast<HWND>(lParam) != hwnd_) {
+            if (
+                state.isMoving &&
+                placementInteractionMode_ == PlacementInteractionMode::Resize &&
+                reinterpret_cast<HWND>(lParam) != hwnd_
+            ) {
                 StopMoveMode();
                 return 0;
             }
@@ -3423,8 +3489,12 @@ LRESULT DashboardApp::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam) 
                     }
                 }
             }
-            if (LOWORD(lParam) == HTCLIENT && state.isEditingLayout && !state.isMoving &&
-                !shellUi_->IsLayoutEditModalUiActive()) {
+            if (
+                LOWORD(lParam) == HTCLIENT &&
+                state.isEditingLayout &&
+                !state.isMoving &&
+                !shellUi_->IsLayoutEditModalUiActive()
+            ) {
                 POINT screenPoint{};
                 if (GetCursorPos(&screenPoint) && ShouldIgnoreCoveredLayoutEditPointer(screenPoint, true)) {
                     SuspendCoveredLayoutEditHover();
@@ -3568,6 +3638,4 @@ void DashboardApp::RecordLayoutEditTracePhase(TracePhase phase, std::chrono::nan
     trace_.Timings().Record(trace_, TraceTimingOperationName(phase), elapsed);
 }
 
-void DashboardApp::EndLayoutEditTraceSession(ResourceStringId reason) {
-    (void)reason;
-}
+void DashboardApp::EndLayoutEditTraceSession(ResourceStringId reason) { (void)reason; }

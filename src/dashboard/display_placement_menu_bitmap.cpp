@@ -7,29 +7,29 @@
 
 namespace {
 
-int RectWidth(const RECT& rect) {
-    return rect.right - rect.left;
-}
+int RectWidth(const RECT& rect) { return rect.right - rect.left; }
 
-int RectHeight(const RECT& rect) {
-    return rect.bottom - rect.top;
-}
+int RectHeight(const RECT& rect) { return rect.bottom - rect.top; }
 
 int SystemMetricForDpi(int metric, UINT dpi) {
-    using GetSystemMetricsForDpiFn = int(WINAPI*)(int, UINT);
+    using GetSystemMetricsForDpiFn = int (WINAPI *)(int, UINT);
     static const auto getSystemMetricsForDpi = reinterpret_cast<GetSystemMetricsForDpiFn>(
-        GetProcAddress(GetModuleHandleA("user32.dll"), "GetSystemMetricsForDpi"));
+        GetProcAddress(GetModuleHandleA("user32.dll"), "GetSystemMetricsForDpi")
+    );
     return getSystemMetricsForDpi != nullptr ? getSystemMetricsForDpi(metric, dpi) : GetSystemMetrics(metric);
 }
 
 bool QueryNonClientMetricsForDpi(NONCLIENTMETRICSA& metrics, UINT dpi) {
-    using SystemParametersInfoForDpiFn = BOOL(WINAPI*)(UINT, UINT, PVOID, UINT, UINT);
+    using SystemParametersInfoForDpiFn = BOOL (WINAPI *)(UINT, UINT, PVOID, UINT, UINT);
     static const auto systemParametersInfoForDpi = reinterpret_cast<SystemParametersInfoForDpiFn>(
-        GetProcAddress(GetModuleHandleA("user32.dll"), "SystemParametersInfoForDpi"));
+        GetProcAddress(GetModuleHandleA("user32.dll"), "SystemParametersInfoForDpi")
+    );
     metrics = {};
     metrics.cbSize = sizeof(metrics);
-    if (systemParametersInfoForDpi != nullptr &&
-        systemParametersInfoForDpi(SPI_GETNONCLIENTMETRICS, sizeof(metrics), &metrics, 0, dpi)) {
+    if (
+        systemParametersInfoForDpi != nullptr &&
+        systemParametersInfoForDpi(SPI_GETNONCLIENTMETRICS, sizeof(metrics), &metrics, 0, dpi)
+    ) {
         return true;
     }
     return SystemParametersInfoA(SPI_GETNONCLIENTMETRICS, sizeof(metrics), &metrics, 0) != FALSE;
@@ -88,11 +88,13 @@ void PaintBitmapRect(DisplayPlacementMenuBitmapPixel* pixels, int width, int hei
 }
 
 void PaintBitmapRectOutline(
-    DisplayPlacementMenuBitmapPixel* pixels, int width, int height, const RECT& rect, int thickness, COLORREF color) {
+    DisplayPlacementMenuBitmapPixel* pixels, int width, int height, const RECT& rect, int thickness, COLORREF color
+) {
     const int lineThickness = std::max(1, thickness);
     PaintBitmapRect(pixels, width, height, RECT{rect.left, rect.top, rect.right, rect.top + lineThickness}, color);
     PaintBitmapRect(
-        pixels, width, height, RECT{rect.left, rect.bottom - lineThickness, rect.right, rect.bottom}, color);
+        pixels, width, height, RECT{rect.left, rect.bottom - lineThickness, rect.right, rect.bottom}, color
+    );
     PaintBitmapRect(pixels, width, height, RECT{rect.left, rect.top, rect.left + lineThickness, rect.bottom}, color);
     PaintBitmapRect(pixels, width, height, RECT{rect.right - lineThickness, rect.top, rect.right, rect.bottom}, color);
 }
@@ -116,12 +118,14 @@ int ResolveNativeMenuBitmapSize(UINT dpi) {
     return std::max(1, std::min(preferred, std::max(1, rowHeight - verticalInset)));
 }
 
-void PaintDisplayPlacementMenuBitmapPixels(DisplayPlacementMenuBitmapPixel* pixels,
+void PaintDisplayPlacementMenuBitmapPixels(
+    DisplayPlacementMenuBitmapPixel* pixels,
     int bitmapSize,
     const DisplayMenuOption& option,
     COLORREF menuColor,
     COLORREF menuTextColor,
-    COLORREF highlightColor) {
+    COLORREF highlightColor
+) {
     if (pixels == nullptr || bitmapSize <= 0) {
         return;
     }
@@ -133,8 +137,10 @@ void PaintDisplayPlacementMenuBitmapPixels(DisplayPlacementMenuBitmapPixel* pixe
     const int padding = std::max(1, bitmapSize / 8);
     const RECT bounds{padding, padding, bitmapSize - padding, bitmapSize - padding};
     const DisplayPlacementSchematicGeometry geometry = ComputeDisplayPlacementSchematicGeometry(option, bounds);
-    if (geometry.displayRect.right <= geometry.displayRect.left ||
-        geometry.displayRect.bottom <= geometry.displayRect.top) {
+    if (
+        geometry.displayRect.right <= geometry.displayRect.left ||
+        geometry.displayRect.bottom <= geometry.displayRect.top
+    ) {
         return;
     }
 
@@ -146,7 +152,8 @@ void PaintDisplayPlacementMenuBitmapPixels(DisplayPlacementMenuBitmapPixel* pixe
         PaintBitmapRect(pixels, bitmapSize, bitmapSize, geometry.dividerRect, dividerColor);
     }
     PaintBitmapRectOutline(
-        pixels, bitmapSize, bitmapSize, geometry.displayRect, std::max(1, bitmapSize / 14), outlineColor);
+        pixels, bitmapSize, bitmapSize, geometry.displayRect, std::max(1, bitmapSize / 14), outlineColor
+    );
 }
 
 HBITMAP CreateDisplayPlacementMenuBitmap(const DisplayMenuOption& option, UINT dpi) {
@@ -171,6 +178,7 @@ HBITMAP CreateDisplayPlacementMenuBitmap(const DisplayMenuOption& option, UINT d
 
     auto* pixels = static_cast<DisplayPlacementMenuBitmapPixel*>(bits);
     PaintDisplayPlacementMenuBitmapPixels(
-        pixels, bitmapSize, option, GetSysColor(COLOR_MENU), GetSysColor(COLOR_MENUTEXT), GetSysColor(COLOR_HIGHLIGHT));
+        pixels, bitmapSize, option, GetSysColor(COLOR_MENU), GetSysColor(COLOR_MENUTEXT), GetSysColor(COLOR_HIGHLIGHT)
+    );
     return bitmap;
 }

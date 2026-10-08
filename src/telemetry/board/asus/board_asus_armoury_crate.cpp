@@ -55,13 +55,9 @@ public:
         }
     }
 
-    bool Valid() const {
-        return value_ != nullptr && value_ != INVALID_HANDLE_VALUE;
-    }
+    bool Valid() const { return value_ != nullptr && value_ != INVALID_HANDLE_VALUE; }
 
-    HANDLE Get() const {
-        return value_;
-    }
+    HANDLE Get() const { return value_; }
 
 private:
     HANDLE value_ = INVALID_HANDLE_VALUE;
@@ -71,9 +67,7 @@ bool HasDstsPresence(std::uint32_t status) {
     return status != kAsusUnsupportedStatus && (status & kAsusDstsPresenceBit) != 0;
 }
 
-bool IsSaneCelsius(double value) {
-    return value >= -20.0 && value <= 125.0;
-}
+bool IsSaneCelsius(double value) { return value >= -20.0 && value <= 125.0; }
 
 UniqueHandle OpenAsusAtkDevice() {
     return UniqueHandle(CreateFileA(
@@ -87,27 +81,15 @@ UniqueHandle OpenAsusAtkDevice() {
     ));
 }
 
-bool QueryAsusAtkDsts(
-    HANDLE device,
-    std::uint32_t deviceId,
-    std::uint32_t& status,
-    DWORD& error,
-    DWORD& bytesReturned
-) {
+bool QueryAsusAtkDsts(HANDLE device, std::uint32_t deviceId, std::uint32_t& status, DWORD& error, DWORD& bytesReturned)
+{
     AsusAtkDstsInput input;
     input.deviceId = deviceId;
     status = 0;
     bytesReturned = 0;
     SetLastError(ERROR_SUCCESS);
     const BOOL result = DeviceIoControl(
-        device,
-        kAsusAtkIoControl,
-        &input,
-        sizeof(input),
-        &status,
-        sizeof(status),
-        &bytesReturned,
-        nullptr
+        device, kAsusAtkIoControl, &input, sizeof(input), &status, sizeof(status), &bytesReturned, nullptr
     );
     error = result != FALSE ? ERROR_SUCCESS : GetLastError();
     return result != FALSE && bytesReturned >= sizeof(status);
@@ -139,12 +121,7 @@ void TraceAtkDriverResult(
 }
 
 bool CaptureAtkDriverStatus(
-    Trace& trace,
-    HANDLE device,
-    const char* kind,
-    std::uint32_t deviceId,
-    const char* name,
-    std::uint32_t& status
+    Trace& trace, HANDLE device, const char* kind, std::uint32_t deviceId, const char* name, std::uint32_t& status
 ) {
     DWORD error = ERROR_SUCCESS;
     DWORD bytesReturned = 0;
@@ -154,11 +131,7 @@ bool CaptureAtkDriverStatus(
 }
 
 void CaptureAtkDriverFan(
-    Trace& trace,
-    HANDLE device,
-    std::uint32_t deviceId,
-    const char* name,
-    std::vector<BoardSensorReading>& fans
+    Trace& trace, HANDLE device, std::uint32_t deviceId, const char* name, std::vector<BoardSensorReading>& fans
 ) {
     std::uint32_t status = 0;
     if (!CaptureAtkDriverStatus(trace, device, "fan", deviceId, name, status) || !HasDstsPresence(status)) {
@@ -222,12 +195,8 @@ AsusArmouryCrateSnapshot CaptureAsusAtkDriverSensors(Trace& trace) {
 
 class AsusArmouryCrateBoardTelemetryProvider final : public BoardVendorTelemetryProvider {
 public:
-    AsusArmouryCrateBoardTelemetryProvider(
-        Trace& trace,
-        BoardVendorInfo info
-    ) :
-        trace_(trace),
-        info_(std::move(info)) {}
+    AsusArmouryCrateBoardTelemetryProvider(Trace& trace, BoardVendorInfo info) : trace_(trace), info_(std::move(info))
+    {}
 
     bool Initialize(const BoardTelemetrySettings& settings) override {
         settings_ = settings;
@@ -263,9 +232,7 @@ public:
         }
         for (size_t i = 0; i < fanMetricTemplate_.size(); ++i) {
             AppendRequestedBoardMetricIndex(
-                requestedFanIndexBySourceName_,
-                ResolveFanSensorName(fanMetricTemplate_[i].name),
-                i
+                requestedFanIndexBySourceName_, ResolveFanSensorName(fanMetricTemplate_[i].name), i
             );
         }
         requestedDiagnosticsSuffix_.clear();
@@ -324,9 +291,7 @@ public:
         ResetBoardMetricValues(sample.temperatures);
         ResetBoardMetricValues(sample.fans);
         ApplyBoardSensorReadingsToMetrics(
-            snapshot.temperatures,
-            requestedTemperatureIndexBySourceName_,
-            sample.temperatures
+            snapshot.temperatures, requestedTemperatureIndexBySourceName_, sample.temperatures
         );
         ApplyBoardSensorReadingsToMetrics(snapshot.fans, requestedFanIndexBySourceName_, sample.fans);
         sample.available = HasAvailableMetricValue(sample.temperatures) || HasAvailableMetricValue(sample.fans);

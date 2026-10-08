@@ -21,17 +21,11 @@ constexpr wchar_t kFilterCueText[] = L"Filter settings";  // EM_SETCUEBANNER sen
 
 LayoutEditDialog::LayoutEditDialog(LayoutEditDialogHost& host) : host_(host) {}
 
-LayoutEditDialog::~LayoutEditDialog() {
-    Close();
-}
+LayoutEditDialog::~LayoutEditDialog() { Close(); }
 
-LayoutEditDialogHost& LayoutEditDialog::Host() {
-    return host_;
-}
+LayoutEditDialogHost& LayoutEditDialog::Host() { return host_; }
 
-const LayoutEditDialogHost& LayoutEditDialog::Host() const {
-    return host_;
-}
+const LayoutEditDialogHost& LayoutEditDialog::Host() const { return host_; }
 
 bool LayoutEditDialog::HandleDialogMessage(MSG* msg) const {
     return msg != nullptr && hwnd_ != nullptr && IsWindow(hwnd_) && IsDialogMessageA(hwnd_, msg) != FALSE;
@@ -72,8 +66,8 @@ bool TryGetMonitorWorkAreaForRect(const RECT& rect, RECT* workArea) {
     MONITORINFO monitorInfo{};
     monitorInfo.cbSize = sizeof(monitorInfo);
     const HMONITOR monitor = MonitorFromRect(&rect, MONITOR_DEFAULTTONEAREST);
-    return monitor != nullptr && GetMonitorInfoA(monitor, &monitorInfo) != FALSE &&
-           (*workArea = monitorInfo.rcWork, true);
+    return
+        monitor != nullptr && GetMonitorInfoA(monitor, &monitorInfo) != FALSE && (*workArea = monitorInfo.rcWork, true);
 }
 
 }  // namespace
@@ -111,7 +105,8 @@ void LayoutEditDialog::PositionWindow(HWND hwnd) const {
         if (TryGetMonitorWorkAreaForRect(desiredRect, &workArea)) {
             const RECT clampedRect = ClampWindowRectToWorkArea(desiredRect, workArea);
             SetWindowPos(
-                hwnd, nullptr, clampedRect.left, clampedRect.top, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+                hwnd, nullptr, clampedRect.left, clampedRect.top, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE
+            );
             return;
         }
     }
@@ -231,11 +226,13 @@ bool LayoutEditDialog::Ensure(const std::optional<LayoutEditFocusKey>& focusKey,
         state_->initialFocus.emplace(*focusKey);
     }
 
-    HWND dialog = CreateDialogParamA(host_.LayoutEditDialogInstance(),
+    HWND dialog = CreateDialogParamA(
+        host_.LayoutEditDialogInstance(),
         MAKEINTRESOURCEA(IDD_LAYOUT_EDIT_CONFIGURATION),
         nullptr,
         LayoutEditDialog::DialogProc,
-        reinterpret_cast<LPARAM>(state_.get()));
+        reinterpret_cast<LPARAM>(state_.get())
+    );
     if (dialog == nullptr) {
         state_.reset();
         return false;
@@ -357,7 +354,8 @@ INT_PTR CALLBACK LayoutEditDialog::DialogProc(HWND hwnd, UINT message, WPARAM wP
             TreeView_SetExtendedStyle(tree, TVS_EX_DOUBLEBUFFER, TVS_EX_DOUBLEBUFFER);
         }
         SendDlgItemMessageA(
-            hwnd, IDC_LAYOUT_EDIT_FILTER_EDIT, EM_SETCUEBANNER, FALSE, reinterpret_cast<LPARAM>(kFilterCueText));
+            hwnd, IDC_LAYOUT_EDIT_FILTER_EDIT, EM_SETCUEBANNER, FALSE, reinterpret_cast<LPARAM>(kFilterCueText)
+        );
         RebuildLayoutEditTree(state, hwnd, state->initialFocus);
         state->dialog->PositionWindow(hwnd);
         ShowWindow(hwnd, SW_SHOWNORMAL);

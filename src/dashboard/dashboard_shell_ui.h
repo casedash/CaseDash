@@ -26,13 +26,16 @@ public:
 
     bool IsLayoutEditModalUiActive() const;
     void ShowContextMenu(
-        MenuSource source, POINT screenPoint, const LayoutEditController::TooltipTarget* layoutEditTarget);
+        MenuSource source, POINT screenPoint, const LayoutEditController::TooltipTarget* layoutEditTarget
+    );
     void ApplyTitlebarLayoutSelection(size_t index);
     void ApplyTitlebarThemeSelection(size_t index);
     void ShowTitlebarConfigureDisplayMenu(POINT screenPoint);
-    void InvokeDefaultAction(MenuSource source,
+    void InvokeDefaultAction(
+        MenuSource source,
         const LayoutEditController::TooltipTarget* layoutEditTarget,
-        const POINT* cursorAnchorClientPoint = nullptr);
+        const POINT* cursorAnchorClientPoint = nullptr
+    );
     void HandleExitRequest();
     void BeginLayoutEditModalUi();
     void EndLayoutEditModalUi();
@@ -63,7 +66,8 @@ private:
     bool StopLayoutEditSession(UnsavedLayoutEditPrompt prompt);
     bool OpenLayoutEditDialog();
     bool EnsureLayoutEditDialog(
-        const std::optional<LayoutEditFocusKey>& focusKey = std::nullopt, bool bringToFront = false);
+        const std::optional<LayoutEditFocusKey>& focusKey = std::nullopt, bool bringToFront = false
+    );
     void RefreshLayoutEditDialog(const std::optional<LayoutEditFocusKey>& preferredFocus = std::nullopt);
     void RefreshLayoutEditDialogSelection();
     void DestroyLayoutEditDialogWindow();
@@ -84,11 +88,13 @@ private:
     bool ApplyColorPreview(LayoutEditParameter parameter, unsigned int value) override;
     bool ApplyColorExpressionPreview(LayoutEditParameter parameter, const std::string& expression) override;
     bool ApplyThemeColorPreview(const ThemeColorEditKey& key, unsigned int value) override;
-    bool ApplyMetricPreview(const LayoutMetricEditKey& key,
+    bool ApplyMetricPreview(
+        const LayoutMetricEditKey& key,
         const std::optional<double>& scale,
         const std::string& unit,
         const std::string& label,
-        const std::optional<std::string>& binding) override;
+        const std::optional<std::string>& binding
+    ) override;
     bool ApplyCardTitlePreview(const LayoutCardTitleEditKey& key, const std::string& title) override;
     bool ApplyLayoutEditPreview(const LayoutEditFocusKey& key, const LayoutEditValue& value) override;
     bool ApplyMetricListAddRowPreview(const LayoutEditController::TooltipTarget& target);
@@ -103,9 +109,11 @@ private:
     size_t BuildConfigureDisplayMenu(HMENU menu, DisplayMenuOption* options, size_t capacity);
     bool AttachConfigureDisplayMenuBitmap(HMENU menu, UINT commandId, const DisplayMenuOption& option);
     void ClearConfigureDisplayMenuBitmaps();
-    void ExecuteCommand(UINT selected,
+    void ExecuteCommand(
+        UINT selected,
         const LayoutEditController::TooltipTarget* layoutEditTarget,
-        const POINT* cursorAnchorClientPoint = nullptr);
+        const POINT* cursorAnchorClientPoint = nullptr
+    );
     std::optional<double> PromptCustomScale();
     bool PromptAndApplyLayoutEditTarget(const LayoutEditController::TooltipTarget& target);
 

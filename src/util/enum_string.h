@@ -6,16 +6,19 @@
 #include <string_view>
 #include <type_traits>
 
-template <typename Enum> struct EnumStringTraits;
+template <typename Enum>
+struct EnumStringTraits;
 
 namespace enum_string_detail {
 
-template <typename Enum> constexpr size_t EnumIndex(Enum value) {
+template <typename Enum>
+constexpr size_t EnumIndex(Enum value) {
     using Underlying = std::underlying_type_t<Enum>;
     return static_cast<size_t>(static_cast<Underlying>(value));
 }
 
-template <size_t N> consteval bool HasUniqueNames(const std::array<std::string_view, N>& names) {
+template <size_t N>
+consteval bool HasUniqueNames(const std::array<std::string_view, N>& names) {
     for (size_t left = 0; left < N; ++left) {
         for (size_t right = left + 1; right < N; ++right) {
             if (names[left] == names[right]) {
@@ -26,11 +29,11 @@ template <size_t N> consteval bool HasUniqueNames(const std::array<std::string_v
     return true;
 }
 
-template <size_t N> consteval bool ValidateCanonicalNames(const std::array<std::string_view, N>& names) {
-    return HasUniqueNames(names);
-}
+template <size_t N>
+consteval bool ValidateCanonicalNames(const std::array<std::string_view, N>& names) { return HasUniqueNames(names); }
 
-template <typename Enum> constexpr const auto& CanonicalNames() {
+template <typename Enum>
+constexpr const auto& CanonicalNames() {
     using Traits = EnumStringTraits<Enum>;
     static_assert(std::is_enum_v<Enum>);
     static_assert(ValidateCanonicalNames(Traits::names));
@@ -39,7 +42,8 @@ template <typename Enum> constexpr const auto& CanonicalNames() {
 
 }  // namespace enum_string_detail
 
-template <typename Enum> constexpr std::string_view EnumToString(Enum value) {
+template <typename Enum>
+constexpr std::string_view EnumToString(Enum value) {
     const auto& names = enum_string_detail::CanonicalNames<Enum>();
     const size_t index = enum_string_detail::EnumIndex(value);
     if (index >= names.size()) {
@@ -48,7 +52,8 @@ template <typename Enum> constexpr std::string_view EnumToString(Enum value) {
     return names[index];
 }
 
-template <typename Enum> std::optional<Enum> EnumFromString(std::string_view text) {
+template <typename Enum>
+std::optional<Enum> EnumFromString(std::string_view text) {
     const auto& names = enum_string_detail::CanonicalNames<Enum>();
     for (size_t index = 0; index < names.size(); ++index) {
         if (names[index] == text) {
@@ -58,7 +63,8 @@ template <typename Enum> std::optional<Enum> EnumFromString(std::string_view tex
     return std::nullopt;
 }
 
-template <typename Enum> bool TryEnumFromString(std::string_view text, Enum& value) {
+template <typename Enum>
+bool TryEnumFromString(std::string_view text, Enum& value) {
     const auto parsed = EnumFromString<Enum>(text);
     if (!parsed.has_value()) {
         return false;
@@ -70,10 +76,13 @@ template <typename Enum> bool TryEnumFromString(std::string_view text, Enum& val
 #define ENUM_STRING_DECLARE_ENUMERATOR(name, text) name,
 #define ENUM_STRING_DECLARE_NAME(name, text) text,
 
-#define ENUM_STRING_DECLARE(EnumType, ItemsMacro)                                                                      \
-    enum class EnumType { ItemsMacro(ENUM_STRING_DECLARE_ENUMERATOR) };                                                \
-                                                                                                                       \
-    template <> struct EnumStringTraits<EnumType> {                                                                    \
-        static constexpr auto names = std::to_array<std::string_view>({ItemsMacro(ENUM_STRING_DECLARE_NAME)});         \
-        static_assert(enum_string_detail::ValidateCanonicalNames(names));                                              \
+#define ENUM_STRING_DECLARE(EnumType, ItemsMacro)                                                              \
+    enum class EnumType {                                                                                      \
+        ItemsMacro(ENUM_STRING_DECLARE_ENUMERATOR)                                                             \
+    };                                                                                                         \
+                                                                                                               \
+    template <>                                                                                                \
+    struct EnumStringTraits<EnumType> {                                                                        \
+        static constexpr auto names = std::to_array<std::string_view>({ItemsMacro(ENUM_STRING_DECLARE_NAME)}); \
+        static_assert(enum_string_detail::ValidateCanonicalNames(names));                                      \
     }

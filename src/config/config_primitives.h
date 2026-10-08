@@ -21,13 +21,9 @@ struct ColorConfig {
     bool operator==(const ColorConfig& other) const = default;
 };
 
-inline bool operator==(const ColorConfig& color, unsigned int value) {
-    return color.ToRgba() == value;
-}
+inline bool operator==(const ColorConfig& color, unsigned int value) { return color.ToRgba() == value; }
 
-inline bool operator==(unsigned int value, const ColorConfig& color) {
-    return color == value;
-}
+inline bool operator==(unsigned int value, const ColorConfig& color) { return color == value; }
 
 struct UiFontConfig {
     std::string face;

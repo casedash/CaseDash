@@ -23,8 +23,8 @@ int ComputeCpuGaugeWidth(int gaugeWeight) {
     const int dashboardWidth = kWindowWidth - (kOuterMargin * 2);
     const int cpuCardWidth = SplitWeightedFirstChild(dashboardWidth, kCardGap, kTopRowCpuWeight, kTopRowGpuWeight);
     const int cpuContentWidth = cpuCardWidth - (kCardPadding * 2);
-    return SplitWeightedFirstChild(
-        cpuContentWidth, kWidgetColumnGap, gaugeWeight, kCpuInnerCombinedWeight - gaugeWeight);
+    return
+        SplitWeightedFirstChild(cpuContentWidth, kWidgetColumnGap, gaugeWeight, kCpuInnerCombinedWeight - gaugeWeight);
 }
 
 int ComputeGpuGaugeWidth() {
@@ -70,7 +70,8 @@ TEST(LayoutSnapSolver, FindsExactIntegerMatchThroughNestedWeights) {
             extent = ComputeCpuGaugeWidth(firstWeight);
             return true;
         },
-        snappedWeight);
+        snappedWeight
+    );
 
     ASSERT_TRUE(snapped);
     EXPECT_EQ(ComputeCpuGaugeWidth(snappedWeight), targetExtent);

@@ -61,8 +61,9 @@ LayoutCardConfig MakeCard(const std::string& id, const LayoutNodeConfig& layout)
 }
 
 const LayoutEditTreeNode* FindRootNode(const LayoutEditTreeModel& model, const std::string& label) {
-    const auto it = std::find_if(
-        model.roots.begin(), model.roots.end(), [&](const LayoutEditTreeNode& node) { return node.label == label; });
+    const auto it = std::find_if(model.roots.begin(), model.roots.end(), [&](const LayoutEditTreeNode& node) {
+        return node.label == label;
+    });
     return it != model.roots.end() ? &(*it) : nullptr;
 }
 
@@ -82,8 +83,9 @@ std::vector<std::string> ChildLabels(const LayoutEditTreeNode& node) {
     return labels;
 }
 
-const LayoutEditTreeNode* FindNodeForLeaf(
-    const std::vector<LayoutEditTreeNode>& nodes, const LayoutEditTreeLeaf* targetLeaf) {
+const LayoutEditTreeNode*
+    FindNodeForLeaf(const std::vector<LayoutEditTreeNode>& nodes, const LayoutEditTreeLeaf* targetLeaf)
+{
     for (const LayoutEditTreeNode& node : nodes) {
         if (node.leaf.has_value() && &(*node.leaf) == targetLeaf) {
             return &node;
@@ -96,7 +98,8 @@ const LayoutEditTreeNode* FindNodeForLeaf(
 }
 
 void ExpectSpecialSelectionHighlight(
-    const LayoutEditTreeNode* node, LayoutEditSelectionHighlightSpecial expectedHighlight) {
+    const LayoutEditTreeNode* node, LayoutEditSelectionHighlightSpecial expectedHighlight
+) {
     ASSERT_NE(node, nullptr);
     ASSERT_TRUE(node->selectionHighlight.has_value());
     ASSERT_TRUE(std::holds_alternative<LayoutEditSelectionHighlightSpecial>(*node->selectionHighlight));
@@ -114,9 +117,11 @@ AppConfig MakeBaseConfig() {
     config.layout.structure.cards =
         MakeContainerNode("columns", {MakeDashboardCardNode("alpha"), MakeDashboardCardNode("beta")});
     config.layout.cards.push_back(
-        MakeCard("alpha", MakeContainerNode("columns", {MakeWidgetNode("gauge"), MakeWidgetNode("metric_list")})));
+        MakeCard("alpha", MakeContainerNode("columns", {MakeWidgetNode("gauge"), MakeWidgetNode("metric_list")}))
+    );
     config.layout.cards.push_back(
-        MakeCard("beta", MakeContainerNode("rows", {MakeWidgetNode("gauge"), MakeWidgetNode("metric_list")})));
+        MakeCard("beta", MakeContainerNode("rows", {MakeWidgetNode("gauge"), MakeWidgetNode("metric_list")}))
+    );
     return config;
 }
 
@@ -125,21 +130,22 @@ AppConfig MakeBaseConfig() {
 TEST(LayoutEditTree, PreservesTemplateSectionAndFieldOrderForEditableSections) {
     const LayoutEditTreeModel model = BuildLayoutEditTreeModel(MakeBaseConfig(), ReadTemplateText());
 
-    EXPECT_EQ(RootLabels(model),
-        (std::vector<std::string>{"metrics",
-            "colors",
-            "fonts",
-            "metric_list",
-            "drive_usage_list",
-            "throughput",
-            "gauge",
-            "text",
-            "network_footer",
-            "dashboard",
-            "card_style",
-            "layout.primary",
-            "card.alpha",
-            "card.beta"}));
+    EXPECT_EQ(RootLabels(model), (std::vector<std::string>{
+        "metrics",
+        "colors",
+        "fonts",
+        "metric_list",
+        "drive_usage_list",
+        "throughput",
+        "gauge",
+        "text",
+        "network_footer",
+        "dashboard",
+        "card_style",
+        "layout.primary",
+        "card.alpha",
+        "card.beta"
+    }));
 
     const LayoutEditTreeNode* metrics = FindRootNode(model, "metrics");
     ASSERT_NE(metrics, nullptr);
@@ -153,22 +159,23 @@ TEST(LayoutEditTree, PreservesTemplateSectionAndFieldOrderForEditableSections) {
 
     const LayoutEditTreeNode* colors = FindRootNode(model, "colors");
     ASSERT_NE(colors, nullptr);
-    EXPECT_EQ(ChildLabels(*colors),
-        (std::vector<std::string>{"background_color",
-            "foreground_color",
-            "icon_color",
-            "accent_color",
-            "peak_ghost_color",
-            "warning_color",
-            "layout_guide_color",
-            "active_edit_color",
-            "panel_border_color",
-            "muted_text_color",
-            "track_color",
-            "panel_fill_color",
-            "graph_background_color",
-            "graph_axis_color",
-            "graph_marker_color"}));
+    EXPECT_EQ(ChildLabels(*colors), (std::vector<std::string>{
+        "background_color",
+        "foreground_color",
+        "icon_color",
+        "accent_color",
+        "peak_ghost_color",
+        "warning_color",
+        "layout_guide_color",
+        "active_edit_color",
+        "panel_border_color",
+        "muted_text_color",
+        "track_color",
+        "panel_fill_color",
+        "graph_background_color",
+        "graph_axis_color",
+        "graph_marker_color"
+    }));
 
     EXPECT_EQ(FindRootNode(model, "display"), nullptr);
     EXPECT_NE(FindRootNode(model, "colors"), nullptr);
@@ -181,11 +188,13 @@ TEST(LayoutEditTree, PreservesTemplateSectionAndFieldOrderForEditableSections) {
     EXPECT_EQ(std::get<WidgetClass>(*gaugeRoot->selectionHighlight), WidgetClass::Gauge);
 
     ExpectSpecialSelectionHighlight(
-        FindRootNode(model, "dashboard"), LayoutEditSelectionHighlightSpecial::DashboardBounds);
+        FindRootNode(model, "dashboard"), LayoutEditSelectionHighlightSpecial::DashboardBounds
+    );
     ExpectSpecialSelectionHighlight(FindRootNode(model, "card_style"), LayoutEditSelectionHighlightSpecial::AllCards);
     ExpectSpecialSelectionHighlight(FindRootNode(model, "fonts"), LayoutEditSelectionHighlightSpecial::AllTexts);
     ExpectSpecialSelectionHighlight(
-        FindRootNode(model, "layout.primary"), LayoutEditSelectionHighlightSpecial::DashboardBounds);
+        FindRootNode(model, "layout.primary"), LayoutEditSelectionHighlightSpecial::DashboardBounds
+    );
 
     const LayoutEditTreeNode* alphaRoot = FindRootNode(model, "card.alpha");
     ASSERT_NE(alphaRoot, nullptr);
@@ -227,13 +236,17 @@ TEST(LayoutEditTree, IncludesOnlyReachableCardsInEncounterOrderAndSkipsCycles) {
     config.layout.structure.cards =
         MakeContainerNode("columns", {MakeDashboardCardNode("alpha"), MakeDashboardCardNode("gamma")});
     config.layout.cards.push_back(
-        MakeCard("alpha", MakeContainerNode("columns", {MakeCardRefNode("beta"), MakeWidgetNode("metric_list")})));
+        MakeCard("alpha", MakeContainerNode("columns", {MakeCardRefNode("beta"), MakeWidgetNode("metric_list")}))
+    );
     config.layout.cards.push_back(
-        MakeCard("beta", MakeContainerNode("columns", {MakeCardRefNode("alpha"), MakeWidgetNode("throughput")})));
+        MakeCard("beta", MakeContainerNode("columns", {MakeCardRefNode("alpha"), MakeWidgetNode("throughput")}))
+    );
     config.layout.cards.push_back(
-        MakeCard("gamma", MakeContainerNode("columns", {MakeWidgetNode("gauge"), MakeWidgetNode("metric_list")})));
+        MakeCard("gamma", MakeContainerNode("columns", {MakeWidgetNode("gauge"), MakeWidgetNode("metric_list")}))
+    );
     config.layout.cards.push_back(
-        MakeCard("delta", MakeContainerNode("columns", {MakeWidgetNode("gauge"), MakeWidgetNode("metric_list")})));
+        MakeCard("delta", MakeContainerNode("columns", {MakeWidgetNode("gauge"), MakeWidgetNode("metric_list")}))
+    );
 
     const LayoutEditTreeModel model = BuildLayoutEditTreeModel(config, ReadTemplateText());
 
@@ -262,18 +275,20 @@ TEST(LayoutEditTree, IncludesOnlyReachableCardsInEncounterOrderAndSkipsCycles) {
 TEST(LayoutEditTree, BuildsLayoutAndCardSubtreesFromNestedContainers) {
     AppConfig config;
     config.display.layout = "primary";
-    config.layout.structure.cards = MakeContainerNode("rows",
-        {MakeContainerNode("columns", {MakeDashboardCardNode("alpha"), MakeDashboardCardNode("beta")}),
-            MakeDashboardCardNode("gamma")});
-    config.layout.cards.push_back(MakeCard("alpha",
-        MakeContainerNode("rows",
-            {MakeContainerNode(
-                 "columns", {MakeWidgetNode("metric_list"), MakeWidgetNode("gauge"), MakeWidgetNode("text")}),
-                MakeWidgetNode("throughput")})));
+    config.layout.structure.cards = MakeContainerNode("rows", {
+        MakeContainerNode("columns", {MakeDashboardCardNode("alpha"), MakeDashboardCardNode("beta")}),
+        MakeDashboardCardNode("gamma")
+    });
+    config.layout.cards.push_back(MakeCard("alpha", MakeContainerNode("rows", {
+        MakeContainerNode("columns", {MakeWidgetNode("metric_list"), MakeWidgetNode("gauge"), MakeWidgetNode("text")}),
+        MakeWidgetNode("throughput")
+    })));
     config.layout.cards.push_back(
-        MakeCard("beta", MakeContainerNode("columns", {MakeWidgetNode("gauge"), MakeWidgetNode("metric_list")})));
+        MakeCard("beta", MakeContainerNode("columns", {MakeWidgetNode("gauge"), MakeWidgetNode("metric_list")}))
+    );
     config.layout.cards.push_back(
-        MakeCard("gamma", MakeContainerNode("columns", {MakeWidgetNode("gauge"), MakeWidgetNode("metric_list")})));
+        MakeCard("gamma", MakeContainerNode("columns", {MakeWidgetNode("gauge"), MakeWidgetNode("metric_list")}))
+    );
 
     const LayoutEditTreeModel model = BuildLayoutEditTreeModel(config, ReadTemplateText());
 
@@ -283,9 +298,12 @@ TEST(LayoutEditTree, BuildsLayoutAndCardSubtreesFromNestedContainers) {
     EXPECT_EQ(layoutRoot->children[0].label, "cards");
     ASSERT_TRUE(layoutRoot->children[0].selectionHighlight.has_value());
     ASSERT_TRUE(
-        std::holds_alternative<LayoutEditSelectionHighlightSpecial>(*layoutRoot->children[0].selectionHighlight));
-    EXPECT_EQ(std::get<LayoutEditSelectionHighlightSpecial>(*layoutRoot->children[0].selectionHighlight),
-        LayoutEditSelectionHighlightSpecial::DashboardBounds);
+        std::holds_alternative<LayoutEditSelectionHighlightSpecial>(*layoutRoot->children[0].selectionHighlight)
+    );
+    EXPECT_EQ(
+        std::get<LayoutEditSelectionHighlightSpecial>(*layoutRoot->children[0].selectionHighlight),
+        LayoutEditSelectionHighlightSpecial::DashboardBounds
+    );
     EXPECT_EQ(ChildLabels(layoutRoot->children[0]), (std::vector<std::string>{"alpha, beta", "columns, gamma"}));
 
     const LayoutEditTreeNode* alphaRoot = FindRootNode(model, "card.alpha");
@@ -314,7 +332,8 @@ TEST(LayoutEditTree, BuildsLayoutAndCardSubtreesFromNestedContainers) {
     EXPECT_EQ(containerKey.editCardId, "alpha");
     EXPECT_EQ(containerKey.nodePath, (std::vector<size_t>{0}));
     EXPECT_EQ(
-        ChildLabels(*alphaContainer), (std::vector<std::string>{"metric_list", "metric_list, gauge", "gauge, text"}));
+        ChildLabels(*alphaContainer), (std::vector<std::string>{"metric_list", "metric_list, gauge", "gauge, text"})
+    );
 }
 
 TEST(LayoutEditTree, WeightLabelsAndFocusLookupResolveParameterAndWeightLeaves) {
@@ -350,8 +369,10 @@ TEST(LayoutEditTree, WeightLabelsAndFocusLookupResolveParameterAndWeightLeaves) 
     EXPECT_EQ(titleLeaf->memberName, "title");
     EXPECT_EQ(titleLeaf->valueFormat, configschema::ValueFormat::String);
 
-    const LayoutEditTreeLeaf* metricListLeaf = FindLayoutEditTreeLeaf(model,
-        LayoutEditFocusKey{LayoutNodeFieldEditKey{"alpha", {1}, WidgetClass::MetricList, LayoutNodeField::Parameter}});
+    const LayoutEditTreeLeaf* metricListLeaf = FindLayoutEditTreeLeaf(
+        model,
+        LayoutEditFocusKey{LayoutNodeFieldEditKey{"alpha", {1}, WidgetClass::MetricList, LayoutNodeField::Parameter}}
+    );
     ASSERT_NE(metricListLeaf, nullptr);
     EXPECT_EQ(metricListLeaf->sectionName, "card.alpha");
     EXPECT_EQ(metricListLeaf->memberName, "layout");
@@ -361,10 +382,9 @@ TEST(LayoutEditTree, FindsRootMetricListLayoutLeafFromReorderHandleFocusKey) {
     AppConfig config;
     config.display.layout = "primary";
     config.layout.structure.cards = MakeDashboardCardNode("cpu");
-    config.layout.cards.push_back(MakeCard("cpu",
-        MakeContainerNode("rows",
-            {MakeWidgetNode("text"),
-                MakeContainerNode("columns", {MakeWidgetNode("gauge"), MakeCardRefNode("cpu_metrics")})})));
+    config.layout.cards.push_back(MakeCard("cpu", MakeContainerNode("rows", {
+        MakeWidgetNode("text"), MakeContainerNode("columns", {MakeWidgetNode("gauge"), MakeCardRefNode("cpu_metrics")})
+    })));
     config.layout.cards.push_back(MakeCard("cpu_metrics", MakeWidgetNode("metric_list")));
 
     LayoutEditAnchorRegion reorderHandle;
@@ -392,20 +412,25 @@ TEST(LayoutEditTree, IncludesDateTimeFormatLeavesForClockWidgets) {
     config.display.layout = "primary";
     config.layout.structure.cards = MakeDashboardCardNode("time");
     config.layout.cards.push_back(
-        MakeCard("time", MakeContainerNode("rows", {MakeWidgetNode("clock_time"), MakeWidgetNode("clock_date")})));
+        MakeCard("time", MakeContainerNode("rows", {MakeWidgetNode("clock_time"), MakeWidgetNode("clock_date")}))
+    );
 
     const LayoutEditTreeModel model = BuildLayoutEditTreeModel(config, ReadTemplateText());
 
-    const LayoutEditTreeLeaf* timeFormatLeaf = FindLayoutEditTreeLeaf(model,
-        LayoutEditFocusKey{LayoutNodeFieldEditKey{"time", {0}, WidgetClass::ClockTime, LayoutNodeField::Parameter}});
+    const LayoutEditTreeLeaf* timeFormatLeaf = FindLayoutEditTreeLeaf(
+        model,
+        LayoutEditFocusKey{LayoutNodeFieldEditKey{"time", {0}, WidgetClass::ClockTime, LayoutNodeField::Parameter}}
+    );
     ASSERT_NE(timeFormatLeaf, nullptr);
     EXPECT_EQ(timeFormatLeaf->sectionName, "card.time");
     EXPECT_EQ(timeFormatLeaf->memberName, "layout");
     ASSERT_NE(FindNodeForLeaf(model.roots, timeFormatLeaf), nullptr);
     EXPECT_EQ(FindNodeForLeaf(model.roots, timeFormatLeaf)->label, "clock_time");
 
-    const LayoutEditTreeLeaf* dateFormatLeaf = FindLayoutEditTreeLeaf(model,
-        LayoutEditFocusKey{LayoutNodeFieldEditKey{"time", {1}, WidgetClass::ClockDate, LayoutNodeField::Parameter}});
+    const LayoutEditTreeLeaf* dateFormatLeaf = FindLayoutEditTreeLeaf(
+        model,
+        LayoutEditFocusKey{LayoutNodeFieldEditKey{"time", {1}, WidgetClass::ClockDate, LayoutNodeField::Parameter}}
+    );
     ASSERT_NE(dateFormatLeaf, nullptr);
     EXPECT_EQ(dateFormatLeaf->sectionName, "card.time");
     EXPECT_EQ(dateFormatLeaf->memberName, "layout");
@@ -426,9 +451,9 @@ TEST(LayoutEditTree, CollapsesSingleChildContainerPathsInCardTrees) {
     AppConfig config;
     config.display.layout = "primary";
     config.layout.structure.cards = MakeContainerNode("columns", {MakeDashboardCardNode("gpu")});
-    config.layout.cards.push_back(MakeCard("gpu",
-        MakeContainerNode(
-            "rows", {MakeContainerNode("columns", {MakeWidgetNode("gauge"), MakeWidgetNode("metric_list")})})));
+    config.layout.cards.push_back(MakeCard("gpu", MakeContainerNode(
+        "rows", {MakeContainerNode("columns", {MakeWidgetNode("gauge"), MakeWidgetNode("metric_list")})}
+    )));
 
     const LayoutEditTreeModel model = BuildLayoutEditTreeModel(config, ReadTemplateText());
 

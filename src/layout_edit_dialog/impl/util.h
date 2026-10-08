@@ -71,7 +71,8 @@ std::vector<std::string> EnumerateInstalledFontFamilies(HWND hwnd);
 void PopulateFontFaceComboBox(HWND hwnd, std::string_view selectedFace);
 std::string ReadFontDialogFaceText(HWND hwnd, UINT notificationCode);
 void PopulateMetricBindingComboBox(
-    HWND hwnd, const std::vector<std::string>& options, std::string_view selectedBinding, bool enableSelection);
+    HWND hwnd, const std::vector<std::string>& options, std::string_view selectedBinding, bool enableSelection
+);
 
 std::optional<std::string> FindCardTitleValue(const AppConfig& config, const LayoutCardTitleEditKey& key);
 std::optional<std::pair<int, int>> FindWeightEditValues(const AppConfig& config, const LayoutWeightEditKey& key);

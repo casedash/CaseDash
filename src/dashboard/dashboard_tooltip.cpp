@@ -13,15 +13,14 @@ bool RectsEqual(const RECT& left, const RECT& right) {
     return left.left == right.left && left.top == right.top && left.right == right.right && left.bottom == right.bottom;
 }
 
-bool PointsEqual(POINT left, POINT right) {
-    return left.x == right.x && left.y == right.y;
-}
+bool PointsEqual(POINT left, POINT right) { return left.x == right.x && left.y == right.y; }
 
 }  // namespace
 
 bool DashboardTooltip::Create(HWND owner, HINSTANCE instance, int maxTipWidth) {
     owner_ = owner;
-    hwnd_ = CreateWindowExA(WS_EX_TOPMOST,
+    hwnd_ = CreateWindowExA(
+        WS_EX_TOPMOST,
         TOOLTIPS_CLASSA,
         nullptr,
         WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP,
@@ -32,7 +31,8 @@ bool DashboardTooltip::Create(HWND owner, HINSTANCE instance, int maxTipWidth) {
         owner_,
         nullptr,
         instance,
-        nullptr);
+        nullptr
+    );
     if (hwnd_ == nullptr) {
         owner_ = nullptr;
         return false;
@@ -157,21 +157,13 @@ void DashboardTooltip::RelayMouseMessage(UINT message, WPARAM wParam, LPARAM lPa
     SendMessageA(hwnd_, TTM_RELAYEVENT, 0, reinterpret_cast<LPARAM>(&msg));
 }
 
-bool DashboardTooltip::Visible() const {
-    return visible_;
-}
+bool DashboardTooltip::Visible() const { return visible_; }
 
-bool DashboardTooltip::TargetRectValid() const {
-    return targetRectValid_;
-}
+bool DashboardTooltip::TargetRectValid() const { return targetRectValid_; }
 
-const RECT& DashboardTooltip::TargetRect() const {
-    return targetRect_;
-}
+const RECT& DashboardTooltip::TargetRect() const { return targetRect_; }
 
-const std::string& DashboardTooltip::Text() const {
-    return text_;
-}
+const std::string& DashboardTooltip::Text() const { return text_; }
 
 TOOLINFOA DashboardTooltip::ToolInfo() const {
     TOOLINFOA toolInfo{};

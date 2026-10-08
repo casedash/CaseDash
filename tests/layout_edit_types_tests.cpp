@@ -25,8 +25,8 @@ LayoutNodeConfig MakeNode(std::string name, std::string parameter = {}) {
 TEST(LayoutEditTypes, MatchesWidgetIdentityUsingKindAndPath) {
     const LayoutEditWidgetIdentity widgetA{"card-a", "card-a", {1, 2, 3}};
     const LayoutEditWidgetIdentity widgetB{"card-a", "card-a", {1, 2, 3}};
-    const LayoutEditWidgetIdentity cardChrome{
-        "card-a", "card-a", {1, 2, 3}, LayoutEditWidgetIdentity::Kind::CardChrome};
+    const LayoutEditWidgetIdentity
+        cardChrome{"card-a", "card-a", {1, 2, 3}, LayoutEditWidgetIdentity::Kind::CardChrome};
 
     EXPECT_TRUE(MatchesWidgetIdentity(widgetA, widgetB));
     EXPECT_FALSE(MatchesWidgetIdentity(widgetA, cardChrome));
@@ -57,7 +57,8 @@ TEST(DashboardOverlayState, DrawsOverlayLayerForDragsMoveOverlayAndTreeSelection
 
     overlayState = DashboardOverlayState{};
     overlayState.activeContainerChildReorderDrag = ContainerChildReorderOverlayState{
-        LayoutContainerChildOrderEditKey{"card-a", {}}, {RenderRect{0, 0, 10, 10}}, 0, 8, 1, false};
+        LayoutContainerChildOrderEditKey{"card-a", {}}, {RenderRect{0, 0, 10, 10}}, 0, 8, 1, false
+    };
     EXPECT_TRUE(overlayState.ShouldDrawOverlayLayer());
 
     overlayState = DashboardOverlayState{};
@@ -294,12 +295,17 @@ TEST(LayoutEditTypes, PrioritizesMetricAndTitleAnchorsAboveGuides) {
     LayoutEditAnchorKey titleAnchor;
     titleAnchor.subject = LayoutCardTitleEditKey{"card-a"};
 
-    EXPECT_LT(LayoutEditAnchorHitPriority(metricAnchor),
-        GetLayoutEditParameterHitPriority(LayoutEditParameter::MetricListLabelWidth));
-    EXPECT_LT(LayoutEditAnchorHitPriority(metricAnchor),
-        GetLayoutEditParameterHitPriority(LayoutEditParameter::TextBottomGap));
-    EXPECT_LT(LayoutEditAnchorHitPriority(titleAnchor),
-        GetLayoutEditParameterHitPriority(LayoutEditParameter::CardHeaderContentGap));
+    EXPECT_LT(
+        LayoutEditAnchorHitPriority(metricAnchor),
+        GetLayoutEditParameterHitPriority(LayoutEditParameter::MetricListLabelWidth)
+    );
+    EXPECT_LT(
+        LayoutEditAnchorHitPriority(metricAnchor), GetLayoutEditParameterHitPriority(LayoutEditParameter::TextBottomGap)
+    );
+    EXPECT_LT(
+        LayoutEditAnchorHitPriority(titleAnchor),
+        GetLayoutEditParameterHitPriority(LayoutEditParameter::CardHeaderContentGap)
+    );
 }
 
 TEST(LayoutEditTypes, MatchesSelectedWeightFocusAgainstLayoutGuidesOnly) {
@@ -473,16 +479,16 @@ TEST(LayoutEditService, AppliesNodeFieldPreviewToCardLayout) {
 }
 
 TEST(LayoutEditTypes, MatchesCardChromeSelectionByEditedCardIdentity) {
-    const LayoutEditWidgetIdentity selection{
-        "storage_throughput", "storage_throughput", {}, LayoutEditWidgetIdentity::Kind::CardChrome};
-    const LayoutEditWidgetIdentity topLevelCandidate{
-        "storage_throughput", "storage_throughput", {}, LayoutEditWidgetIdentity::Kind::CardChrome};
-    const LayoutEditWidgetIdentity embeddedCandidate{
-        "storage", "storage_throughput", {}, LayoutEditWidgetIdentity::Kind::CardChrome};
-    const LayoutEditWidgetIdentity wrongCardCandidate{
-        "storage", "storage", {}, LayoutEditWidgetIdentity::Kind::CardChrome};
-    const LayoutEditWidgetIdentity widgetCandidate{
-        "storage", "storage_throughput", {}, LayoutEditWidgetIdentity::Kind::Widget};
+    const LayoutEditWidgetIdentity
+        selection{"storage_throughput", "storage_throughput", {}, LayoutEditWidgetIdentity::Kind::CardChrome};
+    const LayoutEditWidgetIdentity
+        topLevelCandidate{"storage_throughput", "storage_throughput", {}, LayoutEditWidgetIdentity::Kind::CardChrome};
+    const LayoutEditWidgetIdentity
+        embeddedCandidate{"storage", "storage_throughput", {}, LayoutEditWidgetIdentity::Kind::CardChrome};
+    const LayoutEditWidgetIdentity
+        wrongCardCandidate{"storage", "storage", {}, LayoutEditWidgetIdentity::Kind::CardChrome};
+    const LayoutEditWidgetIdentity
+        widgetCandidate{"storage", "storage_throughput", {}, LayoutEditWidgetIdentity::Kind::Widget};
 
     EXPECT_TRUE(MatchesCardChromeSelectionIdentity(selection, topLevelCandidate));
     EXPECT_TRUE(MatchesCardChromeSelectionIdentity(selection, embeddedCandidate));

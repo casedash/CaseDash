@@ -4,8 +4,8 @@
 #include <iterator>
 #include <utility>
 
-DashboardAnimationTimeline::DashboardAnimationTimeline(std::chrono::milliseconds duration)
-    : duration_(duration.count() > 0 ? duration : std::chrono::milliseconds(1)) {}
+DashboardAnimationTimeline::DashboardAnimationTimeline(std::chrono::milliseconds duration) :
+    duration_(duration.count() > 0 ? duration : std::chrono::milliseconds(1)) {}
 
 void DashboardAnimationTimeline::BeginFrame(Clock::time_point now) {
     frameTime_ = now;
@@ -16,7 +16,8 @@ void DashboardAnimationTimeline::BeginFrame(Clock::time_point now) {
 }
 
 WidgetAnimationStatePtr DashboardAnimationTimeline::Resolve(
-    const AnimationDataKey& key, const WidgetAnimationState& target, std::uint64_t targetVersion) {
+    const AnimationDataKey& key, const WidgetAnimationState& target, std::uint64_t targetVersion
+) {
     if (!frameActive_) {
         return target.Clone();
     }
@@ -70,15 +71,16 @@ void DashboardAnimationTimeline::Reset() {
     frameActive_ = false;
 }
 
-std::size_t DashboardAnimationTimeline::TrackCount() const {
-    return tracks_.size();
-}
+std::size_t DashboardAnimationTimeline::TrackCount() const { return tracks_.size(); }
 
 bool DashboardAnimationTimeline::HasActiveAnimations(Clock::time_point now) const {
     for (const TrackEntry& entry : tracks_) {
         const Track& track = entry.track;
-        if (track.transition != nullptr && track.transition->HasActiveChange() &&
-            ProgressSince(track.startTime, now) < 1.0) {
+        if (
+            track.transition != nullptr &&
+            track.transition->HasActiveChange() &&
+            ProgressSince(track.startTime, now) < 1.0
+        ) {
             return true;
         }
     }

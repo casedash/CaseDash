@@ -26,21 +26,25 @@ double Milliseconds(std::chrono::nanoseconds elapsed) {
     return std::chrono::duration<double, std::milli>(elapsed).count();
 }
 
-void RecordStats(std::chrono::nanoseconds LayoutGuideSheetPipelineStats::* field,
+void RecordStats(
+    std::chrono::nanoseconds LayoutGuideSheetPipelineStats::* field,
     Clock::time_point start,
-    LayoutGuideSheetPipelineStats* stats) {
+    LayoutGuideSheetPipelineStats* stats
+) {
     if (stats != nullptr) {
         (*stats).*field += Clock::now() - start;
     }
 }
 
-bool BuildLayoutGuideSheetPipelineInputs(DashboardRenderer& renderer,
+bool BuildLayoutGuideSheetPipelineInputs(
+    DashboardRenderer& renderer,
     const SystemSnapshot& snapshot,
     const LayoutGuideSheetConfig& guideSheet,
     std::vector<LayoutGuideSheetCalloutRequest>& callouts,
     std::vector<std::string>& selectedCardIds,
     std::string* errorText,
-    LayoutGuideSheetPipelineStats* stats) {
+    LayoutGuideSheetPipelineStats* stats
+) {
     DashboardOverlayState overlayState;
     overlayState.showLayoutEditGuides = true;
     overlayState.forceLayoutEditAffordances = true;
@@ -90,16 +94,20 @@ void WritePipelineStatsTrace(Trace& trace, const LayoutGuideSheetPipelineStats& 
     const std::string measureText = FormatDoubleFixed(Milliseconds(stats.measure), 3);
     const std::string placementText = FormatDoubleFixed(Milliseconds(stats.placement), 3);
     const std::string drawText = FormatDoubleFixed(Milliseconds(stats.draw), 3);
-    trace.WriteFmt(TracePrefix::Diagnostics,
-        RES_STR("layout_guide_sheet stats selected_cards=%zu callouts=%zu active_regions_ms=%s sheet_plan_ms=%s "
-                "sheet_measure_ms=%s sheet_place_ms=%s sheet_draw_ms=%s"),
+    trace.WriteFmt(
+        TracePrefix::Diagnostics,
+        RES_STR(
+            "layout_guide_sheet stats selected_cards=%zu callouts=%zu active_regions_ms=%s sheet_plan_ms=%s "
+                "sheet_measure_ms=%s sheet_place_ms=%s sheet_draw_ms=%s"
+        ),
         stats.selectedCards,
         stats.callouts,
         activeRegionsText.c_str(),
         planText.c_str(),
         measureText.c_str(),
         placementText.c_str(),
-        drawText.c_str());
+        drawText.c_str()
+    );
 }
 
 struct LayoutGuideSheetParseContext {
@@ -107,7 +115,8 @@ struct LayoutGuideSheetParseContext {
 };
 
 void ApplyLayoutGuideSheetConfigEntry(
-    void* context, std::string_view section, std::string_view key, std::string_view value) {
+    void* context, std::string_view section, std::string_view key, std::string_view value
+) {
     if (section != "layout_guide_sheet") {
         return;
     }
@@ -150,32 +159,37 @@ void ResolveLayoutGuideSheetColors(const AppConfig& config, LayoutGuideSheetConf
         return;
     }
 
-    const auto guideSheetLookup = [&config, activeTheme, colorsSection](
-                                      std::string_view name) -> std::optional<ColorConfig> {
-        if (std::optional<ColorConfig> themeColor = FindThemeColorToken(*activeTheme, name); themeColor.has_value()) {
-            return themeColor;
-        }
-        return FindConfigColorFieldByKey(RuntimeConfigFields(*colorsSection), &config.layout.colors, name);
-    };
+    const auto
+        guideSheetLookup = [&config, activeTheme, colorsSection](std::string_view name) -> std::optional<ColorConfig> {
+            if (std::optional<ColorConfig> themeColor = FindThemeColorToken(*activeTheme, name); themeColor.has_value())
+            {
+                return themeColor;
+            }
+            return FindConfigColorFieldByKey(RuntimeConfigFields(*colorsSection), &config.layout.colors, name);
+        };
     ResolveConfigColorFieldsInPlace(LayoutGuideSheetRuntimeConfigFields(), &guideSheet, guideSheetLookup);
 }
 
-bool SaveLayoutGuideSheetPng(const FilePath& imagePath,
+bool SaveLayoutGuideSheetPng(
+    const FilePath& imagePath,
     const SystemSnapshot& snapshot,
     const AppConfig& config,
     const LayoutGuideSheetConfig& guideSheet,
     double scale,
     Trace& trace,
     std::string* errorText,
-    LayoutGuideSheetPipelineStats* stats) {
+    LayoutGuideSheetPipelineStats* stats
+) {
     LayoutGuideSheetPipelineStats collectedStats;
     LayoutGuideSheetPipelineStats* outputStats = stats != nullptr ? stats : &collectedStats;
     *outputStats = {};
     const std::string imagePathText = imagePath.string();
-    trace.WriteFmt(TracePrefix::Diagnostics,
+    trace.WriteFmt(
+        TracePrefix::Diagnostics,
         RES_STR("layout_guide_sheet start path=\"%s\" layout=\"%s\""),
         imagePathText.c_str(),
-        config.display.layout.c_str());
+        config.display.layout.c_str()
+    );
 
     DashboardRenderer renderer(trace);
     renderer.SetRenderScale(scale);
@@ -196,7 +210,8 @@ bool SaveLayoutGuideSheetPng(const FilePath& imagePath,
     std::string localError;
     std::string* outputErrorText = errorText != nullptr ? errorText : &localError;
     if (!BuildLayoutGuideSheetPipelineInputs(
-            renderer, snapshot, guideSheet, callouts, selectedCardIds, outputErrorText, outputStats)) {
+        renderer, snapshot, guideSheet, callouts, selectedCardIds, outputErrorText, outputStats
+    )) {
         WriteRendererErrorTrace(trace, RES_STR("layout_guide_sheet_active_regions"), *outputErrorText);
         trace.Write(TracePrefix::Diagnostics, RES_STR("layout_guide_sheet failed stage=\"active_regions\""));
         return false;
@@ -205,8 +220,8 @@ bool SaveLayoutGuideSheetPng(const FilePath& imagePath,
     std::vector<std::string> traceDetails;
     LayoutGuideSheetRenderStats renderStats;
     LayoutGuideSheetRenderer sheetRenderer(renderer, guideSheet);
-    const bool saved = sheetRenderer.SavePng(
-        imagePath, snapshot, callouts, selectedCardIds, &traceDetails, outputErrorText, &renderStats);
+    const bool saved = sheetRenderer
+        .SavePng(imagePath, snapshot, callouts, selectedCardIds, &traceDetails, outputErrorText, &renderStats);
     RecordRenderStats(renderStats, outputStats);
     if (!saved) {
         WriteRendererErrorTrace(trace, RES_STR("layout_guide_sheet_save"), *outputErrorText);
@@ -223,11 +238,13 @@ bool SaveLayoutGuideSheetPng(const FilePath& imagePath,
     return true;
 }
 
-bool RenderLayoutGuideSheetOffscreen(DashboardRenderer& renderer,
+bool RenderLayoutGuideSheetOffscreen(
+    DashboardRenderer& renderer,
     const SystemSnapshot& snapshot,
     const LayoutGuideSheetConfig& guideSheet,
     std::string* errorText,
-    LayoutGuideSheetPipelineStats* stats) {
+    LayoutGuideSheetPipelineStats* stats
+) {
     if (stats != nullptr) {
         *stats = {};
     }
@@ -235,7 +252,8 @@ bool RenderLayoutGuideSheetOffscreen(DashboardRenderer& renderer,
     std::vector<LayoutGuideSheetCalloutRequest> callouts;
     std::vector<std::string> selectedCardIds;
     if (!BuildLayoutGuideSheetPipelineInputs(
-            renderer, snapshot, guideSheet, callouts, selectedCardIds, errorText, stats)) {
+        renderer, snapshot, guideSheet, callouts, selectedCardIds, errorText, stats
+    )) {
         return false;
     }
 

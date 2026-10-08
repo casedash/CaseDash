@@ -64,7 +64,8 @@ bool ContainsCardId(const std::vector<std::string>& cardIds, const std::string& 
 }
 
 bool WidgetIdentityBelongsToSelectedCard(
-    const LayoutEditWidgetIdentity& widget, const std::vector<std::string>& selectedCardIds) {
+    const LayoutEditWidgetIdentity& widget, const std::vector<std::string>& selectedCardIds
+) {
     if (widget.kind != LayoutEditWidgetIdentity::Kind::Widget) {
         return false;
     }
@@ -72,7 +73,8 @@ bool WidgetIdentityBelongsToSelectedCard(
 }
 
 bool PayloadBelongsToSelectedCard(
-    const LayoutEditActiveRegionPayload& payload, const std::vector<std::string>& selectedCardIds) {
+    const LayoutEditActiveRegionPayload& payload, const std::vector<std::string>& selectedCardIds
+) {
     if (const auto* guide = LayoutEditActiveRegionPayloadAs<LayoutEditGuide>(payload)) {
         return ContainsCardId(selectedCardIds, guide->renderCardId);
     }
@@ -88,9 +90,11 @@ bool PayloadBelongsToSelectedCard(
     return true;
 }
 
-SourceCardResolution ResolveLayoutGuideSheetSourceCard(const LayoutEditActiveRegion& region,
+SourceCardResolution ResolveLayoutGuideSheetSourceCard(
+    const LayoutEditActiveRegion& region,
     const std::vector<LayoutGuideSheetCardSummary>& cards,
-    const std::vector<std::string>& selectedCardIds) {
+    const std::vector<std::string>& selectedCardIds
+) {
     std::string bestCardId;
     long long bestArea = 0;
     for (const LayoutGuideSheetCardSummary& card : cards) {
@@ -123,8 +127,10 @@ SourceCardResolution ResolveLayoutGuideSheetSourceCard(const LayoutEditActiveReg
 }
 
 bool IsRepresentativeWidgetClass(WidgetClass widgetClass) {
-    return widgetClass != WidgetClass::Unknown && widgetClass != WidgetClass::NetworkFooter &&
-           widgetClass != WidgetClass::VerticalSpacer && widgetClass != WidgetClass::VerticalSpring;
+    return widgetClass != WidgetClass::Unknown &&
+        widgetClass != WidgetClass::NetworkFooter &&
+        widgetClass != WidgetClass::VerticalSpacer &&
+        widgetClass != WidgetClass::VerticalSpring;
 }
 
 bool IsContainerChildOrderAnchor(const LayoutEditActiveRegionPayload& payload) {
@@ -155,11 +161,14 @@ size_t CountBits(unsigned int value) {
 }
 
 std::string LayoutGuideSheetCalloutKey(
-    const std::string& parameterLine, const std::string& descriptionLine, const TooltipPayload& payload) {
-    if (const auto* anchor = std::get_if<LayoutEditAnchorRegion>(&payload);
-        anchor != nullptr && std::holds_alternative<LayoutContainerChildOrderEditKey>(anchor->key.subject)) {
-        return anchor->shape == AnchorShape::HorizontalReorder ? "overview_horizontal_layout_reorder"
-                                                               : "overview_vertical_layout_reorder";
+    const std::string& parameterLine, const std::string& descriptionLine, const TooltipPayload& payload
+) {
+    if (
+        const auto* anchor = std::get_if<LayoutEditAnchorRegion>(&payload);
+        anchor != nullptr && std::holds_alternative<LayoutContainerChildOrderEditKey>(anchor->key.subject)
+    ) {
+        return anchor->shape == AnchorShape::HorizontalReorder ? "overview_horizontal_layout_reorder" :
+            "overview_vertical_layout_reorder";
     }
     if (const std::optional<LayoutEditFocusKey> focusKey = TooltipPayloadFocusKey(payload); focusKey.has_value()) {
         if (std::holds_alternative<LayoutMetricEditKey>(*focusKey)) {
@@ -168,8 +177,10 @@ std::string LayoutGuideSheetCalloutKey(
         if (std::holds_alternative<LayoutCardTitleEditKey>(*focusKey)) {
             return "card_title";
         }
-        if (const auto* nodeFieldKey = std::get_if<LayoutNodeFieldEditKey>(&*focusKey);
-            nodeFieldKey != nullptr && nodeFieldKey->widgetClass == WidgetClass::MetricList) {
+        if (
+            const auto* nodeFieldKey = std::get_if<LayoutNodeFieldEditKey>(&*focusKey);
+            nodeFieldKey != nullptr && nodeFieldKey->widgetClass == WidgetClass::MetricList
+        ) {
             std::string key = FormatText("metric_list_layout:%s", nodeFieldKey->editCardId.c_str());
             for (const size_t pathPart : nodeFieldKey->nodePath) {
                 AppendFormat(key, "/%zu", pathPart);
@@ -178,20 +189,22 @@ std::string LayoutGuideSheetCalloutKey(
         }
     }
     if (const auto* guide = std::get_if<LayoutEditGuide>(&payload); guide != nullptr && guide->renderCardId.empty()) {
-        return guide->axis == LayoutGuideAxis::Horizontal ? "overview_horizontal_sizing_guide"
-                                                          : "overview_vertical_sizing_guide";
+        return guide->axis == LayoutGuideAxis::Horizontal ? "overview_horizontal_sizing_guide" :
+            "overview_vertical_sizing_guide";
     }
     return FormatText("%s\n%s", parameterLine.c_str(), descriptionLine.c_str());
 }
 
-void AddOrUpdateCallout(std::vector<LayoutGuideSheetCalloutRequest>& callouts,
+void AddOrUpdateCallout(
+    std::vector<LayoutGuideSheetCalloutRequest>& callouts,
     const std::string& key,
     const std::string& sourceCardId,
     const std::string& parameterLine,
     const std::string& descriptionLine,
     const LayoutEditActiveRegion& region,
     int priority,
-    size_t& order) {
+    size_t& order
+) {
     std::optional<LayoutEditAnchorKey> hoverAnchorKey;
     if (const auto* anchor = LayoutEditActiveRegionPayloadAs<LayoutEditAnchorRegion>(region)) {
         hoverAnchorKey = anchor->key;
@@ -220,8 +233,7 @@ void AddOrUpdateCallout(std::vector<LayoutGuideSheetCalloutRequest>& callouts,
     const auto existing =
         std::find_if(callouts.begin(), callouts.end(), [&](const auto& callout) { return callout.key == key; });
     if (existing != callouts.end()) {
-        const bool beforeExisting =
-            region.box.top < existing->targetRect.top ||
+        const bool beforeExisting = region.box.top < existing->targetRect.top ||
             (region.box.top == existing->targetRect.top && region.box.left < existing->targetRect.left);
         if (beforeExisting) {
             existing->targetRect = region.box;
@@ -239,7 +251,8 @@ void AddOrUpdateCallout(std::vector<LayoutGuideSheetCalloutRequest>& callouts,
         return;
     }
 
-    callouts.push_back(LayoutGuideSheetCalloutRequest{key,
+    callouts.push_back(LayoutGuideSheetCalloutRequest{
+        key,
         sourceCardId,
         parameterLine,
         descriptionLine,
@@ -251,7 +264,8 @@ void AddOrUpdateCallout(std::vector<LayoutGuideSheetCalloutRequest>& callouts,
         hoverColorParameter,
         region.box,
         priority,
-        order++});
+        order++
+    });
 }
 
 }  // namespace
@@ -291,9 +305,10 @@ std::vector<std::string> SelectLayoutGuideSheetCards(const std::vector<LayoutGui
             covered |= cardMasks[i];
         }
         const size_t coverage = CountBits(covered);
-        const bool better = bestMask == 0 || coverage > bestCoverage ||
-                            (coverage == bestCoverage && cardCount < bestCardCount) ||
-                            (coverage == bestCoverage && cardCount == bestCardCount && widgetCount > bestWidgetCount);
+        const bool better = bestMask == 0 ||
+            coverage > bestCoverage ||
+            (coverage == bestCoverage && cardCount < bestCardCount) ||
+            (coverage == bestCoverage && cardCount == bestCardCount && widgetCount > bestWidgetCount);
         if (better) {
             bestMask = mask;
             bestCoverage = coverage;
@@ -315,11 +330,13 @@ std::vector<std::string> SelectLayoutGuideSheetCards(const std::vector<LayoutGui
     return selected;
 }
 
-void BuildLayoutGuideSheetCallouts(const AppConfig& config,
+void BuildLayoutGuideSheetCallouts(
+    const AppConfig& config,
     const LayoutEditActiveRegions& regions,
     const std::vector<LayoutGuideSheetCardSummary>& cards,
     const std::vector<std::string>& selectedCardIds,
-    std::vector<LayoutGuideSheetCalloutRequest>& callouts) {
+    std::vector<LayoutGuideSheetCalloutRequest>& callouts
+) {
     size_t order = callouts.size();
     for (const LayoutEditActiveRegion& region : regions) {
         const std::optional<TooltipPayload> payload = TooltipPayloadFromActiveRegion(region);
@@ -355,9 +372,11 @@ void BuildLayoutGuideSheetCallouts(const AppConfig& config,
     }
 }
 
-void BuildLayoutGuideSheetOverviewCallouts(const AppConfig& config,
+void BuildLayoutGuideSheetOverviewCallouts(
+    const AppConfig& config,
     const LayoutEditActiveRegions& regions,
-    std::vector<LayoutGuideSheetCalloutRequest>& callouts) {
+    std::vector<LayoutGuideSheetCalloutRequest>& callouts
+) {
     size_t order = callouts.size();
     for (const LayoutEditActiveRegion& region : regions) {
         const std::optional<TooltipPayload> payload = TooltipPayloadFromActiveRegion(region);
@@ -377,12 +396,14 @@ void BuildLayoutGuideSheetOverviewCallouts(const AppConfig& config,
         const auto parameter = TooltipPayloadParameter(*payload);
         const int priority = parameter.has_value() ? GetLayoutEditParameterHitPriority(*parameter) : 500;
         AddOrUpdateCallout(
-            callouts, key, kLayoutGuideSheetOverviewSourceId, parameterLine, descriptionLine, region, priority, order);
+            callouts, key, kLayoutGuideSheetOverviewSourceId, parameterLine, descriptionLine, region, priority, order
+        );
     }
 }
 
-void AppendLayoutGuideSheetCardCallouts(std::vector<LayoutGuideSheetCalloutRequest>& merged,
-    const std::vector<LayoutGuideSheetCalloutRequest>& cardCallouts) {
+void AppendLayoutGuideSheetCardCallouts(
+    std::vector<LayoutGuideSheetCalloutRequest>& merged, const std::vector<LayoutGuideSheetCalloutRequest>& cardCallouts
+) {
     std::array<bool, static_cast<size_t>(LayoutEditParameter::Count)> coveredColorParameters{};
     for (const LayoutGuideSheetCalloutRequest& callout : merged) {
         if (callout.hoverColorParameter.has_value()) {

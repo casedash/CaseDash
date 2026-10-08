@@ -28,9 +28,8 @@ std::optional<double> TooltipPayloadNumericValue(const TooltipPayload& payload) 
         return std::nullopt;
     }
     if (const auto* anchor = std::get_if<LayoutEditAnchorRegion>(&payload)) {
-        return LayoutEditAnchorParameter(anchor->key).has_value()
-                   ? std::optional<double>(static_cast<double>(anchor->value))
-                   : std::nullopt;
+        return LayoutEditAnchorParameter(anchor->key).has_value() ?
+            std::optional<double>(static_cast<double>(anchor->value)) : std::nullopt;
     }
     if (const auto* guide = std::get_if<LayoutEditWidgetGuide>(&payload)) {
         return guide->value;
@@ -64,10 +63,12 @@ std::optional<LayoutEditFocusKey> TooltipPayloadFocusKey(const TooltipPayload& p
         if (const auto nodeFieldKey = LayoutEditAnchorNodeFieldKey(anchor->key); nodeFieldKey.has_value()) {
             return LayoutEditFocusKey{*nodeFieldKey};
         }
-        if (const auto containerOrderKey = LayoutEditAnchorContainerChildOrderKey(anchor->key);
-            containerOrderKey.has_value()) {
-            return LayoutEditFocusKey{
-                LayoutContainerEditKey{containerOrderKey->editCardId, containerOrderKey->nodePath}};
+        if (
+            const auto containerOrderKey = LayoutEditAnchorContainerChildOrderKey(anchor->key);
+            containerOrderKey.has_value()
+        ) {
+            return
+                LayoutEditFocusKey{LayoutContainerEditKey{containerOrderKey->editCardId, containerOrderKey->nodePath}};
         }
         return std::nullopt;
     }

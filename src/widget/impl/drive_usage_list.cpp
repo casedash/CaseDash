@@ -66,8 +66,9 @@ std::string ResolveDriveMetricLabel(const WidgetHost& renderer, std::string_view
     return std::string(fallback);
 }
 
-std::string ResolveDriveMetricSampleValue(
-    const WidgetHost& renderer, std::string_view metricRef, std::string_view fallback) {
+std::string
+    ResolveDriveMetricSampleValue(const WidgetHost& renderer, std::string_view metricRef, std::string_view fallback)
+{
     const std::string& sample = renderer.ResolveConfiguredMetricSampleValueText(metricRef);
     return sample.empty() ? std::string(fallback) : sample;
 }
@@ -81,7 +82,8 @@ DriveUsageListWidget::MeasuredColumnWidths MeasureColumnWidths(const WidgetHost&
     };
 }
 
-DriveUsageListWidget::ColumnRects ResolveColumns(const RenderRect& band,
+DriveUsageListWidget::ColumnRects ResolveColumns(
+    const RenderRect& band,
     int labelWidth,
     int labelGap,
     int activityWidth,
@@ -89,24 +91,31 @@ DriveUsageListWidget::ColumnRects ResolveColumns(const RenderRect& band,
     int barGap,
     int percentWidth,
     int percentGap,
-    int freeWidth) {
+    int freeWidth
+) {
     DriveUsageListWidget::ColumnRects columns;
     columns.label = {band.left, band.top, (std::min)(band.right, band.left + labelWidth), band.bottom};
-    columns.read = {(std::min)(band.right, columns.label.right + labelGap),
+    columns.read = {
+        (std::min)(band.right, columns.label.right + labelGap),
         band.top,
         (std::min)(band.right, columns.label.right + labelGap + activityWidth),
-        band.bottom};
-    columns.write = {(std::min)(band.right, columns.read.right + rwGap),
+        band.bottom
+    };
+    columns.write = {
+        (std::min)(band.right, columns.read.right + rwGap),
         band.top,
         (std::min)(band.right, columns.read.right + rwGap + activityWidth),
-        band.bottom};
+        band.bottom
+    };
     columns.free = {(std::max)(band.left, band.right - freeWidth), band.top, band.right, band.bottom};
-    columns.percent = {
-        (std::max)(band.left, columns.free.left - percentWidth), band.top, columns.free.left, band.bottom};
-    columns.bar = {(std::min)(band.right, columns.write.right + barGap),
+    columns.percent =
+        {(std::max)(band.left, columns.free.left - percentWidth), band.top, columns.free.left, band.bottom};
+    columns.bar = {
+        (std::min)(band.right, columns.write.right + barGap),
         band.top,
         (std::max)((std::min)(band.right, columns.write.right + barGap), columns.percent.left - percentGap),
-        band.bottom};
+        band.bottom
+    };
     return columns;
 }
 
@@ -171,23 +180,24 @@ std::vector<RenderRect> SegmentIndicatorRects(const RenderRect& rect, int segmen
 }
 
 void DrawSegmentIndicatorTrack(
-    Renderer& renderer, const RenderRect& rect, int segmentCount, int segmentGap, RenderColorId trackColor) {
+    Renderer& renderer, const RenderRect& rect, int segmentCount, int segmentGap, RenderColorId trackColor
+) {
     for (const RenderRect& segmentRect : SegmentIndicatorRects(rect, segmentCount, segmentGap)) {
         renderer.FillSolidRect(segmentRect, trackColor);
     }
 }
 
-void DrawSegmentIndicatorFill(Renderer& renderer,
+void DrawSegmentIndicatorFill(
+    Renderer& renderer,
     const RenderRect& rect,
     int segmentCount,
     int segmentGap,
     double ratio,
-    RenderColorId accentColor) {
+    RenderColorId accentColor
+) {
     const double clampedRatio = std::clamp(ratio, 0.0, 1.0);
-    const int filledSegments =
-        clampedRatio > 0.0
-            ? std::clamp(static_cast<int>(std::ceil(clampedRatio * static_cast<double>(segmentCount))), 1, segmentCount)
-            : 0;
+    const int filledSegments = clampedRatio > 0.0 ?
+        std::clamp(static_cast<int>(std::ceil(clampedRatio* static_cast<double>(segmentCount))), 1, segmentCount) : 0;
     int index = segmentCount - 1;
     for (const RenderRect& segmentRect : SegmentIndicatorRects(rect, segmentCount, segmentGap)) {
         if (index < filledSegments) {
@@ -199,24 +209,22 @@ void DrawSegmentIndicatorFill(Renderer& renderer,
 
 class DriveActivityAnimation final : public WidgetAnimation {
 public:
-    DriveActivityAnimation(AnimationDataKey key, RenderRect rect, int segmentCount, int segmentGap)
-        : key_(std::move(key)), rect_(rect), segmentCount_(segmentCount), segmentGap_(segmentGap) {}
+    DriveActivityAnimation(AnimationDataKey key, RenderRect rect, int segmentCount, int segmentGap) :
+        key_(std::move(key)), rect_(rect), segmentCount_(segmentCount), segmentGap_(segmentGap) {}
 
-    const AnimationDataKey& Key() const override {
-        return key_;
-    }
+    const AnimationDataKey& Key() const override { return key_; }
 
-    RenderRect DirtyBounds() const override {
-        return rect_;
-    }
+    RenderRect DirtyBounds() const override { return rect_; }
 
     void Draw(Renderer& renderer, const WidgetAnimationState& state) const override {
-        DrawSegmentIndicatorFill(renderer,
+        DrawSegmentIndicatorFill(
+            renderer,
             rect_,
             segmentCount_,
             segmentGap_,
             ScalarFillSampleFromState(state).valueRatio.value_or(0.0),
-            RenderColorId::Accent);
+            RenderColorId::Accent
+        );
     }
 
 private:
@@ -234,34 +242,43 @@ int EffectiveDriveHeaderHeight(const WidgetHost& renderer) {
 
 void DrawDriveHeaderLabels(WidgetHost& renderer, const DriveUsageListWidget::LayoutState& layout) {
     for (const DriveUsageHeaderText& text : kDriveUsageHeaderText) {
-        renderer.Renderer().DrawText(DriveUsageHeaderRect(layout, text.slot),
+        renderer.Renderer().DrawText(
+            DriveUsageHeaderRect(layout, text.slot),
             ResolveDriveMetricLabel(renderer, text.metricRef, text.fallback),
             TextStyleId::Small,
             RenderColorId::MutedText,
-            DriveUsageHeaderTextOptions(text));
+            DriveUsageHeaderTextOptions(text)
+        );
     }
 }
 
 void RegisterDriveHeaderStaticTextAnchors(
-    WidgetHost& renderer, const WidgetLayout& widget, const DriveUsageListWidget::LayoutState& layout) {
+    WidgetHost& renderer, const WidgetLayout& widget, const DriveUsageListWidget::LayoutState& layout
+) {
     for (const DriveUsageHeaderText& text : kDriveUsageHeaderText) {
         const RenderRect& rect = DriveUsageHeaderRect(layout, text.slot);
         const std::string label = ResolveDriveMetricLabel(renderer, text.metricRef, text.fallback);
         const TextLayoutOptions options = DriveUsageHeaderTextOptions(text);
-        renderer.EditArtifacts().RegisterStaticTextAnchor(rect,
+        renderer.EditArtifacts().RegisterStaticTextAnchor(
+            rect,
             label,
             TextStyleId::Small,
             options,
-            renderer.MakeEditableTextBinding(widget,
+            renderer.MakeEditableTextBinding(
+                widget,
                 WidgetHost::LayoutEditParameter::FontSmall,
                 text.editAnchorId,
-                renderer.Config().layout.fonts.smallText.size),
-            WidgetHost::LayoutEditParameter::ColorMutedText);
-        renderer.EditArtifacts().RegisterStaticTextAnchor(rect,
+                renderer.Config().layout.fonts.smallText.size
+            ),
+            WidgetHost::LayoutEditParameter::ColorMutedText
+        );
+        renderer.EditArtifacts().RegisterStaticTextAnchor(
+            rect,
             label,
             TextStyleId::Small,
             options,
-            renderer.MakeMetricTextBinding(widget, text.metricRef, text.metricAnchorId));
+            renderer.MakeMetricTextBinding(widget, text.metricRef, text.metricAnchorId)
+        );
     }
 }
 
@@ -298,11 +315,14 @@ void DriveUsageListWidget::ResolveLayoutState(const WidgetHost& renderer, const 
     layoutState_.driveBarHeight = (std::max)(1, renderer.Renderer().ScaleLogical(config.barHeight));
     layoutState_.activitySegments = (std::max)(1, config.activitySegments);
     layoutState_.activitySegmentGap = (std::max)(0, renderer.Renderer().ScaleLogical(config.activitySegmentGap));
-    layoutState_.rowContentHeight = (std::max)(renderer.Renderer().TextMetrics().label,
-        (std::max)(renderer.Renderer().TextMetrics().smallText, layoutState_.driveBarHeight));
+    layoutState_.rowContentHeight = (std::max)(
+        renderer.Renderer().TextMetrics().label,
+        (std::max)(renderer.Renderer().TextMetrics().smallText, layoutState_.driveBarHeight)
+    );
     layoutState_.activityAnchorSize = (std::max)(8, renderer.Renderer().ScaleLogical(10));
     layoutState_.headerRect = RenderRect{rect.left, rect.top, rect.right, rect.top + layoutState_.headerHeight};
-    layoutState_.headerColumns = ResolveColumns(layoutState_.headerRect,
+    layoutState_.headerColumns = ResolveColumns(
+        layoutState_.headerRect,
         layoutState_.measuredColumnWidths.label,
         layoutState_.labelGap,
         layoutState_.activityWidth,
@@ -310,23 +330,32 @@ void DriveUsageListWidget::ResolveLayoutState(const WidgetHost& renderer, const 
         layoutState_.barGap,
         layoutState_.measuredColumnWidths.percent,
         layoutState_.percentGap,
-        layoutState_.freeWidth);
-    layoutState_.usageHeaderRect = RenderRect{layoutState_.headerColumns.bar.left,
+        layoutState_.freeWidth
+    );
+    layoutState_.usageHeaderRect = RenderRect{
+        layoutState_.headerColumns.bar.left,
         layoutState_.headerRect.top,
         layoutState_.headerColumns.percent.right,
-        layoutState_.headerRect.bottom};
-    layoutState_.headerReadLabelRect = RenderRect{layoutState_.headerColumns.read.left - layoutState_.rwGap,
+        layoutState_.headerRect.bottom
+    };
+    layoutState_.headerReadLabelRect = RenderRect{
+        layoutState_.headerColumns.read.left - layoutState_.rwGap,
         layoutState_.headerColumns.read.top,
         layoutState_.headerColumns.read.right + layoutState_.rwGap,
-        layoutState_.headerColumns.read.bottom};
-    layoutState_.headerWriteLabelRect = RenderRect{layoutState_.headerColumns.write.left - layoutState_.rwGap,
+        layoutState_.headerColumns.read.bottom
+    };
+    layoutState_.headerWriteLabelRect = RenderRect{
+        layoutState_.headerColumns.write.left - layoutState_.rwGap,
         layoutState_.headerColumns.write.top,
         layoutState_.headerColumns.write.right + layoutState_.rwGap,
-        layoutState_.headerColumns.write.bottom};
-    layoutState_.activityTargetRect = RenderRect{layoutState_.headerColumns.read.left,
+        layoutState_.headerColumns.write.bottom
+    };
+    layoutState_.activityTargetRect = RenderRect{
+        layoutState_.headerColumns.read.left,
         layoutState_.headerRect.bottom,
         layoutState_.headerColumns.write.right,
-        rect.bottom};
+        rect.bottom
+    };
     layoutState_.rowBands.clear();
     layoutState_.rowColumns.clear();
     layoutState_.rowReadIndicatorRects.clear();
@@ -335,10 +364,12 @@ void DriveUsageListWidget::ResolveLayoutState(const WidgetHost& renderer, const 
     layoutState_.rowBarAnchorRects.clear();
     const int totalRows = static_cast<int>(renderer.Config().storage.drives.size());
     RenderRect rowRect{
-        rect.left, layoutState_.headerRect.bottom, rect.right, layoutState_.headerRect.bottom + layoutState_.rowHeight};
+        rect.left, layoutState_.headerRect.bottom, rect.right, layoutState_.headerRect.bottom + layoutState_.rowHeight
+    };
     for (int rowIndex = 0; rowIndex < totalRows && rowRect.top < rect.bottom; ++rowIndex) {
         layoutState_.rowBands.push_back(rowRect);
-        layoutState_.rowColumns.push_back(ResolveColumns(rowRect,
+        layoutState_.rowColumns.push_back(ResolveColumns(
+            rowRect,
             layoutState_.measuredColumnWidths.label,
             layoutState_.labelGap,
             layoutState_.activityWidth,
@@ -346,57 +377,63 @@ void DriveUsageListWidget::ResolveLayoutState(const WidgetHost& renderer, const 
             layoutState_.barGap,
             layoutState_.measuredColumnWidths.percent,
             layoutState_.percentGap,
-            layoutState_.freeWidth));
+            layoutState_.freeWidth
+        ));
         const int rowPixelHeight = static_cast<int>(rowRect.bottom - rowRect.top);
         const int contentTop =
             static_cast<int>(rowRect.top) + (std::max)(0, (rowPixelHeight - layoutState_.rowContentHeight) / 2);
         const ColumnRects& columns = layoutState_.rowColumns.back();
         layoutState_.rowReadIndicatorRects.push_back(
-            RenderRect{columns.read.left, contentTop, columns.read.right, contentTop + layoutState_.rowContentHeight});
-        layoutState_.rowWriteIndicatorRects.push_back(RenderRect{
-            columns.write.left, contentTop, columns.write.right, contentTop + layoutState_.rowContentHeight});
+            RenderRect{columns.read.left, contentTop, columns.read.right, contentTop + layoutState_.rowContentHeight}
+        );
+        layoutState_.rowWriteIndicatorRects.push_back(
+            RenderRect{columns.write.left, contentTop, columns.write.right, contentTop + layoutState_.rowContentHeight}
+        );
         const int barTop =
             static_cast<int>(rowRect.top) + (std::max)(0, (rowPixelHeight - layoutState_.driveBarHeight) / 2);
-        layoutState_.rowBarRects.push_back(
-            RenderRect{columns.bar.left, barTop, columns.bar.right, barTop + layoutState_.driveBarHeight});
+        layoutState_
+            .rowBarRects
+            .push_back(RenderRect{columns.bar.left, barTop, columns.bar.right, barTop + layoutState_.driveBarHeight});
         const int anchorCenterX = static_cast<int>(columns.bar.left) +
-                                  ((std::max)(0, static_cast<int>(columns.bar.right - columns.bar.left) / 2));
+            ((std::max)(0, static_cast<int>(columns.bar.right - columns.bar.left) / 2));
         const int anchorCenterY = barTop + layoutState_.driveBarHeight;
         const int anchorSize = (std::max)(4, renderer.Renderer().ScaleLogical(6));
-        layoutState_.rowBarAnchorRects.push_back(RenderRect{anchorCenterX - (anchorSize / 2),
+        layoutState_.rowBarAnchorRects.push_back(RenderRect{
+            anchorCenterX - (anchorSize / 2),
             anchorCenterY - (anchorSize / 2),
             anchorCenterX - (anchorSize / 2) + anchorSize,
-            anchorCenterY - (anchorSize / 2) + anchorSize});
+            anchorCenterY - (anchorSize / 2) + anchorSize
+        });
         rowRect = RenderRect{
-            rowRect.left,
-            rowRect.top + layoutState_.rowHeight,
-            rowRect.right,
-            rowRect.bottom + layoutState_.rowHeight,
+            rowRect.left, rowRect.top + layoutState_.rowHeight, rowRect.right, rowRect.bottom + layoutState_.rowHeight,
         };
     }
     layoutState_.visibleRows = static_cast<int>(layoutState_.rowBands.size());
-    layoutState_.activityAnchorCenterX =
-        layoutState_.headerColumns.read.left +
+    layoutState_.activityAnchorCenterX = layoutState_.headerColumns.read.left +
         ((std::max)(0, layoutState_.headerColumns.write.right - layoutState_.headerColumns.read.left) / 2);
-    const int firstRowTop = layoutState_.visibleRows > 0 ? static_cast<int>(layoutState_.rowBands.front().top)
-                                                         : static_cast<int>(layoutState_.headerRect.bottom);
-    const int firstRowBottom = layoutState_.visibleRows > 0 ? static_cast<int>(layoutState_.rowBands.front().bottom)
-                                                            : static_cast<int>(layoutState_.headerRect.bottom);
+    const int firstRowTop = layoutState_.visibleRows > 0 ? static_cast<int>(layoutState_.rowBands.front().top) :
+        static_cast<int>(layoutState_.headerRect.bottom);
+    const int firstRowBottom = layoutState_.visibleRows > 0 ? static_cast<int>(layoutState_.rowBands.front().bottom) :
+        static_cast<int>(layoutState_.headerRect.bottom);
     layoutState_.firstRowContentTop =
         firstRowTop + (std::max)(0, ((firstRowBottom - firstRowTop) - layoutState_.rowContentHeight) / 2);
     layoutState_.activityAnchorRect = RenderRect{
         layoutState_.activityAnchorCenterX - (layoutState_.activityAnchorSize / 2),
         layoutState_.firstRowContentTop - (layoutState_.activityAnchorSize / 2),
         layoutState_.activityAnchorCenterX - (layoutState_.activityAnchorSize / 2) + layoutState_.activityAnchorSize,
-        layoutState_.firstRowContentTop - (layoutState_.activityAnchorSize / 2) + layoutState_.activityAnchorSize};
+        layoutState_.firstRowContentTop - (layoutState_.activityAnchorSize / 2) + layoutState_.activityAnchorSize
+    };
     if (layoutState_.visibleRows > 0 && config.activitySegments > 1) {
         layoutState_.clampedActivitySegmentGap = ClampStackedSegmentGap(
-            layoutState_.rowContentHeight, config.activitySegments, layoutState_.activitySegmentGap);
-        layoutState_.lowestSegmentTop = ComputeLowestStackedSegmentTop(layoutState_.firstRowContentTop,
+            layoutState_.rowContentHeight, config.activitySegments, layoutState_.activitySegmentGap
+        );
+        layoutState_.lowestSegmentTop = ComputeLowestStackedSegmentTop(
+            layoutState_.firstRowContentTop,
             layoutState_.rowContentHeight,
             layoutState_.activityWidth,
             config.activitySegments,
-            layoutState_.clampedActivitySegmentGap);
+            layoutState_.clampedActivitySegmentGap
+        );
     }
 }
 
@@ -415,17 +452,23 @@ void DriveUsageListWidget::Draw(WidgetHost& renderer, const WidgetLayout& widget
         const RenderRect& writeIndicatorRect = layoutState_.rowWriteIndicatorRects[rowIndex];
         const RenderRect& barRect = layoutState_.rowBarRects[rowIndex];
 
-        const WidgetHost::TextLayoutResult labelLayout = renderer.Renderer().DrawTextBlock(columns.label,
+        const WidgetHost::TextLayoutResult labelLayout = renderer.Renderer().DrawTextBlock(
+            columns.label,
             drive->label,
             TextStyleId::Label,
             RenderColorId::Foreground,
-            TextLayoutOptions::SingleLine(TextHorizontalAlign::Leading, TextVerticalAlign::Center));
-        renderer.EditArtifacts().RegisterDynamicTextAnchor(labelLayout,
-            renderer.MakeEditableTextBinding(widget,
+            TextLayoutOptions::SingleLine(TextHorizontalAlign::Leading, TextVerticalAlign::Center)
+        );
+        renderer.EditArtifacts().RegisterDynamicTextAnchor(
+            labelLayout,
+            renderer.MakeEditableTextBinding(
+                widget,
                 WidgetHost::LayoutEditParameter::FontLabel,
                 textBaseId,
-                renderer.Config().layout.fonts.label.size),
-            WidgetHost::LayoutEditParameter::ColorForeground);
+                renderer.Config().layout.fonts.label.size
+            ),
+            WidgetHost::LayoutEditParameter::ColorForeground
+        );
         const bool drawAnimatedValues = renderer.CurrentRenderMode() != WidgetHost::RenderMode::Blank;
         ScalarFillSample readTarget;
         ScalarFillSample writeTarget;
@@ -435,64 +478,94 @@ void DriveUsageListWidget::Draw(WidgetHost& renderer, const WidgetLayout& widget
             writeTarget.valueRatio = drive->writeActivity;
             usageTarget.valueRatio = drive->usedPercent / 100.0;
         }
-        DrawSegmentIndicatorTrack(renderer.Renderer(),
+        DrawSegmentIndicatorTrack(
+            renderer.Renderer(),
             readIndicatorRect,
             layoutState_.activitySegments,
             layoutState_.activitySegmentGap,
-            RenderColorId::Track);
-        renderer.AddWidgetAnimation(std::make_unique<DriveActivityAnimation>(AnimationDataKey{drive->label, "read"},
-                                        readIndicatorRect,
-                                        layoutState_.activitySegments,
-                                        layoutState_.activitySegmentGap),
+            RenderColorId::Track
+        );
+        renderer.AddWidgetAnimation(
+            std::make_unique<DriveActivityAnimation>(
+                AnimationDataKey{drive->label, "read"},
+                readIndicatorRect,
+                layoutState_.activitySegments,
+                layoutState_.activitySegmentGap
+            ),
             MakeScalarFillAnimationState(readTarget),
-            widget.rect);
-        DrawSegmentIndicatorTrack(renderer.Renderer(),
+            widget.rect
+        );
+        DrawSegmentIndicatorTrack(
+            renderer.Renderer(),
             writeIndicatorRect,
             layoutState_.activitySegments,
             layoutState_.activitySegmentGap,
-            RenderColorId::Track);
-        renderer.AddWidgetAnimation(std::make_unique<DriveActivityAnimation>(AnimationDataKey{drive->label, "write"},
-                                        writeIndicatorRect,
-                                        layoutState_.activitySegments,
-                                        layoutState_.activitySegmentGap),
+            RenderColorId::Track
+        );
+        renderer.AddWidgetAnimation(
+            std::make_unique<DriveActivityAnimation>(
+                AnimationDataKey{drive->label, "write"},
+                writeIndicatorRect,
+                layoutState_.activitySegments,
+                layoutState_.activitySegmentGap
+            ),
             MakeScalarFillAnimationState(writeTarget),
-            widget.rect);
+            widget.rect
+        );
         DrawWidgetPillBarTrack(renderer.Renderer(), barRect);
-        renderer.AddWidgetAnimation(MakeWidgetPillBarAnimation(AnimationDataKey{drive->label, "used"}, barRect),
+        renderer.AddWidgetAnimation(
+            MakeWidgetPillBarAnimation(AnimationDataKey{drive->label, "used"}, barRect),
             MakeScalarFillAnimationState(usageTarget),
-            widget.rect);
+            widget.rect
+        );
         const int splitX = barRect.left + ((std::max)(0, barRect.right - barRect.left) / 2);
-        renderer.EditArtifacts().RegisterDynamicColorEditRegion(WidgetHost::LayoutEditParameter::ColorAccent,
-            RenderRect{barRect.left, barRect.top, splitX, barRect.bottom});
-        renderer.EditArtifacts().RegisterDynamicColorEditRegion(WidgetHost::LayoutEditParameter::ColorTrack,
-            RenderRect{splitX, barRect.top, barRect.right, barRect.bottom});
+        renderer.EditArtifacts().RegisterDynamicColorEditRegion(
+            WidgetHost::LayoutEditParameter::ColorAccent, RenderRect{barRect.left, barRect.top, splitX, barRect.bottom}
+        );
+        renderer.EditArtifacts().RegisterDynamicColorEditRegion(
+            WidgetHost::LayoutEditParameter::ColorTrack, RenderRect{splitX, barRect.top, barRect.right, barRect.bottom}
+        );
         if (renderer.CurrentRenderMode() != WidgetHost::RenderMode::Blank) {
-            const WidgetHost::TextLayoutResult percentLayout = renderer.Renderer().DrawTextBlock(columns.percent,
+            const WidgetHost::TextLayoutResult percentLayout = renderer.Renderer().DrawTextBlock(
+                columns.percent,
                 drive->usedText,
                 TextStyleId::Label,
                 RenderColorId::Foreground,
-                TextLayoutOptions::SingleLine(TextHorizontalAlign::Leading, TextVerticalAlign::Center));
-            renderer.EditArtifacts().RegisterDynamicTextAnchor(percentLayout,
-                renderer.MakeEditableTextBinding(widget,
+                TextLayoutOptions::SingleLine(TextHorizontalAlign::Leading, TextVerticalAlign::Center)
+            );
+            renderer.EditArtifacts().RegisterDynamicTextAnchor(
+                percentLayout,
+                renderer.MakeEditableTextBinding(
+                    widget,
                     WidgetHost::LayoutEditParameter::FontLabel,
                     textBaseId + 1,
-                    renderer.Config().layout.fonts.label.size),
-                WidgetHost::LayoutEditParameter::ColorForeground);
+                    renderer.Config().layout.fonts.label.size
+                ),
+                WidgetHost::LayoutEditParameter::ColorForeground
+            );
             renderer.EditArtifacts().RegisterDynamicTextAnchor(
-                percentLayout, renderer.MakeMetricTextBinding(widget, "drive.usage", textBaseId + 101));
-            const WidgetHost::TextLayoutResult freeLayout = renderer.Renderer().DrawTextBlock(columns.free,
+                percentLayout, renderer.MakeMetricTextBinding(widget, "drive.usage", textBaseId + 101)
+            );
+            const WidgetHost::TextLayoutResult freeLayout = renderer.Renderer().DrawTextBlock(
+                columns.free,
                 drive->freeText,
                 TextStyleId::Small,
                 RenderColorId::MutedText,
-                TextLayoutOptions::SingleLine(TextHorizontalAlign::Trailing, TextVerticalAlign::Center));
-            renderer.EditArtifacts().RegisterDynamicTextAnchor(freeLayout,
-                renderer.MakeEditableTextBinding(widget,
+                TextLayoutOptions::SingleLine(TextHorizontalAlign::Trailing, TextVerticalAlign::Center)
+            );
+            renderer.EditArtifacts().RegisterDynamicTextAnchor(
+                freeLayout,
+                renderer.MakeEditableTextBinding(
+                    widget,
                     WidgetHost::LayoutEditParameter::FontSmall,
                     textBaseId + 2,
-                    renderer.Config().layout.fonts.smallText.size),
-                WidgetHost::LayoutEditParameter::ColorMutedText);
+                    renderer.Config().layout.fonts.smallText.size
+                ),
+                WidgetHost::LayoutEditParameter::ColorMutedText
+            );
             renderer.EditArtifacts().RegisterDynamicTextAnchor(
-                freeLayout, renderer.MakeMetricTextBinding(widget, "drive.free", textBaseId + 102));
+                freeLayout, renderer.MakeMetricTextBinding(widget, "drive.free", textBaseId + 102)
+            );
         }
     }
 
@@ -502,36 +575,46 @@ void DriveUsageListWidget::Draw(WidgetHost& renderer, const WidgetLayout& widget
 void DriveUsageListWidget::BuildStaticAnchors(WidgetHost& renderer, const WidgetLayout& widget) const {
     const auto& config = renderer.Config().layout.driveUsageList;
     renderer.EditArtifacts().RegisterStaticEditAnchor(LayoutEditAnchorRegistration{
-        .key = LayoutEditAnchorKey{LayoutEditWidgetIdentity{widget.cardId, widget.editCardId, widget.nodePath},
+        .key = LayoutEditAnchorKey{
+            LayoutEditWidgetIdentity{widget.cardId, widget.editCardId, widget.nodePath},
             WidgetHost::LayoutEditParameter::DriveUsageActivitySegments,
-            0},
+            0
+        },
         .targetRect = layoutState_.activityTargetRect,
         .anchorRect = layoutState_.activityAnchorRect,
         .shape = AnchorShape::Diamond,
         .value = config.activitySegments,
         .drag = LayoutEditAnchorDrag::AxisDelta(
-            AnchorDragAxis::Both, RenderPoint{layoutState_.activityAnchorCenterX, layoutState_.firstRowContentTop}),
+            AnchorDragAxis::Both, RenderPoint{layoutState_.activityAnchorCenterX, layoutState_.firstRowContentTop}
+        ),
         .visibility = LayoutEditAnchorVisibility::WhenWidgetHovered,
-        .targetOutline = LayoutEditTargetOutline::Hidden});
+        .targetOutline = LayoutEditTargetOutline::Hidden
+    });
     RegisterDriveHeaderStaticTextAnchors(renderer, widget, layoutState_);
-    for (int rowIndex = 0;
-        rowIndex < layoutState_.visibleRows && rowIndex < static_cast<int>(layoutState_.rowBarRects.size()) &&
-        rowIndex < static_cast<int>(layoutState_.rowBarAnchorRects.size());
-        ++rowIndex) {
+    for (
+        int rowIndex = 0;
+        rowIndex < layoutState_.visibleRows &&
+            rowIndex < static_cast<int>(layoutState_.rowBarRects.size()) &&
+            rowIndex < static_cast<int>(layoutState_.rowBarAnchorRects.size());
+        ++rowIndex
+    ) {
         const RenderRect& barRect = layoutState_.rowBarRects[rowIndex];
         const RenderRect& anchorRect = layoutState_.rowBarAnchorRects[rowIndex];
         const int anchorCenterX = anchorRect.left + ((std::max)(0, anchorRect.right - anchorRect.left) / 2);
         const int anchorCenterY = anchorRect.top + ((std::max)(0, anchorRect.bottom - anchorRect.top) / 2);
         renderer.EditArtifacts().RegisterStaticEditAnchor(LayoutEditAnchorRegistration{
-            .key = LayoutEditAnchorKey{LayoutEditWidgetIdentity{widget.cardId, widget.editCardId, widget.nodePath},
+            .key = LayoutEditAnchorKey{
+                LayoutEditWidgetIdentity{widget.cardId, widget.editCardId, widget.nodePath},
                 WidgetHost::LayoutEditParameter::DriveUsageBarHeight,
-                rowIndex},
+                rowIndex
+            },
             .targetRect = barRect,
             .anchorRect = anchorRect,
             .shape = AnchorShape::Circle,
             .value = config.barHeight,
-            .drag = LayoutEditAnchorDrag::AxisDelta(
-                AnchorDragAxis::Horizontal, RenderPoint{anchorCenterX, anchorCenterY})});
+            .drag =
+                LayoutEditAnchorDrag::AxisDelta(AnchorDragAxis::Horizontal, RenderPoint{anchorCenterX, anchorCenterY})
+        });
     }
 }
 
@@ -543,30 +626,32 @@ void DriveUsageListWidget::BuildEditGuides(WidgetHost& renderer, const WidgetLay
         return;
     }
 
-    const auto addVerticalGuide =
-        [&](int guideId, int x, WidgetHost::LayoutEditParameter parameter, int value, int dragDirection) {
-            const int clampedX = std::clamp(x, static_cast<int>(widget.rect.left), static_cast<int>(widget.rect.right));
-            LayoutEditWidgetGuide guide;
-            guide.axis = LayoutGuideAxis::Vertical;
-            guide.widget = LayoutEditWidgetIdentity{widget.cardId, widget.editCardId, widget.nodePath};
-            guide.parameter = parameter;
-            guide.guideId = guideId;
-            guide.widgetRect = widget.rect;
-            guide.drawStart = RenderPoint{clampedX, widget.rect.top};
-            guide.drawEnd = RenderPoint{clampedX, widget.rect.bottom};
-            guide.hitRect =
-                RenderRect{clampedX - hitInset, widget.rect.top, clampedX + hitInset + 1, widget.rect.bottom};
-            guide.value = value;
-            guide.dragDirection = dragDirection;
-            renderer.EditArtifacts().RegisterWidgetEditGuide(std::move(guide));
-        };
-    const auto addHorizontalGuide = [&](int guideId,
-                                        int y,
-                                        WidgetHost::LayoutEditParameter parameter,
-                                        int value,
-                                        int dragDirection,
-                                        int left = (std::numeric_limits<int>::min)(),
-                                        int right = (std::numeric_limits<int>::max)()) {
+    const auto addVerticalGuide = [&](
+        int guideId, int x, WidgetHost::LayoutEditParameter parameter, int value, int dragDirection
+    ) {
+        const int clampedX = std::clamp(x, static_cast<int>(widget.rect.left), static_cast<int>(widget.rect.right));
+        LayoutEditWidgetGuide guide;
+        guide.axis = LayoutGuideAxis::Vertical;
+        guide.widget = LayoutEditWidgetIdentity{widget.cardId, widget.editCardId, widget.nodePath};
+        guide.parameter = parameter;
+        guide.guideId = guideId;
+        guide.widgetRect = widget.rect;
+        guide.drawStart = RenderPoint{clampedX, widget.rect.top};
+        guide.drawEnd = RenderPoint{clampedX, widget.rect.bottom};
+        guide.hitRect = RenderRect{clampedX - hitInset, widget.rect.top, clampedX + hitInset + 1, widget.rect.bottom};
+        guide.value = value;
+        guide.dragDirection = dragDirection;
+        renderer.EditArtifacts().RegisterWidgetEditGuide(std::move(guide));
+    };
+    const auto addHorizontalGuide = [&](
+        int guideId,
+        int y,
+        WidgetHost::LayoutEditParameter parameter,
+        int value,
+        int dragDirection,
+        int left = (std::numeric_limits<int>::min)(),
+        int right = (std::numeric_limits<int>::max)()
+    ) {
         const int clampedY = std::clamp(y, static_cast<int>(widget.rect.top), static_cast<int>(widget.rect.bottom));
         const int guideLeft = std::clamp(left, static_cast<int>(widget.rect.left), static_cast<int>(widget.rect.right));
         const int guideRight = std::clamp(right, guideLeft, static_cast<int>(widget.rect.right));
@@ -588,27 +673,35 @@ void DriveUsageListWidget::BuildEditGuides(WidgetHost& renderer, const WidgetLay
     addVerticalGuide(1, columns.write.left, WidgetHost::LayoutEditParameter::DriveUsageRwGap, config.rwGap, 1);
     addVerticalGuide(2, columns.bar.left, WidgetHost::LayoutEditParameter::DriveUsageBarGap, config.barGap, 1);
     addVerticalGuide(
-        3, columns.bar.right, WidgetHost::LayoutEditParameter::DriveUsagePercentGap, config.percentGap, -1);
+        3, columns.bar.right, WidgetHost::LayoutEditParameter::DriveUsagePercentGap, config.percentGap, -1
+    );
     addVerticalGuide(
-        4, columns.write.right, WidgetHost::LayoutEditParameter::DriveUsageActivityWidth, config.activityWidth, 1);
+        4, columns.write.right, WidgetHost::LayoutEditParameter::DriveUsageActivityWidth, config.activityWidth, 1
+    );
     addVerticalGuide(5, columns.free.left, WidgetHost::LayoutEditParameter::DriveUsageFreeWidth, config.freeWidth, -1);
-    addHorizontalGuide(6,
+    addHorizontalGuide(
+        6,
         widget.rect.top + layoutState_.headerHeight,
         WidgetHost::LayoutEditParameter::DriveUsageHeaderGap,
         config.headerGap,
-        1);
+        1
+    );
     if (layoutState_.visibleRows > 0 && config.activitySegments > 1) {
-        const RenderRect activityBandRect{columns.read.left,
+        const RenderRect activityBandRect{
+            columns.read.left,
             layoutState_.firstRowContentTop,
             columns.write.right,
-            layoutState_.firstRowContentTop + layoutState_.rowContentHeight};
-        addHorizontalGuide(7,
+            layoutState_.firstRowContentTop + layoutState_.rowContentHeight
+        };
+        addHorizontalGuide(
+            7,
             layoutState_.lowestSegmentTop,
             WidgetHost::LayoutEditParameter::DriveUsageActivitySegmentGap,
             config.activitySegmentGap,
             1,
             activityBandRect.left,
-            activityBandRect.right);
+            activityBandRect.right
+        );
     }
     for (int rowIndex = 0; rowIndex < layoutState_.visibleRows; ++rowIndex) {
         const int y = layoutState_.rowBands[rowIndex].bottom;

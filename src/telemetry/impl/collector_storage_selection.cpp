@@ -6,9 +6,7 @@
 
 #include "util/strings.h"
 
-bool IsSelectableStorageDriveType(UINT driveType) {
-    return driveType == DRIVE_FIXED || driveType == DRIVE_REMOVABLE;
-}
+bool IsSelectableStorageDriveType(UINT driveType) { return driveType == DRIVE_FIXED || driveType == DRIVE_REMOVABLE; }
 
 std::string NormalizeStorageDriveLetter(const std::string& drive) {
     if (drive.empty()) {
@@ -67,8 +65,7 @@ std::vector<std::string> SelectFixedDriveLetters(const std::vector<StorageDriveC
 }  // namespace
 
 std::vector<std::string> ResolveConfiguredStorageDriveLetters(
-    const std::vector<std::string>& configuredDrives,
-    const std::vector<StorageDriveCandidate>& availableDrives
+    const std::vector<std::string>& configuredDrives, const std::vector<StorageDriveCandidate>& availableDrives
 ) {
     std::vector<std::string> resolvedDrives = NormalizeConfiguredStorageDriveLetters(configuredDrives);
     if (!resolvedDrives.empty() || !configuredDrives.empty()) {

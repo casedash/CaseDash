@@ -4,56 +4,54 @@
 
 namespace {
 
-int RectWidth(const RECT& rect) {
-    return rect.right - rect.left;
-}
+int RectWidth(const RECT& rect) { return rect.right - rect.left; }
 
-int RectHeight(const RECT& rect) {
-    return rect.bottom - rect.top;
-}
+int RectHeight(const RECT& rect) { return rect.bottom - rect.top; }
 
-bool IsRectUsable(const RECT& rect) {
-    return RectWidth(rect) > 0 && RectHeight(rect) > 0;
-}
+bool IsRectUsable(const RECT& rect) { return RectWidth(rect) > 0 && RectHeight(rect) > 0; }
 
 bool DashboardTouchesMonitorEdge(const RECT& monitor, const RECT& dashboardClient) {
-    return dashboardClient.left == monitor.left || dashboardClient.top == monitor.top ||
-           dashboardClient.right == monitor.right || dashboardClient.bottom == monitor.bottom;
+    return dashboardClient.left == monitor.left ||
+        dashboardClient.top == monitor.top ||
+        dashboardClient.right == monitor.right ||
+        dashboardClient.bottom == monitor.bottom;
 }
 
 bool RectsMatch(const RECT& left, const RECT& right) {
     return left.left == right.left && left.top == right.top && left.right == right.right && left.bottom == right.bottom;
 }
 
-bool PointInUsableRect(POINT point, const RECT& rect) {
-    return IsRectUsable(rect) && PtInRect(&rect, point) != FALSE;
-}
+bool PointInUsableRect(POINT point, const RECT& rect) { return IsRectUsable(rect) && PtInRect(&rect, point) != FALSE; }
 
-int NonNegativeMargin(LONG value) {
-    return static_cast<int>(std::max<LONG>(0, value));
-}
+int NonNegativeMargin(LONG value) { return static_cast<int>(std::max<LONG>(0, value)); }
 
 }  // namespace
 
-DashboardTitlebarFrameMargins DashboardTitlebarFrameMarginsFromAdjustedRect(
-    const RECT& adjustedRect, int clientWidth, int clientHeight) {
-    return DashboardTitlebarFrameMargins{NonNegativeMargin(-adjustedRect.left),
+DashboardTitlebarFrameMargins
+    DashboardTitlebarFrameMarginsFromAdjustedRect(const RECT& adjustedRect, int clientWidth, int clientHeight)
+{
+    return DashboardTitlebarFrameMargins{
+        NonNegativeMargin(-adjustedRect.left),
         NonNegativeMargin(-adjustedRect.top),
         NonNegativeMargin(adjustedRect.right - clientWidth),
-        NonNegativeMargin(adjustedRect.bottom - clientHeight)};
+        NonNegativeMargin(adjustedRect.bottom - clientHeight)
+    };
 }
 
-DashboardTitlebarGeometry ResolveDashboardTitlebarFrameGeometry(
-    const RECT& dashboardClientRect, DashboardTitlebarFrameMargins margins) {
+DashboardTitlebarGeometry
+    ResolveDashboardTitlebarFrameGeometry(const RECT& dashboardClientRect, DashboardTitlebarFrameMargins margins)
+{
     DashboardTitlebarGeometry geometry;
     if (!IsRectUsable(dashboardClientRect) || margins.top <= 0) {
         return geometry;
     }
 
-    geometry.windowRect = RECT{dashboardClientRect.left - margins.left,
+    geometry.windowRect = RECT{
+        dashboardClientRect.left - margins.left,
         dashboardClientRect.top - margins.top,
         dashboardClientRect.right + margins.right,
-        dashboardClientRect.bottom + margins.bottom};
+        dashboardClientRect.bottom + margins.bottom
+    };
     geometry.virtualHoverRect =
         RECT{dashboardClientRect.left, geometry.windowRect.top, dashboardClientRect.right, dashboardClientRect.top};
     geometry.canShow = IsRectUsable(geometry.windowRect) && IsRectUsable(geometry.virtualHoverRect);
@@ -84,13 +82,15 @@ const char* DashboardTitlebarTooltipLocalizationKey(DashboardTitlebarTooltipCont
     return "";
 }
 
-DashboardTitlebarTooltipTarget ResolveDashboardTitlebarTooltipTarget(POINT clientPoint,
+DashboardTitlebarTooltipTarget ResolveDashboardTitlebarTooltipTarget(
+    POINT clientPoint,
     const RECT& appMenuRect,
     const RECT& layoutComboRect,
     const RECT& themeComboRect,
     const RECT& editLayoutRect,
     const RECT& displayRect,
-    const RECT& closeRect) {
+    const RECT& closeRect
+) {
     const struct {
         DashboardTitlebarTooltipControl control;
         const RECT& rect;
@@ -106,22 +106,25 @@ DashboardTitlebarTooltipTarget ResolveDashboardTitlebarTooltipTarget(POINT clien
     for (const auto& control : controls) {
         if (PointInUsableRect(clientPoint, control.rect)) {
             return DashboardTitlebarTooltipTarget{
-                control.control, control.rect, DashboardTitlebarTooltipLocalizationKey(control.control)};
+                control.control, control.rect, DashboardTitlebarTooltipLocalizationKey(control.control)
+            };
         }
     }
     return {};
 }
 
 DashboardTitlebarGeometry ResolveDashboardTitlebarGeometry(
-    const RECT& dashboardClientRect, const RECT& monitorRect, DashboardTitlebarFrameMargins margins) {
+    const RECT& dashboardClientRect, const RECT& monitorRect, DashboardTitlebarFrameMargins margins
+) {
     if (!IsRectUsable(monitorRect) || RectsMatch(dashboardClientRect, monitorRect)) {
         return {};
     }
 
     DashboardTitlebarGeometry geometry = ResolveDashboardTitlebarFrameGeometry(dashboardClientRect, margins);
-    geometry.canShow = IsRectUsable(geometry.windowRect) && IsRectUsable(geometry.virtualHoverRect) &&
-                       geometry.windowRect.top >= monitorRect.top &&
-                       !DashboardTouchesMonitorEdge(monitorRect, dashboardClientRect);
+    geometry.canShow = IsRectUsable(geometry.windowRect) &&
+        IsRectUsable(geometry.virtualHoverRect) &&
+        geometry.windowRect.top >= monitorRect.top &&
+        !DashboardTouchesMonitorEdge(monitorRect, dashboardClientRect);
     if (!geometry.canShow) {
         geometry.windowRect = {};
         geometry.virtualHoverRect = {};
@@ -142,11 +145,17 @@ DashboardTitlebarResizeHitRects ResolveDashboardTitlebarResizeHitRects(const REC
     return hitRects;
 }
 
-DashboardTitlebarControlLayout ResolveDashboardTitlebarControlLayout(
-    const RECT& clientRect, const DashboardTitlebarControlMetrics& metrics) {
+DashboardTitlebarControlLayout
+    ResolveDashboardTitlebarControlLayout(const RECT& clientRect, const DashboardTitlebarControlMetrics& metrics)
+{
     DashboardTitlebarControlLayout layout;
-    if (!IsRectUsable(clientRect) || metrics.buttonWidth <= 0 || metrics.gap < 0 || metrics.padding < 0 ||
-        metrics.comboHeight <= 0) {
+    if (
+        !IsRectUsable(clientRect) ||
+        metrics.buttonWidth <= 0 ||
+        metrics.gap < 0 ||
+        metrics.padding < 0 ||
+        metrics.comboHeight <= 0
+    ) {
         return layout;
     }
 
@@ -193,8 +202,8 @@ DashboardTitlebarControlLayout ResolveDashboardTitlebarControlLayout(
     }
 
     LONG controlsLeft = layout.closeRect.left;
-    const RECT* controls[] = {
-        &layout.displayRect, &layout.editLayoutRect, &layout.layoutComboRect, &layout.themeComboRect};
+    const RECT* controls[] =
+        {&layout.displayRect, &layout.editLayoutRect, &layout.layoutComboRect, &layout.themeComboRect};
     for (const RECT* control : controls) {
         if (IsRectUsable(*control)) {
             controlsLeft = std::min(controlsLeft, control->left);

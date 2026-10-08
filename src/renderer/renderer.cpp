@@ -2,9 +2,7 @@
 
 #include "renderer/impl/d2d_renderer.h"
 
-std::unique_ptr<Renderer> CreateRenderer() {
-    return std::make_unique<D2DRenderer>();
-}
+std::unique_ptr<Renderer> CreateRenderer() { return std::make_unique<D2DRenderer>(); }
 
 bool RenderBitmap::Empty() const {
     if (width <= 0 || height <= 0) {
@@ -13,6 +11,4 @@ bool RenderBitmap::Empty() const {
     return resource == nullptr;
 }
 
-bool RenderBitmap::IsLiveLayer() const {
-    return !Empty() && storage == RenderBitmapStorage::LiveLayer;
-}
+bool RenderBitmap::IsLiveLayer() const { return !Empty() && storage == RenderBitmapStorage::LiveLayer; }

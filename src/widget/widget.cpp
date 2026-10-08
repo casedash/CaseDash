@@ -62,8 +62,8 @@ std::unique_ptr<Widget> CreateCardChromeWidget(const LayoutCardConfig& card) {
     return std::make_unique<CardChromeWidget>(card);
 }
 
-void FinalizeWidgetLayoutGroup(
-    WidgetHost& renderer, WidgetClass widgetClass, const std::vector<WidgetLayout*>& widgets) {
+void FinalizeWidgetLayoutGroup(WidgetHost& renderer, WidgetClass widgetClass, const std::vector<WidgetLayout*>& widgets)
+{
     if (widgetClass == WidgetClass::Gauge) {
         FinalizeGaugeLayoutGroup(renderer, widgets);
     }

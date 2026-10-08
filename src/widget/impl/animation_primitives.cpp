@@ -45,13 +45,11 @@ bool OptionalDoubleEqual(std::optional<double> left, std::optional<double> right
 }
 
 bool ScalarEqual(const ScalarFillSample& left, const ScalarFillSample& right) {
-    return OptionalDoubleEqual(left.valueRatio, right.valueRatio) &&
-           OptionalDoubleEqual(left.peakRatio, right.peakRatio);
+    return
+        OptionalDoubleEqual(left.valueRatio, right.valueRatio) && OptionalDoubleEqual(left.peakRatio, right.peakRatio);
 }
 
-double Lerp(double start, double target, double progress) {
-    return start + ((target - start) * progress);
-}
+double Lerp(double start, double target, double progress) { return start + ((target - start) * progress); }
 
 ScalarFillSample InitialScalarStart(const ScalarFillSample& target) {
     ScalarFillSample start;
@@ -129,16 +127,18 @@ ThroughputChartSample SanitizeThroughput(ThroughputChartSample sample) {
     return sample;
 }
 
-bool DoublesEqual(double left, double right) {
-    return std::abs(left - right) <= kEpsilon;
-}
+bool DoublesEqual(double left, double right) { return std::abs(left - right) <= kEpsilon; }
 
 bool ThroughputEqual(const ThroughputChartSample& left, const ThroughputChartSample& right) {
-    if (!DoublesEqual(left.maxGraph, right.maxGraph) || !DoublesEqual(left.liveLeaderMbps, right.liveLeaderMbps) ||
+    if (
+        !DoublesEqual(left.maxGraph, right.maxGraph) ||
+        !DoublesEqual(left.liveLeaderMbps, right.liveLeaderMbps) ||
         !DoublesEqual(left.timeMarkerOffsetSamples, right.timeMarkerOffsetSamples) ||
         !DoublesEqual(left.plotShiftSamples, right.plotShiftSamples) ||
-        !DoublesEqual(left.guideStepMbps, right.guideStepMbps) || left.bodySampleCount != right.bodySampleCount ||
-        left.samples.size() != right.samples.size()) {
+        !DoublesEqual(left.guideStepMbps, right.guideStepMbps) ||
+        left.bodySampleCount != right.bodySampleCount ||
+        left.samples.size() != right.samples.size()
+    ) {
         return false;
     }
     for (size_t index = 0; index < left.samples.size(); ++index) {
@@ -174,16 +174,21 @@ double AlignedSampleValue(const std::vector<double>& samples, size_t outputIndex
 }
 
 bool ThroughputHasActiveChange(const ThroughputChartSample& start, const ThroughputChartSample& target) {
-    if (!DoublesEqual(start.maxGraph, target.maxGraph) || !DoublesEqual(start.liveLeaderMbps, target.liveLeaderMbps) ||
+    if (
+        !DoublesEqual(start.maxGraph, target.maxGraph) ||
+        !DoublesEqual(start.liveLeaderMbps, target.liveLeaderMbps) ||
         !DoublesEqual(start.timeMarkerOffsetSamples, target.timeMarkerOffsetSamples) ||
         !DoublesEqual(start.plotShiftSamples, target.plotShiftSamples) ||
-        start.bodySampleCount != target.bodySampleCount) {
+        start.bodySampleCount != target.bodySampleCount
+    ) {
         return true;
     }
     const size_t outputCount = (std::max)(start.samples.size(), target.samples.size());
     for (size_t index = 0; index < outputCount; ++index) {
-        if (!DoublesEqual(AlignedSampleValue(start.samples, index, outputCount),
-                AlignedSampleValue(target.samples, index, outputCount))) {
+        if (!DoublesEqual(
+            AlignedSampleValue(start.samples, index, outputCount),
+            AlignedSampleValue(target.samples, index, outputCount)
+        )) {
             return true;
         }
     }
@@ -206,7 +211,8 @@ size_t PlotTailCount(double plotShiftSamples, size_t maxTailCount) {
 }
 
 bool SamplesEqualAt(
-    const std::vector<double>& left, size_t leftIndex, const std::vector<double>& right, size_t rightIndex) {
+    const std::vector<double>& left, size_t leftIndex, const std::vector<double>& right, size_t rightIndex
+) {
     return leftIndex < left.size() && rightIndex < right.size() && DoublesEqual(left[leftIndex], right[rightIndex]);
 }
 
@@ -235,8 +241,9 @@ bool OverlapSupportsScroll(size_t overlap, size_t targetSampleCount) {
     return overlap + 1u >= targetSampleCount;
 }
 
-std::vector<double> ScrollSamplesForShift(
-    const std::vector<double>& scrollSamples, size_t visibleSampleCount, double plotShiftSamples) {
+std::vector<double>
+    ScrollSamplesForShift(const std::vector<double>& scrollSamples, size_t visibleSampleCount, double plotShiftSamples)
+{
     const size_t tailCapacity =
         scrollSamples.size() > visibleSampleCount ? scrollSamples.size() - visibleSampleCount : 0;
     const size_t sampleCount =
@@ -249,10 +256,12 @@ std::vector<double> ScrollSamplesForShift(
     return samples;
 }
 
-void ConfigureThroughputScroll(std::vector<double>& scrollSamples,
+void ConfigureThroughputScroll(
+    std::vector<double>& scrollSamples,
     double& targetPlotShiftSamples,
     const ThroughputChartSample& start,
-    const ThroughputChartSample& target) {
+    const ThroughputChartSample& target
+) {
     scrollSamples.clear();
     targetPlotShiftSamples = 0.0;
     const size_t targetSampleCount = target.samples.size();
@@ -276,8 +285,8 @@ void ConfigureThroughputScroll(std::vector<double>& scrollSamples,
 
 class ScalarFillAnimationTransition final : public WidgetAnimationTransition {
 public:
-    ScalarFillAnimationTransition(ScalarFillSample start, ScalarFillSample target)
-        : start_(std::move(start)), target_(std::move(target)) {}
+    ScalarFillAnimationTransition(ScalarFillSample start, ScalarFillSample target) :
+        start_(std::move(start)), target_(std::move(target)) {}
 
     WidgetAnimationStatePtr Sample(double progress) const override {
         if (progress >= 1.0) {
@@ -286,9 +295,7 @@ public:
         return MakeScalarFillAnimationState(SampleScalar(start_, target_, std::clamp(progress, 0.0, 1.0)));
     }
 
-    bool HasActiveChange() const override {
-        return ScalarHasActiveChange(start_, target_);
-    }
+    bool HasActiveChange() const override { return ScalarHasActiveChange(start_, target_); }
 
 private:
     ScalarFillSample start_;
@@ -297,8 +304,9 @@ private:
 
 class ThroughputChartAnimationTransition final : public WidgetAnimationTransition {
 public:
-    ThroughputChartAnimationTransition(ThroughputChartSample start, ThroughputChartSample target)
-        : start_(std::move(start)), target_(std::move(target)) {
+    ThroughputChartAnimationTransition(ThroughputChartSample start, ThroughputChartSample target) :
+        start_(std::move(start)), target_(std::move(target))
+    {
         ConfigureThroughputScroll(scrollSamples_, targetPlotShiftSamples_, start_, target_);
     }
 
@@ -316,9 +324,11 @@ public:
         } else {
             sample.samples.reserve(outputCount);
             for (size_t index = 0; index < outputCount; ++index) {
-                sample.samples.push_back(Lerp(AlignedSampleValue(start_.samples, index, outputCount),
+                sample.samples.push_back(Lerp(
+                    AlignedSampleValue(start_.samples, index, outputCount),
                     AlignedSampleValue(target_.samples, index, outputCount),
-                    progress));
+                    progress
+                ));
             }
             sample.plotShiftSamples = Lerp(start_.plotShiftSamples, target_.plotShiftSamples, progress);
         }
@@ -332,9 +342,7 @@ public:
         return MakeThroughputChartAnimationState(std::move(sample));
     }
 
-    bool HasActiveChange() const override {
-        return ThroughputHasActiveChange(start_, target_);
-    }
+    bool HasActiveChange() const override { return ThroughputHasActiveChange(start_, target_); }
 
 private:
     ThroughputChartSample start_;
@@ -345,16 +353,12 @@ private:
 
 }  // namespace
 
-ScalarFillAnimationState::ScalarFillAnimationState(ScalarFillSample sample)
-    : sample_(SanitizeScalar(std::move(sample))) {}
+ScalarFillAnimationState::ScalarFillAnimationState(ScalarFillSample sample) : sample_(SanitizeScalar(std::move(sample)))
+{}
 
-const ScalarFillSample& ScalarFillAnimationState::Sample() const {
-    return sample_;
-}
+const ScalarFillSample& ScalarFillAnimationState::Sample() const { return sample_; }
 
-const void* ScalarFillAnimationState::TypeToken() const {
-    return ScalarFillAnimationTypeToken();
-}
+const void* ScalarFillAnimationState::TypeToken() const { return ScalarFillAnimationTypeToken(); }
 
 WidgetAnimationStatePtr ScalarFillAnimationState::Clone() const {
     return std::make_unique<ScalarFillAnimationState>(sample_);
@@ -387,16 +391,12 @@ const ScalarFillSample& ScalarFillSampleFromState(const WidgetAnimationState& st
     return static_cast<const ScalarFillAnimationState&>(state).Sample();
 }
 
-ThroughputChartAnimationState::ThroughputChartAnimationState(ThroughputChartSample sample)
-    : sample_(SanitizeThroughput(std::move(sample))) {}
+ThroughputChartAnimationState::ThroughputChartAnimationState(ThroughputChartSample sample) :
+    sample_(SanitizeThroughput(std::move(sample))) {}
 
-const ThroughputChartSample& ThroughputChartAnimationState::Sample() const {
-    return sample_;
-}
+const ThroughputChartSample& ThroughputChartAnimationState::Sample() const { return sample_; }
 
-const void* ThroughputChartAnimationState::TypeToken() const {
-    return ThroughputChartAnimationTypeToken();
-}
+const void* ThroughputChartAnimationState::TypeToken() const { return ThroughputChartAnimationTypeToken(); }
 
 WidgetAnimationStatePtr ThroughputChartAnimationState::Clone() const {
     return std::make_unique<ThroughputChartAnimationState>(sample_);

@@ -2,6 +2,4 @@
 
 void VerticalSpringWidget::Initialize(const LayoutNodeConfig&) {}
 
-int VerticalSpringWidget::PreferredHeight(const WidgetHost&) const {
-    return 0;
-}
+int VerticalSpringWidget::PreferredHeight(const WidgetHost&) const { return 0; }

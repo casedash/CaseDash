@@ -19,9 +19,7 @@
 
 namespace {
 
-std::size_t TextStyleSlot(TextStyleId style) {
-    return static_cast<std::size_t>(style);
-}
+std::size_t TextStyleSlot(TextStyleId style) { return static_cast<std::size_t>(style); }
 
 DWRITE_TEXT_ALIGNMENT DWriteTextAlignment(const TextLayoutOptions& options) {
     switch (options.horizontalAlign) {
@@ -65,7 +63,8 @@ void SetHresultError(std::string& errorText, ResourceStringId prefix, HRESULT hr
 
 void SetPrefixedHresultError(std::string& errorText, std::string_view prefix, ResourceStringId suffix, HRESULT hr) {
     AssignFormat(
-        errorText, RES_STR("%.*s%s hr="), static_cast<int>(prefix.size()), prefix.data(), ResourceStringText(suffix));
+        errorText, RES_STR("%.*s%s hr="), static_cast<int>(prefix.size()), prefix.data(), ResourceStringText(suffix)
+    );
     AppendHresult(errorText, hr);
 }
 
@@ -79,10 +78,12 @@ public:
 
         if (d2dFactory_ == nullptr) {
             D2D1_FACTORY_OPTIONS options{};
-            const HRESULT hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_MULTI_THREADED,
+            const HRESULT hr = D2D1CreateFactory(
+                D2D1_FACTORY_TYPE_MULTI_THREADED,
                 __uuidof(ID2D1Factory1),
                 &options,
-                reinterpret_cast<void**>(d2dFactory_.ReleaseAndGetAddressOf()));
+                reinterpret_cast<void**>(d2dFactory_.ReleaseAndGetAddressOf())
+            );
             if (FAILED(hr) || d2dFactory_ == nullptr) {
                 SetHresultError(errorText, RES_STR("d2d_factory_failed"), hr);
                 return false;
@@ -91,19 +92,14 @@ public:
 
         if (d3dDevice_ == nullptr) {
             const std::array<D3D_FEATURE_LEVEL, 4> preferredFeatureLevels{
-                D3D_FEATURE_LEVEL_11_1,
-                D3D_FEATURE_LEVEL_11_0,
-                D3D_FEATURE_LEVEL_10_1,
-                D3D_FEATURE_LEVEL_10_0,
+                D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1, D3D_FEATURE_LEVEL_10_0,
             };
-            const std::array<D3D_FEATURE_LEVEL, 3> fallbackFeatureLevels{
-                D3D_FEATURE_LEVEL_11_0,
-                D3D_FEATURE_LEVEL_10_1,
-                D3D_FEATURE_LEVEL_10_0,
-            };
+            const std::array<D3D_FEATURE_LEVEL, 3>
+                fallbackFeatureLevels{D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1, D3D_FEATURE_LEVEL_10_0};
             D3D_FEATURE_LEVEL createdFeatureLevel = D3D_FEATURE_LEVEL_10_0;
             const auto createDevice = [&](D3D_DRIVER_TYPE driverType, auto featureLevels) {
-                return D3D11CreateDevice(nullptr,
+                return D3D11CreateDevice(
+                    nullptr,
                     driverType,
                     nullptr,
                     D3D11_CREATE_DEVICE_BGRA_SUPPORT,
@@ -112,7 +108,8 @@ public:
                     D3D11_SDK_VERSION,
                     d3dDevice_.ReleaseAndGetAddressOf(),
                     &createdFeatureLevel,
-                    d3dContext_.ReleaseAndGetAddressOf());
+                    d3dContext_.ReleaseAndGetAddressOf()
+                );
             };
             HRESULT hr = createDevice(D3D_DRIVER_TYPE_HARDWARE, preferredFeatureLevels);
             if (hr == E_INVALIDARG) {
@@ -158,21 +155,13 @@ public:
         return true;
     }
 
-    ID2D1Factory1* D2DFactory() const {
-        return d2dFactory_.Get();
-    }
+    ID2D1Factory1* D2DFactory() const { return d2dFactory_.Get(); }
 
-    ID2D1Device* D2DDevice() const {
-        return d2dDevice_.Get();
-    }
+    ID2D1Device* D2DDevice() const { return d2dDevice_.Get(); }
 
-    ID3D11Device* D3DDevice() const {
-        return d3dDevice_.Get();
-    }
+    ID3D11Device* D3DDevice() const { return d3dDevice_.Get(); }
 
-    IDXGIFactory2* DxgiFactory() const {
-        return dxgiFactory_.Get();
-    }
+    IDXGIFactory2* DxgiFactory() const { return dxgiFactory_.Get(); }
 
 private:
     LightweightMutex mutex_;
@@ -190,30 +179,21 @@ D2DSharedDevice& SharedD2DDevice() {
 
 class D2DRenderBitmapResource final : public RenderBitmapResource {
 public:
-    D2DRenderBitmapResource(Microsoft::WRL::ComPtr<IWICBitmap> bitmap, Microsoft::WRL::ComPtr<ID2D1RenderTarget> target)
-        : wicBitmap_(std::move(bitmap)), wicRenderTarget_(std::move(target)) {}
+    D2DRenderBitmapResource(
+        Microsoft::WRL::ComPtr<IWICBitmap> bitmap, Microsoft::WRL::ComPtr<ID2D1RenderTarget> target
+    ) : wicBitmap_(std::move(bitmap)), wicRenderTarget_(std::move(target)) {}
 
     explicit D2DRenderBitmapResource(Microsoft::WRL::ComPtr<ID2D1Bitmap1> bitmap) : targetBitmap_(std::move(bitmap)) {}
 
-    const void* TypeToken() const override {
-        return D2DRenderBitmapResourceTypeToken();
-    }
+    const void* TypeToken() const override { return D2DRenderBitmapResourceTypeToken(); }
 
-    IWICBitmap* WicBitmap() const {
-        return wicBitmap_.Get();
-    }
+    IWICBitmap* WicBitmap() const { return wicBitmap_.Get(); }
 
-    ID2D1RenderTarget* WicRenderTarget() const {
-        return wicRenderTarget_.Get();
-    }
+    ID2D1RenderTarget* WicRenderTarget() const { return wicRenderTarget_.Get(); }
 
-    ID2D1Bitmap* D2DBitmap() const {
-        return targetBitmap_.Get();
-    }
+    ID2D1Bitmap* D2DBitmap() const { return targetBitmap_.Get(); }
 
-    ID2D1Bitmap1* TargetBitmap() const {
-        return targetBitmap_.Get();
-    }
+    ID2D1Bitmap1* TargetBitmap() const { return targetBitmap_.Get(); }
 
     ID2D1Bitmap* CachedD2DBitmap(ID2D1RenderTarget* target) const {
         return cachedD2DBitmapTarget_ == target ? cachedD2DBitmap_.Get() : nullptr;
@@ -251,16 +231,21 @@ private:
 };
 
 int GetPanelIconAtlasSlot(std::string_view iconName) {
-    if (iconName == "cpu")
+    if (iconName == "cpu") {
         return 0;
-    if (iconName == "gpu")
+    }
+    if (iconName == "gpu") {
         return 1;
-    if (iconName == "network")
+    }
+    if (iconName == "network") {
         return 2;
-    if (iconName == "storage")
+    }
+    if (iconName == "storage") {
         return 3;
-    if (iconName == "time")
+    }
+    if (iconName == "time") {
         return 4;
+    }
     return -1;
 }
 
@@ -336,8 +321,8 @@ Microsoft::WRL::ComPtr<IWICBitmapSource> LoadPngResourceMask(IWICImagingFactory*
     }
 
     Microsoft::WRL::ComPtr<IWICBitmapDecoder> decoder;
-    HRESULT hr = wicFactory->CreateDecoderFromStream(
-        stream.Get(), nullptr, WICDecodeMetadataCacheOnLoad, decoder.GetAddressOf());
+    HRESULT hr = wicFactory
+        ->CreateDecoderFromStream(stream.Get(), nullptr, WICDecodeMetadataCacheOnLoad, decoder.GetAddressOf());
     if (FAILED(hr) || decoder == nullptr) {
         return bitmapSource;
     }
@@ -355,7 +340,8 @@ Microsoft::WRL::ComPtr<IWICBitmapSource> LoadPngResourceMask(IWICImagingFactory*
     }
 
     hr = converter->Initialize(
-        frame.Get(), GUID_WICPixelFormat8bppGray, WICBitmapDitherTypeNone, nullptr, 0.0, WICBitmapPaletteTypeCustom);
+        frame.Get(), GUID_WICPixelFormat8bppGray, WICBitmapDitherTypeNone, nullptr, 0.0, WICBitmapPaletteTypeCustom
+    );
     if (FAILED(hr)) {
         return bitmapSource;
     }
@@ -364,8 +350,8 @@ Microsoft::WRL::ComPtr<IWICBitmapSource> LoadPngResourceMask(IWICImagingFactory*
     return bitmapSource;
 }
 
-Microsoft::WRL::ComPtr<ID2D1Bitmap> CreatePanelIconAtlasMaskBitmap(
-    ID2D1RenderTarget* target, IWICBitmapSource* source) {
+Microsoft::WRL::ComPtr<ID2D1Bitmap> CreatePanelIconAtlasMaskBitmap(ID2D1RenderTarget* target, IWICBitmapSource* source)
+{
     Microsoft::WRL::ComPtr<ID2D1Bitmap> bitmap;
     if (target == nullptr || source == nullptr) {
         return bitmap;
@@ -385,8 +371,9 @@ Microsoft::WRL::ComPtr<ID2D1Bitmap> CreatePanelIconAtlasMaskBitmap(
 
     const D2D1_BITMAP_PROPERTIES properties =
         D2D1::BitmapProperties(D2D1::PixelFormat(DXGI_FORMAT_A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED));
-    if (FAILED(target->CreateBitmap(
-            D2D1::SizeU(width, height), mask.data(), maskStride, properties, bitmap.GetAddressOf()))) {
+    if (FAILED(
+        target->CreateBitmap(D2D1::SizeU(width, height), mask.data(), maskStride, properties, bitmap.GetAddressOf())
+    )) {
         return {};
     }
 
@@ -397,9 +384,7 @@ Microsoft::WRL::ComPtr<ID2D1Bitmap> CreatePanelIconAtlasMaskBitmap(
 
 D2DRenderer::D2DRenderer() : palette_(style_.colors) {}
 
-D2DRenderer::~D2DRenderer() {
-    Shutdown();
-}
+D2DRenderer::~D2DRenderer() { Shutdown(); }
 
 bool D2DRenderer::SetStyle(const RendererStyle& style) {
     lastError_.clear();
@@ -455,17 +440,11 @@ void D2DRenderer::SetImmediatePresent(bool enabled) {
     DiscardWindowTarget("present_mode_change");
 }
 
-const std::string& D2DRenderer::LastError() const {
-    return lastError_;
-}
+const std::string& D2DRenderer::LastError() const { return lastError_; }
 
-const TextStyleMetrics& D2DRenderer::TextMetrics() const {
-    return textStyleMetrics_;
-}
+const TextStyleMetrics& D2DRenderer::TextMetrics() const { return textStyleMetrics_; }
 
-bool D2DRenderer::IsDrawActive() const {
-    return d2dActiveRenderTarget_ != nullptr;
-}
+bool D2DRenderer::IsDrawActive() const { return d2dActiveRenderTarget_ != nullptr; }
 
 bool D2DRenderer::DrawWindow(int width, int height, const DrawCallback& draw) {
     if (!BeginWindowDraw(width, height, false)) {
@@ -494,7 +473,8 @@ bool D2DRenderer::DrawWindowRetained(int width, int height, const DrawCallback& 
 }
 
 bool D2DRenderer::DrawWindowDirty(
-    int width, int height, std::span<const RenderRect> dirtyRects, const DirtyDrawCallback& draw) {
+    int width, int height, std::span<const RenderRect> dirtyRects, const DirtyDrawCallback& draw
+) {
     if (dirtyRects.empty()) {
         return true;
     }
@@ -520,21 +500,25 @@ bool D2DRenderer::DrawOffscreen(int width, int height, const DrawCallback& draw)
 }
 
 bool D2DRenderer::DrawToBitmap(
-    RenderBitmap& output, int width, int height, RenderBitmapClear clear, const DrawCallback& draw) {
+    RenderBitmap& output, int width, int height, RenderBitmapClear clear, const DrawCallback& draw
+) {
     if (!InitializeDirect2D()) {
         return false;
     }
 
     const UINT bitmapWidth = static_cast<UINT>(std::max(1, width));
     const UINT bitmapHeight = static_cast<UINT>(std::max(1, height));
-    const D2D1_COLOR_F clearColor = clear == RenderBitmapClear::Transparent
-                                        ? D2D1::ColorF(0.0f, 0.0f, 0.0f, 0.0f)
-                                        : palette_.Get(RenderColorId::Background).ToD2DColorF();
+    const D2D1_COLOR_F clearColor = clear == RenderBitmapClear::Transparent ? D2D1::ColorF(0.0f, 0.0f, 0.0f, 0.0f) :
+        palette_.Get(RenderColorId::Background).ToD2DColorF();
     Microsoft::WRL::ComPtr<IWICBitmap> bitmap;
     Microsoft::WRL::ComPtr<ID2D1RenderTarget> bitmapRenderTarget;
-    if (output.width == static_cast<int>(bitmapWidth) && output.height == static_cast<int>(bitmapHeight) &&
-        output.storage == RenderBitmapStorage::Generic && output.resource != nullptr &&
-        output.resource->TypeToken() == D2DRenderBitmapResourceTypeToken()) {
+    if (
+        output.width == static_cast<int>(bitmapWidth) &&
+        output.height == static_cast<int>(bitmapHeight) &&
+        output.storage == RenderBitmapStorage::Generic &&
+        output.resource != nullptr &&
+        output.resource->TypeToken() == D2DRenderBitmapResourceTypeToken()
+    ) {
         const auto* resource = static_cast<const D2DRenderBitmapResource*>(output.resource.get());
         if (resource->WicBitmap() != nullptr && resource->WicRenderTarget() != nullptr) {
             bitmap = resource->WicBitmap();
@@ -546,19 +530,23 @@ bool D2DRenderer::DrawToBitmap(
     if (bitmap == nullptr || bitmapRenderTarget == nullptr) {
         bitmap.Reset();
         bitmapRenderTarget.Reset();
-        hr = wicFactory_->CreateBitmap(
-            bitmapWidth, bitmapHeight, GUID_WICPixelFormat32bppPBGRA, WICBitmapCacheOnLoad, &bitmap);
+        hr = wicFactory_
+            ->CreateBitmap(bitmapWidth, bitmapHeight, GUID_WICPixelFormat32bppPBGRA, WICBitmapCacheOnLoad, &bitmap);
         if (FAILED(hr) || bitmap == nullptr) {
             SetHresultError(lastError_, RES_STR("layer_wic_bitmap_failed"), hr);
             return false;
         }
 
-        hr = d2dFactory_->CreateWicBitmapRenderTarget(bitmap.Get(),
-            D2D1::RenderTargetProperties(D2D1_RENDER_TARGET_TYPE_DEFAULT,
+        hr = d2dFactory_->CreateWicBitmapRenderTarget(
+            bitmap.Get(),
+            D2D1::RenderTargetProperties(
+                D2D1_RENDER_TARGET_TYPE_DEFAULT,
                 D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED),
                 96.0f,
-                96.0f),
-            bitmapRenderTarget.GetAddressOf());
+                96.0f
+            ),
+            bitmapRenderTarget.GetAddressOf()
+        );
         if (FAILED(hr) || bitmapRenderTarget == nullptr) {
             SetHresultError(lastError_, RES_STR("layer_d2d_target_failed"), hr);
             return false;
@@ -583,7 +571,8 @@ bool D2DRenderer::DrawToBitmap(
 }
 
 bool D2DRenderer::DrawToLiveLayerBitmap(
-    RenderBitmap& output, int width, int height, RenderBitmapClear clear, const DrawCallback& draw) {
+    RenderBitmap& output, int width, int height, RenderBitmapClear clear, const DrawCallback& draw
+) {
     if (!EnsureDeviceContext()) {
         return false;
     }
@@ -591,19 +580,25 @@ bool D2DRenderer::DrawToLiveLayerBitmap(
     const UINT bitmapWidth = static_cast<UINT>(std::max(1, width));
     const UINT bitmapHeight = static_cast<UINT>(std::max(1, height));
     Microsoft::WRL::ComPtr<ID2D1Bitmap1> targetBitmap;
-    if (output.width == static_cast<int>(bitmapWidth) && output.height == static_cast<int>(bitmapHeight) &&
-        output.storage == RenderBitmapStorage::LiveLayer && output.resource != nullptr &&
-        output.resource->TypeToken() == D2DRenderBitmapResourceTypeToken()) {
+    if (
+        output.width == static_cast<int>(bitmapWidth) &&
+        output.height == static_cast<int>(bitmapHeight) &&
+        output.storage == RenderBitmapStorage::LiveLayer &&
+        output.resource != nullptr &&
+        output.resource->TypeToken() == D2DRenderBitmapResourceTypeToken()
+    ) {
         const auto* resource = static_cast<const D2DRenderBitmapResource*>(output.resource.get());
         targetBitmap = resource->TargetBitmap();
     }
     if (targetBitmap == nullptr) {
-        const D2D1_BITMAP_PROPERTIES1 properties = D2D1::BitmapProperties1(D2D1_BITMAP_OPTIONS_TARGET,
+        const D2D1_BITMAP_PROPERTIES1 properties = D2D1::BitmapProperties1(
+            D2D1_BITMAP_OPTIONS_TARGET,
             D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED),
             96.0f,
-            96.0f);
-        const HRESULT hr = d2dDeviceContext_->CreateBitmap(
-            D2D1::SizeU(bitmapWidth, bitmapHeight), nullptr, 0, properties, targetBitmap.GetAddressOf());
+            96.0f
+        );
+        const HRESULT hr = d2dDeviceContext_
+            ->CreateBitmap(D2D1::SizeU(bitmapWidth, bitmapHeight), nullptr, 0, properties, targetBitmap.GetAddressOf());
         if (FAILED(hr) || targetBitmap == nullptr) {
             SetHresultError(lastError_, RES_STR("layer_d2d_bitmap_failed"), hr);
             return false;
@@ -617,9 +612,8 @@ bool D2DRenderer::DrawToLiveLayerBitmap(
         d2dDeviceContext_->SetTarget(previousTarget.Get());
         return false;
     }
-    const D2D1_COLOR_F clearColor = clear == RenderBitmapClear::Transparent
-                                        ? D2D1::ColorF(0.0f, 0.0f, 0.0f, 0.0f)
-                                        : palette_.Get(RenderColorId::Background).ToD2DColorF();
+    const D2D1_COLOR_F clearColor = clear == RenderBitmapClear::Transparent ? D2D1::ColorF(0.0f, 0.0f, 0.0f, 0.0f) :
+        palette_.Get(RenderColorId::Background).ToD2DColorF();
     d2dActiveRenderTarget_->Clear(clearColor);
     draw();
     EndDirect2DDraw();
@@ -635,11 +629,13 @@ bool D2DRenderer::DrawToLiveLayerBitmap(
     return true;
 }
 
-bool D2DRenderer::DrawToWicBitmap(int width,
+bool D2DRenderer::DrawToWicBitmap(
+    int width,
     int height,
     const DrawCallback& draw,
     std::string_view errorPrefix,
-    Microsoft::WRL::ComPtr<IWICBitmap>* renderedBitmap) {
+    Microsoft::WRL::ComPtr<IWICBitmap>* renderedBitmap
+) {
     if (!InitializeDirect2D()) {
         return false;
     }
@@ -647,20 +643,24 @@ bool D2DRenderer::DrawToWicBitmap(int width,
     Microsoft::WRL::ComPtr<IWICBitmap> bitmap;
     const UINT bitmapWidth = static_cast<UINT>(std::max(1, width));
     const UINT bitmapHeight = static_cast<UINT>(std::max(1, height));
-    HRESULT hr = wicFactory_->CreateBitmap(
-        bitmapWidth, bitmapHeight, GUID_WICPixelFormat32bppPBGRA, WICBitmapCacheOnLoad, &bitmap);
+    HRESULT hr = wicFactory_
+        ->CreateBitmap(bitmapWidth, bitmapHeight, GUID_WICPixelFormat32bppPBGRA, WICBitmapCacheOnLoad, &bitmap);
     if (FAILED(hr) || bitmap == nullptr) {
         SetPrefixedHresultError(lastError_, errorPrefix, RES_STR("_wic_bitmap_failed"), hr);
         return false;
     }
 
     Microsoft::WRL::ComPtr<ID2D1RenderTarget> bitmapRenderTarget;
-    hr = d2dFactory_->CreateWicBitmapRenderTarget(bitmap.Get(),
-        D2D1::RenderTargetProperties(D2D1_RENDER_TARGET_TYPE_DEFAULT,
+    hr = d2dFactory_->CreateWicBitmapRenderTarget(
+        bitmap.Get(),
+        D2D1::RenderTargetProperties(
+            D2D1_RENDER_TARGET_TYPE_DEFAULT,
             D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED),
             96.0f,
-            96.0f),
-        bitmapRenderTarget.GetAddressOf());
+            96.0f
+        ),
+        bitmapRenderTarget.GetAddressOf()
+    );
     if (FAILED(hr) || bitmapRenderTarget == nullptr) {
         SetPrefixedHresultError(lastError_, errorPrefix, RES_STR("_d2d_target_failed"), hr);
         return false;
@@ -690,7 +690,8 @@ bool D2DRenderer::SavePng(const FilePath& imagePath, int width, int height, cons
 }
 
 TextLayoutResult D2DRenderer::MeasureTextBlock(
-    const RenderRect& rect, const std::string& text, TextStyleId style, const TextLayoutOptions& options) const {
+    const RenderRect& rect, const std::string& text, TextStyleId style, const TextLayoutOptions& options
+) const {
     const std::wstring wideText = WideFromText(text);
     if (wideText.empty()) {
         return TextLayoutResult{rect};
@@ -698,11 +699,13 @@ TextLayoutResult D2DRenderer::MeasureTextBlock(
     return MeasureTextBlockD2D(rect, wideText, style, options, nullptr);
 }
 
-TextLayoutResult D2DRenderer::DrawTextBlock(const RenderRect& rect,
+TextLayoutResult D2DRenderer::DrawTextBlock(
+    const RenderRect& rect,
     const std::string& text,
     TextStyleId style,
     RenderColorId color,
-    const TextLayoutOptions& options) {
+    const TextLayoutOptions& options
+) {
     TextLayoutResult result{rect};
     const std::wstring wideText = WideFromText(text);
     if (wideText.empty()) {
@@ -719,20 +722,24 @@ TextLayoutResult D2DRenderer::DrawTextBlock(const RenderRect& rect,
         return result;
     }
     const D2D1_DRAW_TEXT_OPTIONS drawOptions = options.clip ? D2D1_DRAW_TEXT_OPTIONS_CLIP : D2D1_DRAW_TEXT_OPTIONS_NONE;
-    d2dActiveRenderTarget_->DrawText(wideText.c_str(),
+    d2dActiveRenderTarget_->DrawText(
+        wideText.c_str(),
         static_cast<UINT32>(wideText.size()),
         textFormat,
         D2DRectFromRenderRect(rect),
         brush,
-        drawOptions);
+        drawOptions
+    );
     return result;
 }
 
-void D2DRenderer::DrawText(const RenderRect& rect,
+void D2DRenderer::DrawText(
+    const RenderRect& rect,
     const std::string& text,
     TextStyleId style,
     RenderColorId color,
-    const TextLayoutOptions& options) const {
+    const TextLayoutOptions& options
+) const {
     const std::wstring wideText = WideFromText(text);
     if (wideText.empty()) {
         return;
@@ -747,12 +754,14 @@ void D2DRenderer::DrawText(const RenderRect& rect,
         return;
     }
     const D2D1_DRAW_TEXT_OPTIONS drawOptions = options.clip ? D2D1_DRAW_TEXT_OPTIONS_CLIP : D2D1_DRAW_TEXT_OPTIONS_NONE;
-    d2dActiveRenderTarget_->DrawText(wideText.c_str(),
+    d2dActiveRenderTarget_->DrawText(
+        wideText.c_str(),
         static_cast<UINT32>(wideText.size()),
         textFormat,
         D2DRectFromRenderRect(rect),
         brush,
-        drawOptions);
+        drawOptions
+    );
 }
 
 int D2DRenderer::ScaleLogical(int value) const {
@@ -776,13 +785,15 @@ int D2DRenderer::MeasureTextWidth(TextStyleId style, std::string_view text) cons
         return 0;
     }
     const RenderRect measureRect{0, 0, 4096, 4096};
-    const int width = std::max(0,
-        static_cast<int>(MeasureTextBlockD2D(measureRect,
+    const int width = std::max(0, static_cast<int>(
+        MeasureTextBlockD2D(
+            measureRect,
             wideText,
             style,
             TextLayoutOptions::SingleLine(TextHorizontalAlign::Leading, TextVerticalAlign::Center),
-            nullptr)
-                .textRect.right));
+            nullptr
+        ).textRect.right
+    ));
     const_cast<RendererTextWidthCache&>(textWidthCache_).Store(style, text, width);
     return width;
 }
@@ -795,7 +806,8 @@ bool D2DRenderer::SaveWicBitmapPng(IWICBitmap* bitmap, const FilePath& imagePath
 
     std::string errorText;
     if (!SaveWicBitmapSourcePng(
-            wicFactory_.Get(), bitmap, imagePath, PngPixelFormat::BgrOpaque, "screenshot", &errorText)) {
+        wicFactory_.Get(), bitmap, imagePath, PngPixelFormat::BgrOpaque, "screenshot", &errorText
+    )) {
         lastError_ = std::move(errorText);
         return false;
     }
@@ -810,9 +822,11 @@ bool D2DRenderer::InitializeDirect2D() {
         d2dFactory_ = SharedD2DDevice().D2DFactory();
     }
     if (dwriteFactory_ == nullptr) {
-        const HRESULT hr = DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED,
+        const HRESULT hr = DWriteCreateFactory(
+            DWRITE_FACTORY_TYPE_SHARED,
             __uuidof(IDWriteFactory),
-            reinterpret_cast<IUnknown**>(dwriteFactory_.ReleaseAndGetAddressOf()));
+            reinterpret_cast<IUnknown**>(dwriteFactory_.ReleaseAndGetAddressOf())
+        );
         if (FAILED(hr) || dwriteFactory_ == nullptr) {
             SetHresultError(lastError_, RES_STR("dwrite_factory_failed"), hr);
             return false;
@@ -825,13 +839,15 @@ bool D2DRenderer::InitializeDirect2D() {
         d2dFactory_->CreateStrokeStyle(D2D1::StrokeStyleProperties(), nullptr, 0, d2dSolidStrokeStyle_.GetAddressOf());
     }
     if (d2dDashedStrokeStyle_ == nullptr) {
-        const D2D1_STROKE_STYLE_PROPERTIES props = D2D1::StrokeStyleProperties(D2D1_CAP_STYLE_ROUND,
+        const D2D1_STROKE_STYLE_PROPERTIES props = D2D1::StrokeStyleProperties(
+            D2D1_CAP_STYLE_ROUND,
             D2D1_CAP_STYLE_ROUND,
             D2D1_CAP_STYLE_ROUND,
             D2D1_LINE_JOIN_ROUND,
             10.0f,
             D2D1_DASH_STYLE_DOT,
-            0.0f);
+            0.0f
+        );
         d2dFactory_->CreateStrokeStyle(props, nullptr, 0, d2dDashedStrokeStyle_.GetAddressOf());
     }
     return true;
@@ -871,7 +887,8 @@ bool D2DRenderer::InitializeWic() {
     wicComInitialized_ = initHr == S_OK || initHr == S_FALSE;
 
     const HRESULT hr = CoCreateInstance(
-        CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(wicFactory_.ReleaseAndGetAddressOf()));
+        CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(wicFactory_.ReleaseAndGetAddressOf())
+    );
     if (FAILED(hr) || wicFactory_ == nullptr) {
         SetHresultError(lastError_, RES_STR("wic_factory_failed"), hr);
         if (wicComInitialized_) {
@@ -923,16 +940,21 @@ bool D2DRenderer::EnsureWindowRenderTarget(int width, int height, bool retainCon
         DiscardWindowTarget("retain_mode_change");
     }
     if (d2dWindowRenderTarget_ == nullptr) {
-        const D2D1_RENDER_TARGET_PROPERTIES properties = D2D1::RenderTargetProperties(D2D1_RENDER_TARGET_TYPE_DEFAULT,
+        const D2D1_RENDER_TARGET_PROPERTIES properties = D2D1::RenderTargetProperties(
+            D2D1_RENDER_TARGET_TYPE_DEFAULT,
             D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_IGNORE),
             96.0f,
-            96.0f);
+            96.0f
+        );
         const D2D1_PRESENT_OPTIONS presentOptions = static_cast<D2D1_PRESENT_OPTIONS>(
             (retainContents ? D2D1_PRESENT_OPTIONS_RETAIN_CONTENTS : D2D1_PRESENT_OPTIONS_NONE) |
-            (d2dImmediatePresent_ ? D2D1_PRESENT_OPTIONS_IMMEDIATELY : D2D1_PRESENT_OPTIONS_NONE));
-        const HRESULT hr = d2dFactory_->CreateHwndRenderTarget(properties,
+                (d2dImmediatePresent_ ? D2D1_PRESENT_OPTIONS_IMMEDIATELY : D2D1_PRESENT_OPTIONS_NONE)
+        );
+        const HRESULT hr = d2dFactory_->CreateHwndRenderTarget(
+            properties,
             D2D1::HwndRenderTargetProperties(hwnd_, D2D1::SizeU(targetWidth, targetHeight), presentOptions),
-            d2dWindowRenderTarget_.ReleaseAndGetAddressOf());
+            d2dWindowRenderTarget_.ReleaseAndGetAddressOf()
+        );
         if (FAILED(hr) || d2dWindowRenderTarget_ == nullptr) {
             SetHresultError(lastError_, RES_STR("d2d_hwnd_target_failed"), hr);
             return false;
@@ -984,7 +1006,8 @@ bool D2DRenderer::EnsureDxgiWindowTarget(int width, int height, bool retainConte
             return false;
         }
         const HRESULT hr = factory->CreateSwapChainForHwnd(
-            device, hwnd_, &swapChainDesc, nullptr, nullptr, dxgiSwapChain_.ReleaseAndGetAddressOf());
+            device, hwnd_, &swapChainDesc, nullptr, nullptr, dxgiSwapChain_.ReleaseAndGetAddressOf()
+        );
         if (FAILED(hr) || dxgiSwapChain_ == nullptr) {
             SetHresultError(lastError_, RES_STR("dxgi_swap_chain_failed"), hr);
             return false;
@@ -1007,8 +1030,8 @@ bool D2DRenderer::EnsureDxgiWindowTarget(int width, int height, bool retainConte
 
     dxgiWindowTargetBitmap_.Reset();
     d2dDeviceContext_->SetTarget(nullptr);
-    const HRESULT hr = dxgiSwapChain_->ResizeBuffers(
-        0, static_cast<UINT>(targetWidth), static_cast<UINT>(targetHeight), DXGI_FORMAT_UNKNOWN, 0);
+    const HRESULT hr = dxgiSwapChain_
+        ->ResizeBuffers(0, static_cast<UINT>(targetWidth), static_cast<UINT>(targetHeight), DXGI_FORMAT_UNKNOWN, 0);
     if (FAILED(hr)) {
         DiscardWindowTarget("dxgi_resize_failed");
         SetHresultError(lastError_, RES_STR("dxgi_resize_failed"), hr);
@@ -1035,13 +1058,14 @@ bool D2DRenderer::CreateDxgiWindowTargetBitmap() {
         return false;
     }
 
-    const D2D1_BITMAP_PROPERTIES1 properties =
-        D2D1::BitmapProperties1(D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW,
-            D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_IGNORE),
-            96.0f,
-            96.0f);
-    hr = d2dDeviceContext_->CreateBitmapFromDxgiSurface(
-        backBuffer.Get(), properties, dxgiWindowTargetBitmap_.ReleaseAndGetAddressOf());
+    const D2D1_BITMAP_PROPERTIES1 properties = D2D1::BitmapProperties1(
+        D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW,
+        D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_IGNORE),
+        96.0f,
+        96.0f
+    );
+    hr = d2dDeviceContext_
+        ->CreateBitmapFromDxgiSurface(backBuffer.Get(), properties, dxgiWindowTargetBitmap_.ReleaseAndGetAddressOf());
     if (FAILED(hr) || dxgiWindowTargetBitmap_ == nullptr) {
         SetHresultError(lastError_, RES_STR("dxgi_d2d_target_failed"), hr);
         return false;
@@ -1217,17 +1241,18 @@ Microsoft::WRL::ComPtr<ID2D1Bitmap> D2DRenderer::D2DBitmapForRenderBitmap(const 
             d2dBitmap = resource->D2DBitmap();
             hr = S_OK;
         } else if (resource->WicBitmap() != nullptr) {
-            if (ID2D1Bitmap* cachedBitmap = resource->CachedD2DBitmap(d2dActiveRenderTarget_);
-                cachedBitmap != nullptr) {
+            if (ID2D1Bitmap* cachedBitmap = resource->CachedD2DBitmap(d2dActiveRenderTarget_); cachedBitmap != nullptr)
+            {
                 d2dBitmap = cachedBitmap;
                 hr = S_OK;
             } else {
                 hr = d2dActiveRenderTarget_->CreateSharedBitmap(
-                    __uuidof(IWICBitmap), resource->WicBitmap(), &properties, d2dBitmap.GetAddressOf());
+                    __uuidof(IWICBitmap), resource->WicBitmap(), &properties, d2dBitmap.GetAddressOf()
+                );
                 if (FAILED(hr) || d2dBitmap == nullptr) {
                     d2dBitmap.Reset();
-                    hr = d2dActiveRenderTarget_->CreateBitmapFromWicBitmap(
-                        resource->WicBitmap(), &properties, d2dBitmap.GetAddressOf());
+                    hr = d2dActiveRenderTarget_
+                        ->CreateBitmapFromWicBitmap(resource->WicBitmap(), &properties, d2dBitmap.GetAddressOf());
                 }
                 if (SUCCEEDED(hr) && d2dBitmap != nullptr) {
                     resource->CacheD2DBitmap(d2dActiveRenderTarget_, d2dBitmap);
@@ -1247,13 +1272,17 @@ bool D2DRenderer::DrawBitmap(const RenderBitmap& bitmap, RenderPoint origin) {
     if (d2dBitmap == nullptr) {
         return false;
     }
-    d2dActiveRenderTarget_->DrawBitmap(d2dBitmap.Get(),
-        D2D1::RectF(static_cast<float>(origin.x),
+    d2dActiveRenderTarget_->DrawBitmap(
+        d2dBitmap.Get(),
+        D2D1::RectF(
+            static_cast<float>(origin.x),
             static_cast<float>(origin.y),
             static_cast<float>(origin.x + bitmap.width),
-            static_cast<float>(origin.y + bitmap.height)),
+            static_cast<float>(origin.y + bitmap.height)
+        ),
         1.0f,
-        D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR);
+        D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR
+    );
     return true;
 }
 
@@ -1275,13 +1304,16 @@ bool D2DRenderer::DrawBitmapRegion(const RenderBitmap& bitmap, const RenderRect&
     }
     targetOrigin.x += clippedSource.left - sourceRect.left;
     targetOrigin.y += clippedSource.top - sourceRect.top;
-    const D2D1_RECT_F destinationRect = D2D1::RectF(static_cast<float>(targetOrigin.x),
+    const D2D1_RECT_F destinationRect = D2D1::RectF(
+        static_cast<float>(targetOrigin.x),
         static_cast<float>(targetOrigin.y),
         static_cast<float>(targetOrigin.x + clippedSource.Width()),
-        static_cast<float>(targetOrigin.y + clippedSource.Height()));
+        static_cast<float>(targetOrigin.y + clippedSource.Height())
+    );
     const D2D1_RECT_F sourceD2DRect = D2DRectFromRenderRect(clippedSource);
     d2dActiveRenderTarget_->DrawBitmap(
-        d2dBitmap.Get(), destinationRect, 1.0f, D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR, &sourceD2DRect);
+        d2dBitmap.Get(), destinationRect, 1.0f, D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR, &sourceD2DRect
+    );
     return true;
 }
 
@@ -1301,11 +1333,14 @@ bool D2DRenderer::DrawBitmapRegions(const RenderBitmap& bitmap, std::span<const 
         resource != nullptr ? resource->CachedD2DBitmapBrush(d2dActiveRenderTarget_) : nullptr;
     if (bitmapBrush == nullptr) {
         Microsoft::WRL::ComPtr<ID2D1BitmapBrush> createdBrush;
-        const HRESULT brushHr = d2dActiveRenderTarget_->CreateBitmapBrush(d2dBitmap.Get(),
+        const HRESULT brushHr = d2dActiveRenderTarget_->CreateBitmapBrush(
+            d2dBitmap.Get(),
             D2D1::BitmapBrushProperties(
-                D2D1_EXTEND_MODE_CLAMP, D2D1_EXTEND_MODE_CLAMP, D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR),
+                D2D1_EXTEND_MODE_CLAMP, D2D1_EXTEND_MODE_CLAMP, D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR
+            ),
             D2D1::BrushProperties(),
-            createdBrush.GetAddressOf());
+            createdBrush.GetAddressOf()
+        );
         if (FAILED(brushHr) || createdBrush == nullptr) {
             SetHresultError(lastError_, RES_STR("draw_bitmap_regions_brush_failed"), brushHr);
             return false;
@@ -1355,15 +1390,18 @@ bool D2DRenderer::DrawIcon(std::string_view iconName, const RenderRect& rect) {
     if (panelIconAtlasMask_ == nullptr || brush == nullptr) {
         return false;
     }
-    const D2D1_RECT_F sourceRect = D2D1::RectF(0.0f,
+    const D2D1_RECT_F sourceRect = D2D1::RectF(
+        0.0f,
         static_cast<float>(atlasSlot * kPanelIconAtlasCellSize),
         static_cast<float>(kPanelIconAtlasCellSize),
-        static_cast<float>((atlasSlot + 1) * kPanelIconAtlasCellSize));
+        static_cast<float>((atlasSlot + 1) * kPanelIconAtlasCellSize)
+    );
     const D2D1_ANTIALIAS_MODE previousAntialiasMode = d2dActiveRenderTarget_->GetAntialiasMode();
     // FillOpacityMask requires aliased antialias mode even though the icon edge alpha stays in the mask.
     d2dActiveRenderTarget_->SetAntialiasMode(D2D1_ANTIALIAS_MODE_ALIASED);
     d2dActiveRenderTarget_->FillOpacityMask(
-        panelIconAtlasMask_.Get(), brush, D2D1_OPACITY_MASK_CONTENT_GRAPHICS, D2DRectFromRenderRect(rect), sourceRect);
+        panelIconAtlasMask_.Get(), brush, D2D1_OPACITY_MASK_CONTENT_GRAPHICS, D2DRectFromRenderRect(rect), sourceRect
+    );
     d2dActiveRenderTarget_->SetAntialiasMode(previousAntialiasMode);
     return true;
 }
@@ -1389,8 +1427,8 @@ bool D2DRenderer::FillSolidRoundedRect(const RenderRect& rect, int radius, Rende
         return false;
     }
     const float clampedRadius = static_cast<float>(std::max(0, radius));
-    d2dActiveRenderTarget_->FillRoundedRectangle(
-        D2D1::RoundedRect(D2DRectFromRenderRect(rect), clampedRadius, clampedRadius), brush);
+    d2dActiveRenderTarget_
+        ->FillRoundedRectangle(D2D1::RoundedRect(D2DRectFromRenderRect(rect), clampedRadius, clampedRadius), brush);
     return true;
 }
 
@@ -1405,10 +1443,13 @@ bool D2DRenderer::FillSolidEllipse(const RenderRect& rect, RenderColorId color) 
     const float radiusX = static_cast<float>(rect.Width()) / 2.0f;
     const float radiusY = static_cast<float>(rect.Height()) / 2.0f;
     d2dActiveRenderTarget_->FillEllipse(
-        D2D1::Ellipse(D2D1::Point2F(static_cast<float>(rect.left) + radiusX, static_cast<float>(rect.top) + radiusY),
+        D2D1::Ellipse(
+            D2D1::Point2F(static_cast<float>(rect.left) + radiusX, static_cast<float>(rect.top) + radiusY),
             radiusX,
-            radiusY),
-        brush);
+            radiusY
+        ),
+        brush
+    );
     return true;
 }
 
@@ -1449,10 +1490,12 @@ bool D2DRenderer::DrawSolidRect(const RenderRect& rect, const RenderStroke& stro
     if (brush == nullptr) {
         return false;
     }
-    d2dActiveRenderTarget_->DrawRectangle(D2DRectFromRenderRect(rect),
+    d2dActiveRenderTarget_->DrawRectangle(
+        D2DRectFromRenderRect(rect),
         brush,
         (std::max)(1.0f, stroke.width),
-        stroke.pattern == StrokePattern::Dotted ? d2dDashedStrokeStyle_.Get() : d2dSolidStrokeStyle_.Get());
+        stroke.pattern == StrokePattern::Dotted ? d2dDashedStrokeStyle_.Get() : d2dSolidStrokeStyle_.Get()
+    );
     return true;
 }
 
@@ -1469,7 +1512,8 @@ bool D2DRenderer::DrawSolidRoundedRect(const RenderRect& rect, int radius, const
         D2D1::RoundedRect(D2DRectFromRenderRect(rect), clampedRadius, clampedRadius),
         brush,
         (std::max)(1.0f, stroke.width),
-        stroke.pattern == StrokePattern::Dotted ? d2dDashedStrokeStyle_.Get() : d2dSolidStrokeStyle_.Get());
+        stroke.pattern == StrokePattern::Dotted ? d2dDashedStrokeStyle_.Get() : d2dSolidStrokeStyle_.Get()
+    );
     return true;
 }
 
@@ -1483,10 +1527,12 @@ bool D2DRenderer::DrawSolidEllipse(const RenderRect& rect, const RenderStroke& s
     }
     const float radiusX = static_cast<float>((std::max)(1, rect.Width())) / 2.0f;
     const float radiusY = static_cast<float>((std::max)(1, rect.Height())) / 2.0f;
-    d2dActiveRenderTarget_->DrawEllipse(D2D1::Ellipse(D2DPointFromRenderPoint(rect.Center()), radiusX, radiusY),
+    d2dActiveRenderTarget_->DrawEllipse(
+        D2D1::Ellipse(D2DPointFromRenderPoint(rect.Center()), radiusX, radiusY),
         brush,
         (std::max)(1.0f, stroke.width),
-        d2dSolidStrokeStyle_.Get());
+        d2dSolidStrokeStyle_.Get()
+    );
     return true;
 }
 
@@ -1498,11 +1544,13 @@ bool D2DRenderer::DrawSolidLine(RenderPoint start, RenderPoint end, const Render
     if (brush == nullptr) {
         return false;
     }
-    d2dActiveRenderTarget_->DrawLine(D2DPointFromRenderPoint(start),
+    d2dActiveRenderTarget_->DrawLine(
+        D2DPointFromRenderPoint(start),
         D2DPointFromRenderPoint(end),
         brush,
         (std::max)(1.0f, stroke.width),
-        stroke.pattern == StrokePattern::Dotted ? d2dDashedStrokeStyle_.Get() : d2dSolidStrokeStyle_.Get());
+        stroke.pattern == StrokePattern::Dotted ? d2dDashedStrokeStyle_.Get() : d2dSolidStrokeStyle_.Get()
+    );
     return true;
 }
 
@@ -1532,7 +1580,8 @@ Microsoft::WRL::ComPtr<ID2D1PathGeometry> D2DRenderer::CreateD2DPathGeometry() c
 }
 
 Microsoft::WRL::ComPtr<ID2D1GeometryGroup> D2DRenderer::CreateD2DGeometryGroup(
-    std::span<const Microsoft::WRL::ComPtr<ID2D1PathGeometry>> geometries, size_t count) const {
+    std::span<const Microsoft::WRL::ComPtr<ID2D1PathGeometry>> geometries, size_t count
+) const {
     Microsoft::WRL::ComPtr<ID2D1GeometryGroup> group;
     if (d2dFactory_ == nullptr || count == 0) {
         return group;
@@ -1546,7 +1595,8 @@ Microsoft::WRL::ComPtr<ID2D1GeometryGroup> D2DRenderer::CreateD2DGeometryGroup(
     }
     if (!raw.empty()) {
         d2dFactory_->CreateGeometryGroup(
-            D2D1_FILL_MODE_WINDING, raw.data(), static_cast<UINT32>(raw.size()), group.GetAddressOf());
+            D2D1_FILL_MODE_WINDING, raw.data(), static_cast<UINT32>(raw.size()), group.GetAddressOf()
+        );
     }
     return group;
 }
@@ -1571,10 +1621,12 @@ bool D2DRenderer::DrawD2DGeometry(ID2D1Geometry* geometry, const RenderStroke& s
     if (brush == nullptr) {
         return false;
     }
-    d2dActiveRenderTarget_->DrawGeometry(geometry,
+    d2dActiveRenderTarget_->DrawGeometry(
+        geometry,
         brush,
         (std::max)(1.0f, stroke.width),
-        stroke.pattern == StrokePattern::Dotted ? d2dDashedStrokeStyle_.Get() : d2dSolidStrokeStyle_.Get());
+        stroke.pattern == StrokePattern::Dotted ? d2dDashedStrokeStyle_.Get() : d2dSolidStrokeStyle_.Get()
+    );
     return true;
 }
 
@@ -1636,10 +1688,12 @@ bool D2DRenderer::DrawPolyline(std::span<const RenderPoint> points, const Render
     if (brush == nullptr) {
         return false;
     }
-    d2dActiveRenderTarget_->DrawGeometry(geometry.Get(),
+    d2dActiveRenderTarget_->DrawGeometry(
+        geometry.Get(),
         brush,
         (std::max)(1.0f, stroke.width),
-        stroke.pattern == StrokePattern::Dotted ? d2dDashedStrokeStyle_.Get() : d2dSolidStrokeStyle_.Get());
+        stroke.pattern == StrokePattern::Dotted ? d2dDashedStrokeStyle_.Get() : d2dSolidStrokeStyle_.Get()
+    );
     return true;
 }
 
@@ -1659,14 +1713,16 @@ bool D2DRenderer::CreateDWriteTextFormats() {
         fontConfig.size = ScaleLogical(fontConfig.size);
         const std::wstring face = WideFromText(fontConfig.face);
         Microsoft::WRL::ComPtr<IDWriteTextFormat> format;
-        const HRESULT hr = dwriteFactory_->CreateTextFormat(face.c_str(),
+        const HRESULT hr = dwriteFactory_->CreateTextFormat(
+            face.c_str(),
             nullptr,
             static_cast<DWRITE_FONT_WEIGHT>(fontConfig.weight),
             DWRITE_FONT_STYLE_NORMAL,
             DWRITE_FONT_STRETCH_NORMAL,
             static_cast<FLOAT>(fontConfig.size),
             localeName.c_str(),
-            format.GetAddressOf());
+            format.GetAddressOf()
+        );
         if (FAILED(hr) || format == nullptr) {
             return false;
         }
@@ -1674,10 +1730,15 @@ bool D2DRenderer::CreateDWriteTextFormats() {
         return true;
     };
 
-    return createFormat(TextStyleId::Title) && createFormat(TextStyleId::Big) && createFormat(TextStyleId::Value) &&
-           createFormat(TextStyleId::Label) && createFormat(TextStyleId::Text) && createFormat(TextStyleId::Small) &&
-           createFormat(TextStyleId::Footer) && createFormat(TextStyleId::ClockTime) &&
-           createFormat(TextStyleId::ClockDate);
+    return createFormat(TextStyleId::Title) &&
+        createFormat(TextStyleId::Big) &&
+        createFormat(TextStyleId::Value) &&
+        createFormat(TextStyleId::Label) &&
+        createFormat(TextStyleId::Text) &&
+        createFormat(TextStyleId::Small) &&
+        createFormat(TextStyleId::Footer) &&
+        createFormat(TextStyleId::ClockTime) &&
+        createFormat(TextStyleId::ClockDate);
 }
 
 void D2DRenderer::ConfigureDWriteTextFormat(IDWriteTextFormat* format, const TextLayoutOptions& options) const {
@@ -1689,11 +1750,13 @@ void D2DRenderer::ConfigureDWriteTextFormat(IDWriteTextFormat* format, const Tex
     format->SetWordWrapping(options.wrap ? DWRITE_WORD_WRAPPING_WRAP : DWRITE_WORD_WRAPPING_NO_WRAP);
 }
 
-TextLayoutResult D2DRenderer::MeasureTextBlockD2D(const RenderRect& rect,
+TextLayoutResult D2DRenderer::MeasureTextBlockD2D(
+    const RenderRect& rect,
     const std::wstring& wideText,
     TextStyleId style,
     const TextLayoutOptions& options,
-    Microsoft::WRL::ComPtr<IDWriteTextLayout>* layoutOut) const {
+    Microsoft::WRL::ComPtr<IDWriteTextLayout>* layoutOut
+) const {
     TextLayoutResult result{rect};
     IDWriteTextFormat* textFormat = DWriteTextFormat(style);
     if (dwriteFactory_ == nullptr || textFormat == nullptr || wideText.empty()) {
@@ -1704,9 +1767,12 @@ TextLayoutResult D2DRenderer::MeasureTextBlockD2D(const RenderRect& rect,
     const float layoutWidth = static_cast<float>((std::max)(1, rect.Width()));
     const float layoutHeight = static_cast<float>((std::max)(1, rect.Height()));
     Microsoft::WRL::ComPtr<IDWriteTextLayout> layout;
-    if (FAILED(dwriteFactory_->CreateTextLayout(
-            wideText.c_str(), static_cast<UINT32>(wideText.size()), textFormat, layoutWidth, layoutHeight, &layout)) ||
-        layout == nullptr) {
+    if (
+        FAILED(dwriteFactory_->CreateTextLayout(
+            wideText.c_str(), static_cast<UINT32>(wideText.size()), textFormat, layoutWidth, layoutHeight, &layout
+        )) ||
+        layout == nullptr
+    ) {
         return result;
     }
 
@@ -1782,8 +1848,10 @@ bool D2DRenderer::RebuildTextFormatsAndMetrics() {
             return 0;
         }
         Microsoft::WRL::ComPtr<IDWriteTextLayout> layout;
-        if (FAILED(dwriteFactory_->CreateTextLayout(kTextMeasureSample, 2, format, 1024.0f, 1024.0f, &layout)) ||
-            layout == nullptr) {
+        if (
+            FAILED(dwriteFactory_->CreateTextLayout(kTextMeasureSample, 2, format, 1024.0f, 1024.0f, &layout)) ||
+            layout == nullptr
+        ) {
             return 0;
         }
         DWRITE_TEXT_METRICS metrics{};

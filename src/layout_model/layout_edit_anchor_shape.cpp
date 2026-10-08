@@ -4,14 +4,16 @@
 
 #include "renderer/renderer.h"
 
-void DrawLayoutEditAnchorShape(Renderer& renderer,
+void DrawLayoutEditAnchorShape(
+    Renderer& renderer,
     AnchorShape shape,
     const RenderRect& rect,
     RenderColorId color,
     float outlineWidth,
     int gapHalf,
     bool outlineCircle,
-    bool outlinePlus) {
+    bool outlinePlus
+) {
     if (shape == AnchorShape::Circle) {
         if (outlineCircle) {
             renderer.DrawSolidEllipse(rect, RenderStroke::Solid(color, outlineWidth));
@@ -75,9 +77,11 @@ void DrawLayoutEditAnchorShape(Renderer& renderer,
         const int halfHeight = std::max(2, static_cast<int>(rect.bottom - rect.top) / 2);
         const auto stroke = RenderStroke::Solid(color, outlineWidth);
         renderer.DrawSolidLine(
-            RenderPoint{centerX - halfWidth, centerY}, RenderPoint{centerX + halfWidth, centerY}, stroke);
+            RenderPoint{centerX - halfWidth, centerY}, RenderPoint{centerX + halfWidth, centerY}, stroke
+        );
         renderer.DrawSolidLine(
-            RenderPoint{centerX, centerY - halfHeight}, RenderPoint{centerX, centerY + halfHeight}, stroke);
+            RenderPoint{centerX, centerY - halfHeight}, RenderPoint{centerX, centerY + halfHeight}, stroke
+        );
         return;
     }
     renderer.FillSolidRect(rect, color);

@@ -96,15 +96,20 @@ public:
 
 private:
     bool PrepareRenderer(
-        Renderer& renderer, const DashboardPresentationFrame& frame, DashboardPresentedFrameState& state);
-    bool PresentFrame(Renderer& renderer,
+        Renderer& renderer, const DashboardPresentationFrame& frame, DashboardPresentedFrameState& state
+    );
+    bool PresentFrame(
+        Renderer& renderer,
         DashboardAnimationTimeline& timeline,
         DashboardPresentationFrame& frame,
-        DashboardPresentedFrameState& presentedState);
-    void DrawFrame(Renderer& renderer,
+        DashboardPresentedFrameState& presentedState
+    );
+    void DrawFrame(
+        Renderer& renderer,
         DashboardAnimationTimeline* timeline,
         const DashboardPresentationFrame& frame,
-        DashboardAnimationTimeline::Clock::time_point now) const;
+        DashboardAnimationTimeline::Clock::time_point now
+    ) const;
 
     struct PreparedDirtyAnimation {
         const DashboardPresentationAnimation* command = nullptr;
@@ -119,26 +124,32 @@ private:
         std::vector<RenderRect> dirtyRects;
     };
 
-    void DrawFrameDirty(Renderer& renderer,
+    void DrawFrameDirty(
+        Renderer& renderer,
         const DashboardPresentationFrame& frame,
         std::span<const RenderRect> dirtyRects,
-        const PreparedDirtyFrame& preparedFrame) const;
+        const PreparedDirtyFrame& preparedFrame
+    ) const;
 
-    void DrawAnimations(Renderer& renderer,
+    void DrawAnimations(
+        Renderer& renderer,
         DashboardAnimationTimeline* timeline,
         const std::vector<DashboardPresentationAnimation>& animations,
         int width,
         int height,
-        std::uint64_t targetVersion) const;
-    PreparedDirtyFrame PrepareDirtyFrame(
-        DashboardAnimationTimeline* timeline, const DashboardPresentationFrame& frame) const;
-    void AppendPreparedDirtyAnimations(DashboardAnimationTimeline* timeline,
+        std::uint64_t targetVersion
+    ) const;
+    PreparedDirtyFrame
+        PrepareDirtyFrame(DashboardAnimationTimeline* timeline, const DashboardPresentationFrame& frame) const;
+    void AppendPreparedDirtyAnimations(
+        DashboardAnimationTimeline* timeline,
         const std::vector<DashboardPresentationAnimation>& animations,
         std::uint64_t targetVersion,
         int width,
         int height,
         std::vector<PreparedDirtyAnimation>& prepared,
-        std::vector<RenderRect>& dirtyRects) const;
+        std::vector<RenderRect>& dirtyRects
+    ) const;
     void DrawPreparedDirtyAnimations(Renderer& renderer, const std::vector<PreparedDirtyAnimation>& animations) const;
     void CoalescePendingFrame(DashboardPresentationFrame& target, DashboardPresentationFrame update) const;
     void MergeFrame(DashboardPresentationFrame& target, DashboardPresentationFrame update) const;

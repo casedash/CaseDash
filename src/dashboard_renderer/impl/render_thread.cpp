@@ -30,17 +30,21 @@ RenderRect ClipRectToSurface(RenderRect rect, int width, int height) {
 }
 
 RenderRect IntersectRects(const RenderRect& left, const RenderRect& right) {
-    return RenderRect{(std::max)(left.left, right.left),
+    return RenderRect{
+        (std::max)(left.left, right.left),
         (std::max)(left.top, right.top),
         (std::min)(left.right, right.right),
-        (std::min)(left.bottom, right.bottom)};
+        (std::min)(left.bottom, right.bottom)
+    };
 }
 
-RenderRect AnimationClipBounds(const WidgetAnimation& animation,
+RenderRect AnimationClipBounds(
+    const WidgetAnimation& animation,
     RenderPoint translation,
     const std::optional<RenderRect>& hardClip,
     int width,
-    int height) {
+    int height
+) {
     RenderRect bounds =
         OffsetRect(animation.DirtyBounds(), translation).Inflate(kAnimationDirtyPadding, kAnimationDirtyPadding);
     if (hardClip.has_value()) {
@@ -49,9 +53,7 @@ RenderRect AnimationClipBounds(const WidgetAnimation& animation,
     return ClipRectToSurface(bounds, width, height);
 }
 
-const char* BoolText(bool value) {
-    return value ? "yes" : "no";
-}
+const char* BoolText(bool value) { return value ? "yes" : "no"; }
 
 const char* TrackRetentionText(DashboardAnimationTimeline::TrackRetention retention) {
     switch (retention) {
@@ -67,8 +69,9 @@ void RecordAnimationFrameTiming(const Trace* trace, HighPrecisionTimer::Tick sta
     if (trace == nullptr || startedAt == 0) {
         return;
     }
-    trace->Timings().Record(
-        *trace, "animation_frame", HighPrecisionTimer::Elapsed(startedAt, HighPrecisionTimer::Now()));
+    trace
+        ->Timings()
+        .Record(*trace, "animation_frame", HighPrecisionTimer::Elapsed(startedAt, HighPrecisionTimer::Now()));
 }
 
 std::string_view StripRendererPrefix(std::string_view error) {
@@ -130,10 +133,10 @@ void DashboardLayerBitmapPool::Clear() {
     available_.clear();
 }
 
-DashboardRenderThread::DashboardRenderThread()
-    : wakeEvent_(CreateEventA(nullptr, TRUE, FALSE, nullptr)),
-      framePresentedEvent_(CreateEventA(nullptr, TRUE, FALSE, nullptr)),
-      discardCompletedEvent_(CreateEventA(nullptr, TRUE, FALSE, nullptr)) {}
+DashboardRenderThread::DashboardRenderThread() :
+    wakeEvent_(CreateEventA(nullptr, TRUE, FALSE, nullptr)),
+    framePresentedEvent_(CreateEventA(nullptr, TRUE, FALSE, nullptr)),
+    discardCompletedEvent_(CreateEventA(nullptr, TRUE, FALSE, nullptr)) {}
 
 DashboardRenderThread::~DashboardRenderThread() {
     Shutdown();
@@ -153,7 +156,8 @@ void DashboardRenderThread::Configure(HWND hwnd, bool threaded, bool immediatePr
         WriteTraceFmt(
             RES_STR("render_thread_shutdown_request reason=configure_threading_change old_threaded=%s new_threaded=%s"),
             BoolText(threaded_),
-            BoolText(threaded));
+            BoolText(threaded)
+        );
         Shutdown();
     }
 
@@ -184,9 +188,7 @@ void DashboardRenderThread::Configure(HWND hwnd, bool threaded, bool immediatePr
     syncRenderer_->SetImmediatePresent(immediatePresent_.load());
 }
 
-void DashboardRenderThread::SetTrace(const Trace* trace) {
-    trace_.store(trace);
-}
+void DashboardRenderThread::SetTrace(const Trace* trace) { trace_.store(trace); }
 
 void DashboardRenderThread::SetBitmapPool(std::shared_ptr<DashboardLayerBitmapPool> pool) {
     const LightweightMutexLock lock(mutex_);
@@ -228,7 +230,8 @@ void DashboardRenderThread::Shutdown() {
         syncRenderer_->Shutdown();
     }
     WriteTraceFmt(
-        RES_STR("animation_timeline_reset owner=sync reason=shutdown tracks=%zu"), syncTimeline_.TrackCount());
+        RES_STR("animation_timeline_reset owner=sync reason=shutdown tracks=%zu"), syncTimeline_.TrackCount()
+    );
     syncTimeline_.Reset();
     if (syncFrame_.has_value()) {
         ReleaseFrameLayers(std::move(*syncFrame_));
@@ -341,14 +344,15 @@ bool DashboardRenderThread::RenderFrameOffscreen(Renderer& renderer, DashboardPr
     return rendered;
 }
 
-void DashboardRenderThread::DrawFrameForCurrentTarget(
-    Renderer& renderer, const DashboardPresentationFrame& frame) const {
+void DashboardRenderThread::DrawFrameForCurrentTarget(Renderer& renderer, const DashboardPresentationFrame& frame) const
+{
     DrawFrame(renderer, nullptr, frame, DashboardAnimationTimeline::Clock::now());
 }
 
 void DashboardRenderThread::ResetTimeline() {
     WriteTraceFmt(
-        RES_STR("animation_timeline_reset owner=sync reason=explicit_request tracks=%zu"), syncTimeline_.TrackCount());
+        RES_STR("animation_timeline_reset owner=sync reason=explicit_request tracks=%zu"), syncTimeline_.TrackCount()
+    );
     syncTimeline_.Reset();
     activeAnimations_.store(false);
     if (threaded_) {
@@ -414,9 +418,7 @@ void DashboardRenderThread::DiscardWindowTarget(std::string_view reason) {
     }
 }
 
-bool DashboardRenderThread::HasActiveAnimations() const {
-    return activeAnimations_.load();
-}
+bool DashboardRenderThread::HasActiveAnimations() const { return activeAnimations_.load(); }
 
 std::string DashboardRenderThread::LastError() const {
     const LightweightMutexLock lock(mutex_);
@@ -424,7 +426,8 @@ std::string DashboardRenderThread::LastError() const {
 }
 
 bool DashboardRenderThread::PrepareRenderer(
-    Renderer& renderer, const DashboardPresentationFrame& frame, DashboardPresentedFrameState& state) {
+    Renderer& renderer, const DashboardPresentationFrame& frame, DashboardPresentedFrameState& state
+) {
     renderer.AttachWindow(hwnd_.load());
     renderer.SetImmediatePresent(immediatePresent_.load());
     if (state.versions.surfaceVersion != frame.versions.surfaceVersion) {
@@ -443,10 +446,12 @@ bool DashboardRenderThread::PrepareRenderer(
     return true;
 }
 
-bool DashboardRenderThread::PresentFrame(Renderer& renderer,
+bool DashboardRenderThread::PresentFrame(
+    Renderer& renderer,
     DashboardAnimationTimeline& timeline,
     DashboardPresentationFrame& frame,
-    DashboardPresentedFrameState& presentedState) {
+    DashboardPresentedFrameState& presentedState
+) {
     const Trace* trace = trace_.load();
     const bool metricTargetsUpdated =
         !presentedState.hasMetricVersion || presentedState.versions.metricVersion != frame.versions.metricVersion;
@@ -459,10 +464,11 @@ bool DashboardRenderThread::PresentFrame(Renderer& renderer,
     if (activeTimeline != nullptr) {
         activeTimeline->BeginFrame(now);
     }
-    const bool fullRedraw = !frame.animate || !presentedState.hasFrame ||
-                            presentedState.versions.snapshotVersion != frame.versions.snapshotVersion ||
-                            presentedState.versions.overlayVersion != frame.versions.overlayVersion ||
-                            presentedState.versions.animationGeometryVersion != frame.versions.animationGeometryVersion;
+    const bool fullRedraw = !frame.animate ||
+        !presentedState.hasFrame ||
+        presentedState.versions.snapshotVersion != frame.versions.snapshotVersion ||
+        presentedState.versions.overlayVersion != frame.versions.overlayVersion ||
+        presentedState.versions.animationGeometryVersion != frame.versions.animationGeometryVersion;
     bool presented = true;
     bool retainedContents = presentedState.retainedContents;
     if (fullRedraw) {
@@ -485,10 +491,9 @@ bool DashboardRenderThread::PresentFrame(Renderer& renderer,
         const PreparedDirtyFrame preparedFrame = PrepareDirtyFrame(activeTimeline, frame);
         if (!preparedFrame.dirtyRects.empty()) {
             const RenderRect fullSurface{0, 0, frame.width, frame.height};
-            const std::span<const RenderRect> redrawRects =
-                retainedContents
-                    ? std::span<const RenderRect>(preparedFrame.dirtyRects.data(), preparedFrame.dirtyRects.size())
-                    : std::span<const RenderRect>(&fullSurface, 1);
+            const std::span<const RenderRect> redrawRects = retainedContents ?
+                std::span<const RenderRect>(preparedFrame.dirtyRects.data(), preparedFrame.dirtyRects.size()) :
+                std::span<const RenderRect>(&fullSurface, 1);
             presented = renderer.DrawWindowDirty(frame.width, frame.height, redrawRects, [&](auto dirtyRects) {
                 DrawFrameDirty(renderer, frame, dirtyRects, preparedFrame);
                 RecordAnimationFrameTiming(trace, animationStartedAt);
@@ -497,16 +502,18 @@ bool DashboardRenderThread::PresentFrame(Renderer& renderer,
         }
     }
     if (activeTimeline != nullptr) {
-        const auto retention = metricTargetsUpdated ? DashboardAnimationTimeline::TrackRetention::PruneUntouched
-                                                    : DashboardAnimationTimeline::TrackRetention::KeepUntouched;
+        const auto retention = metricTargetsUpdated ? DashboardAnimationTimeline::TrackRetention::PruneUntouched :
+            DashboardAnimationTimeline::TrackRetention::KeepUntouched;
         const std::size_t trackCountBeforeEndFrame = activeTimeline->TrackCount();
         const std::size_t prunedCount = activeTimeline->EndFrame(retention);
         const std::size_t trackCountAfterEndFrame = activeTimeline->TrackCount();
         if (prunedCount > 0) {
             WriteTraceFmt(
-                RES_STR("animation_timeline_prune retention=%s pruned=%zu before=%zu after=%zu metric_version=%llu "
+                RES_STR(
+                    "animation_timeline_prune retention=%s pruned=%zu before=%zu after=%zu metric_version=%llu "
                         "previous_metric_version=%llu had_previous_metric=%s surface_version=%llu "
-                        "snapshot_version=%llu overlay_version=%llu animation_geometry_version=%llu"),
+                        "snapshot_version=%llu overlay_version=%llu animation_geometry_version=%llu"
+                ),
                 TrackRetentionText(retention),
                 prunedCount,
                 trackCountBeforeEndFrame,
@@ -517,7 +524,8 @@ bool DashboardRenderThread::PresentFrame(Renderer& renderer,
                 static_cast<unsigned long long>(frame.versions.surfaceVersion),
                 static_cast<unsigned long long>(frame.versions.snapshotVersion),
                 static_cast<unsigned long long>(frame.versions.overlayVersion),
-                static_cast<unsigned long long>(frame.versions.animationGeometryVersion));
+                static_cast<unsigned long long>(frame.versions.animationGeometryVersion)
+            );
         }
         activeAnimations_.store(activeTimeline->HasActiveAnimations(now));
     } else {
@@ -534,24 +542,30 @@ bool DashboardRenderThread::PresentFrame(Renderer& renderer,
     return presented;
 }
 
-void DashboardRenderThread::DrawFrame(Renderer& renderer,
+void DashboardRenderThread::DrawFrame(
+    Renderer& renderer,
     DashboardAnimationTimeline* timeline,
     const DashboardPresentationFrame& frame,
-    DashboardAnimationTimeline::Clock::time_point) const {
+    DashboardAnimationTimeline::Clock::time_point
+) const {
     renderer.DrawBitmap(frame.snapshotLayer, RenderPoint{0, 0});
     DrawAnimations(
-        renderer, timeline, frame.snapshotAnimations, frame.width, frame.height, frame.versions.metricVersion);
+        renderer, timeline, frame.snapshotAnimations, frame.width, frame.height, frame.versions.metricVersion
+    );
     if (frame.overlayLayer.has_value()) {
         renderer.DrawBitmap(*frame.overlayLayer, RenderPoint{0, 0});
     }
     DrawAnimations(
-        renderer, timeline, frame.overlayAnimations, frame.width, frame.height, frame.versions.metricVersion);
+        renderer, timeline, frame.overlayAnimations, frame.width, frame.height, frame.versions.metricVersion
+    );
 }
 
-void DashboardRenderThread::DrawFrameDirty(Renderer& renderer,
+void DashboardRenderThread::DrawFrameDirty(
+    Renderer& renderer,
     const DashboardPresentationFrame& frame,
     std::span<const RenderRect> dirtyRects,
-    const PreparedDirtyFrame& preparedFrame) const {
+    const PreparedDirtyFrame& preparedFrame
+) const {
     renderer.DrawBitmapRegions(frame.snapshotLayer, dirtyRects);
     DrawPreparedDirtyAnimations(renderer, preparedFrame.snapshotAnimations);
     if (frame.overlayLayer.has_value()) {
@@ -560,12 +574,14 @@ void DashboardRenderThread::DrawFrameDirty(Renderer& renderer,
     DrawPreparedDirtyAnimations(renderer, preparedFrame.overlayAnimations);
 }
 
-void DashboardRenderThread::DrawAnimations(Renderer& renderer,
+void DashboardRenderThread::DrawAnimations(
+    Renderer& renderer,
     DashboardAnimationTimeline* timeline,
     const std::vector<DashboardPresentationAnimation>& animations,
     int width,
     int height,
-    std::uint64_t targetVersion) const {
+    std::uint64_t targetVersion
+) const {
     for (const DashboardPresentationAnimation& command : animations) {
         const WidgetAnimationPtr& animation = command.animation;
         if (animation == nullptr || command.targetState == nullptr) {
@@ -597,35 +613,42 @@ void DashboardRenderThread::DrawAnimations(Renderer& renderer,
 }
 
 DashboardRenderThread::PreparedDirtyFrame DashboardRenderThread::PrepareDirtyFrame(
-    DashboardAnimationTimeline* timeline, const DashboardPresentationFrame& frame) const {
+    DashboardAnimationTimeline* timeline, const DashboardPresentationFrame& frame
+) const {
     PreparedDirtyFrame preparedFrame;
     preparedFrame.snapshotAnimations.reserve(frame.snapshotAnimations.size());
     preparedFrame.overlayAnimations.reserve(frame.overlayAnimations.size());
     preparedFrame.dirtyRects.reserve(frame.snapshotAnimations.size() + frame.overlayAnimations.size());
-    AppendPreparedDirtyAnimations(timeline,
+    AppendPreparedDirtyAnimations(
+        timeline,
         frame.snapshotAnimations,
         frame.versions.metricVersion,
         frame.width,
         frame.height,
         preparedFrame.snapshotAnimations,
-        preparedFrame.dirtyRects);
-    AppendPreparedDirtyAnimations(timeline,
+        preparedFrame.dirtyRects
+    );
+    AppendPreparedDirtyAnimations(
+        timeline,
         frame.overlayAnimations,
         frame.versions.metricVersion,
         frame.width,
         frame.height,
         preparedFrame.overlayAnimations,
-        preparedFrame.dirtyRects);
+        preparedFrame.dirtyRects
+    );
     return preparedFrame;
 }
 
-void DashboardRenderThread::AppendPreparedDirtyAnimations(DashboardAnimationTimeline* timeline,
+void DashboardRenderThread::AppendPreparedDirtyAnimations(
+    DashboardAnimationTimeline* timeline,
     const std::vector<DashboardPresentationAnimation>& animations,
     std::uint64_t targetVersion,
     int width,
     int height,
     std::vector<PreparedDirtyAnimation>& prepared,
-    std::vector<RenderRect>& dirtyRects) const {
+    std::vector<RenderRect>& dirtyRects
+) const {
     for (const DashboardPresentationAnimation& command : animations) {
         const WidgetAnimationPtr& animation = command.animation;
         if (animation == nullptr || command.targetState == nullptr) {
@@ -651,7 +674,8 @@ void DashboardRenderThread::AppendPreparedDirtyAnimations(DashboardAnimationTime
 }
 
 void DashboardRenderThread::DrawPreparedDirtyAnimations(
-    Renderer& renderer, const std::vector<PreparedDirtyAnimation>& animations) const {
+    Renderer& renderer, const std::vector<PreparedDirtyAnimation>& animations
+) const {
     for (const PreparedDirtyAnimation& item : animations) {
         const DashboardPresentationAnimation& command = *item.command;
         renderer.PushClipRect(item.dirtyRect);
@@ -667,7 +691,8 @@ void DashboardRenderThread::DrawPreparedDirtyAnimations(
 }
 
 void DashboardRenderThread::CoalescePendingFrame(
-    DashboardPresentationFrame& target, DashboardPresentationFrame update) const {
+    DashboardPresentationFrame& target, DashboardPresentationFrame update
+) const {
     target.style = std::move(update.style);
     target.versions.surfaceVersion = update.versions.surfaceVersion;
     target.versions.metricVersion = update.versions.metricVersion;
@@ -756,9 +781,12 @@ void DashboardRenderThread::ThreadMain() {
                 const bool hasControlWork =
                     pendingFrame_.has_value() || stopRequested_ || resetTimelineRequested_ || discardTargetRequested_;
                 const bool waitingForFirstFrame = !activeFrame.has_value() && !hasControlWork;
-                const bool waitingWhileSuspended = animationPresentationSuspended_.load() && activeFrame.has_value() &&
-                                                   !pendingFrame_.has_value() && !stopRequested_ &&
-                                                   !resetTimelineRequested_ && !discardTargetRequested_;
+                const bool waitingWhileSuspended = animationPresentationSuspended_.load() &&
+                    activeFrame.has_value() &&
+                    !pendingFrame_.has_value() &&
+                    !stopRequested_ &&
+                    !resetTimelineRequested_ &&
+                    !discardTargetRequested_;
                 if (waitingForFirstFrame || waitingWhileSuspended) {
                     ResetEvent(wakeEvent_);
                     shouldWait = true;
@@ -769,7 +797,8 @@ void DashboardRenderThread::ThreadMain() {
                     if (!shouldStop && resetTimelineRequested_) {
                         WriteTraceFmt(
                             RES_STR("animation_timeline_reset owner=thread reason=explicit_request tracks=%zu"),
-                            timeline.TrackCount());
+                            timeline.TrackCount()
+                        );
                         timeline.Reset();
                         activeAnimations_.store(false);
                         resetTimelineRequested_ = false;
@@ -842,8 +871,12 @@ void DashboardRenderThread::ThreadMain() {
                 bool shouldWait = false;
                 {
                     const LightweightMutexLock lock(mutex_);
-                    if (stopRequested_ || pendingFrame_.has_value() || resetTimelineRequested_ ||
-                        discardTargetRequested_) {
+                    if (
+                        stopRequested_ ||
+                        pendingFrame_.has_value() ||
+                        resetTimelineRequested_ ||
+                        discardTargetRequested_
+                    ) {
                         break;
                     }
                     ResetEvent(wakeEvent_);
@@ -917,9 +950,7 @@ void DashboardRenderThread::WriteTraceFmt(ResourceStringId format, ...) const {
     va_end(args);
 }
 
-void DashboardRenderThread::SetLastError(ResourceStringId error) {
-    SetLastError(ResourceStringText(error));
-}
+void DashboardRenderThread::SetLastError(ResourceStringId error) { SetLastError(ResourceStringText(error)); }
 
 void DashboardRenderThread::SetLastError(std::string error) {
     if (error.empty()) {

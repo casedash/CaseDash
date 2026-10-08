@@ -42,9 +42,7 @@ constexpr unsigned int kNvApiEnumPhysicalGpus = 0xE5AC921F;
 constexpr unsigned int kNvApiGpuGetFullName = 0xCEEE8E9F;
 constexpr unsigned int kNvApiGpuGetAllClockFrequencies = 0xDCB616C3;
 
-constexpr unsigned int NvApiStructVersion(unsigned int size, unsigned int version) {
-    return size | (version << 16);
-}
+constexpr unsigned int NvApiStructVersion(unsigned int size, unsigned int version) { return size | (version << 16); }
 
 struct NvApiClockDomain {
     unsigned int bIsPresent : 1;
@@ -90,9 +88,7 @@ struct NvmlPciInfo {
     char busId[32] = {};
 };
 
-constexpr unsigned int NvmlStructVersion(unsigned int size, unsigned int version) {
-    return size | (version << 24);
-}
+constexpr unsigned int NvmlStructVersion(unsigned int size, unsigned int version) { return size | (version << 24); }
 
 constexpr unsigned int kNvmlFanSpeedInfoV1 = NvmlStructVersion(static_cast<unsigned int>(sizeof(NvmlFanSpeedInfo)), 1);
 
@@ -136,9 +132,9 @@ public:
         }
 
         bool loaded = true;
-#define CASEDASH_LOAD_REQUIRED(function, name) \
-    function = \
-        reinterpret_cast<decltype(function)>(GetProcAddress(module_, name)); loaded = function != nullptr && loaded
+#define CASEDASH_LOAD_REQUIRED(function, name)                                      \
+    function = reinterpret_cast<decltype(function)>(GetProcAddress(module_, name)); \
+    loaded = function != nullptr && loaded
 #define CASEDASH_LOAD_OPTIONAL(function, name) \
     function = reinterpret_cast<decltype(function)>(GetProcAddress(module_, name))
 
@@ -186,9 +182,7 @@ public:
         return FormatText(RES_STR("%d"), result);
     }
 
-    NvmlReturn DeviceCount(unsigned int& count) const {
-        return deviceGetCount_(&count);
-    }
+    NvmlReturn DeviceCount(unsigned int& count) const { return deviceGetCount_(&count); }
 
     NvmlReturn DeviceHandleByIndex(unsigned int index, NvmlDevice& device) const {
         return deviceGetHandleByIndex_(index, &device);
@@ -202,9 +196,7 @@ public:
         return deviceGetTemperature_(device, kNvmlTemperatureGpu, &temperatureC);
     }
 
-    NvmlReturn MemoryInfo(NvmlDevice device, NvmlMemory& memory) const {
-        return deviceGetMemoryInfo_(device, &memory);
-    }
+    NvmlReturn MemoryInfo(NvmlDevice device, NvmlMemory& memory) const { return deviceGetMemoryInfo_(device, &memory); }
 
     std::optional<NvmlReturn> FanSpeedRpm(NvmlDevice device, unsigned int& fanRpm) const {
         if (deviceGetFanSpeedRpm_ == nullptr) {
@@ -292,10 +284,7 @@ public:
         int count = 0;
         const NvApiStatus enumStatus = enumPhysicalGpus_(handles, &count);
         trace.WriteFmt(
-            TracePrefix::NvidiaNvml,
-            RES_STR("nvapi_enum result=\"%s\" count=%d"),
-            ResultText(enumStatus).c_str(),
-            count
+            TracePrefix::NvidiaNvml, RES_STR("nvapi_enum result=\"%s\" count=%d"), ResultText(enumStatus).c_str(), count
         );
         if (enumStatus != kNvApiOk || count <= 0) {
             diagnostics = FormatText(RES_STR("NVAPI found no NVIDIA GPUs: %s"), ResultText(enumStatus).c_str());
@@ -310,15 +299,12 @@ public:
             char name[kNvApiShortStringSize] = {};
             const NvApiStatus nameStatus = gpuGetFullName_(handles[index], name);
             const std::string candidateName = nameStatus == kNvApiOk ? std::string(name) : std::string();
-            const int rank = !preferredName.empty() && EqualsInsensitive(candidateName, preferredName) ? 3 :
-                (
-                    !preferredName.empty() &&
-                    (
-                        ContainsInsensitive(candidateName, preferredName) ||
-                        ContainsInsensitive(preferredName, candidateName)
-                    ) ?
-                        2 : 1
-                );
+            const int rank = !preferredName.empty() && EqualsInsensitive(candidateName, preferredName) ? 3 : (
+                !preferredName.empty() && (
+                    ContainsInsensitive(candidateName, preferredName) ||
+                    ContainsInsensitive(preferredName, candidateName)
+                ) ? 2 : 1
+            );
             trace.WriteFmt(
                 TracePrefix::NvidiaNvml,
                 RES_STR("nvapi_device_candidate index=%d name_result=\"%s\" match_rank=%d name=\"%s\""),
@@ -340,10 +326,7 @@ public:
         }
 
         trace.WriteFmt(
-            TracePrefix::NvidiaNvml,
-            RES_STR("nvapi_device_selected rank=%d name=\"%s\""),
-            bestRank,
-            gpuName_.c_str()
+            TracePrefix::NvidiaNvml, RES_STR("nvapi_device_selected rank=%d name=\"%s\""), bestRank, gpuName_.c_str()
         );
         diagnostics = FormatText(RES_STR("NVAPI clock GPU=%s"), gpuName_.c_str());
         return true;
@@ -407,8 +390,8 @@ std::string KnownNvmlName(const std::array<char, 128>& name) {
 bool NvmlPackedDeviceIdMatches(unsigned int pciDeviceId, const GpuAdapterInfo& adapter) {
     const unsigned int low = pciDeviceId & 0xffffu;
     const unsigned int high = (pciDeviceId >> 16) & 0xffffu;
-    return (low == adapter.vendorId && high == adapter.deviceId) ||
-        (low == adapter.deviceId && high == adapter.vendorId);
+    return
+        (low == adapter.vendorId && high == adapter.deviceId) || (low == adapter.deviceId && high == adapter.vendorId);
 }
 
 int NvidiaDeviceMatchRank(const GpuAdapterInfo& adapter, const NvmlPciInfo* pci, const std::string& name) {
@@ -441,14 +424,8 @@ int NvidiaDeviceMatchRank(const GpuAdapterInfo& adapter, const NvmlPciInfo* pci,
 
 class NvidiaNvmlGpuTelemetryProvider final : public GpuVendorTelemetryProvider {
 public:
-    NvidiaNvmlGpuTelemetryProvider(
-        Trace& trace,
-        std::optional<GpuAdapterInfo> adapter,
-        bool collectPresentedFps
-    ) :
-        trace_(trace),
-        adapter_(std::move(adapter)),
-        collectPresentedFps_(collectPresentedFps) {}
+    NvidiaNvmlGpuTelemetryProvider(Trace& trace, std::optional<GpuAdapterInfo> adapter, bool collectPresentedFps) :
+        trace_(trace), adapter_(std::move(adapter)), collectPresentedFps_(collectPresentedFps) {}
 
     bool Initialize() override {
         trace_.Write(TracePrefix::NvidiaNvml, RES_STR("initialize_begin"));
@@ -681,7 +658,7 @@ private:
                 TracePrefix::NvidiaNvml,
                 RES_STR(
                     "device_candidate index=%u handle_result=\"%s\" name_result=\"%s\" pci_result=\"%s\" "
-                    "pci=%u:%u:%u pci_device_id=0x%08X subsystem_id=0x%08X match_rank=%d name=\"%s\""
+                        "pci=%u:%u:%u pci_device_id=0x%08X subsystem_id=0x%08X match_rank=%d name=\"%s\""
                 ),
                 index,
                 nvml_.ResultText(handleResult).c_str(),
@@ -717,8 +694,7 @@ private:
         );
         if (device_ == nullptr) {
             diagnostics_ = FormatText(
-                RES_STR("NVML failed to open selected NVIDIA GPU: device=%s"),
-                nvml_.ResultText(bestResult).c_str()
+                RES_STR("NVML failed to open selected NVIDIA GPU: device=%s"), nvml_.ResultText(bestResult).c_str()
             );
             return false;
         }
@@ -750,10 +726,8 @@ private:
 
 }  // namespace
 
-std::unique_ptr<GpuVendorTelemetryProvider> CreateNvidiaGpuTelemetryProvider(
-    Trace& trace,
-    std::optional<GpuAdapterInfo> adapter,
-    bool collectPresentedFps
-) {
+std::unique_ptr<GpuVendorTelemetryProvider>
+    CreateNvidiaGpuTelemetryProvider(Trace& trace, std::optional<GpuAdapterInfo> adapter, bool collectPresentedFps)
+{
     return std::make_unique<NvidiaNvmlGpuTelemetryProvider>(trace, std::move(adapter), collectPresentedFps);
 }

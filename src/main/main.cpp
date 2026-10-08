@@ -63,9 +63,8 @@ std::optional<int> RelaunchElevatedIfRequested(const CommandLineArguments& comma
     }
     // Size: reuse util/paths fixed-buffer capture instead of keeping a second vector-based path reader in main.
     DWORD exitCode = 1;
-    return RunElevatedSelfAndWait(nullptr, parameters, GetWorkingDirectory(), SW_SHOWNORMAL, &exitCode)
-               ? static_cast<int>(exitCode)
-               : 1;
+    return RunElevatedSelfAndWait(nullptr, parameters, GetWorkingDirectory(), SW_SHOWNORMAL, &exitCode) ?
+        static_cast<int>(exitCode) : 1;
 }
 
 void ReportMainDiagnosticsError(const DiagnosticsOptions& options, std::string_view message) {
@@ -91,14 +90,19 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
     if (const auto elevatedSaveSource = GetSwitchValue(commandLine, "/save-config"); elevatedSaveSource.has_value()) {
         const auto elevatedSaveTarget = GetSwitchValue(commandLine, "/save-config-target");
         return RunElevatedSaveConfigMode(
-            FilePath(*elevatedSaveSource), elevatedSaveTarget.has_value() ? FilePath(*elevatedSaveTarget) : FilePath{});
+            FilePath(*elevatedSaveSource), elevatedSaveTarget.has_value() ? FilePath(*elevatedSaveTarget) : FilePath{}
+        );
     }
-    if (const auto configureDisplayPayload = GetSwitchValue(commandLine, "/configure-display");
-        configureDisplayPayload.has_value()) {
+    if (
+        const auto configureDisplayPayload = GetSwitchValue(commandLine, "/configure-display");
+        configureDisplayPayload.has_value()
+    ) {
         const auto configureDisplayDump = GetSwitchValue(commandLine, "/configure-display-dump");
-        return RunElevatedConfigureDisplayMode(FilePath(*configureDisplayPayload),
+        return RunElevatedConfigureDisplayMode(
+            FilePath(*configureDisplayPayload),
             configureDisplayDump.has_value() ? FilePath(*configureDisplayDump) : FilePath{},
-            HasSwitch(commandLine, "/configure-display-write-wallpaper"));
+            HasSwitch(commandLine, "/configure-display-write-wallpaper")
+        );
     }
     if (const auto autoStartSetting = GetSwitchValue(commandLine, "/set-autostart"); autoStartSetting.has_value()) {
         if (_stricmp(autoStartSetting->c_str(), "on") == 0) {

@@ -21,13 +21,9 @@ AppConfig MakeDisplayConfig(int layoutWidth, int layoutHeight) {
     return config;
 }
 
-RECT MakeRect(int width, int height) {
-    return RECT{0, 0, width, height};
-}
+RECT MakeRect(int width, int height) { return RECT{0, 0, width, height}; }
 
-RECT MakeRectAt(int left, int top, int width, int height) {
-    return RECT{left, top, left + width, top + height};
-}
+RECT MakeRectAt(int left, int top, int width, int height) { return RECT{left, top, left + width, top + height}; }
 
 DisplayMenuMonitorInfo MakeMonitor(int width, int height) {
     return DisplayMenuMonitorInfo{"Panel", "Panel", MakeRect(width, height), USER_DEFAULT_SCREEN_DPI};
@@ -42,18 +38,21 @@ TargetMonitorInfo MakeTargetMonitorAt(int left, int top, int width, int height) 
 }
 
 AppConfig MakeFullscreenWallpaperConfig(
-    const std::string& monitorName, int layoutWidth, int layoutHeight, const TargetMonitorInfo& monitor) {
+    const std::string& monitorName, int layoutWidth, int layoutHeight, const TargetMonitorInfo& monitor
+) {
     AppConfig config = MakeDisplayConfig(layoutWidth, layoutHeight);
     config.display.monitorName = monitorName;
     config.display.wallpaper = kDefaultBlankWallpaperFileName;
     config.display.position = LogicalPointConfig{};
     config.display.scale = ComputeMonitorFittedScale(
-        config, monitor.rect.right - monitor.rect.left, monitor.rect.bottom - monitor.rect.top);
+        config, monitor.rect.right - monitor.rect.left, monitor.rect.bottom - monitor.rect.top
+    );
     return config;
 }
 
 DisplayMenuOption MakeSchematicOption(
-    DisplayPlacementMode mode, int monitorWidth, int monitorHeight, int targetWidth, int targetHeight) {
+    DisplayPlacementMode mode, int monitorWidth, int monitorHeight, int targetWidth, int targetHeight
+) {
     DisplayMenuOption option;
     option.monitorRect = MakeRect(monitorWidth, monitorHeight);
     option.targetSize = SIZE{targetWidth, targetHeight};
@@ -73,14 +72,16 @@ std::vector<DisplayPlacementMenuBitmapPixel> PaintMenuBitmapForTest(DisplayMenuO
     constexpr COLORREF kMenuColor = RGB(11, 22, 33);
     constexpr COLORREF kMenuTextColor = RGB(101, 111, 121);
     constexpr COLORREF kHighlightColor = RGB(204, 51, 17);
-    std::vector<DisplayPlacementMenuBitmapPixel> pixels(kBitmapSize * kBitmapSize);
+    std::vector<DisplayPlacementMenuBitmapPixel> pixels(kBitmapSize* kBitmapSize);
     PaintDisplayPlacementMenuBitmapPixels(
-        pixels.data(), kBitmapSize, option, kMenuColor, kMenuTextColor, kHighlightColor);
+        pixels.data(), kBitmapSize, option, kMenuColor, kMenuTextColor, kHighlightColor
+    );
     return pixels;
 }
 
 int CountPixels(
-    const std::vector<DisplayPlacementMenuBitmapPixel>& pixels, DisplayPlacementMenuBitmapPixel expectedPixel) {
+    const std::vector<DisplayPlacementMenuBitmapPixel>& pixels, DisplayPlacementMenuBitmapPixel expectedPixel
+) {
     return static_cast<int>(std::count(pixels.begin(), pixels.end(), expectedPixel));
 }
 
@@ -191,14 +192,16 @@ TEST(DisplayMenuCheckmark, FullscreenCommittedConfigRequiresExpectedWallpaper) {
     DisplayMenuOption options[3]{};
 
     size_t count = BuildDisplayMenuOptionsForMonitor(
-        liveConfig, MakeMonitor(1920, 1080), &committed.display, monitor, false, options, 3);
+        liveConfig, MakeMonitor(1920, 1080), &committed.display, monitor, false, options, 3
+    );
 
     ASSERT_EQ(count, 1u);
     EXPECT_TRUE(options[0].matchesCommittedConfig);
 
     committed.display.autohide = "top";
     count = BuildDisplayMenuOptionsForMonitor(
-        liveConfig, MakeMonitor(1920, 1080), &committed.display, monitor, false, options, 3);
+        liveConfig, MakeMonitor(1920, 1080), &committed.display, monitor, false, options, 3
+    );
 
     ASSERT_EQ(count, 1u);
     EXPECT_FALSE(options[0].matchesCommittedConfig);
@@ -206,7 +209,8 @@ TEST(DisplayMenuCheckmark, FullscreenCommittedConfigRequiresExpectedWallpaper) {
     committed.display.autohide.clear();
     committed.display.wallpaper = "other.png";
     count = BuildDisplayMenuOptionsForMonitor(
-        liveConfig, MakeMonitor(1920, 1080), &committed.display, monitor, false, options, 3);
+        liveConfig, MakeMonitor(1920, 1080), &committed.display, monitor, false, options, 3
+    );
 
     ASSERT_EQ(count, 1u);
     EXPECT_FALSE(options[0].matchesCommittedConfig);
@@ -224,7 +228,8 @@ TEST(DisplayMenuCheckmark, EdgeCommittedConfigRequiresEmptyWallpaper) {
     DisplayMenuOption options[3]{};
 
     size_t count = BuildDisplayMenuOptionsForMonitor(
-        liveConfig, MakeMonitor(1200, 1000), &committed.display, monitor, false, options, 3);
+        liveConfig, MakeMonitor(1200, 1000), &committed.display, monitor, false, options, 3
+    );
 
     ASSERT_EQ(count, 2u);
     EXPECT_FALSE(options[0].matchesCommittedConfig);
@@ -233,7 +238,8 @@ TEST(DisplayMenuCheckmark, EdgeCommittedConfigRequiresEmptyWallpaper) {
     committed.display.autohide = "top";
     committed.display.position = LogicalPointConfig{};
     count = BuildDisplayMenuOptionsForMonitor(
-        liveConfig, MakeMonitor(1200, 1000), &committed.display, monitor, false, options, 3);
+        liveConfig, MakeMonitor(1200, 1000), &committed.display, monitor, false, options, 3
+    );
 
     ASSERT_EQ(count, 2u);
     EXPECT_TRUE(options[0].matchesCommittedConfig);
@@ -241,7 +247,8 @@ TEST(DisplayMenuCheckmark, EdgeCommittedConfigRequiresEmptyWallpaper) {
 
     committed.display.autohide.clear();
     count = BuildDisplayMenuOptionsForMonitor(
-        liveConfig, MakeMonitor(1200, 1000), &committed.display, monitor, false, options, 3);
+        liveConfig, MakeMonitor(1200, 1000), &committed.display, monitor, false, options, 3
+    );
 
     ASSERT_EQ(count, 2u);
     EXPECT_FALSE(options[0].matchesCommittedConfig);
@@ -251,7 +258,8 @@ TEST(DisplayMenuCheckmark, EdgeCommittedConfigRequiresEmptyWallpaper) {
     committed.display.position = LogicalPointConfig{0, ScalePhysicalToLogical(325, 0.75)};
     committed.display.wallpaper = kDefaultBlankWallpaperFileName;
     count = BuildDisplayMenuOptionsForMonitor(
-        liveConfig, MakeMonitor(1200, 1000), &committed.display, monitor, false, options, 3);
+        liveConfig, MakeMonitor(1200, 1000), &committed.display, monitor, false, options, 3
+    );
 
     ASSERT_EQ(count, 2u);
     EXPECT_FALSE(options[0].matchesCommittedConfig);
@@ -272,7 +280,8 @@ TEST(DisplayMenuCheckmark, LivePlacementDoesNotMoveCommittedCheckmark) {
     DisplayMenuOption options[3]{};
 
     const size_t count = BuildDisplayMenuOptionsForMonitor(
-        liveConfig, MakeMonitor(1200, 1000), &committed.display, monitor, false, options, 3);
+        liveConfig, MakeMonitor(1200, 1000), &committed.display, monitor, false, options, 3
+    );
 
     ASSERT_EQ(count, 2u);
     EXPECT_FALSE(options[0].matchesCommittedConfig);
@@ -291,34 +300,47 @@ TEST(DisplayMenuCheckmark, InconsistentCommittedPlacementChecksNothing) {
 
     AppConfig wrongScale = committed;
     wrongScale.display.scale = 0.751;
-    ASSERT_EQ(BuildDisplayMenuOptionsForMonitor(
-                  liveConfig, MakeMonitor(1200, 1000), &wrongScale.display, monitor, false, options, 3),
-        2u);
+    ASSERT_EQ(
+        BuildDisplayMenuOptionsForMonitor(
+            liveConfig, MakeMonitor(1200, 1000), &wrongScale.display, monitor, false, options, 3
+        ),
+        2u
+    );
     EXPECT_FALSE(options[0].matchesCommittedConfig);
     EXPECT_FALSE(options[1].matchesCommittedConfig);
 
     AppConfig wrongPosition = committed;
     wrongPosition.display.position = LogicalPointConfig{1, ScalePhysicalToLogical(325, 0.75)};
-    ASSERT_EQ(BuildDisplayMenuOptionsForMonitor(
-                  liveConfig, MakeMonitor(1200, 1000), &wrongPosition.display, monitor, false, options, 3),
-        2u);
+    ASSERT_EQ(
+        BuildDisplayMenuOptionsForMonitor(
+            liveConfig, MakeMonitor(1200, 1000), &wrongPosition.display, monitor, false, options, 3
+        ),
+        2u
+    );
     EXPECT_FALSE(options[0].matchesCommittedConfig);
     EXPECT_FALSE(options[1].matchesCommittedConfig);
 
-    ASSERT_EQ(BuildDisplayMenuOptionsForMonitor(liveConfig,
-                  MakeMonitor(1200, 1000),
-                  &committed.display,
-                  MakeTargetMonitorAt(1200, 0, 1200, 1000),
-                  false,
-                  options,
-                  3),
-        2u);
+    ASSERT_EQ(
+        BuildDisplayMenuOptionsForMonitor(
+            liveConfig,
+            MakeMonitor(1200, 1000),
+            &committed.display,
+            MakeTargetMonitorAt(1200, 0, 1200, 1000),
+            false,
+            options,
+            3
+        ),
+        2u
+    );
     EXPECT_FALSE(options[0].matchesCommittedConfig);
     EXPECT_FALSE(options[1].matchesCommittedConfig);
 
-    ASSERT_EQ(BuildDisplayMenuOptionsForMonitor(
-                  liveConfig, MakeMonitor(1200, 1000), &committed.display, std::nullopt, false, options, 3),
-        2u);
+    ASSERT_EQ(
+        BuildDisplayMenuOptionsForMonitor(
+            liveConfig, MakeMonitor(1200, 1000), &committed.display, std::nullopt, false, options, 3
+        ),
+        2u
+    );
     EXPECT_FALSE(options[0].matchesCommittedConfig);
     EXPECT_FALSE(options[1].matchesCommittedConfig);
 }
@@ -478,7 +500,8 @@ TEST(DisplayAspectResize, DragTargetAnchorsOppositeCornerForEveryCorner) {
 
 TEST(DisplayAspectResize, DragTargetClampsWithoutMovingOppositeCorner) {
     const DisplayAspectResizeTarget target = ComputeAspectResizeDragTarget(
-        SIZE{1600, 900}, DisplayResizeCorner::TopLeft, POINT{1000, 1000}, POINT{1200, 1200});
+        SIZE{1600, 900}, DisplayResizeCorner::TopLeft, POINT{1000, 1000}, POINT{1200, 1200}
+    );
 
     EXPECT_NEAR(target.targetScale, 0.1, 0.000001);
     ExpectRect(target.targetClientRect, 840, 910, 1000, 1000);
@@ -581,7 +604,8 @@ TEST(DisplayConfiguration, PreviousWallpaperClearRequestsFollowPlacementAndMonit
     fullscreenOption.monitorRect = MakeRect(1920, 1080);
     EXPECT_FALSE(ShouldClearPreviousDisplayWallpaper(previous, previousMonitor, fullscreenOption));
     EXPECT_TRUE(
-        ShouldClearPreviousDisplayWallpaper(previous, MakeTargetMonitorAt(1920, 0, 1920, 1080), fullscreenOption));
+        ShouldClearPreviousDisplayWallpaper(previous, MakeTargetMonitorAt(1920, 0, 1920, 1080), fullscreenOption)
+    );
 
     DisplayMenuOption edgeOption = fullscreenOption;
     edgeOption.writesWallpaper = false;
@@ -622,8 +646,9 @@ TEST(DisplayWallpaperOwnership, SameMonitorFullscreenTransitionDoesNotClear) {
     const AppConfig previous = MakeFullscreenWallpaperConfig("Panel", 1600, 900, monitor);
     const AppConfig next = MakeFullscreenWallpaperConfig("Panel", 1600, 900, monitor);
 
-    EXPECT_FALSE(ShouldClearCommittedDisplayWallpaper(ResolveCommittedDisplayWallpaperOwner(previous, monitor),
-        ResolveCommittedDisplayWallpaperOwner(next, monitor)));
+    EXPECT_FALSE(ShouldClearCommittedDisplayWallpaper(
+        ResolveCommittedDisplayWallpaperOwner(previous, monitor), ResolveCommittedDisplayWallpaperOwner(next, monitor)
+    ));
 }
 
 TEST(DisplayWallpaperOwnership, FullscreenMonitorTransitionClearsPreviousAndOwnsNext) {
@@ -636,7 +661,8 @@ TEST(DisplayWallpaperOwnership, FullscreenMonitorTransitionClearsPreviousAndOwns
 
     ASSERT_TRUE(nextOwner.has_value());
     EXPECT_TRUE(
-        ShouldClearCommittedDisplayWallpaper(ResolveCommittedDisplayWallpaperOwner(previous, monitorA), nextOwner));
+        ShouldClearCommittedDisplayWallpaper(ResolveCommittedDisplayWallpaperOwner(previous, monitorA), nextOwner)
+    );
 }
 
 TEST(DisplayWallpaperOwnership, FullscreenToEdgeClearsPreviousAndSavesEmptyWallpaper) {
@@ -648,8 +674,10 @@ TEST(DisplayWallpaperOwnership, FullscreenToEdgeClearsPreviousAndSavesEmptyWallp
     const AppConfig normalized = NormalizeCommittedDisplayWallpaperConfig(edge, monitor);
 
     EXPECT_TRUE(normalized.display.wallpaper.empty());
-    EXPECT_TRUE(ShouldClearCommittedDisplayWallpaper(ResolveCommittedDisplayWallpaperOwner(previous, monitor),
-        ResolveCommittedDisplayWallpaperOwner(normalized, monitor)));
+    EXPECT_TRUE(ShouldClearCommittedDisplayWallpaper(
+        ResolveCommittedDisplayWallpaperOwner(previous, monitor),
+        ResolveCommittedDisplayWallpaperOwner(normalized, monitor)
+    ));
 }
 
 TEST(DisplayWallpaperOwnership, CommittedOwnerDrivesClearAfterManualMove) {
@@ -662,7 +690,8 @@ TEST(DisplayWallpaperOwnership, CommittedOwnerDrivesClearAfterManualMove) {
     const AppConfig configuredB = MakeFullscreenWallpaperConfig("Panel B", 1600, 900, monitorB);
 
     EXPECT_FALSE(ResolveCommittedDisplayWallpaperOwner(manuallyMoved, monitorB).has_value());
-    EXPECT_TRUE(
-        ShouldClearCommittedDisplayWallpaper(ResolveCommittedDisplayWallpaperOwner(committedOwnerConfig, monitorA),
-            ResolveCommittedDisplayWallpaperOwner(configuredB, monitorB)));
+    EXPECT_TRUE(ShouldClearCommittedDisplayWallpaper(
+        ResolveCommittedDisplayWallpaperOwner(committedOwnerConfig, monitorA),
+        ResolveCommittedDisplayWallpaperOwner(configuredB, monitorB)
+    ));
 }

@@ -82,9 +82,7 @@ bool ContainsInsensitive(const std::string& value, const std::string& needle) {
     return ToLower(value).find(ToLower(needle)) != std::string::npos;
 }
 
-bool EqualsInsensitive(const std::string& left, const std::string& right) {
-    return ToLower(left) == ToLower(right);
-}
+bool EqualsInsensitive(const std::string& left, const std::string& right) { return ToLower(left) == ToLower(right); }
 
 std::string JoinNames(const std::vector<std::string>& names) {
     std::string joined;

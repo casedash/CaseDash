@@ -50,17 +50,13 @@ void Trace::SetEnabledPrefixes(std::uint64_t prefixes) {
     }
 }
 
-bool Trace::Enabled() const {
-    return output_ != nullptr;
-}
+bool Trace::Enabled() const { return output_ != nullptr; }
 
 bool Trace::Enabled(TracePrefix prefix) const {
     return output_ != nullptr && (enabledPrefixes_ & PrefixMask(prefix)) != 0;
 }
 
-TraceTimingCollector& Trace::Timings() const {
-    return timings_;
-}
+TraceTimingCollector& Trace::Timings() const { return timings_; }
 
 void Trace::Write(TracePrefix prefix, const char* text) const {
     if (!Enabled(prefix)) {
@@ -76,9 +72,7 @@ void Trace::Write(TracePrefix prefix, ResourceStringId text) const {
     WriteTraceLine(output_, PrefixName(prefix), ResourceStringText(text));
 }
 
-void Trace::Write(TracePrefix prefix, const std::string& text) const {
-    Write(prefix, text.c_str());
-}
+void Trace::Write(TracePrefix prefix, const std::string& text) const { Write(prefix, text.c_str()); }
 
 void Trace::WriteFmt(TracePrefix prefix, const char* format, ...) const {
     va_list args;
@@ -201,21 +195,21 @@ std::string Trace::PrefixNamesText() {
     return text;
 }
 
-const char* Trace::BoolText(bool value) {
-    return value ? "yes" : "no";
-}
+const char* Trace::BoolText(bool value) { return value ? "yes" : "no"; }
 
 std::string Trace::FormatTimestamp() {
     SYSTEMTIME localTime{};
     GetLocalTime(&localTime);
-    return FormatText("%04u-%02u-%02u %02u:%02u:%02u.%03u",
+    return FormatText(
+        "%04u-%02u-%02u %02u:%02u:%02u.%03u",
         localTime.wYear,
         localTime.wMonth,
         localTime.wDay,
         localTime.wHour,
         localTime.wMinute,
         localTime.wSecond,
-        localTime.wMilliseconds);
+        localTime.wMilliseconds
+    );
 }
 
 std::string Trace::FormatValueDouble(const char* label, double value, int precision) {
@@ -226,11 +220,13 @@ void WriteRendererErrorTrace(Trace& trace, std::string_view stage, const std::st
     if (error.empty()) {
         return;
     }
-    trace.WriteFmt(TracePrefix::Renderer,
+    trace.WriteFmt(
+        TracePrefix::Renderer,
         RES_STR("error stage=\"%.*s\" detail=\"%s\""),
         static_cast<int>(stage.size()),
         stage.data(),
-        error.c_str());
+        error.c_str()
+    );
 }
 
 void WriteRendererErrorTrace(Trace& trace, ResourceStringId stage, const std::string& error) {
@@ -238,5 +234,6 @@ void WriteRendererErrorTrace(Trace& trace, ResourceStringId stage, const std::st
         return;
     }
     trace.WriteFmt(
-        TracePrefix::Renderer, RES_STR("error stage=\"%s\" detail=\"%s\""), ResourceStringText(stage), error.c_str());
+        TracePrefix::Renderer, RES_STR("error stage=\"%s\" detail=\"%s\""), ResourceStringText(stage), error.c_str()
+    );
 }

@@ -79,9 +79,7 @@ const LayoutCardConfig* FindCardById(const AppConfig& config, std::string_view c
     return nullptr;
 }
 
-double RoundToStep(double value, double step) {
-    return std::round(value / step) * step;
-}
+double RoundToStep(double value, double step) { return std::round(value / step) * step; }
 
 void SetDialogControlRoundedDecimal(HWND hwnd, int controlId, double value, int decimalPlaces) {
     std::string text = FormatText("%.*f", decimalPlaces, value);
@@ -120,49 +118,65 @@ void SetSliderRange(HWND hwnd, int sliderId, int minValue, int maxValue, int pag
 }
 
 void SetLchSliderPositions(HWND hwnd, OklchColor lch) {
-    SendDlgItemMessageA(hwnd,
+    SendDlgItemMessageA(
+        hwnd,
         IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_SLIDER,
         TBM_SETPOS,
         TRUE,
-        std::clamp(static_cast<int>(std::lround(lch.l * 1000.0)), 0, 1000));
-    SendDlgItemMessageA(hwnd,
-        IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_SLIDER,
-        TBM_SETPOS,
-        TRUE,
-        std::clamp(static_cast<int>(std::lround(lch.c * kLchChromaSliderScale)),
-            0,
-            static_cast<int>(std::lround(kLchChromaSliderMax * kLchChromaSliderScale))));
-    SendDlgItemMessageA(hwnd,
+        std::clamp(static_cast<int>(std::lround(lch.l * 1000.0)), 0, 1000)
+    );
+    SendDlgItemMessageA(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_SLIDER, TBM_SETPOS, TRUE, std::clamp(
+        static_cast<int>(std::lround(lch.c * kLchChromaSliderScale)),
+        0,
+        static_cast<int>(std::lround(kLchChromaSliderMax * kLchChromaSliderScale))
+    ));
+    SendDlgItemMessageA(
+        hwnd,
         IDC_LAYOUT_EDIT_COLOR_LCH_HUE_SLIDER,
         TBM_SETPOS,
         TRUE,
-        std::clamp(static_cast<int>(std::lround(lch.h)), 0, 360));
+        std::clamp(static_cast<int>(std::lround(lch.h)), 0, 360)
+    );
 }
 
 void SetHsvSliderPositions(HWND hwnd, HsvColor hsv) {
-    SendDlgItemMessageA(hwnd,
+    SendDlgItemMessageA(
+        hwnd,
         IDC_LAYOUT_EDIT_COLOR_HSV_HUE_SLIDER,
         TBM_SETPOS,
         TRUE,
-        std::clamp(static_cast<int>(std::lround(hsv.h)), 0, 360));
-    SendDlgItemMessageA(hwnd,
+        std::clamp(static_cast<int>(std::lround(hsv.h)), 0, 360)
+    );
+    SendDlgItemMessageA(
+        hwnd,
         IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_SLIDER,
         TBM_SETPOS,
         TRUE,
-        std::clamp(static_cast<int>(std::lround(hsv.s * kHsvUnitSliderScale)), 0, 1000));
-    SendDlgItemMessageA(hwnd,
+        std::clamp(static_cast<int>(std::lround(hsv.s * kHsvUnitSliderScale)), 0, 1000)
+    );
+    SendDlgItemMessageA(
+        hwnd,
         IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_SLIDER,
         TBM_SETPOS,
         TRUE,
-        std::clamp(static_cast<int>(std::lround(hsv.v * kHsvUnitSliderScale)), 0, 1000));
+        std::clamp(static_cast<int>(std::lround(hsv.v * kHsvUnitSliderScale)), 0, 1000)
+    );
 }
 
 std::optional<OklchColor> ReadColorDialogLch(HWND hwnd) {
     const auto lightness = TryParseDialogControlDouble(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_EDIT);
     const auto chroma = TryParseDialogControlDouble(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_EDIT);
     const auto hue = TryParseDialogControlDouble(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_HUE_EDIT);
-    if (!lightness.has_value() || !chroma.has_value() || !hue.has_value() || *lightness < 0.0 || *lightness > 1.0 ||
-        *chroma < 0.0 || *hue < 0.0 || *hue > 360.0) {
+    if (
+        !lightness.has_value() ||
+        !chroma.has_value() ||
+        !hue.has_value() ||
+        *lightness < 0.0 ||
+        *lightness > 1.0 ||
+        *chroma < 0.0 ||
+        *hue < 0.0 ||
+        *hue > 360.0
+    ) {
         return std::nullopt;
     }
     return OklchColor{*lightness, *chroma, *hue};
@@ -172,8 +186,17 @@ std::optional<HsvColor> ReadColorDialogHsv(HWND hwnd) {
     const auto hue = TryParseDialogControlDouble(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_HUE_EDIT);
     const auto saturation = TryParseDialogControlDouble(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_EDIT);
     const auto value = TryParseDialogControlDouble(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_EDIT);
-    if (!hue.has_value() || !saturation.has_value() || !value.has_value() || *hue < 0.0 || *hue > 360.0 ||
-        *saturation < 0.0 || *saturation > 1.0 || *value < 0.0 || *value > 1.0) {
+    if (
+        !hue.has_value() ||
+        !saturation.has_value() ||
+        !value.has_value() ||
+        *hue < 0.0 ||
+        *hue > 360.0 ||
+        *saturation < 0.0 ||
+        *saturation > 1.0 ||
+        *value < 0.0 ||
+        *value > 1.0
+    ) {
         return std::nullopt;
     }
     return HsvColor{*hue, *saturation, *value};
@@ -193,9 +216,8 @@ std::string FindConfiguredBoardMetricBinding(const AppConfig& config, const Layo
         return {};
     }
 
-    const auto& bindings = target->kind == BoardMetricBindingKind::Temperature
-                               ? config.layout.board.temperatureSensorNames
-                               : config.layout.board.fanSensorNames;
+    const auto& bindings = target->kind == BoardMetricBindingKind::Temperature ?
+        config.layout.board.temperatureSensorNames : config.layout.board.fanSensorNames;
     const auto it = bindings.find(target->logicalName);
     if (it != bindings.end() && !it->second.empty()) {
         return it->second;
@@ -203,9 +225,7 @@ std::string FindConfiguredBoardMetricBinding(const AppConfig& config, const Layo
     return target->logicalName;
 }
 
-bool AreScalesEqual(double left, double right) {
-    return std::abs(left - right) < kScaleEpsilon;
-}
+bool AreScalesEqual(double left, double right) { return std::abs(left - right) < kScaleEpsilon; }
 
 std::optional<double> TryParseDialogDouble(const char* text) {
     if (text == nullptr || *text == '\0') {
@@ -246,9 +266,7 @@ std::optional<int> TryParseDialogInteger(const char* text) {
     return static_cast<int>(value);
 }
 
-std::string LayoutGuideChildName(const LayoutNodeConfig& node) {
-    return node.name.empty() ? "unknown" : node.name;
-}
+std::string LayoutGuideChildName(const LayoutNodeConfig& node) { return node.name.empty() ? "unknown" : node.name; }
 
 std::string ReadDialogControlText(HWND hwnd, int controlId) {
     char buffer[256] = {};
@@ -283,9 +301,7 @@ LRESULT AddComboString(HWND combo, std::string_view text) {
     return SendMessageA(combo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(textStorage.c_str()));
 }
 
-std::string FormatDialogColorHex(unsigned int color) {
-    return FormatText("#%08X", color);
-}
+std::string FormatDialogColorHex(unsigned int color) { return FormatText("#%08X", color); }
 
 std::optional<unsigned int> TryParseDialogHexColor(const char* text) {
     if (text == nullptr) {
@@ -344,12 +360,14 @@ void ConfigureColorSliders(HWND hwnd) {
     SetSliderRange(hwnd, IDC_LAYOUT_EDIT_COLOR_MIX_AMOUNT_SLIDER, 0, 100, 10, 1);
     SetSliderRange(hwnd, IDC_LAYOUT_EDIT_COLOR_ALPHA_DERIVED_SLIDER, 0, 255, 16, 1);
     SetSliderRange(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_SLIDER, 0, 1000, 100, 1);
-    SetSliderRange(hwnd,
+    SetSliderRange(
+        hwnd,
         IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_SLIDER,
         0,
         static_cast<int>(std::lround(kLchChromaSliderMax * kLchChromaSliderScale)),
         25,
-        1);
+        1
+    );
     SetSliderRange(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_HUE_SLIDER, 0, 360, 15, 1);
     SetSliderRange(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_HUE_SLIDER, 0, 360, 15, 1);
     SetSliderRange(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_SLIDER, 0, 1000, 100, 1);
@@ -429,33 +447,32 @@ void SetColorDialogRgbFromHsv(HWND hwnd) {
     SetColorDialogHex(hwnd, color);
 }
 
-bool ColorDialogLchValueValid(HWND hwnd) {
-    return ReadColorDialogLch(hwnd).has_value();
-}
+bool ColorDialogLchValueValid(HWND hwnd) { return ReadColorDialogLch(hwnd).has_value(); }
 
-bool ColorDialogHsvValueValid(HWND hwnd) {
-    return ReadColorDialogHsv(hwnd).has_value();
-}
+bool ColorDialogHsvValueValid(HWND hwnd) { return ReadColorDialogHsv(hwnd).has_value(); }
 
 bool IsColorLchControlId(int controlId) {
     return controlId == IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_EDIT ||
-           controlId == IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_EDIT || controlId == IDC_LAYOUT_EDIT_COLOR_LCH_HUE_EDIT;
+        controlId == IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_EDIT ||
+        controlId == IDC_LAYOUT_EDIT_COLOR_LCH_HUE_EDIT;
 }
 
 bool IsColorHsvControlId(int controlId) {
-    return controlId == IDC_LAYOUT_EDIT_COLOR_HSV_HUE_EDIT || controlId == IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_EDIT ||
-           controlId == IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_EDIT;
+    return controlId == IDC_LAYOUT_EDIT_COLOR_HSV_HUE_EDIT ||
+        controlId == IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_EDIT ||
+        controlId == IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_EDIT;
 }
 
 bool IsColorLchSliderId(int controlId) {
     return controlId == IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_SLIDER ||
-           controlId == IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_SLIDER || controlId == IDC_LAYOUT_EDIT_COLOR_LCH_HUE_SLIDER;
+        controlId == IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_SLIDER ||
+        controlId == IDC_LAYOUT_EDIT_COLOR_LCH_HUE_SLIDER;
 }
 
 bool IsColorHsvSliderId(int controlId) {
     return controlId == IDC_LAYOUT_EDIT_COLOR_HSV_HUE_SLIDER ||
-           controlId == IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_SLIDER ||
-           controlId == IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_SLIDER;
+        controlId == IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_SLIDER ||
+        controlId == IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_SLIDER;
 }
 
 void SyncColorLchSliderFromEdit(HWND hwnd, int editId) {
@@ -465,27 +482,29 @@ void SyncColorLchSliderFromEdit(HWND hwnd, int editId) {
     }
     switch (editId) {
         case IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_EDIT:
-            SendDlgItemMessageA(hwnd,
+            SendDlgItemMessageA(
+                hwnd,
                 IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_SLIDER,
                 TBM_SETPOS,
                 TRUE,
-                std::clamp(static_cast<int>(std::lround(*value * 1000.0)), 0, 1000));
+                std::clamp(static_cast<int>(std::lround(*value * 1000.0)), 0, 1000)
+            );
             break;
         case IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_EDIT:
-            SendDlgItemMessageA(hwnd,
-                IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_SLIDER,
-                TBM_SETPOS,
-                TRUE,
-                std::clamp(static_cast<int>(std::lround(*value * kLchChromaSliderScale)),
-                    0,
-                    static_cast<int>(std::lround(kLchChromaSliderMax * kLchChromaSliderScale))));
+            SendDlgItemMessageA(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_SLIDER, TBM_SETPOS, TRUE, std::clamp(
+                static_cast<int>(std::lround(*value * kLchChromaSliderScale)),
+                0,
+                static_cast<int>(std::lround(kLchChromaSliderMax * kLchChromaSliderScale))
+            ));
             break;
         case IDC_LAYOUT_EDIT_COLOR_LCH_HUE_EDIT:
-            SendDlgItemMessageA(hwnd,
+            SendDlgItemMessageA(
+                hwnd,
                 IDC_LAYOUT_EDIT_COLOR_LCH_HUE_SLIDER,
                 TBM_SETPOS,
                 TRUE,
-                std::clamp(static_cast<int>(std::lround(*value)), 0, 360));
+                std::clamp(static_cast<int>(std::lround(*value)), 0, 360)
+            );
             break;
     }
 }
@@ -497,25 +516,31 @@ void SyncColorHsvSliderFromEdit(HWND hwnd, int editId) {
     }
     switch (editId) {
         case IDC_LAYOUT_EDIT_COLOR_HSV_HUE_EDIT:
-            SendDlgItemMessageA(hwnd,
+            SendDlgItemMessageA(
+                hwnd,
                 IDC_LAYOUT_EDIT_COLOR_HSV_HUE_SLIDER,
                 TBM_SETPOS,
                 TRUE,
-                std::clamp(static_cast<int>(std::lround(*value)), 0, 360));
+                std::clamp(static_cast<int>(std::lround(*value)), 0, 360)
+            );
             break;
         case IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_EDIT:
-            SendDlgItemMessageA(hwnd,
+            SendDlgItemMessageA(
+                hwnd,
                 IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_SLIDER,
                 TBM_SETPOS,
                 TRUE,
-                std::clamp(static_cast<int>(std::lround(*value * kHsvUnitSliderScale)), 0, 1000));
+                std::clamp(static_cast<int>(std::lround(*value * kHsvUnitSliderScale)), 0, 1000)
+            );
             break;
         case IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_EDIT:
-            SendDlgItemMessageA(hwnd,
+            SendDlgItemMessageA(
+                hwnd,
                 IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_SLIDER,
                 TBM_SETPOS,
                 TRUE,
-                std::clamp(static_cast<int>(std::lround(*value * kHsvUnitSliderScale)), 0, 1000));
+                std::clamp(static_cast<int>(std::lround(*value * kHsvUnitSliderScale)), 0, 1000)
+            );
             break;
     }
 }
@@ -525,11 +550,13 @@ void SetColorLchEditFromSlider(HWND hwnd, int sliderId) {
     switch (sliderId) {
         case IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_SLIDER:
             SetDialogControlRoundedDecimal(
-                hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_EDIT, static_cast<double>(position) / 1000.0, 3);
+                hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_LIGHTNESS_EDIT, static_cast<double>(position) / 1000.0, 3
+            );
             break;
         case IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_SLIDER:
             SetDialogControlRoundedDecimal(
-                hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_EDIT, static_cast<double>(position) / kLchChromaSliderScale, 3);
+                hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_CHROMA_EDIT, static_cast<double>(position) / kLchChromaSliderScale, 3
+            );
             break;
         case IDC_LAYOUT_EDIT_COLOR_LCH_HUE_SLIDER:
             SetDialogControlInteger(hwnd, IDC_LAYOUT_EDIT_COLOR_LCH_HUE_EDIT, position);
@@ -544,14 +571,14 @@ void SetColorHsvEditFromSlider(HWND hwnd, int sliderId) {
             SetDialogControlInteger(hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_HUE_EDIT, position);
             break;
         case IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_SLIDER:
-            SetDialogControlRoundedDecimal(hwnd,
-                IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_EDIT,
-                static_cast<double>(position) / kHsvUnitSliderScale,
-                3);
+            SetDialogControlRoundedDecimal(
+                hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_SATURATION_EDIT, static_cast<double>(position) / kHsvUnitSliderScale, 3
+            );
             break;
         case IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_SLIDER:
             SetDialogControlRoundedDecimal(
-                hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_EDIT, static_cast<double>(position) / kHsvUnitSliderScale, 3);
+                hwnd, IDC_LAYOUT_EDIT_COLOR_HSV_VALUE_EDIT, static_cast<double>(position) / kHsvUnitSliderScale, 3
+            );
             break;
     }
 }
@@ -657,7 +684,8 @@ std::string ReadFontDialogFaceText(HWND hwnd, UINT notificationCode) {
 }
 
 void PopulateMetricBindingComboBox(
-    HWND hwnd, const std::vector<std::string>& options, std::string_view selectedBinding, bool enableSelection) {
+    HWND hwnd, const std::vector<std::string>& options, std::string_view selectedBinding, bool enableSelection
+) {
     HWND combo = GetDlgItem(hwnd, IDC_LAYOUT_EDIT_METRIC_BINDING_EDIT);
     if (combo == nullptr) {
         return;
@@ -695,8 +723,10 @@ std::optional<std::pair<int, int>> FindWeightEditValues(const AppConfig& config,
     if (node == nullptr || key.separatorIndex + 1 >= node->children.size()) {
         return std::nullopt;
     }
-    return std::make_pair(std::max(1, node->children[key.separatorIndex].weight),
-        std::max(1, node->children[key.separatorIndex + 1].weight));
+    return std::make_pair(
+        std::max(1, node->children[key.separatorIndex].weight),
+        std::max(1, node->children[key.separatorIndex + 1].weight)
+    );
 }
 
 std::vector<std::string> AvailableMetricDefinitionIds(const AppConfig& config) {
@@ -727,29 +757,39 @@ std::string BuildLayoutEditNodeTitle(const LayoutEditTreeNode* node) {
     if (node == nullptr) {
         return "Select a setting";
     }
-    if (const auto* parameterLeaf =
+    if (
+        const auto* parameterLeaf =
             node->leaf.has_value() ? std::get_if<LayoutEditParameter>(&node->leaf->focusKey) : nullptr;
-        parameterLeaf != nullptr) {
+        parameterLeaf != nullptr
+    ) {
         return TitleCaseWords(GetLayoutEditParameterDisplayName(*parameterLeaf));
     }
-    if (const auto* metricLeaf =
+    if (
+        const auto* metricLeaf =
             node->leaf.has_value() ? std::get_if<LayoutMetricEditKey>(&node->leaf->focusKey) : nullptr;
-        metricLeaf != nullptr) {
+        metricLeaf != nullptr
+    ) {
         return FormatText("Metric: %s", metricLeaf->metricId.c_str());
     }
-    if (const auto* titleLeaf =
+    if (
+        const auto* titleLeaf =
             node->leaf.has_value() ? std::get_if<LayoutCardTitleEditKey>(&node->leaf->focusKey) : nullptr;
-        titleLeaf != nullptr) {
+        titleLeaf != nullptr
+    ) {
         return "Card Title";
     }
-    if (const auto* nodeFieldLeaf =
+    if (
+        const auto* nodeFieldLeaf =
             node->leaf.has_value() ? std::get_if<LayoutNodeFieldEditKey>(&node->leaf->focusKey) : nullptr;
-        nodeFieldLeaf != nullptr) {
+        nodeFieldLeaf != nullptr
+    ) {
         return std::string(LayoutNodeFieldEditTitle(*nodeFieldLeaf));
     }
-    if (const auto* weightLeaf =
+    if (
+        const auto* weightLeaf =
             node->leaf.has_value() ? std::get_if<LayoutWeightEditKey>(&node->leaf->focusKey) : nullptr;
-        weightLeaf != nullptr) {
+        weightLeaf != nullptr
+    ) {
         return weightLeaf->editCardId.empty() ? "Dashboard Split Weights" : "Card Split Weights";
     }
     return TitleCaseWords(node->label);
@@ -817,8 +857,10 @@ std::string_view BuildLayoutEditHintText(const LayoutEditTreeNode* node) {
     if (std::holds_alternative<ThemeColorEditKey>(node->leaf->focusKey)) {
         return FindLocalizedText(RES_STR("layout_edit.hint.theme_color"));
     }
-    if (const auto* nodeFieldLeaf = std::get_if<LayoutNodeFieldEditKey>(&node->leaf->focusKey);
-        nodeFieldLeaf != nullptr) {
+    if (
+        const auto* nodeFieldLeaf = std::get_if<LayoutNodeFieldEditKey>(&node->leaf->focusKey);
+        nodeFieldLeaf != nullptr
+    ) {
         return LayoutNodeFieldEditHint(*nodeFieldLeaf);
     }
     return FindLocalizedText(RES_STR("layout_edit.status.select_field"));

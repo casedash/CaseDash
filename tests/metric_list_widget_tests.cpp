@@ -21,9 +21,7 @@ const void* MetricListTestRenderBitmapResourceTypeToken() {
 
 class MetricListTestRenderBitmapResource final : public RenderBitmapResource {
 public:
-    const void* TypeToken() const override {
-        return MetricListTestRenderBitmapResourceTypeToken();
-    }
+    const void* TypeToken() const override { return MetricListTestRenderBitmapResourceTypeToken(); }
 };
 
 struct DrawnText {
@@ -42,12 +40,14 @@ struct CapturedWidgetAnimation {
 class MetricListTestEditArtifacts final : public WidgetEditArtifactRegistrar {
 public:
     void RegisterStaticEditAnchor(LayoutEditAnchorRegistration registration) override {
-        staticAnchors.push_back(LayoutEditAnchorRegion{registration.key,
+        staticAnchors.push_back(LayoutEditAnchorRegion{
+            registration.key,
             registration.targetRect,
             registration.anchorRect,
             registration.anchorRect,
             0,
-            registration.shape});
+            registration.shape
+        });
     }
 
     void RegisterDynamicEditAnchor(LayoutEditAnchorRegistration) override {}
@@ -58,34 +58,38 @@ public:
 
     void RegisterDynamicCornerEditAnchor(const LayoutEditAnchorKey&, const RenderRect&) override {}
 
-    void RegisterStaticTextAnchor(const RenderRect&,
+    void RegisterStaticTextAnchor(
+        const RenderRect&,
         const std::string&,
         TextStyleId,
         const TextLayoutOptions&,
         const LayoutEditAnchorBinding&,
         std::optional<LayoutEditParameter>,
-        LayoutEditTargetOutline) override {}
+        LayoutEditTargetOutline
+    ) override {}
 
-    void RegisterDynamicTextAnchor(const TextLayoutResult&,
+    void RegisterDynamicTextAnchor(
+        const TextLayoutResult&,
         const LayoutEditAnchorBinding&,
         std::optional<LayoutEditParameter>,
-        LayoutEditTargetOutline) override {}
+        LayoutEditTargetOutline
+    ) override {}
 
-    void RegisterDynamicTextAnchor(const RenderRect&,
+    void RegisterDynamicTextAnchor(
+        const RenderRect&,
         const std::string&,
         TextStyleId,
         const TextLayoutOptions&,
         const LayoutEditAnchorBinding&,
         std::optional<LayoutEditParameter>,
-        LayoutEditTargetOutline) override {}
+        LayoutEditTargetOutline
+    ) override {}
 
     void RegisterStaticColorEditRegion(LayoutEditParameter, const RenderRect&) override {}
 
     void RegisterDynamicColorEditRegion(LayoutEditParameter, const RenderRect&) override {}
 
-    void RegisterWidgetEditGuide(LayoutEditWidgetGuide guide) override {
-        guides.push_back(std::move(guide));
-    }
+    void RegisterWidgetEditGuide(LayoutEditWidgetGuide guide) override { guides.push_back(std::move(guide)); }
 
     std::vector<LayoutEditAnchorRegion> staticAnchors;
     std::vector<LayoutEditWidgetGuide> guides;
@@ -99,27 +103,19 @@ public:
         config_.layout.metricList.labelWidth = 82;
         textMetrics_.value = 16;
         definitions_.push_back(MetricDefinitionConfig{"cpu.ram", MetricDisplayStyle::Memory, true, 0.0, "GB", "RAM"});
-        definitions_.push_back(
-            MetricDefinitionConfig{"cpu.clock", MetricDisplayStyle::Scalar, false, 5.0, "GHz", "Clock"});
-        definitions_.push_back(
-            MetricDefinitionConfig{"gpu.fps", MetricDisplayStyle::Scalar, false, 240.0, "FPS", "FPS"});
+        definitions_
+            .push_back(MetricDefinitionConfig{"cpu.clock", MetricDisplayStyle::Scalar, false, 5.0, "GHz", "Clock"});
+        definitions_
+            .push_back(MetricDefinitionConfig{"gpu.fps", MetricDisplayStyle::Scalar, false, 240.0, "FPS", "FPS"});
     }
 
-    ::Renderer& Renderer() override {
-        return *this;
-    }
+    ::Renderer& Renderer() override { return *this; }
 
-    const ::Renderer& Renderer() const override {
-        return *this;
-    }
+    const ::Renderer& Renderer() const override { return *this; }
 
-    const AppConfig& Config() const override {
-        return config_;
-    }
+    const AppConfig& Config() const override { return config_; }
 
-    bool SetStyle(const RendererStyle&) override {
-        return true;
-    }
+    bool SetStyle(const RendererStyle&) override { return true; }
 
     void AttachWindow(HWND) override {}
 
@@ -149,8 +145,8 @@ public:
         return true;
     }
 
-    bool DrawToBitmap(
-        RenderBitmap& bitmap, int width, int height, RenderBitmapClear, const DrawCallback& draw) override {
+    bool DrawToBitmap(RenderBitmap& bitmap, int width, int height, RenderBitmapClear, const DrawCallback& draw) override
+    {
         bitmap.width = width;
         bitmap.height = height;
         bitmap.storage = RenderBitmapStorage::Generic;
@@ -160,7 +156,8 @@ public:
     }
 
     bool DrawToLiveLayerBitmap(
-        RenderBitmap& bitmap, int width, int height, RenderBitmapClear, const DrawCallback& draw) override {
+        RenderBitmap& bitmap, int width, int height, RenderBitmapClear, const DrawCallback& draw
+    ) override {
         bitmap.width = width;
         bitmap.height = height;
         bitmap.storage = RenderBitmapStorage::LiveLayer;
@@ -174,48 +171,43 @@ public:
         return true;
     }
 
-    const std::string& LastError() const override {
-        return empty_;
-    }
+    const std::string& LastError() const override { return empty_; }
 
-    const TextStyleMetrics& TextMetrics() const override {
-        return textMetrics_;
-    }
+    const TextStyleMetrics& TextMetrics() const override { return textMetrics_; }
 
-    RenderMode CurrentRenderMode() const override {
-        return RenderMode::Normal;
-    }
+    RenderMode CurrentRenderMode() const override { return RenderMode::Normal; }
 
-    WidgetEditArtifactRegistrar& EditArtifacts() override {
-        return editArtifacts;
-    }
+    WidgetEditArtifactRegistrar& EditArtifacts() override { return editArtifacts; }
 
-    int ScaleLogical(int value) const override {
-        return value;
-    }
+    int ScaleLogical(int value) const override { return value; }
 
     int MeasureTextWidth(TextStyleId, std::string_view text) const override {
         return static_cast<int>(text.size()) * 8;
     }
 
     TextLayoutResult MeasureTextBlock(
-        const RenderRect& rect, const std::string&, TextStyleId, const TextLayoutOptions&) const override {
+        const RenderRect& rect, const std::string&, TextStyleId, const TextLayoutOptions&
+    ) const override {
         return TextLayoutResult{rect};
     }
 
-    void DrawText(const RenderRect& rect,
+    void DrawText(
+        const RenderRect& rect,
         const std::string& text,
         TextStyleId style,
         RenderColorId color,
-        const TextLayoutOptions&) const override {
+        const TextLayoutOptions&
+    ) const override {
         drawnTexts.push_back(DrawnText{rect, text, style, color});
     }
 
-    TextLayoutResult DrawTextBlock(const RenderRect& rect,
+    TextLayoutResult DrawTextBlock(
+        const RenderRect& rect,
         const std::string& text,
         TextStyleId style,
         RenderColorId color,
-        const TextLayoutOptions&) override {
+        const TextLayoutOptions&
+    ) override {
         drawnTexts.push_back(DrawnText{rect, text, style, color});
         return TextLayoutResult{rect};
     }
@@ -228,93 +220,66 @@ public:
 
     void PopTranslation() override {}
 
-    bool DrawBitmap(const RenderBitmap&, RenderPoint) override {
-        return true;
-    }
+    bool DrawBitmap(const RenderBitmap&, RenderPoint) override { return true; }
 
-    bool DrawBitmapRegion(const RenderBitmap&, const RenderRect&, RenderPoint) override {
-        return true;
-    }
+    bool DrawBitmapRegion(const RenderBitmap&, const RenderRect&, RenderPoint) override { return true; }
 
-    bool DrawBitmapRegions(const RenderBitmap&, std::span<const RenderRect>) override {
-        return true;
-    }
+    bool DrawBitmapRegions(const RenderBitmap&, std::span<const RenderRect>) override { return true; }
 
-    bool DrawIcon(std::string_view, const RenderRect&) override {
-        return true;
-    }
+    bool DrawIcon(std::string_view, const RenderRect&) override { return true; }
 
-    bool FillSolidRect(const RenderRect&, RenderColorId) override {
-        return true;
-    }
+    bool FillSolidRect(const RenderRect&, RenderColorId) override { return true; }
 
-    bool FillSolidRoundedRect(const RenderRect&, int, RenderColorId) override {
-        return true;
-    }
+    bool FillSolidRoundedRect(const RenderRect&, int, RenderColorId) override { return true; }
 
-    bool FillSolidEllipse(const RenderRect&, RenderColorId) override {
-        return true;
-    }
+    bool FillSolidEllipse(const RenderRect&, RenderColorId) override { return true; }
 
-    bool FillSolidDiamond(const RenderRect&, RenderColorId) override {
-        return true;
-    }
+    bool FillSolidDiamond(const RenderRect&, RenderColorId) override { return true; }
 
-    bool DrawSolidRect(const RenderRect&, const RenderStroke&) override {
-        return true;
-    }
+    bool DrawSolidRect(const RenderRect&, const RenderStroke&) override { return true; }
 
-    bool DrawSolidRoundedRect(const RenderRect&, int, const RenderStroke&) override {
-        return true;
-    }
+    bool DrawSolidRoundedRect(const RenderRect&, int, const RenderStroke&) override { return true; }
 
-    bool DrawSolidEllipse(const RenderRect&, const RenderStroke&) override {
-        return true;
-    }
+    bool DrawSolidEllipse(const RenderRect&, const RenderStroke&) override { return true; }
 
-    bool DrawSolidLine(RenderPoint, RenderPoint, const RenderStroke&) override {
-        return true;
-    }
+    bool DrawSolidLine(RenderPoint, RenderPoint, const RenderStroke&) override { return true; }
 
-    bool DrawArc(const RenderArc&, const RenderStroke&) override {
-        return true;
-    }
+    bool DrawArc(const RenderArc&, const RenderStroke&) override { return true; }
 
-    bool DrawArcs(std::span<const RenderArc>, const RenderStroke&) override {
-        return true;
-    }
+    bool DrawArcs(std::span<const RenderArc>, const RenderStroke&) override { return true; }
 
-    bool DrawPolyline(std::span<const RenderPoint>, const RenderStroke&) override {
-        return true;
-    }
+    bool DrawPolyline(std::span<const RenderPoint>, const RenderStroke&) override { return true; }
 
-    bool FillPath(const RenderPath&, RenderColorId) override {
-        return true;
-    }
+    bool FillPath(const RenderPath&, RenderColorId) override { return true; }
 
-    bool FillPaths(std::span<const RenderPath>, RenderColorId) override {
-        return true;
-    }
+    bool FillPaths(std::span<const RenderPath>, RenderColorId) override { return true; }
 
     LayoutEditAnchorBinding MakeEditableTextBinding(
-        const WidgetLayout& widget, LayoutEditParameter parameter, int anchorId, int value) const override {
+        const WidgetLayout& widget, LayoutEditParameter parameter, int anchorId, int value
+    ) const override {
         return LayoutEditAnchorBinding{
             LayoutEditAnchorKey{
-                LayoutEditWidgetIdentity{widget.cardId, widget.editCardId, widget.nodePath}, parameter, anchorId},
+                LayoutEditWidgetIdentity{widget.cardId, widget.editCardId, widget.nodePath}, parameter, anchorId
+            },
             value,
             AnchorShape::Circle,
-            LayoutEditAnchorDragSpec::AxisDelta(AnchorDragAxis::Vertical)};
+            LayoutEditAnchorDragSpec::AxisDelta(AnchorDragAxis::Vertical)
+        };
     }
 
-    LayoutEditAnchorBinding MakeMetricTextBinding(
-        const WidgetLayout& widget, std::string_view metricId, int anchorId) const override {
+    LayoutEditAnchorBinding
+        MakeMetricTextBinding(const WidgetLayout& widget, std::string_view metricId, int anchorId) const override
+    {
         return LayoutEditAnchorBinding{
-            LayoutEditAnchorKey{LayoutEditWidgetIdentity{widget.cardId, widget.editCardId, widget.nodePath},
+            LayoutEditAnchorKey{
+                LayoutEditWidgetIdentity{widget.cardId, widget.editCardId, widget.nodePath},
                 LayoutMetricEditKey{std::string(metricId)},
-                anchorId},
+                anchorId
+            },
             0,
             AnchorShape::Wedge,
-            std::nullopt};
+            std::nullopt
+        };
     }
 
     const MetricDefinitionConfig* FindConfiguredMetricDefinition(std::string_view metricRef) const override {
@@ -326,18 +291,19 @@ public:
         return nullptr;
     }
 
-    const std::string& ResolveConfiguredMetricSampleValueText(std::string_view) const override {
-        return empty_;
-    }
+    const std::string& ResolveConfiguredMetricSampleValueText(std::string_view) const override { return empty_; }
 
-    std::optional<MetricListReorderOverlayState> ActiveMetricListReorderDrag(
-        const LayoutEditWidgetIdentity&) const override {
+    std::optional<MetricListReorderOverlayState>
+        ActiveMetricListReorderDrag(const LayoutEditWidgetIdentity&) const override
+    {
         return std::nullopt;
     }
 
-    void AddWidgetAnimation(WidgetAnimationPtr animation,
+    void AddWidgetAnimation(
+        WidgetAnimationPtr animation,
         WidgetAnimationStatePtr targetState,
-        std::optional<RenderRect> clipRect = std::nullopt) override {
+        std::optional<RenderRect> clipRect = std::nullopt
+    ) override {
         if (animation != nullptr && targetState != nullptr) {
             animations.push_back(CapturedWidgetAnimation{std::move(animation), std::move(targetState), clipRect});
         }
@@ -371,24 +337,28 @@ MetricListWidget BuildGpuFpsMetricListWidget() {
 }
 
 int CountPlusAnchors(const MetricListTestRenderer& renderer) {
-    return static_cast<int>(std::count_if(renderer.editArtifacts.staticAnchors.begin(),
+    return static_cast<int>(std::count_if(
+        renderer.editArtifacts.staticAnchors.begin(),
         renderer.editArtifacts.staticAnchors.end(),
-        [](const LayoutEditAnchorRegion& region) { return region.shape == AnchorShape::Plus; }));
+        [](const LayoutEditAnchorRegion& region) { return region.shape == AnchorShape::Plus; }
+    ));
 }
 
 MetricsSectionConfig BuildMetricsConfig() {
     MetricsSectionConfig metrics;
-    metrics.definitions.push_back(
-        MetricDefinitionConfig{"gpu.fps", MetricDisplayStyle::Scalar, false, 240.0, "FPS", "FPS"});
+    metrics
+        .definitions
+        .push_back(MetricDefinitionConfig{"gpu.fps", MetricDisplayStyle::Scalar, false, 240.0, "FPS", "FPS"});
     return metrics;
 }
 
 MetricsSectionConfig BuildMetricListMetricsConfig() {
     MetricsSectionConfig metrics;
-    metrics.definitions.push_back(
-        MetricDefinitionConfig{"cpu.ram", MetricDisplayStyle::Memory, true, 0.0, "GB", "RAM"});
-    metrics.definitions.push_back(
-        MetricDefinitionConfig{"cpu.clock", MetricDisplayStyle::Scalar, false, 5.0, "GHz", "Clock"});
+    metrics
+        .definitions.push_back(MetricDefinitionConfig{"cpu.ram", MetricDisplayStyle::Memory, true, 0.0, "GB", "RAM"});
+    metrics
+        .definitions
+        .push_back(MetricDefinitionConfig{"cpu.clock", MetricDisplayStyle::Scalar, false, 5.0, "GHz", "Clock"});
     return metrics;
 }
 
@@ -496,9 +466,11 @@ TEST(MetricListWidget, UsesWarningColorForAdminIndicatorInValueAndAnnotationSlot
     widget.ResolveLayoutState(missingFpsRenderer, layout.rect);
     widget.Draw(missingFpsRenderer, layout, missingFpsSource);
 
-    auto missingFpsIt = std::find_if(missingFpsRenderer.drawnTexts.begin(),
-        missingFpsRenderer.drawnTexts.end(),
-        [](const DrawnText& text) { return text.text == "!admin" && text.style == TextStyleId::Value; });
+    auto missingFpsIt = std::find_if(
+        missingFpsRenderer.drawnTexts.begin(), missingFpsRenderer.drawnTexts.end(), [](const DrawnText& text) {
+            return text.text == "!admin" && text.style == TextStyleId::Value;
+        }
+    );
     ASSERT_NE(missingFpsIt, missingFpsRenderer.drawnTexts.end());
     EXPECT_EQ(missingFpsIt->color, RenderColorId::Warning);
 
@@ -510,9 +482,11 @@ TEST(MetricListWidget, UsesWarningColorForAdminIndicatorInValueAndAnnotationSlot
     widget.ResolveLayoutState(missingNameRenderer, layout.rect);
     widget.Draw(missingNameRenderer, layout, missingNameSource);
 
-    auto missingNameIt = std::find_if(missingNameRenderer.drawnTexts.begin(),
-        missingNameRenderer.drawnTexts.end(),
-        [](const DrawnText& text) { return text.text == "!admin" && text.style == TextStyleId::Label; });
+    auto missingNameIt = std::find_if(
+        missingNameRenderer.drawnTexts.begin(), missingNameRenderer.drawnTexts.end(), [](const DrawnText& text) {
+            return text.text == "!admin" && text.style == TextStyleId::Label;
+        }
+    );
     ASSERT_NE(missingNameIt, missingNameRenderer.drawnTexts.end());
     EXPECT_EQ(missingNameIt->color, RenderColorId::Warning);
 }

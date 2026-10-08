@@ -25,5 +25,5 @@ struct MetricBoardBindingUse {
 };
 
 std::optional<BoardMetricBindingTarget> ResolveMetricBoardBindingTarget(std::string_view metricId);
-bool ShouldExposeMetricBoardBinding(
-    std::string_view metricId, const std::vector<MetricBoardBindingUse>& activeBindings);
+bool
+    ShouldExposeMetricBoardBinding(std::string_view metricId, const std::vector<MetricBoardBindingUse>& activeBindings);

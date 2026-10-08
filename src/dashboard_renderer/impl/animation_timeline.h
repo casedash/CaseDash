@@ -11,6 +11,7 @@
 class DashboardAnimationTimeline {
 public:
     using Clock = std::chrono::steady_clock;
+
     enum class TrackRetention {
         PruneUntouched,
         KeepUntouched,
@@ -19,8 +20,8 @@ public:
     explicit DashboardAnimationTimeline(std::chrono::milliseconds duration = kTelemetryRefreshInterval);
 
     void BeginFrame(Clock::time_point now);
-    WidgetAnimationStatePtr Resolve(
-        const AnimationDataKey& key, const WidgetAnimationState& target, std::uint64_t targetVersion);
+    WidgetAnimationStatePtr
+        Resolve(const AnimationDataKey& key, const WidgetAnimationState& target, std::uint64_t targetVersion);
     std::size_t EndFrame(TrackRetention retention = TrackRetention::PruneUntouched);
     void Reset();
     std::size_t TrackCount() const;

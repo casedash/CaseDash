@@ -54,7 +54,8 @@ public:
     MonitorPlacementInfo GetWindowPlacementInfo() const override;
     MonitorPlacementInfo GetWindowPlacementInfoForScale(double scale) const override;
     std::optional<FilePath> PromptDiagnosticsSavePath(
-        std::string_view defaultFileName, std::string_view filter, std::string_view defaultExtension) const override;
+        std::string_view defaultFileName, std::string_view filter, std::string_view defaultExtension
+    ) const override;
     void ShowError(std::string_view message) const override;
 
 private:
@@ -96,10 +97,12 @@ private:
     void UpdateRendererScale(double scale);
     double ResolveCurrentDisplayScale(UINT dpi) const;
     bool IsLayoutEditMode() const;
-    std::optional<int> EvaluateLayoutWidgetExtentForWeights(const LayoutEditLayoutTarget& target,
+    std::optional<int> EvaluateLayoutWidgetExtentForWeights(
+        const LayoutEditLayoutTarget& target,
         const std::vector<int>& weights,
         const LayoutEditWidgetIdentity& widget,
-        LayoutGuideAxis axis) override;
+        LayoutGuideAxis axis
+    ) override;
     void StartMoveMode();
     void StartMoveModeAt(POINT cursorAnchorClientPoint);
     void StartResizeModeAt(POINT cursorClientPoint, DisplayResizeCorner corner);
@@ -148,8 +151,8 @@ private:
     bool AutohideCursorInDashboard(POINT screenPoint) const;
     bool DrainPendingTelemetryUpdate(TelemetryUpdate& update);
     RECT DashboardClientScreenRect() const;
-    DashboardTitlebarFrameMargins ComputeNativeTitlebarFrameMarginsForDpi(
-        int clientWidth, int clientHeight, UINT dpi) const;
+    DashboardTitlebarFrameMargins
+        ComputeNativeTitlebarFrameMarginsForDpi(int clientWidth, int clientHeight, UINT dpi) const;
     DashboardTitlebarFrameMargins ComputeNativeTitlebarFrameMargins(int clientWidth, int clientHeight) const;
     DashboardTitlebarGeometry ResolveNativeTitlebarGeometry(const RECT& dashboardClientRect) const;
     RECT ResolveWindowRectForDashboardClientRect(const RECT& dashboardClientRect) const;
@@ -176,21 +179,24 @@ private:
     RECT NativeTitlebarThemeComboRect() const;
     RECT NativeTitlebarButtonRect(NativeTitlebarButton button) const;
     RECT NativeTitlebarButtonRect(NativeTitlebarButton button, const DashboardTitlebarControlLayout& layout) const;
-    void PopulateNativeTitlebarCombo(HWND combo,
+    void PopulateNativeTitlebarCombo(
+        HWND combo,
         const std::vector<std::string>& values,
         std::string_view selected,
         std::vector<std::string>& cache,
-        std::string& selectedCache);
+        std::string& selectedCache
+    );
     std::vector<std::string> NativeTitlebarLayoutNames() const;
     std::vector<std::string> NativeTitlebarThemeNames() const;
     std::optional<size_t> NativeTitlebarComboSelectionIndex(HWND combo) const;
     NativeTitlebarButton HitTestNativeTitlebarButton(POINT clientPoint) const;
-    NativeTitlebarButton HitTestNativeTitlebarButton(
-        POINT clientPoint, const DashboardTitlebarControlLayout& layout) const;
+    NativeTitlebarButton
+        HitTestNativeTitlebarButton(POINT clientPoint, const DashboardTitlebarControlLayout& layout) const;
     void PaintNativeTitlebar(HDC hdc) const;
     void PaintNativeTitlebarButton(HDC hdc, NativeTitlebarButton button) const;
     void PaintNativeTitlebarButton(
-        HDC hdc, NativeTitlebarButton button, const DashboardTitlebarControlLayout& layout) const;
+        HDC hdc, NativeTitlebarButton button, const DashboardTitlebarControlLayout& layout
+    ) const;
     void RefreshNativeTitlebarChrome();
     void InvalidateNativeTitlebar() const;
     void SetNativeTitlebarButtonState(NativeTitlebarButton hovered, NativeTitlebarButton pressed);
@@ -200,11 +206,13 @@ private:
     void InvokeNativeTitlebarButton(NativeTitlebarButton button);
     void StartNativeTitlebarHoverTimer();
     void StopNativeTitlebarHoverTimer();
-    void StartMoveMode(bool hasCursorAnchorClientPoint,
+    void StartMoveMode(
+        bool hasCursorAnchorClientPoint,
         POINT cursorAnchorClientPoint,
         bool clampCursorAnchorClientPoint,
         bool placeOnRelease,
-        bool keepNativeTitlebarDuringMove);
+        bool keepNativeTitlebarDuringMove
+    );
     void StartMoveModeFromNativeTitlebar(POINT screenPoint);
     void StartResizeModeFromNativeTitlebar(POINT screenPoint, DisplayResizeCorner corner);
     std::optional<DisplayPlacementTarget> ResolveConfiguredDisplayPlacementTarget() const;
@@ -229,9 +237,11 @@ private:
     void RebuildLayoutEditArtifacts() override;
     bool ApplyLayoutGuideWeights(const LayoutEditLayoutTarget& target, const std::vector<int>& weights) override;
     bool ApplyLayoutGuideAdjacentWeights(
-        const LayoutEditLayoutTarget& target, size_t separatorIndex, int firstWeight, int secondWeight);
+        const LayoutEditLayoutTarget& target, size_t separatorIndex, int firstWeight, int secondWeight
+    );
     bool ApplyMetricListOrder(
-        const LayoutEditWidgetIdentity& widget, const std::vector<std::string>& metricRefs) override;
+        const LayoutEditWidgetIdentity& widget, const std::vector<std::string>& metricRefs
+    ) override;
     bool ApplyContainerChildOrder(const LayoutContainerChildOrderEditKey& key, int fromIndex, int toIndex) override;
     bool ApplyLayoutEditValue(LayoutEditParameter parameter, double value) override;
     void InvalidateLayoutEdit() override;

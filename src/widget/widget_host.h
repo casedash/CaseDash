@@ -28,24 +28,30 @@ public:
     virtual void RegisterDynamicEditAnchor(LayoutEditAnchorRegistration registration) = 0;
     virtual void RegisterStaticCornerEditAnchor(const LayoutEditAnchorKey& key, const RenderRect& targetRect) = 0;
     virtual void RegisterDynamicCornerEditAnchor(const LayoutEditAnchorKey& key, const RenderRect& targetRect) = 0;
-    virtual void RegisterStaticTextAnchor(const RenderRect& rect,
+    virtual void RegisterStaticTextAnchor(
+        const RenderRect& rect,
         const std::string& text,
         TextStyleId style,
         const TextLayoutOptions& options,
         const LayoutEditAnchorBinding& editable,
         std::optional<LayoutEditParameter> colorParameter = std::nullopt,
-        LayoutEditTargetOutline targetOutline = LayoutEditTargetOutline::Visible) = 0;
-    virtual void RegisterDynamicTextAnchor(const TextLayoutResult& layoutResult,
+        LayoutEditTargetOutline targetOutline = LayoutEditTargetOutline::Visible
+    ) = 0;
+    virtual void RegisterDynamicTextAnchor(
+        const TextLayoutResult& layoutResult,
         const LayoutEditAnchorBinding& editable,
         std::optional<LayoutEditParameter> colorParameter = std::nullopt,
-        LayoutEditTargetOutline targetOutline = LayoutEditTargetOutline::Visible) = 0;
-    virtual void RegisterDynamicTextAnchor(const RenderRect& rect,
+        LayoutEditTargetOutline targetOutline = LayoutEditTargetOutline::Visible
+    ) = 0;
+    virtual void RegisterDynamicTextAnchor(
+        const RenderRect& rect,
         const std::string& text,
         TextStyleId style,
         const TextLayoutOptions& options,
         const LayoutEditAnchorBinding& editable,
         std::optional<LayoutEditParameter> colorParameter = std::nullopt,
-        LayoutEditTargetOutline targetOutline = LayoutEditTargetOutline::Visible) = 0;
+        LayoutEditTargetOutline targetOutline = LayoutEditTargetOutline::Visible
+    ) = 0;
     virtual void RegisterStaticColorEditRegion(LayoutEditParameter parameter, const RenderRect& targetRect) = 0;
     virtual void RegisterDynamicColorEditRegion(LayoutEditParameter parameter, const RenderRect& targetRect) = 0;
     virtual void RegisterWidgetEditGuide(LayoutEditWidgetGuide guide) = 0;
@@ -66,15 +72,18 @@ public:
     virtual RenderMode CurrentRenderMode() const = 0;
     virtual WidgetEditArtifactRegistrar& EditArtifacts() = 0;
     virtual LayoutEditAnchorBinding MakeEditableTextBinding(
-        const WidgetLayout& widget, LayoutEditParameter parameter, int anchorId, int value) const = 0;
-    virtual LayoutEditAnchorBinding MakeMetricTextBinding(
-        const WidgetLayout& widget, std::string_view metricId, int anchorId) const = 0;
+        const WidgetLayout& widget, LayoutEditParameter parameter, int anchorId, int value
+    ) const = 0;
+    virtual LayoutEditAnchorBinding
+        MakeMetricTextBinding(const WidgetLayout& widget, std::string_view metricId, int anchorId) const = 0;
     virtual const MetricDefinitionConfig* FindConfiguredMetricDefinition(std::string_view metricRef) const = 0;
     virtual const std::string& ResolveConfiguredMetricSampleValueText(std::string_view metricRef) const = 0;
-    virtual std::optional<MetricListReorderOverlayState> ActiveMetricListReorderDrag(
-        const LayoutEditWidgetIdentity& widget) const = 0;
+    virtual std::optional<MetricListReorderOverlayState>
+        ActiveMetricListReorderDrag(const LayoutEditWidgetIdentity& widget) const = 0;
     // Main thread: widgets submit geometry-only draw primitives with already-resolved opaque target state.
-    virtual void AddWidgetAnimation(WidgetAnimationPtr animation,
+    virtual void AddWidgetAnimation(
+        WidgetAnimationPtr animation,
         WidgetAnimationStatePtr targetState,
-        std::optional<RenderRect> clipRect = std::nullopt);
+        std::optional<RenderRect> clipRect = std::nullopt
+    );
 };

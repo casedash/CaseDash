@@ -13,7 +13,8 @@
 namespace {
 
 void InsertLayoutEditTreeNodes(
-    LayoutEditDialogState* state, HWND tree, const std::vector<LayoutEditTreeNode>& nodes, HTREEITEM parent) {
+    LayoutEditDialogState* state, HWND tree, const std::vector<LayoutEditTreeNode>& nodes, HTREEITEM parent
+) {
     for (const auto& node : nodes) {
         TVINSERTSTRUCTA insert{};
         insert.hParent = parent;
@@ -54,8 +55,10 @@ HTREEITEM FindTreeItemByFocusKey(LayoutEditDialogState* state, const LayoutEditF
             return binding.item;
         }
         if (binding.node->selectionHighlight.has_value()) {
-            if (const auto* nodeFocus = std::get_if<LayoutEditFocusKey>(&*binding.node->selectionHighlight);
-                nodeFocus != nullptr && MatchesLayoutEditFocusKey(*nodeFocus, focusKey)) {
+            if (
+                const auto* nodeFocus = std::get_if<LayoutEditFocusKey>(&*binding.node->selectionHighlight);
+                nodeFocus != nullptr && MatchesLayoutEditFocusKey(*nodeFocus, focusKey)
+            ) {
                 return binding.item;
             }
         }
@@ -105,13 +108,15 @@ std::string TreeNodeViewportLocation(LayoutEditDialogState* state, const LayoutE
     if (node->locationText.rfind("[theme.", 0) == 0) {
         if (const std::string::size_type sectionEnd = node->locationText.find(']'); sectionEnd != std::string::npos) {
             return FormatText(
-                RES_STR("[theme.%s]%s"), display.theme.c_str(), node->locationText.substr(sectionEnd + 1).c_str());
+                RES_STR("[theme.%s]%s"), display.theme.c_str(), node->locationText.substr(sectionEnd + 1).c_str()
+            );
         }
     }
     if (node->locationText.rfind("[layout.", 0) == 0) {
         if (const std::string::size_type sectionEnd = node->locationText.find(']'); sectionEnd != std::string::npos) {
             return FormatText(
-                RES_STR("[layout.%s]%s"), display.layout.c_str(), node->locationText.substr(sectionEnd + 1).c_str());
+                RES_STR("[layout.%s]%s"), display.layout.c_str(), node->locationText.substr(sectionEnd + 1).c_str()
+            );
         }
     }
     return node->locationText;
@@ -129,8 +134,11 @@ TreeViewportSnapshot CaptureTreeViewportSnapshot(LayoutEditDialogState* state, H
     const HTREEITEM selected = TreeView_GetSelection(tree);
     const int visibleCount = static_cast<int>(TreeView_GetVisibleCount(tree));
     int offset = 0;
-    for (HTREEITEM item = firstVisible; item != nullptr && offset < visibleCount;
-        item = TreeView_GetNextVisible(tree, item), ++offset) {
+    for (
+        HTREEITEM item = firstVisible;
+        item != nullptr && offset < visibleCount;
+        item = TreeView_GetNextVisible(tree, item), ++offset
+    ) {
         if (item == selected) {
             snapshot.selectedLocation = TreeNodeViewportLocation(state, TreeNodeFromItem(tree, item));
             snapshot.selectedOffsetRows = offset;
@@ -160,16 +168,21 @@ HTREEITEM VisibleItemBefore(HWND tree, HTREEITEM item, int rowsBefore) {
 }
 
 bool RestoreTreeViewportFromSnapshot(
-    LayoutEditDialogState* state, HWND tree, HTREEITEM selectedItem, const TreeViewportSnapshot& snapshot) {
+    LayoutEditDialogState* state, HWND tree, HTREEITEM selectedItem, const TreeViewportSnapshot& snapshot
+) {
     if (state == nullptr || tree == nullptr) {
         return false;
     }
 
     if (!snapshot.selectedLocation.empty() && snapshot.selectedOffsetRows >= 0) {
-        if (HTREEITEM restoredSelected = FindTreeItemByLocationText(state, snapshot.selectedLocation);
-            restoredSelected == selectedItem) {
-            if (HTREEITEM anchor = VisibleItemBefore(tree, selectedItem, snapshot.selectedOffsetRows);
-                anchor != nullptr) {
+        if (
+            HTREEITEM restoredSelected = FindTreeItemByLocationText(state, snapshot.selectedLocation);
+            restoredSelected == selectedItem
+        ) {
+            if (
+                HTREEITEM anchor = VisibleItemBefore(tree, selectedItem, snapshot.selectedOffsetRows);
+                anchor != nullptr
+            ) {
                 TreeView_SelectSetFirstVisible(tree, anchor);
                 return true;
             }
@@ -177,8 +190,10 @@ bool RestoreTreeViewportFromSnapshot(
     }
 
     if (!snapshot.firstVisibleLocation.empty()) {
-        if (HTREEITEM firstVisibleItem = FindTreeItemByLocationText(state, snapshot.firstVisibleLocation);
-            firstVisibleItem != nullptr) {
+        if (
+            HTREEITEM firstVisibleItem = FindTreeItemByLocationText(state, snapshot.firstVisibleLocation);
+            firstVisibleItem != nullptr
+        ) {
             TreeView_SelectSetFirstVisible(tree, firstVisibleItem);
             return true;
         }
@@ -194,7 +209,8 @@ std::optional<LayoutEditSelectionHighlight> SelectionHighlightForTreeNode(const 
 }  // namespace
 
 void RebuildLayoutEditTree(
-    LayoutEditDialogState* state, HWND hwnd, const std::optional<LayoutEditFocusKey>& preferredFocus) {
+    LayoutEditDialogState* state, HWND hwnd, const std::optional<LayoutEditFocusKey>& preferredFocus
+) {
     if (state == nullptr) {
         return;
     }
@@ -206,8 +222,8 @@ void RebuildLayoutEditTree(
 
     std::string preferredLocation;
     if (preferredFocus.has_value()) {
-        if (const LayoutEditTreeLeaf* leaf = FindLayoutEditTreeLeaf(state->treeModel, *preferredFocus);
-            leaf != nullptr) {
+        if (const LayoutEditTreeLeaf* leaf = FindLayoutEditTreeLeaf(state->treeModel, *preferredFocus); leaf != nullptr)
+        {
             preferredLocation = FormatText(RES_STR("[%s] %s"), leaf->sectionName.c_str(), leaf->memberName.c_str());
         }
     } else if (state->selectedNode != nullptr) {
@@ -293,10 +309,9 @@ void EnsureVisibleLayoutEditTreeSelection(HWND hwnd) {
     }
 }
 
-void RefreshLayoutEditDialogControls(LayoutEditDialogState* state,
-    HWND hwnd,
-    const std::optional<LayoutEditFocusKey>& preferredFocus,
-    bool rebuildTree) {
+void RefreshLayoutEditDialogControls(
+    LayoutEditDialogState* state, HWND hwnd, const std::optional<LayoutEditFocusKey>& preferredFocus, bool rebuildTree
+) {
     if (state == nullptr || hwnd == nullptr) {
         return;
     }

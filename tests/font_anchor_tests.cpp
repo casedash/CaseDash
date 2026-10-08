@@ -14,13 +14,9 @@
 
 namespace {
 
-FilePath SourceConfigPath() {
-    return FilePath(CASEDASH_SOURCE_DIR) / "resources" / "config.ini";
-}
+FilePath SourceConfigPath() { return FilePath(CASEDASH_SOURCE_DIR) / "resources" / "config.ini"; }
 
-ConfigParseContext TestConfigParseContext() {
-    return ConfigParseContext{TelemetryMetricCatalog()};
-}
+ConfigParseContext TestConfigParseContext() { return ConfigParseContext{TelemetryMetricCatalog()}; }
 
 std::vector<const UiFontConfig*> FontFieldPointers(const AppConfig& config) {
     std::vector<const UiFontConfig*> fields;
@@ -34,17 +30,20 @@ std::vector<const UiFontConfig*> FontFieldPointers(const AppConfig& config) {
             continue;
         }
         fields.push_back(
-            reinterpret_cast<const UiFontConfig*>(reinterpret_cast<const char*>(&config.layout.fonts) + field.offset));
+            reinterpret_cast<const UiFontConfig*>(reinterpret_cast<const char*>(&config.layout.fonts) + field.offset)
+        );
     }
     return fields;
 }
 
 bool ActiveRegionsContainFontParameter(const LayoutEditActiveRegions& regions, LayoutEditParameter parameter) {
     for (const LayoutEditActiveRegion& region : regions) {
-        if (region.kind != LayoutEditActiveRegionKind::StaticEditAnchorHandle &&
+        if (
+            region.kind != LayoutEditActiveRegionKind::StaticEditAnchorHandle &&
             region.kind != LayoutEditActiveRegionKind::StaticEditAnchorTarget &&
             region.kind != LayoutEditActiveRegionKind::DynamicEditAnchorHandle &&
-            region.kind != LayoutEditActiveRegionKind::DynamicEditAnchorTarget) {
+            region.kind != LayoutEditActiveRegionKind::DynamicEditAnchorTarget
+        ) {
             continue;
         }
         const auto* anchorRegion = LayoutEditActiveRegionPayloadAs<LayoutEditAnchorRegion>(region);

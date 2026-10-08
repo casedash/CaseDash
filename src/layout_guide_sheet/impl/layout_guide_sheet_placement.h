@@ -38,4 +38,5 @@ LayoutGuideSheetPlacementResult PlaceLayoutGuideSheetCallouts(
     std::vector<LayoutGuideSheetPlacementCallout>& callouts,
     const LayoutGuideSheetPlacementStyle& style,
     const LayoutGuideSheetConstrainCalloutWidth& constrainCalloutWidth,
-    std::vector<std::string>* traceDetails);
+    std::vector<std::string>* traceDetails
+);

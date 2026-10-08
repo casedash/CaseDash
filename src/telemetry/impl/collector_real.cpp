@@ -30,11 +30,9 @@ public:
         const int wsaStartupResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 
         state_->trace_.Write(TracePrefix::Telemetry, RES_STR("initialize_begin"));
-        state_->trace_.Write(TracePrefix::Telemetry,
-            FormatText("wsa_startup result=%d version=%u.%u",
-                wsaStartupResult,
-                LOBYTE(wsaData.wVersion),
-                HIBYTE(wsaData.wVersion)));
+        state_->trace_.Write(TracePrefix::Telemetry, FormatText(
+            "wsa_startup result=%d version=%u.%u", wsaStartupResult, LOBYTE(wsaData.wVersion), HIBYTE(wsaData.wVersion)
+        ));
         InitializeBoardCollector(*state_, settings.board);
         InitializeCpuCollector(*state_);
         InitializeGpuCollector(*state_);
@@ -52,9 +50,7 @@ public:
         return true;
     }
 
-    const SystemSnapshot& Snapshot() const override {
-        return state_->snapshot_;
-    }
+    const SystemSnapshot& Snapshot() const override { return state_->snapshot_; }
 
     TelemetryDump Dump() const override {
         TelemetryDump dump;
@@ -78,9 +74,7 @@ public:
         return dump;
     }
 
-    const ResolvedTelemetrySelections& ResolvedSelections() const override {
-        return state_->resolvedSelections_;
-    }
+    const ResolvedTelemetrySelections& ResolvedSelections() const override { return state_->resolvedSelections_; }
 
     const std::vector<GpuAdapterCandidate>& GpuAdapterCandidates() const override {
         return state_->gpu_.adapterCandidates;

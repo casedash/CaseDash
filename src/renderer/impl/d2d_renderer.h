@@ -31,31 +31,37 @@ public:
     bool DrawWindow(int width, int height, const DrawCallback& draw) override;
     bool DrawWindowRetained(int width, int height, const DrawCallback& draw) override;
     bool DrawWindowDirty(
-        int width, int height, std::span<const RenderRect> dirtyRects, const DirtyDrawCallback& draw) override;
+        int width, int height, std::span<const RenderRect> dirtyRects, const DirtyDrawCallback& draw
+    ) override;
     bool DrawOffscreen(int width, int height, const DrawCallback& draw) override;
     bool DrawToBitmap(
-        RenderBitmap& bitmap, int width, int height, RenderBitmapClear clear, const DrawCallback& draw) override;
+        RenderBitmap& bitmap, int width, int height, RenderBitmapClear clear, const DrawCallback& draw
+    ) override;
     bool DrawToLiveLayerBitmap(
-        RenderBitmap& bitmap, int width, int height, RenderBitmapClear clear, const DrawCallback& draw) override;
+        RenderBitmap& bitmap, int width, int height, RenderBitmapClear clear, const DrawCallback& draw
+    ) override;
     bool SavePng(const FilePath& imagePath, int width, int height, const DrawCallback& draw) override;
     const std::string& LastError() const override;
     const TextStyleMetrics& TextMetrics() const override;
     int ScaleLogical(int value) const override;
     int MeasureTextWidth(TextStyleId style, std::string_view text) const override;
-    TextLayoutResult MeasureTextBlock(const RenderRect& rect,
-        const std::string& text,
-        TextStyleId style,
-        const TextLayoutOptions& options) const override;
-    void DrawText(const RenderRect& rect,
-        const std::string& text,
-        TextStyleId style,
-        RenderColorId color,
-        const TextLayoutOptions& options) const override;
-    TextLayoutResult DrawTextBlock(const RenderRect& rect,
+    TextLayoutResult MeasureTextBlock(
+        const RenderRect& rect, const std::string& text, TextStyleId style, const TextLayoutOptions& options
+    ) const override;
+    void DrawText(
+        const RenderRect& rect,
         const std::string& text,
         TextStyleId style,
         RenderColorId color,
-        const TextLayoutOptions& options) override;
+        const TextLayoutOptions& options
+    ) const override;
+    TextLayoutResult DrawTextBlock(
+        const RenderRect& rect,
+        const std::string& text,
+        TextStyleId style,
+        RenderColorId color,
+        const TextLayoutOptions& options
+    ) override;
     void PushClipRect(const RenderRect& rect) override;
     void PopClipRect() override;
     void PushTranslation(RenderPoint offset) override;
@@ -79,8 +85,8 @@ public:
     bool FillPaths(std::span<const RenderPath> paths, RenderColorId color) override;
 
 private:
-    friend void RebuildLayoutGuideSheetRendererPalette(
-        D2DRenderer& renderer, const LayoutGuideSheetConfig& layoutGuideSheet);
+    friend void
+        RebuildLayoutGuideSheetRendererPalette(D2DRenderer& renderer, const LayoutGuideSheetConfig& layoutGuideSheet);
 
     enum class ActiveDrawTarget {
         None,
@@ -103,24 +109,29 @@ private:
     void EndDirect2DDraw();
     bool BeginWindowDraw(int width, int height, bool retainContents);
     void EndWindowDraw();
-    bool DrawToWicBitmap(int width,
+    bool DrawToWicBitmap(
+        int width,
         int height,
         const DrawCallback& draw,
         std::string_view errorPrefix,
-        Microsoft::WRL::ComPtr<IWICBitmap>* renderedBitmap = nullptr);
+        Microsoft::WRL::ComPtr<IWICBitmap>* renderedBitmap = nullptr
+    );
     bool SaveWicBitmapPng(IWICBitmap* bitmap, const FilePath& imagePath);
     ID2D1SolidColorBrush* D2DSolidBrush(RenderColorId color);
     IDWriteTextFormat* DWriteTextFormat(TextStyleId style) const;
     bool CreateDWriteTextFormats();
     void ConfigureDWriteTextFormat(IDWriteTextFormat* format, const TextLayoutOptions& options) const;
-    TextLayoutResult MeasureTextBlockD2D(const RenderRect& rect,
+    TextLayoutResult MeasureTextBlockD2D(
+        const RenderRect& rect,
         const std::wstring& wideText,
         TextStyleId style,
         const TextLayoutOptions& options,
-        Microsoft::WRL::ComPtr<IDWriteTextLayout>* layout = nullptr) const;
+        Microsoft::WRL::ComPtr<IDWriteTextLayout>* layout = nullptr
+    ) const;
     Microsoft::WRL::ComPtr<ID2D1PathGeometry> CreateD2DPathGeometry() const;
     Microsoft::WRL::ComPtr<ID2D1GeometryGroup> CreateD2DGeometryGroup(
-        std::span<const Microsoft::WRL::ComPtr<ID2D1PathGeometry>> geometries, size_t count) const;
+        std::span<const Microsoft::WRL::ComPtr<ID2D1PathGeometry>> geometries, size_t count
+    ) const;
     bool FillD2DGeometry(ID2D1Geometry* geometry, RenderColorId color);
     bool DrawD2DGeometry(ID2D1Geometry* geometry, const RenderStroke& stroke);
     Microsoft::WRL::ComPtr<ID2D1Bitmap> D2DBitmapForRenderBitmap(const RenderBitmap& bitmap);

@@ -9,7 +9,8 @@ class DialogRedrawScope {
 public:
     explicit DialogRedrawScope(HWND hwnd, UINT redrawFlags = RDW_INVALIDATE | RDW_ALLCHILDREN | RDW_UPDATENOW);
     DialogRedrawScope(
-        HWND hwnd, const RECT& redrawRect, UINT redrawFlags = RDW_INVALIDATE | RDW_ALLCHILDREN | RDW_UPDATENOW);
+        HWND hwnd, const RECT& redrawRect, UINT redrawFlags = RDW_INVALIDATE | RDW_ALLCHILDREN | RDW_UPDATENOW
+    );
     ~DialogRedrawScope();
 
     DialogRedrawScope(const DialogRedrawScope&) = delete;
@@ -26,7 +27,8 @@ private:
 class DialogDescendantRedrawScope {
 public:
     explicit DialogDescendantRedrawScope(
-        HWND hwnd, UINT redrawFlags = RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN | RDW_UPDATENOW);
+        HWND hwnd, UINT redrawFlags = RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN | RDW_UPDATENOW
+    );
     ~DialogDescendantRedrawScope();
 
     DialogDescendantRedrawScope(const DialogDescendantRedrawScope&) = delete;
@@ -61,7 +63,8 @@ bool IsColorGradientBarControlId(int controlId);
 void DrawColorGradientBar(HWND hwnd, const DRAWITEMSTRUCT& drawItem);
 void DrawThemePreview(LayoutEditDialogState* state, const DRAWITEMSTRUCT& drawItem);
 void SetFontSamplePreview(
-    LayoutEditDialogState* state, HWND hwnd, std::optional<LayoutEditParameter> parameter, const UiFontConfig* font);
+    LayoutEditDialogState* state, HWND hwnd, std::optional<LayoutEditParameter> parameter, const UiFontConfig* font
+);
 void ShowLayoutEditEditors(HWND hwnd, LayoutEditEditorKind kind, bool showBinding = false);
 void DestroyMetricListOrderEditorControls(LayoutEditDialogState* state);
 void EnsureMetricListOrderEditorControls(LayoutEditDialogState* state, HWND hwnd, size_t rowCount);

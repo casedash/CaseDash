@@ -20,18 +20,17 @@ std::string RuntimeSectionName(const RuntimeConfigSectionDescriptor& section) {
 }
 
 std::string RuntimeDynamicSectionName(const RuntimeConfigSectionDescriptor& section, std::string_view suffix) {
-    return FormatText("[%.*s%.*s]",
-        static_cast<int>(section.nameLength),
-        section.name,
-        static_cast<int>(suffix.size()),
-        suffix.data());
+    return FormatText(
+        "[%.*s%.*s]", static_cast<int>(section.nameLength), section.name, static_cast<int>(suffix.size()), suffix.data()
+    );
 }
 
 template <typename UpdateKeyFn>
 void SaveBoardSectionDifferences(
-    const BoardConfig& board, const BoardConfig* compareBoard, const std::string& sectionName, UpdateKeyFn& updateKey) {
-    const auto saveBoardKey =
-        [&](const std::string& key, const std::string& currentValue, const std::string& compareValue) {
+    const BoardConfig& board, const BoardConfig* compareBoard, const std::string& sectionName, UpdateKeyFn& updateKey
+) {
+    const auto
+        saveBoardKey = [&](const std::string& key, const std::string& currentValue, const std::string& compareValue) {
             if (compareBoard == nullptr || currentValue != compareValue) {
                 updateKey(sectionName, key, currentValue);
             }
@@ -39,9 +38,8 @@ void SaveBoardSectionDifferences(
 
     for (const std::string& logicalName : board.requestedTemperatureNames) {
         const auto currentIt = board.temperatureSensorNames.find(logicalName);
-        const std::string currentValue = currentIt != board.temperatureSensorNames.end() && !currentIt->second.empty()
-                                             ? currentIt->second
-                                             : logicalName;
+        const std::string currentValue = currentIt != board.temperatureSensorNames.end() && !currentIt->second.empty() ?
+            currentIt->second : logicalName;
 
         std::string compareValue = logicalName;
         if (compareBoard != nullptr) {
@@ -70,10 +68,12 @@ void SaveBoardSectionDifferences(
 }
 
 template <typename UpdateKeyFn>
-void SaveMetricsSectionDifferences(const MetricsSectionConfig& metrics,
+void SaveMetricsSectionDifferences(
+    const MetricsSectionConfig& metrics,
     const MetricsSectionConfig* compareMetrics,
     const std::string& sectionName,
-    UpdateKeyFn& updateKey) {
+    UpdateKeyFn& updateKey
+) {
     for (const auto& definition : metrics.definitions) {
         if (definition.id.empty() || IsRuntimePlaceholderMetricId(definition.id)) {
             continue;
@@ -90,11 +90,13 @@ void SaveMetricsSectionDifferences(const MetricsSectionConfig& metrics,
 }
 
 template <typename UpdateKeyFn>
-void SaveStructuredSectionDifferences(const RuntimeConfigSectionDescriptor& section,
+void SaveStructuredSectionDifferences(
+    const RuntimeConfigSectionDescriptor& section,
     const void* owner,
     const void* compareOwner,
     const std::string& sectionName,
-    UpdateKeyFn& updateKey) {
+    UpdateKeyFn& updateKey
+) {
     for (const RuntimeConfigFieldDescriptor& field : RuntimeConfigFields(section)) {
         if (compareOwner == nullptr || !RuntimeConfigFieldEquals(field, owner, compareOwner)) {
             updateKey(sectionName, std::string(field.key, field.keyLength), EncodeRuntimeConfigField(field, owner));
@@ -103,46 +105,55 @@ void SaveStructuredSectionDifferences(const RuntimeConfigSectionDescriptor& sect
 }
 
 template <typename UpdateKeyFn>
-void SaveSectionDifferences(const RuntimeConfigSectionDescriptor& section,
+void SaveSectionDifferences(
+    const RuntimeConfigSectionDescriptor& section,
     const void* owner,
     const void* compareOwner,
     const std::string& sectionName,
-    UpdateKeyFn& updateKey) {
+    UpdateKeyFn& updateKey
+) {
     switch (section.codec) {
         case RuntimeConfigSectionCodec::Structured:
             SaveStructuredSectionDifferences(section, owner, compareOwner, sectionName, updateKey);
             break;
         case RuntimeConfigSectionCodec::Board:
-            SaveBoardSectionDifferences(*reinterpret_cast<const BoardConfig*>(owner),
+            SaveBoardSectionDifferences(
+                *reinterpret_cast<const BoardConfig*>(owner),
                 reinterpret_cast<const BoardConfig*>(compareOwner),
                 sectionName,
-                updateKey);
+                updateKey
+            );
             break;
         case RuntimeConfigSectionCodec::Metrics:
-            SaveMetricsSectionDifferences(*reinterpret_cast<const MetricsSectionConfig*>(owner),
+            SaveMetricsSectionDifferences(
+                *reinterpret_cast<const MetricsSectionConfig*>(owner),
                 reinterpret_cast<const MetricsSectionConfig*>(compareOwner),
                 sectionName,
-                updateKey);
+                updateKey
+            );
             break;
     }
 }
 
-template <typename UpdateKeyFn> struct DynamicSectionSaveContext {
+template <typename UpdateKeyFn>
+struct DynamicSectionSaveContext {
     const RuntimeConfigSectionDescriptor* section = nullptr;
     const AppConfig* compareConfig = nullptr;
     UpdateKeyFn* updateKey = nullptr;
 };
 
-template <typename UpdateKeyFn> void SaveDynamicSectionItem(void* context, std::string_view suffix, const void* item) {
+template <typename UpdateKeyFn>
+void SaveDynamicSectionItem(void* context, std::string_view suffix, const void* item) {
     auto& saveContext = *reinterpret_cast<DynamicSectionSaveContext<UpdateKeyFn>*>(context);
-    const void* compareItem = saveContext.compareConfig != nullptr
-                                  ? saveContext.section->dynamic.find(*saveContext.compareConfig, suffix)
-                                  : nullptr;
-    SaveSectionDifferences(*saveContext.section,
+    const void* compareItem = saveContext.compareConfig != nullptr ?
+        saveContext.section->dynamic.find(*saveContext.compareConfig, suffix) : nullptr;
+    SaveSectionDifferences(
+        *saveContext.section,
         item,
         compareItem,
         RuntimeDynamicSectionName(*saveContext.section, suffix),
-        *saveContext.updateKey);
+        *saveContext.updateKey
+    );
 }
 
 template <typename UpdateKeyFn>
@@ -163,12 +174,14 @@ void SaveKnownSectionDifferences(const AppConfig& config, const AppConfig* compa
     }
 }
 
-void ReplaceOrAppendKey(std::vector<std::string>& lines,
+void ReplaceOrAppendKey(
+    std::vector<std::string>& lines,
     size_t sectionStart,
     size_t sectionEnd,
     const std::string& key,
     const std::string& value,
-    bool appendWhenMissing) {
+    bool appendWhenMissing
+) {
     for (size_t i = sectionStart + 1; i < sectionEnd; ++i) {
         const std::string trimmed = Trim(lines[i]);
         if (trimmed.empty() || trimmed[0] == ';' || trimmed[0] == '#') {
@@ -189,8 +202,9 @@ void ReplaceOrAppendKey(std::vector<std::string>& lines,
         while (appendIndex > sectionStart + 1 && Trim(lines[appendIndex - 1]).empty()) {
             --appendIndex;
         }
-        lines.insert(lines.begin() + static_cast<std::ptrdiff_t>(appendIndex),
-            FormatText("%s = %s", key.c_str(), value.c_str()));
+        lines.insert(
+            lines.begin() + static_cast<std::ptrdiff_t>(appendIndex), FormatText("%s = %s", key.c_str(), value.c_str())
+        );
     }
 }
 
@@ -281,7 +295,8 @@ size_t InsertConfigSection(std::vector<std::string>& lines, size_t insertIndex, 
 }
 
 size_t EnsureConfigSectionInDefaultOrder(
-    std::vector<std::string>& lines, const std::string& sectionName, ConfigSaveShape shape) {
+    std::vector<std::string>& lines, const std::string& sectionName, ConfigSaveShape shape
+) {
     const size_t existingIndex = FindConfigSectionIndex(lines, sectionName);
     if (existingIndex < lines.size()) {
         return existingIndex;
@@ -327,7 +342,8 @@ void RemoveConfigSection(std::vector<std::string>& lines, std::string_view secti
         --eraseStart;
     }
     lines.erase(
-        lines.begin() + static_cast<std::ptrdiff_t>(eraseStart), lines.begin() + static_cast<std::ptrdiff_t>(eraseEnd));
+        lines.begin() + static_cast<std::ptrdiff_t>(eraseStart), lines.begin() + static_cast<std::ptrdiff_t>(eraseEnd)
+    );
 }
 
 std::string JoinConfigLines(const std::vector<std::string>& lines) {
@@ -346,29 +362,31 @@ void RemoveLeadingEmptyLines(std::vector<std::string>& lines) {
 
 template <typename UpdateKeyFn>
 void SaveKnownStructuredSectionDifferences(
-    const AppConfig& config, const AppConfig* compareConfig, UpdateKeyFn& updateKey) {
+    const AppConfig& config, const AppConfig* compareConfig, UpdateKeyFn& updateKey
+) {
     SaveKnownSectionDifferences(config, compareConfig, updateKey);
 }
 
 }  // namespace
 
 std::string BuildSavedConfigText(
-    const std::string& initialText, const AppConfig& config, const AppConfig* compareConfig, ConfigSaveShape shape) {
+    const std::string& initialText, const AppConfig& config, const AppConfig* compareConfig, ConfigSaveShape shape
+) {
     std::vector<std::string> lines = SplitConfigLines(initialText);
     RemoveConfigSection(lines, kLayoutGuideSheetHeader);
 
-    const auto updateKey = [&lines, shape](
-                               const std::string& sectionName, const std::string& key, const std::string& value) {
-        size_t sectionStart = EnsureConfigSectionInDefaultOrder(lines, sectionName, shape);
-        if (sectionStart >= lines.size()) {
-            return;
-        }
-        if (Trim(lines[sectionStart]) != sectionName) {
-            lines[sectionStart] = sectionName;
-        }
-        const size_t sectionEnd = FindConfigSectionEnd(lines, sectionStart);
-        ReplaceOrAppendKey(lines, sectionStart, sectionEnd, key, value, shape == ConfigSaveShape::UpdateOrAppend);
-    };
+    const auto
+        updateKey = [&lines, shape](const std::string& sectionName, const std::string& key, const std::string& value) {
+            size_t sectionStart = EnsureConfigSectionInDefaultOrder(lines, sectionName, shape);
+            if (sectionStart >= lines.size()) {
+                return;
+            }
+            if (Trim(lines[sectionStart]) != sectionName) {
+                lines[sectionStart] = sectionName;
+            }
+            const size_t sectionEnd = FindConfigSectionEnd(lines, sectionStart);
+            ReplaceOrAppendKey(lines, sectionStart, sectionEnd, key, value, shape == ConfigSaveShape::UpdateOrAppend);
+        };
 
     SaveKnownStructuredSectionDifferences(config, compareConfig, updateKey);
     RemoveLeadingEmptyLines(lines);

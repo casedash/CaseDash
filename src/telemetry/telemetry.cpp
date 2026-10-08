@@ -9,6 +9,7 @@
 namespace {
 
 using Clock = std::chrono::steady_clock;
+
 constexpr const char* kRetainedHistorySeriesRefs[] = {
     "cpu.ram",
     "cpu.load",
@@ -24,11 +25,10 @@ constexpr const char* kRetainedHistorySeriesRefs[] = {
     "storage.read",
     "storage.write",
 };
+
 static_assert(sizeof(kRetainedHistorySeriesRefs) / sizeof(kRetainedHistorySeriesRefs[0]) == kRetainedHistoryKeyCount);
 
-size_t RetainedHistoryKeyIndex(RetainedHistoryKey key) {
-    return static_cast<size_t>(key);
-}
+size_t RetainedHistoryKeyIndex(RetainedHistoryKey key) { return static_cast<size_t>(key); }
 
 TelemetryUpdate CaptureTelemetryUpdate(const TelemetryCollector& collector) {
     TelemetryUpdate update;
@@ -42,8 +42,9 @@ TelemetryUpdate CaptureTelemetryUpdate(const TelemetryCollector& collector) {
 
 class ThreadedTelemetryRuntime final : public TelemetryRuntime {
 public:
-    ThreadedTelemetryRuntime(std::unique_ptr<TelemetryCollector> collector, Trace& trace, TelemetryUpdateSink* callback)
-        : collector_(std::move(collector)), trace_(trace), callback_(callback) {}
+    ThreadedTelemetryRuntime(
+        std::unique_ptr<TelemetryCollector> collector, Trace& trace, TelemetryUpdateSink* callback
+    ) : collector_(std::move(collector)), trace_(trace), callback_(callback) {}
 
     ~ThreadedTelemetryRuntime() override {
         Shutdown();
@@ -133,7 +134,8 @@ public:
     }
 
 private:
-    template <typename Action> void RunSynchronized(Action&& action) {
+    template <typename Action>
+    void RunSynchronized(Action&& action) {
         LightweightMutexLock lock(commandLock_);
         action();
         PublishLocked();
@@ -226,12 +228,14 @@ bool IsThroughputRetainedHistoryKey(RetainedHistoryKey key) {
     }
 }
 
-std::unique_ptr<TelemetryRuntime> CreateTelemetryRuntime(const TelemetryCollectorOptions& options,
+std::unique_ptr<TelemetryRuntime> CreateTelemetryRuntime(
+    const TelemetryCollectorOptions& options,
     const FilePath& workingDirectory,
     const TelemetrySettings& settings,
     Trace& trace,
     TelemetryUpdateSink* callback,
-    std::string* errorText) {
+    std::string* errorText
+) {
     if (errorText != nullptr) {
         errorText->clear();
     }

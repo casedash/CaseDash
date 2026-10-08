@@ -8,14 +8,13 @@ namespace {
 
 constexpr size_t kMetricLookupCacheSlots = 128;
 
-size_t MetricLookupCacheSlot(std::string_view key) {
-    return StableStringHash(key) % kMetricLookupCacheSlots;
-}
+size_t MetricLookupCacheSlot(std::string_view key) { return StableStringHash(key) % kMetricLookupCacheSlots; }
 
 }  // namespace
 
-const MetricDefinitionConfig* MetricLookupCache::FindDefinition(
-    const MetricsSectionConfig& metrics, std::string_view metricRef) const {
+const MetricDefinitionConfig*
+    MetricLookupCache::FindDefinition(const MetricsSectionConfig& metrics, std::string_view metricRef) const
+{
     MetricDefinitionCacheEntry& entry = definitions_[MetricLookupCacheSlot(metricRef)];
     if (entry.occupied && std::string_view(entry.key) == metricRef) {
         return entry.definition;
@@ -27,8 +26,9 @@ const MetricDefinitionConfig* MetricLookupCache::FindDefinition(
     return definition;
 }
 
-const std::string& MetricLookupCache::ResolveSampleValueText(
-    const MetricsSectionConfig& metrics, std::string_view metricRef) const {
+const std::string&
+    MetricLookupCache::ResolveSampleValueText(const MetricsSectionConfig& metrics, std::string_view metricRef) const
+{
     MetricSampleValueTextCacheEntry& entry = sampleValueTexts_[MetricLookupCacheSlot(metricRef)];
     if (entry.occupied && std::string_view(entry.key) == metricRef) {
         return entry.text;

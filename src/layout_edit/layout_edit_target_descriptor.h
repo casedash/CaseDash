@@ -40,7 +40,8 @@ struct LayoutNodeFieldEditDescriptor {
 
 const LayoutNodeFieldEditDescriptor* FindLayoutNodeFieldEditDescriptor(const LayoutNodeFieldEditKey& key);
 std::optional<LayoutNodeFieldEditKey> LayoutNodeFieldEditKeyForWidgetParameter(
-    std::string editCardId, std::vector<size_t> nodePath, WidgetClass widgetClass);
+    std::string editCardId, std::vector<size_t> nodePath, WidgetClass widgetClass
+);
 std::string_view LayoutNodeFieldEditTitle(const LayoutNodeFieldEditKey& key);
 std::string_view LayoutNodeFieldEditHint(const LayoutNodeFieldEditKey& key);
 std::string_view LayoutNodeFieldEditMenuSubject(const LayoutNodeFieldEditKey& key);

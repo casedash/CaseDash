@@ -70,8 +70,9 @@ std::optional<unsigned int> FindLayoutEditParameterColorValue(const AppConfig& c
     return reinterpret_cast<const ColorConfig*>(FieldAddress(config, field))->ToRgba();
 }
 
-std::optional<const ColorConfig*> FindLayoutEditParameterColorConfigValue(
-    const AppConfig& config, LayoutEditParameter parameter) {
+std::optional<const ColorConfig*>
+    FindLayoutEditParameterColorConfigValue(const AppConfig& config, LayoutEditParameter parameter)
+{
     const auto& field = GetLayoutEditConfigFieldMetadata(parameter);
     if (field.valueKind != RuntimeConfigFieldValueKind::HexColor) {
         return std::nullopt;
@@ -79,8 +80,9 @@ std::optional<const ColorConfig*> FindLayoutEditParameterColorConfigValue(
     return reinterpret_cast<const ColorConfig*>(FieldAddress(config, field));
 }
 
-std::optional<const UiFontConfig*> FindLayoutEditTooltipFontValue(
-    const AppConfig& config, LayoutEditParameter parameter) {
+std::optional<const UiFontConfig*>
+    FindLayoutEditTooltipFontValue(const AppConfig& config, LayoutEditParameter parameter)
+{
     const auto& field = GetLayoutEditConfigFieldMetadata(parameter);
     if (field.valueKind != RuntimeConfigFieldValueKind::FontSpec) {
         return std::nullopt;

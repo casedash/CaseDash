@@ -39,7 +39,7 @@ void SetSupportDiagnostics(
         diagnostics,
         RES_STR(
             "ADLX GPU=%s usage_supported=%s(%d) temp_supported=%s(%d) clock_supported=%s(%d) fan_supported=%s(%d) "
-            "vram_supported=%s(%d)"
+                "vram_supported=%s(%d)"
         ),
         gpuName.c_str(),
         usageSupported ? "yes" : "no",
@@ -68,8 +68,8 @@ std::optional<unsigned int> ParseHexText(std::string text) {
     }
     char* end = nullptr;
     const unsigned long value = std::strtoul(text.c_str(), &end, 16);
-    return end != nullptr && *end == '\0' ? std::optional<unsigned int>{static_cast<unsigned int>(value)} :
-        std::nullopt;
+    return
+        end != nullptr && *end == '\0' ? std::optional<unsigned int>{static_cast<unsigned int>(value)} : std::nullopt;
 }
 
 std::optional<unsigned int> ParsePnpHexField(const std::string& text, const char* key) {
@@ -151,14 +151,8 @@ int AmdDeviceMatchRank(const GpuAdapterInfo& adapter, const AdlxGpuIdentity& ide
 
 class AmdAdlxGpuTelemetryProvider final : public GpuVendorTelemetryProvider {
 public:
-    AmdAdlxGpuTelemetryProvider(
-        Trace& trace,
-        std::optional<GpuAdapterInfo> adapter,
-        bool collectPresentedFps
-    ) :
-        trace_(trace),
-        adapter_(std::move(adapter)),
-        collectPresentedFps_(collectPresentedFps) {}
+    AmdAdlxGpuTelemetryProvider(Trace& trace, std::optional<GpuAdapterInfo> adapter, bool collectPresentedFps) :
+        trace_(trace), adapter_(std::move(adapter)), collectPresentedFps_(collectPresentedFps) {}
 
     ~AmdAdlxGpuTelemetryProvider() override {
         metricsSupport_ = nullptr;
@@ -179,9 +173,7 @@ public:
             );
             result = helper_.InitializeWithIncompatibleDriver();
             trace().WriteFmt(
-                TracePrefix::AmdAdlx,
-                RES_STR("helper_initialize_incompatible_done result=%d"),
-                static_cast<int>(result)
+                TracePrefix::AmdAdlx, RES_STR("helper_initialize_incompatible_done result=%d"), static_cast<int>(result)
             );
         }
         if (ADLX_FAILED(result) || helper_.GetSystemServices() == nullptr) {
@@ -200,14 +192,10 @@ public:
         );
         if (ADLX_FAILED(result) || !performanceMonitoring_) {
             diagnostics_ = FormatText(
-                RES_STR("Failed to get ADLX performance monitoring services: perf=%d"),
-                static_cast<int>(result)
+                RES_STR("Failed to get ADLX performance monitoring services: perf=%d"), static_cast<int>(result)
             );
-            trace().WriteFmt(
-                TracePrefix::AmdAdlx,
-                RES_STR("get_performance_monitoring_failed %s"),
-                diagnostics_.c_str()
-            );
+            trace()
+                .WriteFmt(TracePrefix::AmdAdlx, RES_STR("get_performance_monitoring_failed %s"), diagnostics_.c_str());
             return false;
         }
 
@@ -354,10 +342,7 @@ public:
             trace().Write(TracePrefix::AmdAdlx, RES_STR("get_usage_begin"));
             const ADLX_RESULT result = metrics->GPUUsage(&usage);
             trace().WriteFmt(
-                TracePrefix::AmdAdlx,
-                RES_STR("get_usage_done result=%d value=%.1f"),
-                static_cast<int>(result),
-                usage
+                TracePrefix::AmdAdlx, RES_STR("get_usage_done result=%d value=%.1f"), static_cast<int>(result), usage
             );
             if (ADLX_SUCCEEDED(result)) {
                 sample.loadPercent = usage;
@@ -452,7 +437,7 @@ public:
                     TracePrefix::AmdAdlx,
                     RES_STR(
                         "get_presented_fps available=%s permission_required=%s value=%s process=\"%s\" "
-                        "diagnostics=\"%s\""
+                            "diagnostics=\"%s\""
                     ),
                     Trace::BoolText(fpsSample.fps.has_value()),
                     Trace::BoolText(fpsSample.permissionRequired),
@@ -492,7 +477,7 @@ private:
                 TracePrefix::AmdAdlx,
                 RES_STR(
                     "gpu_candidate index=%u result=%d vendor_id=0x%04X device_id=0x%04X subsystem_id=0x%08X "
-                    "revision=0x%02X match_rank=%d name=\"%s\" pnp=\"%s\""
+                        "revision=0x%02X match_rank=%d name=\"%s\" pnp=\"%s\""
                 ),
                 static_cast<unsigned>(index),
                 static_cast<int>(result),
@@ -557,9 +542,7 @@ private:
         return ADLX_SUCCEEDED(fpsResult) && fps >= 0 ? std::optional<double>{static_cast<double>(fps)} : std::nullopt;
     }
 
-    Trace& trace() {
-        return trace_;
-    }
+    Trace& trace() { return trace_; }
 
     ADLXHelper helper_;
     IADLXGPUPtr gpu_;
@@ -583,10 +566,8 @@ private:
 
 }  // namespace
 
-std::unique_ptr<GpuVendorTelemetryProvider> CreateAmdGpuTelemetryProvider(
-    Trace& trace,
-    std::optional<GpuAdapterInfo> adapter,
-    bool collectPresentedFps
-) {
+std::unique_ptr<GpuVendorTelemetryProvider>
+    CreateAmdGpuTelemetryProvider(Trace& trace, std::optional<GpuAdapterInfo> adapter, bool collectPresentedFps)
+{
     return std::make_unique<AmdAdlxGpuTelemetryProvider>(trace, std::move(adapter), collectPresentedFps);
 }

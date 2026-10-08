@@ -8,9 +8,7 @@ namespace {
 
 constexpr size_t kModulePathBufferLength = 32768;
 
-FilePath CaptureLaunchWorkingDirectory() {
-    return CurrentDirectoryPath();
-}
+FilePath CaptureLaunchWorkingDirectory() { return CurrentDirectoryPath(); }
 
 }  // namespace
 

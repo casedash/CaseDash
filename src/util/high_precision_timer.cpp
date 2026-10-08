@@ -40,6 +40,4 @@ std::chrono::nanoseconds HighPrecisionTimer::Elapsed(Tick start, Tick end) {
     return std::chrono::nanoseconds(static_cast<std::chrono::nanoseconds::rep>(nanoseconds));
 }
 
-std::chrono::nanoseconds HighPrecisionTimer::Since(Tick start) {
-    return Elapsed(start, Now());
-}
+std::chrono::nanoseconds HighPrecisionTimer::Since(Tick start) { return Elapsed(start, Now()); }
