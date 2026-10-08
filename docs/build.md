@@ -143,7 +143,7 @@ The `Release` workflow deploys the generated site after a successful tagged rele
 
 ## GitHub Validation
 
-- The `Validation` workflow runs on pull requests targeting `main`, pushes to `main`, and manual dispatch. Feature-branch changes are validated through pull requests rather than duplicate branch-push runs.
+- The `Validation` workflow runs on every branch push, pull requests targeting `main`, and manual dispatch.
 - GitHub workflows restore the shared vcpkg download and registry caches under `.github-cache\CaseDash` inside the checked-out workspace before validation, then save the refreshed cache contents after the run so repeated GitHub-hosted runs reuse the same bootstrap downloads. Cache restore and save failures are best-effort and do not block validation.
 - The workflow checks formatting first with `format.cmd`, then builds with `build.cmd /benchmarks`, runs architecture lint with `lint.cmd`, tests with `test.cmd`, runs a `CaseDashHeadless.exe` diagnostics export smoke test, builds the WiX MSI with `package.cmd`, and runs `lint.cmd includes` on `windows-2025-vs2026`.
 - The repository branch protection requires the `Validation` job before pull requests can merge.
