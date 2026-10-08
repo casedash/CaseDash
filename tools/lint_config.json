@@ -15,7 +15,7 @@
     "roots": ["src"],
     "header_suffix_group": "headers",
     "implementation_suffix_group": "implementations",
-    "header_body_allowlist": ["external/strictfmt/src/format/impl/format_break_model_inline_helpers.h"],
+    "header_body_allowlist": [],
     "cpp_without_header_allowlist": ["src/main/main.cpp", "src/headless/headless_main.cpp"],
     "control_keywords": ["catch", "for", "if", "switch", "while"]
   },
@@ -80,7 +80,7 @@
       {
         "kind": "source-policy",
         "pattern": "\\bstd\\s*::\\s*filesystem\\b|^\\s*#\\s*include\\s*<\\s*filesystem\\s*>",
-        "excluded_prefixes": ["src/tools/", "external/strictfmt/src/"],
+        "excluded_prefixes": ["src/tools/"],
         "message": "std::filesystem is not allowed in maintained source; use src/util/file_path.* helpers so path handling stays Win32-backed without pulling filesystem machinery into the app. See {guardrails_doc}."
       },
       {
@@ -91,7 +91,7 @@
       {
         "kind": "source-policy",
         "pattern": "\\bstd\\s*::\\s*(?:condition_variable(?:_any)?|jthread|mutex|recursive_mutex|shared_mutex|thread|timed_mutex)\\b|^\\s*#\\s*include\\s*<\\s*(?:condition_variable|mutex|shared_mutex|thread)\\s*>",
-        "excluded_prefixes": ["src/tools/", "external/strictfmt/src/"],
+        "excluded_prefixes": ["src/tools/"],
         "message": "STL threading primitives are not allowed in maintained source; use LightweightMutex for small locks and direct Win32 thread or event handles for worker wakeups so prior size-optimization wins stay enforced. See {guardrails_doc}."
       },
       {

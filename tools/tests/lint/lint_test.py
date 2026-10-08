@@ -125,9 +125,11 @@ class LintCheckTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertIn("Lint succeeded after scanning 2 lint input file(s), 10 LOC in", result.stdout)
 
-    def test_lint_check_allows_strictfmt_filesystem_and_threading_primitives(self) -> None:
+    def test_lint_check_excludes_embedded_strictfmt_sources(self) -> None:
         clean_root = TEST_ROOT / "build" / "strictfmt_portable"
         shutil.rmtree(clean_root, ignore_errors=True)
+        (clean_root / "src").mkdir(parents=True)
+        (clean_root / "src" / "maintained.h").write_text("#pragma once\n", encoding="utf-8")
         (clean_root / "external" / "strictfmt" / "src" / "tools").mkdir(parents=True)
         (clean_root / "external" / "strictfmt" / "src" / "tools" / "portable.cpp").write_text(
             "#include <filesystem>\n"
@@ -164,7 +166,7 @@ class LintCheckTests(unittest.TestCase):
         )
 
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertIn("Lint succeeded after scanning 1 lint input file(s), 8 LOC in", result.stdout)
+        self.assertIn("Lint succeeded after scanning 1 lint input file(s), 1 LOC in", result.stdout)
 
     def test_lint_check_reads_newline_file_list(self) -> None:
         clean_root = TEST_ROOT / "build" / "file_list"
