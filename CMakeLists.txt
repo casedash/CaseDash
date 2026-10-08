@@ -1071,6 +1071,9 @@ target_include_directories(CaseDashTests PRIVATE
     "${CASEDASH_GENERATED_DIR}"
 )
 add_dependencies(CaseDashTests CaseDashGeneratedResources CaseDashGeneratedConfigMeta)
+if(TARGET strictfmt_utf8_tests)
+    add_dependencies(CaseDashTests strictfmt_utf8_tests strictfmt_layout_tests strictfmt_parallel_tests)
+endif()
 target_compile_definitions(CaseDashTests PRIVATE
     NOMINMAX
     WIN32_LEAN_AND_MEAN

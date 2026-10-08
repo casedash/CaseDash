@@ -6,9 +6,9 @@
     "implementations": [".cpp"]
   },
   "scan": {
-    "roots": ["src", "tests", "resources", "external/strictfmt/src"],
+    "roots": ["src", "tests", "resources"],
     "suffix_group": "lint_inputs",
-    "excluded_prefixes": ["src/vendor/", "external/strictfmt/vendor/"],
+    "excluded_prefixes": ["src/vendor/"],
     "include_pattern": "^\\s*#include\\s+(?:\"([^\"]+)\"|<([^>]+)>)"
   },
   "architecture": {
@@ -68,7 +68,7 @@
     ]
   },
   "source_policy": {
-    "roots": ["src", "tests", "external/strictfmt/src"],
+    "roots": ["src", "tests"],
     "suffix_group": "source",
     "guardrails_doc": "docs/source_policy_guardrails.md",
     "line_rules": [

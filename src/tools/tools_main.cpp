@@ -3,7 +3,7 @@
 #include <cstdio>
 #include <string>
 
-#include "format/format_model_dump.h"
+#include "format/impl/format_model_dump.h"
 #include "format/strictfmt_cli.h"
 #include "tools/lint_check.h"
 
@@ -46,6 +46,4 @@ int RunToolsMain(int argc, char** argv) {
     return 2;
 }
 
-int main(int argc, char** argv) {
-    return RunToolsMain(argc, argv);
-}
+int main(int argc, char** argv) { return RunToolsMain(argc, argv); }

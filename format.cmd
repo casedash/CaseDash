@@ -61,7 +61,7 @@ goto :usage
 :args_done
 
 if "!restage!"=="1" if /I not "!mode!"=="fix" goto :usage
-if "!restage!"=="1" if /I not "!scope!"=="staged" goto :usage
+if "!restage!"=="1" if /I "!scope!"=="changed" goto :usage
 
 call :ensure_format_tool
 set "ensure_format_tool_result=!errorlevel!"
@@ -71,7 +71,9 @@ if not "!ensure_format_tool_result!"=="0" (
 )
 
 set "file_list="
-if /I not "!scope!"=="all" (
+set "use_file_list=!restage!"
+if /I not "!scope!"=="all" set "use_file_list=1"
+if "!use_file_list!"=="1" (
     if not exist "%script_root%build" mkdir "%script_root%build"
     set "file_list=%script_root%build\format_files_%RANDOM%_%RANDOM%.txt"
     if exist "!file_list!" del /q "!file_list!" >nul 2>nul
@@ -93,7 +95,7 @@ if /I not "!scope!"=="all" (
     )
 )
 
-set "native_options="
+set "native_options=--validate"
 if /I "!mode!"=="fix" (
     set "native_options=!native_options! -i"
 ) else (
@@ -103,7 +105,7 @@ if defined concurrency_arg set "native_options=!native_options! !concurrency_arg
 if "!verbose!"=="1" set "native_options=!native_options! --verbose"
 
 set "format_failed=0"
-if /I "!scope!"=="all" (
+if "!use_file_list!"=="0" (
     "%script_root%build\CaseDashTools.exe" format !native_options! -r .
 ) else (
     "%script_root%build\CaseDashTools.exe" format !native_options! --files "!file_list!"
@@ -125,33 +127,10 @@ exit /b !format_failed!
 
 :collect_files
 set "format_extensions=.c,.cc,.cpp,.cxx,.c++,.h,.hh,.hpp,.hxx,.h++,.ipp,.inl,.tpp"
-powershell -NoProfile -ExecutionPolicy Bypass -File "%script_root%tools\git_file_list.ps1" -Root "%root_arg%" -Scope "!scope!" -Output "!file_list!" -Roots "src,tests" -Extensions "!format_extensions!"
-set "collect_parent_result=!errorlevel!"
-if not "!collect_parent_result!"=="0" exit /b !collect_parent_result!
-
-set "strictfmt_root=%root_arg%\external\strictfmt"
-if exist "!strictfmt_root!\.git" (
-    set "strictfmt_file_list=%script_root%build\format_strictfmt_files_%RANDOM%_%RANDOM%.txt"
-    if exist "!strictfmt_file_list!" del /q "!strictfmt_file_list!" >nul 2>nul
-    powershell -NoProfile -ExecutionPolicy Bypass -File "%script_root%tools\git_file_list.ps1" -Root "!strictfmt_root!" -Scope "!scope!" -Output "!strictfmt_file_list!" -Roots "src,tests" -Extensions "!format_extensions!" -Prefix "external/strictfmt"
-    set "collect_strictfmt_result=!errorlevel!"
-    if not "!collect_strictfmt_result!"=="0" (
-        del /q "!strictfmt_file_list!" >nul 2>nul
-        exit /b !collect_strictfmt_result!
-    )
-    type "!strictfmt_file_list!" >> "!file_list!"
-    del /q "!strictfmt_file_list!" >nul 2>nul
-)
-exit /b 0
+powershell -NoProfile -ExecutionPolicy Bypass -File "%script_root%tools\git_file_list.ps1" -Root "%root_arg%" -Scope "!scope!" -Output "!file_list!" -Extensions "!format_extensions!"
+exit /b !errorlevel!
 
 :append_git_file
-set "arg=%~1"
-if /I "!arg:~0,19!"=="external/strictfmt/" (
-    set "strictfmt_arg=!arg:~19!"
-    git -C "%root_arg%\external\strictfmt" -c core.safecrlf=false add -- "!strictfmt_arg!"
-    if errorlevel 1 set "format_failed=1"
-    exit /b 0
-)
 set arg="%~1"
 set "chunk_args=!chunk_args! !arg!"
 set /a chunk_count+=1
@@ -167,14 +146,13 @@ set "chunk_count=0"
 exit /b 0
 
 :ensure_format_tool
-if exist "%script_root%build\CaseDashTools.exe" exit /b 0
 call "%script_root%build.cmd" /tools
 exit /b !errorlevel!
 
 :usage
 echo Usage:
 echo   format
-echo   format fix
+echo   format fix [--restage]
 echo   format changed
 echo   format fix changed
 echo   format fix staged --restage

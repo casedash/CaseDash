@@ -47,6 +47,10 @@ jobs:
         shell: cmd
         run: build.cmd /benchmarks
 
+      - name: Run lint
+        shell: cmd
+        run: lint.cmd
+
       - name: Run tests
         shell: cmd
         run: test.cmd

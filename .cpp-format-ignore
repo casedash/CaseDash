@@ -1,4 +1,6 @@
 .git
+.github-cache
+external
 build
 src/vendor
 tools/tests

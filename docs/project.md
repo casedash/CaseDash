@@ -113,7 +113,7 @@ See also: [docs/build.md](build.md) for setup and commands, [docs/glossary.md](g
 - Repeated unattended profiling runs use `profile_benchmark.cmd /daemon-start` once, then ordinary benchmark invocations queue through the elevated daemon.
 - Failed or regressed benchmark optimization experiments are recorded in `docs/profile_benchmark.md`; machine-specific benchmark range updates are recorded in `docs/performance/<machine>.md`; size-specific lessons stay grouped in `docs/optimize_size.md`.
 - If `devenv.cmd` changes Visual Studio toolchains, delete `build\cmake` before the next `build.cmd` run.
-- Formatter and hook discovery starts from broad `*.cpp` and `*.h` pathspecs, then applies the repo eligibility filter because Git pathspecs such as `tests/**/*.cpp` do not cover top-level files.
+- Formatter and hook discovery filters Git file lists by C/C++ suffix, then applies `.cpp-format-ignore`; directory glob pathspecs can miss top-level files.
 - Clangd include-cleaner line filters stay mechanical and include every eligible `#include` directive so stale project headers do not hide behind maintained suppressions.
 - GitHub Actions does not call machine-local `devenv.cmd`; CI resolves Visual Studio through the runner environment and sets `CASEDASH_INCLUDE_LINT_TIMEOUT_SECONDS` and `CASEDASH_INCLUDE_LINT_MAX_PARALLEL` for include checks.
 - `for /f` commands invoke `vswhere.exe` through `call "%VSWHERE%" ...` so `cmd` does not try to execute `C:\Program`.

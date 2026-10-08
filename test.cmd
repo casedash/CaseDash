@@ -15,6 +15,9 @@ set "RESULT=%errorlevel%"
 python "%REPO_ROOT%\tools\tests\lint\lint_test.py"
 if errorlevel 1 if "%RESULT%"=="0" set "RESULT=%errorlevel%"
 
+python "%REPO_ROOT%\tools\tests\hooks\pre_commit_test.py"
+if errorlevel 1 if "%RESULT%"=="0" set "RESULT=%errorlevel%"
+
 exit /b %RESULT%
 
 :github_devenv

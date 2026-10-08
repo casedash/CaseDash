@@ -6,83 +6,58 @@ $repoRoot = (& git rev-parse --show-toplevel 2>$null)
 if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($repoRoot)) {
     exit 1
 }
-
 $repoRoot = $repoRoot.Trim()
-$stagedFiles = & git -C $repoRoot diff --cached --name-only --diff-filter=ACMR -- '*.cpp' '*.h'
-if ($LASTEXITCODE -ne 0) {
-    exit $LASTEXITCODE
-}
-
-$hasStagedCppFiles = [bool]$stagedFiles
-
-$stashCreated = $false
-$stashMessage = 'casedash-pre-commit-format'
+$stashCommit = $null
+$hookStatus = 0
 
 & git -C $repoRoot diff --quiet --no-ext-diff --ignore-submodules --
-$hasUnstagedChanges = ($LASTEXITCODE -ne 0)
+if ($LASTEXITCODE -gt 1) { exit $LASTEXITCODE }
+$hasUnstagedChanges = ($LASTEXITCODE -eq 1)
 $untrackedFiles = & git -C $repoRoot ls-files --others --exclude-standard
-$hasUntrackedFiles = [bool]$untrackedFiles
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-if ($hasUnstagedChanges -or $hasUntrackedFiles) {
-    $previousErrorActionPreference = $ErrorActionPreference
-    $ErrorActionPreference = 'Continue'
-    try {
-        $stashOutput = & git -C $repoRoot stash push --keep-index --include-untracked -q -m $stashMessage 2>&1
-        $stashStatus = $LASTEXITCODE
-    } finally {
-        $ErrorActionPreference = $previousErrorActionPreference
-    }
-
-    if ($stashStatus -ne 0) {
-        Write-Host 'pre-commit: unable to stash unstaged changes'
-        Write-Host $stashOutput
-        exit $stashStatus
-    }
-
-    if ($stashOutput -and $stashOutput -ne 'No local changes to save') {
-        $stashCreated = $true
-    }
-}
-
-function Restore-PreCommitStash {
-    if (-not $stashCreated) {
-        return
-    }
-
-    & git -C $repoRoot stash pop -q *> $null
+if ($hasUnstagedChanges -or $untrackedFiles) {
+    # Quiet stash output is empty even when Git creates a stash; identify it by commit.
+    $previousStash = & git -C $repoRoot rev-parse --verify --quiet refs/stash
+    & git -C $repoRoot stash push --keep-index --include-untracked -q -m casedash-pre-commit-format
     if ($LASTEXITCODE -ne 0) {
-        Write-Host 'pre-commit: formatted staged files, but failed to restore unstaged changes from stash'
-        Write-Host "Run 'git stash list' and restore the top '$stashMessage' entry manually."
-        exit 1
+        Write-Host 'pre-commit: unable to stash unstaged changes'
+        exit $LASTEXITCODE
+    }
+    $currentStash = & git -C $repoRoot rev-parse --verify --quiet refs/stash
+    if ($currentStash -and $currentStash -ne $previousStash) {
+        $stashCommit = $currentStash.Trim()
     }
 }
 
 try {
-    $hookStatus = 0
-
-    if ($hasStagedCppFiles) {
-        Write-Host 'pre-commit: formatter check temporarily skipped'
-        # Temporarily disabled while formatter break selection is still under implementation.
-        # & cmd.exe /c "`"$repoRoot\format.cmd`" fix staged --restage"
-        # $formatStatus = $LASTEXITCODE
-        # if ($formatStatus -ne 0) {
-        #     $hookStatus = $formatStatus
-        # }
-    }
-
+    # Check the whole staged snapshot so config and formatter updates also reformat existing files.
+    Write-Host 'pre-commit: formatting staged snapshot'
+    & cmd.exe /c "`"$repoRoot\format.cmd`" fix --restage"
+    $hookStatus = $LASTEXITCODE
     if ($hookStatus -eq 0) {
         Write-Host 'pre-commit: running lint checks'
         & cmd.exe /c "`"$repoRoot\lint.cmd`""
-        $lintStatus = $LASTEXITCODE
-        if ($lintStatus -ne 0) {
-            Write-Host 'pre-commit: lint checks failed'
-            $hookStatus = $lintStatus
-        }
+        $hookStatus = $LASTEXITCODE
     }
 } catch {
-    Restore-PreCommitStash
-    throw
+    Write-Host "pre-commit: $($_.Exception.Message)"
+    $hookStatus = 1
+} finally {
+    if ($stashCommit) {
+        & git -C $repoRoot stash apply -q $stashCommit
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "pre-commit: unable to restore unstaged changes; preserved stash $stashCommit. Resolve it before committing."
+            $hookStatus = 1
+        } else {
+            $currentStash = & git -C $repoRoot rev-parse --verify --quiet refs/stash
+            if ($currentStash -eq $stashCommit) {
+                & git -C $repoRoot stash drop -q 'stash@{0}'
+                if ($LASTEXITCODE -ne 0) { $hookStatus = 1 }
+            } else {
+                Write-Host "pre-commit: restored unstaged changes; retained backup stash $stashCommit."
+            }
+        }
+    }
 }
-
-Restore-PreCommitStash
 exit $hookStatus

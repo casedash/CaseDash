@@ -224,9 +224,7 @@ void RequireSingleSuffixGroup(
 void ValidateConfig(const JsonValue& config, const std::map<std::string, std::set<std::string>>& suffixGroups) {
     RequireSuffixGroup(suffixGroups, "scan.suffix_group", config.At("scan").At("suffix_group").AsString());
     RequireSingleSuffixGroup(
-        suffixGroups,
-        "architecture.header_suffix_group",
-        config.At("architecture").At("header_suffix_group").AsString()
+        suffixGroups, "architecture.header_suffix_group", config.At("architecture").At("header_suffix_group").AsString()
     );
     RequireSingleSuffixGroup(
         suffixGroups,
@@ -234,14 +232,10 @@ void ValidateConfig(const JsonValue& config, const std::map<std::string, std::se
         config.At("architecture").At("implementation_suffix_group").AsString()
     );
     RequireSuffixGroup(
-        suffixGroups,
-        "include_style.suffix_group",
-        config.At("include_style").At("suffix_group").AsString()
+        suffixGroups, "include_style.suffix_group", config.At("include_style").At("suffix_group").AsString()
     );
     RequireSuffixGroup(
-        suffixGroups,
-        "source_dependencies.suffix_group",
-        config.At("source_dependencies").At("suffix_group").AsString()
+        suffixGroups, "source_dependencies.suffix_group", config.At("source_dependencies").At("suffix_group").AsString()
     );
     RequireSuffixGroup(
         suffixGroups,
@@ -249,9 +243,7 @@ void ValidateConfig(const JsonValue& config, const std::map<std::string, std::se
         config.At("source_dependencies").At("header_suffix_group").AsString()
     );
     RequireSuffixGroup(
-        suffixGroups,
-        "source_policy.suffix_group",
-        config.At("source_policy").At("suffix_group").AsString()
+        suffixGroups, "source_policy.suffix_group", config.At("source_policy").At("suffix_group").AsString()
     );
     if (ConfigStrings(config.At("source_dependencies"), "roots").size() != 1) {
         throw std::runtime_error("source_dependencies.roots must contain exactly one root");
@@ -297,8 +289,7 @@ bool DirectoryCanContainLintInput(std::string_view relative, const ScanSettings&
 class LintRecursiveFileFilter final : public ToolFileDiscoveryFilter {
 public:
     LintRecursiveFileFilter(const std::string& projectRoot, const ScanSettings& settings) :
-        projectRoot_(projectRoot),
-        settings_(settings) {}
+        projectRoot_(projectRoot), settings_(settings) {}
 
     bool ShouldVisitDirectory(std::string_view path, std::string& error) override {
         (void)error;
@@ -334,13 +325,16 @@ std::vector<FileEntry>
     if (!args.recursiveRoots.empty()) {
         LintRecursiveFileFilter filter(projectRoot, settings);
         std::string error;
-        std::optional<ToolFileDiscoveryResult> recursiveFiles =
-            DiscoverRecursiveToolFiles(args.recursiveRoots, filter, error);
-        if (!recursiveFiles.has_value()) {
+        if (!DiscoverRecursiveToolFiles(
+            args.recursiveRoots,
+            filter,
+            [&](std::string_view path) {
+                entries.push_back({std::string(path), true});
+                return true;
+            },
+            error
+        )) {
             throw std::runtime_error(error);
-        }
-        for (const std::string& path : recursiveFiles->files) {
-            entries.push_back({path, true});
         }
     }
 
@@ -399,12 +393,16 @@ std::vector<FileRecord> ScanLintInputs(
     std::chrono::steady_clock::time_point started
 ) {
     std::vector<CompletedLintScan> completed(entries.size());
-    ToolFileProgress progress(stdout, "lint-check", entries.size(), started, showProgress);
-    RunToolParallelFor(entries.size(), concurrency, &progress, [&](size_t index) {
-        try {
-            completed[index].record = ScanFile(entries[index], projectRoot, settings);
-        } catch (const std::exception& error) {
-            completed[index].error = error.what();
+    ToolFileProgress progress(stdout, "lint-check", started, showProgress);
+    RunToolParallel(concurrency, &progress, [&](const ToolWorkSubmit& submit) {
+        for (size_t index = 0; index < entries.size(); ++index) {
+            submit([&, index] {
+                try {
+                    completed[index].record = ScanFile(entries[index], projectRoot, settings);
+                } catch (const std::exception& error) {
+                    completed[index].error = error.what();
+                }
+            });
         }
     });
 
@@ -515,10 +513,7 @@ void PrintFailureResult(const CheckResult& result) {
             std::printf("%s\n", diagnostic.message.c_str());
         } else {
             std::printf(
-                "%s: %s: %s\n",
-                diagnostic.location.c_str(),
-                diagnostic.kind.c_str(),
-                diagnostic.message.c_str()
+                "%s: %s: %s\n", diagnostic.location.c_str(), diagnostic.kind.c_str(), diagnostic.message.c_str()
             );
         }
     }
