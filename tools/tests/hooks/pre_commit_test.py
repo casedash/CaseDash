@@ -80,6 +80,22 @@ class PreCommitTests(unittest.TestCase):
         self.assertEqual('untracked work\n', (self.root / 'new.txt').read_text())
         self.assertEqual(old_stash, self.git('rev-parse', 'refs/stash'))
 
+    def test_preserves_partial_staging_in_same_source(self) -> None:
+        original = 'int value = 1;\n' + '// context\n' * 20 + 'int other = 1;\n'
+        self.write('example.cpp', original)
+        self.git('add', 'example.cpp')
+        self.git('commit', '-qm', 'Partial staging fixture')
+        self.write('example.cpp', original.replace('value = 1', 'value=2'))
+        self.git('add', 'example.cpp')
+        self.write('example.cpp', original.replace('value = 1', 'value=2').replace('other = 1', 'other = 3'))
+        self.hook()
+        self.assertEqual(original.replace('value = 1', 'value = 2'), self.git('show', ':example.cpp'))
+        self.assertEqual(
+            original.replace('value = 1', 'value = 2').replace('other = 1', 'other = 3'),
+            (self.root / 'example.cpp').read_text(),
+        )
+        self.assertEqual('', self.git('stash', 'list'))
+
     def test_restores_unstaged_work_when_lint_fails(self) -> None:
         self.write('lint.cmd', '@echo off\nexit /b 7\n')
         self.git('add', 'lint.cmd')

@@ -45,8 +45,24 @@ try {
     $hookStatus = 1
 } finally {
     if ($stashCommit) {
-        & git -C $repoRoot stash apply -q $stashCommit
-        if ($LASTEXITCODE -ne 0) {
+        try {
+            # Restore only the unstaged delta. Reapplying the staged delta would conflict with formatting.
+            $base = & git -C $repoRoot commit-tree "$stashCommit^2^{tree}" -m 'pre-commit staged snapshot'
+            if ($LASTEXITCODE -ne 0) { throw 'unable to create recovery base' }
+            $index = & git -C $repoRoot rev-parse "$stashCommit^2"
+            if ($LASTEXITCODE -ne 0) { throw 'unable to read stashed index' }
+            $parents = @('-p', $base.Trim(), '-p', $index.Trim())
+            $untracked = & git -C $repoRoot rev-parse --verify --quiet "$stashCommit^3"
+            if ($untracked) { $parents += @('-p', $untracked.Trim()) }
+            $restore = & git -C $repoRoot commit-tree "$stashCommit^{tree}" @parents -m 'pre-commit unstaged snapshot'
+            if ($LASTEXITCODE -ne 0) { throw 'unable to create recovery snapshot' }
+            & git -C $repoRoot stash apply -q $restore.Trim()
+            $restoreStatus = $LASTEXITCODE
+        } catch {
+            Write-Host "pre-commit: $($_.Exception.Message)"
+            $restoreStatus = 1
+        }
+        if ($restoreStatus -ne 0) {
             Write-Host "pre-commit: unable to restore unstaged changes; preserved stash $stashCommit. Resolve it before committing."
             $hookStatus = 1
         } else {
