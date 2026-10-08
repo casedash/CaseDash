@@ -50,6 +50,7 @@ jobs:
         run: lint.cmd
 
       - name: Run tests
+        timeout-minutes: 15
         shell: cmd
         run: test.cmd
 

@@ -9,7 +9,7 @@ if /I "%GITHUB_ACTIONS%"=="true" (
 )
 if errorlevel 1 exit /b %errorlevel%
 
-ctest --test-dir "%REPO_ROOT%\build\cmake" -C Release --verbose --output-on-failure
+ctest --test-dir "%REPO_ROOT%\build\cmake" -C Release --verbose --output-on-failure --timeout 300
 set "RESULT=%errorlevel%"
 
 python "%REPO_ROOT%\tools\tests\lint\lint_test.py"
